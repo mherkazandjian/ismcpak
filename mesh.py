@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 import pickle  #### remove later
 
-class mesh(  ):
+class mesh( ):
     """
     This class read a PDR mesh and returns an object containing all the data of that mesh
     
@@ -18,25 +18,27 @@ class mesh(  ):
         m.cooling contains all the cooling info
         m.heating contains all the heating info
     """
+
     def __init__(self, fileName=None):
         
-        self.fileName = fileName
-        self.fObj     = open(self.fileName, mode='rb')
-        self.hdr      = self.readBlockFromFileObj( self.headerFormat() )
-        self.state    = self.readBlockFromFileObj( self.stateFormat()  )
-        self.heating  = self.readBlockFromFileObj( self.heatingFormat() )
-        self.cooling  = self.readBlockFromFileObj( self.coolingFormat() )
-        # hold all the info of the mesh in a dtype variable with the 
-        # formats specified below
-        self.data     = self.getData()
+        if fileName != None:
+            self.fName = fileName
         
-
-    def meshFormat(self):
+            # reading on the header, constructing the dull mesh dtype
+            # and re-reading the whole file into a mesh dtype
+            dtHdr = np.dtype( self.headerFormat() )
+            hdr   = np.fromfile(self.fName, dtype = dtHdr, count = 1 )
+            # re-reading the whole file, header and the data
+            dtMesh        = self.constructMeshDtype( hdr['nSpecs'], hdr['nSteps'])
+            data          = np.fromfile( fileName, dtype = dtMesh, count = 1)
+            self.data     = data[0]
+        
+    def meshFormat(self, nSpecs, nSteps):
         return [ 
-                   ('hdr'    , np.dtype( self.headerFormat()   ), 1),
-                   ('state'  , np.dtype( self.stateFormat()    ), 1),
-                   ('heating', np.dtype( self.heatingFormat()  ), 1),
-                   ('cooling', np.dtype( self.coolingFormat()  ), 1),
+                   ('hdr'    , np.dtype( self.headerFormat ()                ), 1),
+                   ('state'  , np.dtype( self.stateFormat  ( nSpecs, nSteps) ), 1),
+                   ('heating', np.dtype( self.heatingFormat( nSteps)         ), 1),
+                   ('cooling', np.dtype( self.coolingFormat( nSteps)         ), 1),
                 ]
     
     def headerFormat(self):
@@ -49,143 +51,49 @@ class mesh(  ):
                   ('nSpecs'   , np.int32  , 1),
                ]
         
-    def stateFormat(self):
+    def stateFormat(self, nSpecs, nSteps):
         return [
-                  ('gasT'  , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('dustT' , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('Av'    , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('abun'  , np.float64, (self.hdr['nSpecs'], self.hdr['nSteps']) ),
+                  ('gasT'  , np.float64, (nSteps, 1) ),
+                  ('dustT' , np.float64, (nSteps, 1) ),
+                  ('Av'    , np.float64, (nSteps, 1) ),
+                  ('abun'  , np.float64, (nSpecs, nSteps) ),
                ]
 
-    def heatingFormat(self):
+    def heatingFormat(self, nSteps):
         return [
-                  ('photo'    , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('cIon'     , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('molHydro' , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('H2pump'   , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('ggColl'   , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('visc'     , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('cr'       , np.float64, (self.hdr['nSteps'], 1) ),
+                  ('photo'    , np.float64, (nSteps, 1) ),
+                  ('cIon'     , np.float64, (nSteps, 1) ),
+                  ('molHydro' , np.float64, (nSteps, 1) ),
+                  ('H2pump'   , np.float64, (nSteps, 1) ),
+                  ('ggColl'   , np.float64, (nSteps, 1) ),
+                  ('visc'     , np.float64, (nSteps, 1) ),
+                  ('cr'       , np.float64, (nSteps, 1) ),
                ]
 
-    def coolingFormat(self):
+    def coolingFormat(self, nSteps):
         return [
-                  ('metaStable'    , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('fineStructure' , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('roVib'         , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('recom'         , np.float64, (self.hdr['nSteps'], 1) ),
-                  ('lymanAlpha'    , np.float64, (self.hdr['nSteps'], 1) ),
+                  ('metaStable'    , np.float64, (nSteps, 1) ),
+                  ('fineStructure' , np.float64, (nSteps, 1) ),
+                  ('roVib'         , np.float64, (nSteps, 1) ),
+                  ('recom'         , np.float64, (nSteps, 1) ),
+                  ('lymanAlpha'    , np.float64, (nSteps, 1) ),
                ]
 
-    def getData(self):       
-        meshFmt = self.meshFormat() 
-        data = np.empty((),  dtype = meshFmt)
-        
-        data['hdr']     = self.hdr
-        data['state']   = self.state      
-        data['heating'] = self.heating
-        data['cooling'] = self.cooling
-
-        return data 
-        
-
+    def constructMeshDtype(self, nSpecs, nSteps):
+        return np.dtype( self.meshFormat( nSpecs, nSteps ) ) 
+    
+    def getData(self):
+        return self.data
+    
     def saveData(self, fName):
-        f = open(fName, 'wb')
-        pickle.dump(self.data, f)
-        f.close() 
+        self.data.tofile( fName )
 
-    def readBlockFromFileObj(self, dtype):
-        dtype    = np.dtype( dtype )
-        dataRead = self.readDtypeDataFromFileObject( dtype, self.fObj)
-        dtypeObj = self.setValuesToDtype(dataRead, dtype)
-        return dtypeObj
-        
-    def readDataBlock(self):
-        
-        dataDtype = np.dtype( self.dataFormat() )
-        dtype    = dataDtype
-        dataRead = self.readDtypeDataFromFileObject( dtype, self.fObj)
-        data     = self.setValuesToDtype(dataRead, dtype)
-        return data
+    def toBuffer(self, fObj):
+        self.data.tofile( fObj )
 
-    def numpyToStructFormatChar(self, str ):
-        str = str.split('<')
-        str = str[1]
-        strRet = ''
+    def setData(self, data):
+        self.data = data
     
-        if str == 'i4':
-            strRet = 'I'
-        if str == 'f8':
-            strRet = 'd'
-        
-        if strRet == '':
-            return -1
-        else:
-            return strRet
-         
-    def numItems(self, feild ):
-        if len(feild) == 2:        
-            times = 1
-        else:
-            shape = feild[2]
-            times = 1
-            for d in shape:
-                times *= d
-        
-        return times
-    
-    def readDtypeDataFromFileObject(self, dtype, fObj):
-        nBytes = 0
-        collateFmt = []
-        collateFmt.append('<')
-
-        # generating the format string used to read and format the bytes
-        for fld in dtype.descr:
-            # name of the field
-            name = fld[0]
-            # type of the field use to unpack into a struct
-            typeStr = self.numpyToStructFormatChar(fld[1])
-            # size of each item in bytes
-            size =  np.dtype( fld[1] ).itemsize
-            # number of items in this feild
-            times = self.numItems( fld )
-
-            for t in range(times):
-                collateFmt.append(typeStr)
-                nBytes += size
-                    
-        #        print name, typeStr, size, times 
-        #        print len(fld)
-        #        print '---------------------'
-    
-        fmt   = ''.join(collateFmt)
-        #print fmt
-        dataRead = fObj.read(nBytes);
-        dataRead = (struct.unpack(fmt, dataRead))
-        #    print fmt
-        #    print dataRead
-
-        return dataRead
-
-
-    def setValuesToDtype(self, dataRead, dtype):
-
-        var = np.empty((),  dtype = dtype)
-
-        #setting the vlaues to the attributes
-        offset=0
-        for fld in dtype.descr:
-            name  = fld[0]
-            times = self.numItems( fld )
-            nextOffset = offset + times
-            fldData = dataRead[offset:nextOffset]
-            # casting the read data into the correct type (if it is not just in case)     
-            fldData = np.array( fldData, dtype = var[name].dtype)
-            offset = nextOffset
-            var[name] = fldData.reshape( var[name].shape )
-
-        return var    
-
     def plot(self, eSpcs):
         
         data = self.data
@@ -205,6 +113,7 @@ class mesh(  ):
         axs[0,0].semilogy(data['state']['Av'],  data['state']['dustT'], 'b' )
         fig.text(0.4, 0.85, '$T_{gas}$' , color='r')
         fig.text(0.4, 0.82, '$T_{dust}$', color='b')
+
 
         axs[0,1].axis([0, 20, 1e-12, 2])
         axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH_P], 'r' )
@@ -231,4 +140,4 @@ class mesh(  ):
         axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCO_P],  'b' )
         fig.text(0.8, 0.44, '$HCN$'   , color='r')
         fig.text(0.8, 0.41, '$HNC$'   , color='g')
-        fig.text(0.8, 0.38, '$HCO^+$' , color='b')        
+        fig.text(0.8, 0.38, '$HCO^+$' , color='b')
