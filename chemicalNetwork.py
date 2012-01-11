@@ -20,7 +20,7 @@ from collections import *
      self.setup(databaseFname, baseSpecies):
      # returns a counter object containing the enum of the species
      enumList = self.speciesEnum()  
-     
+    
      TODO:
          write a method which takes as input the species file used and filters
          out all the reaction which do not contain these species and re-numbers
@@ -46,7 +46,7 @@ class chemicalNetwork(specie, reaction):
         self.albedo = None
         self.Av = None
         self.G0 = None
-
+        self.specDict = {}  # replace the self.species with this
         if (self.fileName != None) and (self.baseSpecies != None):
             self.setup(fileName, baseSpecies)
 
@@ -70,12 +70,12 @@ class chemicalNetwork(specie, reaction):
     # variable fileStr and counts the number of reactions in the file 
     # sets : self.fileStr
     #        self.nRxn
-    def readDatabase(self, fileName):
+    def readNetworkFile(self, fileName):
         file = open(fileName, 'r')
         print 'Opened chemical reaction network file : ' + fileName
 
         nRxn = 0
-        fileStr = ''
+        fileStr = ''           # string that will contain the whole file
         for line in file:
             if line[0]=='#':
                 continue
@@ -90,7 +90,9 @@ class chemicalNetwork(specie, reaction):
     def printFile(self):
         print self.fileStr
 
-   # prints the reaction file without the header
+    # prints the reaction file without the header
+    # rxnIds : an integer list of the reaction indecies to be printed
+    # format : a string for the format of the reactions (see reaction object doc)
     def printReactions(self, rxnIds = None, format = None ):
 
         if rxnIds == None: # print all the reactions
@@ -164,23 +166,25 @@ class chemicalNetwork(specie, reaction):
     # define rxn object list for all the reaction from the ascii database lines
     def parseReactions(self):
 
-        print 'Parsing reactions'
+        print 'Parsing reactions...',
 
         for line in (self.fileStr).splitlines():
             rxn = self.setRxnAttributes(line)    # create a new  rxn object from reaction line
             self.reactions.append(rxn)           # append the new rxn to the reactions
+            
+        print 'complete'
 
     # count all the species and define them
     def analyzeNetwork(self, baseSpecies):
 
         print 'Analyzing the checmical network'
-
         # append the basic species
         uniqueSpecStr = []
         for baseSpec in baseSpecies:
             uniqueSpecStr.append(baseSpec.str)
             self.species.append(baseSpec)
-
+            self.specDict[baseSpec.str] = baseSpec
+            
         # getting the unique species from all the reactions 
         for rxn in self.reactions:
 
@@ -190,6 +194,12 @@ class chemicalNetwork(specie, reaction):
 
             # checking if the species in the reaction are already in the unique set or not
             for specStr in specsStrAllThisRxn:
+                
+                if len(specStr) != 0 and (specStr not in self.specDict):
+                    newSpec = specie(specStr, specType=1)   # making the specie obj
+                    newSpec.getComponents(baseSpecies)      # parsing the specie
+                    self.specDict [specStr] = newSpec
+                    
                 if len(specStr) != 0:
                     if uniqueSpecStr.count(specStr) == 0:
                         uniqueSpecStr.append(specStr) # adding the unique spec to the tmp str buff
@@ -206,7 +216,7 @@ class chemicalNetwork(specie, reaction):
     # construct the numeric representation of the species
     def updateSpeciesInReactions(self):
 
-        print 'Updating the species in the reaction and setting the numbers'
+        print 'Updating the species in the reaction and setting the numbers....',
         
         # collect all the species strings into one string list
         allSpecStrList = []
@@ -255,7 +265,7 @@ class chemicalNetwork(specie, reaction):
                 rxn.products.append(rxn.P4)
             
             self.reactions[i] = rxn
-    
+        print 'compelte'
     # each reaction has 7 species involved max. In the UMIST2006 there are ~450 species. Each
     # specie can be represented by 9 bits ( max 512 unsigned integer). So each reaction can
     # have a tag composed of 9*7=63 bits, which is unique as long as the species involved in
@@ -302,12 +312,12 @@ class chemicalNetwork(specie, reaction):
 
 
     # setup all the chemical network
-    def setup(self, databaseFname, baseSpecies):
-        self.readDatabase(databaseFname)  # read the database into a buffer
-        self.parseReactions()             # parse the reaction lines from the database
-        self.analyzeNetwork(baseSpecies)  # fileter the unique species and parse them in their components 
-        self.updateSpeciesInReactions()   # replacing the spcie objects in the reactions with the parsed species
-        self.setReactionHashcodes()       # compute the hashcodes of the reactions
+    def setup(self, networkFname, baseSpecies):
+        self.readNetworkFile(networkFname) # read the database into a buffer
+        self.parseReactions()              # parse the reaction lines from the database
+        self.analyzeNetwork(baseSpecies)   # fileter the unique species and parse them in their components 
+        self.updateSpeciesInReactions()    # replacing the spcie objects in the reactions with the parsed species
+        self.setReactionHashcodes()        # compute the hashcodes of the reactions
 
     #  write this method
     #        self.getDuplicateReaction()       # matched the hashcodes to determine which reactions are duplicated

@@ -40,9 +40,26 @@ baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
 t0 = time()
 net = chemicalNetwork(rxnFile, baseSpec)
 
+#net.printReactions([1,2,3])
 #net.printReactions(format = "status id hash type rxn abg trng acc ref" )
 #net.printSpecies()
 
+a={}
+print a
+a = {'x': baseSpec[0] }
+print a
+a['y'] = 5
+print a
+a['y'] = 8
+print a
+
+print net.specDict
+
+print 'z' in a
+print 'x' in a
+
+print net.specDict
+"""""
 net.setAbundancesFromFile(abunSpecFname, specAbunFname )
 
 net.setCloudParms(T, zeta, Av, albedo, nDens, G0)
@@ -58,3 +75,4 @@ idsSorted = net.sortRxnsDecreasingRates(ids)
 
 print '################################################################'
 net.printReactions(idsSorted, format = "id type rxn cst rate trng" )
+"""

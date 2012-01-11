@@ -168,7 +168,7 @@ class meshArxv():
             self.meshes.append( thisMeshData )                
             checkNum = np.fromfile( dbDataFObj, dtype = np.int64, count = 1)
                 
-            if checkNum != self.infoAll[i]['info'][2]+1:
+            if checkNum != self.infoAll[i]['info'][2]:
                 str = 'Error : checkpoint numbers do not match : database may be corrupt.'                 
                 raise NameError(str)
                     

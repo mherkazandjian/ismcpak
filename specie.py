@@ -1,8 +1,5 @@
 from string import *
 from numpy import *
-import StringIO
-import sys
-import subprocess
 import re
 
 """ methods :  self.__init__(specStr, specType=None, charge=None, init=None)
@@ -19,18 +16,18 @@ class specie():
         self.str  = specStr    # string representation of the specie
         self.num  = -1         # numeric representation of the specie
 
-        if specType == 0:               # a list holding the indicies of the species making 
-            self.com  = [[specStr,1]]   # it up and the number number of each sub-specie
+        if specType == 0:               # a list holding the indicies of the basic species making 
+            self.comp  = [[specStr,1]]   # it up and the number number of each sub-specie
         else:
-            self.com = []
+            self.comp = []
 
         self.charge = charge
-        self.init = None
         self.abun = None     # abundance of the specie relative to total H nuclei
+        self.init = None     # flag which indicates if the specie is inetialized or not
 
     # method that prints the string representation of the specie
     def show(self):
-        print self.str, ' : ', self.com, ' charge', self.charge, 'type', self.type
+        print self.str, ' : ', self.comp, ' charge', self.charge, 'type', self.type
 
     # method that parses the components of species by counting the elements in each specie
     def getComponents(self, baseSpec):
@@ -56,7 +53,7 @@ class specie():
                     break
 
             if nFound >= 1:
-                self.com.append( [bs.str, nFound] ) 
+                self.comp.append( [bs.str, nFound] ) 
         
         # by now, all the elements should be extracted and counted and only
         # the charge char (if any) should be in the string
