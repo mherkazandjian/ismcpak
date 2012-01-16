@@ -1,8 +1,6 @@
 from string import *
-from numpy import *
+import numpy as np
 import StringIO
-import sys
-import subprocess
 import re
 from specie import *
 
@@ -14,15 +12,10 @@ from specie import *
                self.display(full=None)
                self.setId(id)
                self.setType(type)
-               self.setReactants(R1, R2, R3)
-                 self.setR1(R1)
-                 self.setR2(R2)
-                 self.setR3(R3)
-               self.setReactants(P1, P2, P3, P4)
-                 self.setP1(P1)
-                 self.setP2(P2)
-                 self.setP3(P3)
-                 self.setP4(P4)
+               self.setSpeciesFromStrings( )
+               self.updateSpecies( [R1, R2, R3, P1, P2, P3, P4] )
+               self.setReactantsFromString(R1, R2, R3)
+               self.setProductsFromString(P1, P2, P3, P4)
                self.setAlpha(alpha)
                self.setBeta(beta)
                self.setGamma(gamma)
@@ -45,16 +38,16 @@ class reaction():
         self.type = ''  # umist string for the reaction
         self.ntype = '' # numeric type/code of reaction
         #--------------
-        self.R1   = None        
-        self.R2   = None
-        self.R3   = None
-        self.reactants = []
+        self.reactants  = []  # a string list of the reactants
+        self.nReactants = None
+        
         #--------------
-        self.P1   = None
-        self.P2   = None
-        self.P3   = None
-        self.P4   = None
-        self.products = []
+        self.products  = [] # a string list of the products
+        self.nProducts = None
+        
+        self.species = {} # a dictionary of the species
+        self.nSpec = None
+        
         #--------------
         self.alpha = 0.0
         self.beta  = 0.0
@@ -69,6 +62,24 @@ class reaction():
         self.naccuracy = '' # numeric error of the reaction constant
         #--------------
         self.refCode = ''
+
+    # set all the attributes from the string array of the reaction line
+    def setAllFromRxnStrArr(self, rxnStr):
+        self.str = rxnStr
+        self.active()
+        self.setId  ( int32(rxnStr[0]) )
+        self.setType( rxnStr[1]        )
+        
+        self.setReactantsFromStrings( [ rxnStr[2], rxnStr[3], rxnStr[4] ] )
+        self.setProductsFromStrings(  [ rxnStr[5], rxnStr[6], rxnStr[7], rxnStr[8] ])
+        self.setAlpha( float64(rxnStr[9])  )
+        self.setBeta(  float64(rxnStr[10]) )
+        self.setGamma( float64(rxnStr[11])  )
+        self.setSrc( rxnStr[12] )
+        self.setTl( float64(rxnStr[13]) )
+        self.setTu( float64(rxnStr[14]) )
+        self.setAccuracy( rxnStr[15] )
+        self.setRefCode( rxnStr[16] )
     
     # sets status to 1 indication the reaction IS being used
     def active(self):
@@ -81,31 +92,32 @@ class reaction():
         self.id=id
     def setType(self, type):
         self.type=type
-    # set the reactant strings
-    def setR1(self, R1):
-        self.R1=R1
-    def setR2(self, R2):
-        self.R2=R2
-    def setR3(self, R3):
-        self.R3=R3
-    def setReactants(self, R1, R2, R3):
-        self.R1=specie(R1)
-        self.R2=specie(R2)
-        self.R3=specie(R3)
-    # set the product strings
-    def setP1(self, P1):
-        self.P1=P1
-    def setP2(self, P2):
-        self.P2=P2
-    def setP3(self, P3):
-        self.P3=P3
-    def setP4(self, P4):
-        self.P4=P4
-    def setProducts(self, P1, P2, P3, P4):
-        self.P1=specie(P1)
-        self.P2=specie(P2)
-        self.P3=specie(P3)
-        self.P4=specie(P4)
+        
+    # set the reactants
+    def setReactantsFromStrings(self, reactantsStrArr):
+        
+        for specStr in reactantsStrArr:
+            if len(specStr) != 0:
+                self.species[ specStr] =  specie(specStr)
+                self.reactants.append( specStr )
+        
+        self.nReactants = len(self.reactants)
+            
+
+    # set the products
+    def setProductsFromStrings(self, productsStrArr):
+
+        for specStr in productsStrArr:
+            if len(specStr) != 0:
+                self.species[ specStr] =  specie(specStr)
+                self.products.append( specStr ) 
+            
+        self.nProducts = len(self.products)
+        self.nSpecs = self.nReactants + self.nProducts
+    
+    def updateSpecieInReaction(self, specStr, specObj):
+        self.species[specStr] = specObj
+        
     # set alpha, beta, gamma
     def setAlpha(self, alpha):
         self.alpha=alpha
@@ -126,23 +138,7 @@ class reaction():
         self.accuracy = acc
     def setRefCode(self, refCode):
         self.refCode = refCode
-
-    # set all the attributes from the string array of the reaction line
-    def setAllFromRxnStrArr(self, rxnStr):
-        self.active()
-        self.setId  ( int32(rxnStr[0]) )
-        self.setType( rxnStr[1]        )
-        self.setReactants( rxnStr[2], rxnStr[3], rxnStr[4] )
-        self.setProducts( rxnStr[5], rxnStr[6], rxnStr[7], rxnStr[8] )
-        self.setAlpha( float64(rxnStr[9])  )
-        self.setBeta(  float64(rxnStr[10]) )
-        self.setGamma( float64(rxnStr[11])  )
-        self.setSrc( rxnStr[12] )
-        self.setTl( float64(rxnStr[13]) )
-        self.setTu( float64(rxnStr[14]) )
-        self.setAccuracy( rxnStr[15] )
-        self.setRefCode( rxnStr[16] )
-
+ 
     def display(self, format = None ):
 
         # methods which print the compoments of a reaction
@@ -150,12 +146,67 @@ class reaction():
         def printId     () : print "%04d" % self.id,
         def printHash   () : print "%20d" % self.hash,
         def printType   () : print "%2s"  % self.type,
-        def printReacts () : print "%-10s  %-10s  %-10s" % (self.R1.str, self.R2.str, self.R3.str),
-        def printProds  () : print "%-10s  %-10s  %-10s  %-10s" % (self.P1.str, self.P2.str, self.P3.str, self.P4.str),
+        def printReacts () :
+            # collecting the strings to be printed into a tuple and filling the 
+            # reactants which do not exist by empty strings
+            cmpnts = ()
+            fmtStr = ""
+            for i in [0,1,2]:
+                if i < self.nReactants:
+                    cmpnts  += (self.reactants[i],)
+                    fmtStr  += "%-10s  "   
+                else:
+                    cmpnts += ('',)
+                    fmtStr += "%-10s  " 
+            print fmtStr % cmpnts,
+        def printProds  () :
+            # collecting the strings to be printed into a tuple and filling the 
+            # species which do not exist by empty strings
+            cmpnts = ()
+            fmtStr = ""
+            for i in [0,1,2,4]:
+                if i < self.nProducts:
+                    cmpnts += (self.products[i],)
+                    fmtStr += "%-10s  "   
+                else:
+                    cmpnts += ('',) 
+                    fmtStr += "%-10s  "   
+            print fmtStr % cmpnts,
         def printRxn    () : 
             printReacts()
             print ' --> ',
             printProds(),
+        def printReactsNumeric () :
+            # collecting the numeric reprentations of the species to be printed into 
+            # a tuple and filling the spcies which do not exist by empty strings
+            cmpnts = ()
+            fmtStr = ""
+            for i in [0,1,2]:
+                if i < self.nReactants:
+                    cmpnts += ( self.species[ self.reactants[i] ].num,)
+                    fmtStr += "%-10d  "    
+                else:
+                    cmpnts += ('',)
+                    fmtStr += "%-10s  "   
+            print fmtStr % cmpnts,
+        def printProdsNumeric  () :
+            # collecting the numeric reprentations of the species to be printed into 
+            # a tuple and filling the spcies which do not exist by empty strings
+            cmpnts = ()
+            fmtStr = ""
+            for i in [0,1,2,4]:
+                if i < self.nProducts:
+                    cmpnts += (self.species[ self.products[i] ].num,)
+                    fmtStr += "%-10d"    
+                else:
+                    cmpnts += ('',)
+                    fmtStr += "%-10s  "   
+            print fmtStr % cmpnts
+        def printRxnNumeric    () :
+            printReactsNumeric()
+            print ' --> ',
+            printProdsNumeric(),
+
         def printABG    () : print "|%+-5.2e %+-5.2e %+-5.2e|" % (self.alpha, self.beta, self.gamma), 
         def printTrng   () : print "|%-5d %-5d|" % (self.Tl, self.Tu), 
         def printAcc    () : print " %s " % ( self.accuracy ),
@@ -182,20 +233,21 @@ class reaction():
 
 
         action = {
-            "status" : printStatus,
-            "id"     : printId,
-            "hash"   : printHash,
-            "type"   : printType,
-            "reacts" : printReacts,
-            "prods"  : printProds,
-            "rxn"    : printRxn,
-            "abg"    : printABG,
-            "trng"   : printTrng,
-            "acc"    : printAcc,
-            "ref"    : printRef,
-            "cst"    : printCst, 
-            "rate"   : printRate,
-            "abun"   : printAbun}
+            "status"     : printStatus,
+            "id"         : printId,
+            "hash"       : printHash,
+            "type"       : printType,
+            "reacts"     : printReacts,
+            "prods"      : printProds,
+            "rxn"        : printRxn,
+            "rxnNumeric" : printRxnNumeric,
+            "abg"        : printABG,
+            "trng"       : printTrng,
+            "acc"        : printAcc,
+            "ref"        : printRef,
+            "cst"        : printCst, 
+            "rate"       : printRate,
+            "abun"       : printAbun}
 
 
         if format != None:

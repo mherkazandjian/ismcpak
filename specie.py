@@ -12,7 +12,10 @@ import re
 # --------------------------------------
 class specie():
     def __init__(self, specStr, specType=None, charge=None, init=None):
-        self.type = specType   # , -1 => do not conisder it as a specie, 0 => basic specie, 1 => composite specie
+        self.type = specType   # -2 => ignore specie
+                               # -1 => do not conisder it as a specie
+                               #  0 => basic specie
+                               # 1 => composite specie
         self.str  = specStr    # string representation of the specie
         self.num  = -1         # numeric representation of the specie
 
@@ -27,9 +30,17 @@ class specie():
 
     # method that prints the string representation of the specie
     def show(self):
-        print self.str, ' : ', self.comp, ' charge', self.charge, 'type', self.type
-
+        print self.type
+        print self
+        print '%03d %-12s charge = %+-d  type = %d' % (self.num, self.str, self.charge, self.type) 
+    #, self.comp
     # method that parses the components of species by counting the elements in each specie
+    # make sure baseSpec has the species with String in a decreasing order in length
+    # (except for the charge for example e-), i.e in this order
+    #     longest string names ( CRPHOTON, PHOTON, CRP)
+    #     regular elements (Na, Cl,...)
+    #     elements with a single letter Upper case (H, F, C...)
+    #     species denoted with lower case letters ( e-)
     def getComponents(self, baseSpec):
 
         specStr = self.str

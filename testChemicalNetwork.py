@@ -1,7 +1,7 @@
 from numpy import *
 from time import *
 from chemicalNetwork import *
-from ctypes import *
+import sys
 
 T        = 800.0
 Av       = 20.0
@@ -9,12 +9,12 @@ nDens    = 10**5.5
 G0       = 10**5
 findReact = ''
 findProd  = 'HCN'
-specAbunFname = '../code/M4-GM-16-Av19.0.out'
+specAbunFname = 'data/M4-GM-16-Av19.0.out'
 
 zeta     = 5e-17
 albedo   = 0.6
 rxnFile  = 'data/RATE06.txt'
-abunSpecFname = '../speciesInfo/speciesNames.inp'
+abunSpecFname = 'data/speciesNumAndName.inp'
 
 
 # elements and basic species from which all the other species are made
@@ -40,27 +40,57 @@ baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
 t0 = time()
 net = chemicalNetwork(rxnFile, baseSpec)
 
-#net.printReactions([1,2,3])
-#net.printReactions(format = "status id hash type rxn abg trng acc ref" )
-#net.printSpecies()
+# filter reactions with certain products and reactants
+inds = net.filterReactions(withReacts = ['PHOTON'], withProds = ['H', 'e-'])
+net.printReactions(inds, format = 'type rxn')
 
-a={}
-print a
-a = {'x': baseSpec[0] }
-print a
-a['y'] = 5
-print a
-a['y'] = 8
-print a
+print '-----------------------------------------------------------------------------' 
+# filter reactions with certain reactants only
+inds = net.filterReactions(withReacts = ['HNC'])
+net.printReactions(inds[0:5], format = 'type rxn')
 
-print net.specDict
+print '-----------------------------------------------------------------------------' 
+# changing the index of a specie
+net.printReactions([10], format = 'type rxn')
+net.printReactions([10], format = 'type rxnNumeric')
+net.species['H2O'].num = 51
+net.printReactions([10], format = 'type rxn')
+net.printReactions([10], format = 'type rxnNumeric')
 
-print 'z' in a
-print 'x' in a
+net.abun = np.zeros(50)
 
-print net.specDict
+net.species['H'].num  = 0
+net.species['H'].abun = -44.0
+print net.species['H'].abun
+
+net.abun[0] = 55.0
+net.species['H'].abun = net.abun[net.species['H'].num]
+print net.species['H'].abun
+ 
+#net.computeReactionConstants()
+#net.printReactions(format = 'rxn')
+#net.printReactions(format = 'rxnNumeric')
+#net.species['H'].num = -991
+#net.printReactions(format = 'rxnNumeric')
+#print 'done'
+
+#net.printReactions(format = 'rxn')
+
+net.assignNumbersToSpecies(fileName = 'data/speciesNumAndName.inp')
+
+asdasd
+rxn = net.reactions[0]
+print rxn.str
+rxn.display(format='rxnNumeric')
+print rxn.reactants
+print rxn.products
+
+asdasda
+
+
+#net.setAbundancesFromFile(abunSpecFname, specAbunFname )
+
 """""
-net.setAbundancesFromFile(abunSpecFname, specAbunFname )
 
 net.setCloudParms(T, zeta, Av, albedo, nDens, G0)
 net.computeReactionConstants()

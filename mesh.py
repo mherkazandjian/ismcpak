@@ -1,10 +1,7 @@
 import numpy as np
-import struct
 
 import pylab as pyl
 import matplotlib.pyplot as plt
-
-import pickle  #### remove later
 
 class mesh( ):
     """
