@@ -5,7 +5,7 @@ import re
 """ methods :  self.__init__(specStr, specType=None, charge=None, init=None)
                self.show()
                self.getComponents(baseSpec)
-
+               self.get Abun(), setAbun( x ), getNum()
 """
 
 # class definition for a single specie
@@ -17,7 +17,7 @@ class specie():
                                #  0 => basic specie
                                # 1 => composite specie
         self.str  = specStr    # string representation of the specie
-        self.num  = -1         # numeric representation of the specie
+        self.num  = None         # numeric representation of the specie
 
         if specType == 0:               # a list holding the indicies of the basic species making 
             self.comp  = [[specStr,1]]   # it up and the number number of each sub-specie
@@ -27,12 +27,26 @@ class specie():
         self.charge = charge
         self.abun = None     # abundance of the specie relative to total H nuclei
         self.init = None     # flag which indicates if the specie is inetialized or not
+        self.active = None
 
     # method that prints the string representation of the specie
     def show(self):
-        print self.type
-        print self
-        print '%03d %-12s charge = %+-d  type = %d' % (self.num, self.str, self.charge, self.type) 
+
+        if self.num != None:
+            print '%04d ' % self.num,
+        else:
+            print 'None ',  
+        
+        print '%-12s charge = %+-d  type = %+-d abun = %+-e' % (self.str, self.charge, self.type, self.getAbun() )
+        """
+        #printStr +=  
+        #
+        #    numPrnt = float(nan)
+        #else:
+        #    numPrnt = self.num
+            
+        #print self.num, self.str, self.charge, self.type, self.abun
+        print '%03d %-12s charge = %+-d  type = %d abun = %e' % (self.num, self.str, self.charge, self.type, self.abun[0]) 
     #, self.comp
     # method that parses the components of species by counting the elements in each specie
     # make sure baseSpec has the species with String in a decreasing order in length
@@ -41,6 +55,7 @@ class specie():
     #     regular elements (Na, Cl,...)
     #     elements with a single letter Upper case (H, F, C...)
     #     species denoted with lower case letters ( e-)
+    """
     def getComponents(self, baseSpec):
 
         specStr = self.str
@@ -78,3 +93,11 @@ class specie():
 
         # succcessfully processes
         self.init = 1
+        
+    def getAbun(self):
+        return self.abun[0]
+    def setAbun(self, abun):
+        self.abun[0] = abun
+    
+    def getNum(self):
+        return self.num

@@ -34,7 +34,7 @@ from reaction import *
 # ----------------------------------------
 class chemicalNetwork(specie, reaction):
 
-    def __init__(self, fileName=None, baseSpecies=None):
+    def __init__(self, fileName=None, baseSpecies=None, UMISTVER = None):
         self.nReactions=None             # number of reactions in the network
         self.reactions=[]              # reaction object list in the netowrk
         self.nSpecs = None
@@ -47,8 +47,13 @@ class chemicalNetwork(specie, reaction):
         self.albedo = None
         self.Av = None
         self.G0 = None
-        self.abun = None
+        self.abun = None               # (nSpecies, 1) np array, it is by default initialized to -1
         
+        if UMISTVER != None:
+            self.umistVer = UMISTVER
+        else:
+            self.umistVer = None
+            
         if (self.fileName != None) and (self.baseSpecies != None):
             self.setup(fileName, baseSpecies)
         
@@ -88,6 +93,12 @@ class chemicalNetwork(specie, reaction):
 
         print 'Parsing reactions...',
 
+        if self.umistVer == None:
+            str  = 'Error : cannot parse network reaction, unknown database\n'
+            str += '                   please set database version.'                 
+            raise NameError(str)
+        
+        print 'using '+ self.umistVer + ' format ',
         for line in (self.fileStr).splitlines():
             rxn = self.setRxnAttributes(line)    # create a new  rxn object from reaction line
             self.reactions.append(rxn)           # append the new rxn to the reactions
@@ -125,9 +136,10 @@ class chemicalNetwork(specie, reaction):
         
         # defining the array where the abundances of the species are stored
         # and each entry is mapped to self.species[].abun, such that
-        # self.species['XXX'].abun == self.abun[ self.species['XXX'].num ] 
-        self.abun = np.zeros( len(self.species) )
-
+        # self.species['XXX'].abun == self.abun[ self.species['XXX'].num ]
+        # the abundances are intiialized to -1 
+        self.abun = np.zeros( (len(self.species),1) ) - 1
+        
 
     # setting the number_tag of the species objects in the reaction objects
     # such that it would be possible to construct the numeric representation of
@@ -178,113 +190,36 @@ class chemicalNetwork(specie, reaction):
             print 'setting species number in the order they appear in the file: ' + fileName
             
             fObj =  open(fileName, 'r')
+            i = 0
             for line in fObj:
                 line = line.split()
                 
                 specStr = line[1]
-                numStr  = line[0]
                 if specStr in self.species:
-                    self.species[ specStr ].num = int32(numStr)
+                    self.species[ specStr ].num = int32(i)
                 else:
                     print '%-12s from the file is not a species in the current network' % specStr 
-#                print line[0], line[1]
-        
+                i += 1
             fObj.close() 
         
+        # printintg the species which did not get a number assigned to
         for spec in self.species.values():
             if spec.num == None:
                 print 'index of %-12s is missing in the file, it is kept as None' % spec.str
-             
+         
         self.mapSpeciesAbundances()
         
         print 'assigned species number and mapped the abundances'
+        
         
     # map self.species[].abun to self.abun
     def mapSpeciesAbundances(self):
         
         for specStr in self.species:
-            self.species[specStr].abun = self.abun[ self.species[specStr].num ] 
-
-    def setAbundances(self, fromFile = None, fromMesh = None):
-        
-        print 'Setting the abundances of the species:'
-        # reading the input species whose abundance is to be assigned
-        specFile = open(speciesFileName, 'r')
-        specsStrRead = []
-        for line in specFile:
-            lineParsed = line.split(' ')
-            specStr = strip(lineParsed[1])
-            specsStrRead.append(specStr)
+            specNum = self.species[specStr].num
+            if specNum != None:
+                self.species[specStr].abun = self.abun[ specNum ]
             
-        print specsStrRead
-        aasdasd
-        # reading the abundances of the species whose abundance is to be assigned
-        abunFile = open(abunFileName, 'r')
-        abunRead = []
-        for line in abunFile:
-            abun = float64(line)
-            abunRead.append( abun )
-
-        # assigining the abundances of the species to the specie objects in the network
-        i = 0
-        for i in arange(len(specsStrRead)):
-            indx = self.getSpecieIndex(specsStrRead[i])
-            if indx != -1:
-                #print indx, specsStrRead[i], self.species[indx].str
-                self.species[indx].abun = abunRead[i] ########
-            i = i + 1
-
-"""
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-    CONTINUE IMPLEMENTING SETTING THE ABUNDANCES FROM A MESH AND FROM AN ASCII FILE!!!
-"""
-    # set the abundances of the species from an ascii input file
-    # containg the species name and the corresponding abundance 
-    # column 1 : index (not used), column 2 : specie string, column 3 : abundance relative to H
-    # ;;;;;;; continue working on this.......
-    # pass as a paramter a dictionary specifying the specie and its abundance ex.. 
-    #     spec1 : 1e-5
-    #     spec2 : 0.034
-    #           .
-    #           .
-    #          etc
-    def setAbundancesFromMesh(self, mesh):
-        
-        print 'Setting the abundances of the species:'
-        # reading the input species whose abundance is to be assigned
-        specFile = open(speciesFileName, 'r')
-        specsStrRead = []
-        for line in specFile:
-            lineParsed = line.split(' ')
-            specStr = strip(lineParsed[1])
-            specsStrRead.append(specStr)
-            
-        print specsStrRead
-        aasdasd
-        # reading the abundances of the species whose abundance is to be assigned
-        abunFile = open(abunFileName, 'r')
-        abunRead = []
-        for line in abunFile:
-            abun = float64(line)
-            abunRead.append( abun )
-
-        # assigining the abundances of the species to the specie objects in the network
-        i = 0
-        for i in arange(len(specsStrRead)):
-            indx = self.getSpecieIndex(specsStrRead[i])
-            if indx != -1:
-                #print indx, specsStrRead[i], self.species[indx].str
-                self.species[indx].abun = abunRead[i] ########
-            i = i + 1
- 
     # each reaction has 7 species max involved (UMIST). In the UMIST2006 there are ~450
     # species. Each specie can be represented by a 9 bit integer ( we use an unsigned integer)
     # which can have a max value of 512. So each reaction can have a tag composed of 9*7=63 
@@ -315,6 +250,39 @@ class chemicalNetwork(specie, reaction):
             allHashCodes.append(rxn.hash)
 
         print 'complete'
+
+    # set the abundances of the species from an ascii input file
+    # or from a numpy array. 
+    # the file contains one abundance on each line. each value will be set to the
+    # corresponding vlaue in self.abun at the index corresponding to the line number
+    # (staring with index 0). There should be as much lines as there are species with
+    # assigned numbers. Also the numpy array should have the same length as the species
+    # with numbers. 
+    # WARNING : since self.specie[].abun are mapped to self.abun, in chanfing
+    #           all the values of the array the method self.copyAbundancesFromArray( array )
+    #           should be used, which sets the values one by one, instead of
+    #           replacing self.abun with another array when self.abun = newAbun
+    #           which removes the mapping.
+    def setAbundances(self, fromFile = None, fromArray = None):
+        
+        print 'Setting the abundances of the species from:',
+        
+        newAbunArr = None
+        
+        if fromFile != None:
+            print 'file : %s' % fromFile            
+            newAbunArr = np.fromfile(fromFile, dtype = np.float64, sep = " ")
+            
+        if fromArray != None:
+            print 'file : %s' % fromArray            
+            newAbunArr = fromArray
+        
+        self.copyAbundancesFromArray( newAbunArr )
+
+    def copyAbundancesFromArray(self, array):
+        n = len(array)
+        self.abun[0:n, 0] = array
+ 
  
 #    def findIdenticalReactions(self):
 #        # looking for identical reactions
@@ -372,11 +340,85 @@ class chemicalNetwork(specie, reaction):
 
     # pasrse the UMIST reaction line and return the reaction object
     def setRxnAttributes(self, lineStr):
-        lineParsed = lineStr.split(',')
+        
+        if self.umistVer == 'umist06':
+            lineParsed = lineStr.split(',')
+        
+        if self.umistVer == 'umist99':
+            u06Str = self.convertRxnLineToU06FormatStr( lineStr )
+            lineParsed = u06Str.split(',')
+            
         rxn = reaction()
         rxn.setAllFromRxnStrArr( lineParsed )
         return rxn
+#'1', 'NN', 'H', 'CH', '', 'C', 'H2', '', '', '1.31E-10', '0.00', '80.0', 'C', '300', '2000', 'B', 'NIST'
+    def convertRxnLineToU06FormatStr( self, line ):
         
+        pos = 0
+        newLine = ''
+        
+        w = 4; 
+        cmp = line[pos:(pos+4)].strip() # index
+        newLine += cmp +','; pos += w
+        """
+        from the ID, set the type of the reaction
+        here i do it for a demosnteation by putting XX
+        """
+        newLine += 'XX' +',';  # <------------------------------ see table 5 in umits99
+
+        w = 9;
+        cmp = line[pos:(pos+10)].strip() #r1
+        newLine += cmp +',';  pos += w
+        w = 9;
+        cmp = line[pos:(pos+w)].strip() #r2
+        newLine += cmp +',';   pos += w
+        w = 9;
+        cmp = line[pos:(pos+w)].strip() #r3
+        newLine += cmp +',';   pos += w
+        w = 9;
+        cmp = line[pos:(pos+w)].strip() #p1
+        newLine += cmp +',';   pos += w
+        w = 9;
+        cmp = line[pos:(pos+w)].strip() #p3
+        newLine += cmp +',';   pos += w
+        w = 6;
+        cmp = line[pos:(pos+w)].strip() #p4
+        newLine += cmp +',';   pos += w
+        w = 5;
+        cmp = line[pos:(pos+w)].strip() #alpha
+        newLine += cmp +',';   pos += w
+        w = 8;
+        cmp = line[pos:(pos+w)].strip() #beta
+        newLine += cmp +',';   pos += w
+        w = 8;
+        cmp = line[pos:(pos+w)].strip() #beta
+        newLine += cmp +',';   pos += w
+        w = 10;
+        cmp = line[pos:(pos+w)].strip() #gamma
+        newLine += cmp +',';   pos += w
+        w = 1;
+        cmp = line[pos:(pos+w)].strip() #kind of data
+        newLine += cmp +',';   pos += w
+        w = 5;
+        cmp = line[pos:(pos+w)].strip() #Tlow
+        newLine += cmp +',';   pos += w
+        w = 5;
+        cmp = line[pos:(pos+w)].strip() #Thigh
+        newLine += cmp +',';   pos += w
+        w = 1;
+        cmp = line[pos:(pos+w)].strip() #err
+        newLine += cmp +',';   pos += w
+        w = 4;
+        cmp = line[pos:(pos+w)].strip() #refCode
+        newLine += cmp +',';   pos += w
+
+        print '---------------'
+        print line
+        print newLine
+        
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        asdasdasd
+        return ''
     # method that returns the indecies of the reactions containing the input specie
     # withReacts : a list of strings holding the reactants to be used as a filter
     # withProds  : a list of strings holding the reactants to be used as a filter
