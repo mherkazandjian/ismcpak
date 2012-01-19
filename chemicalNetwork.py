@@ -5,6 +5,21 @@ from specie import *
 from reaction import *
 
 """
+   *if a specie 'XXX' is not in :
+       self.speciesRemoved
+    and self.species['XXX'].num = None
+    then the reactions which have 'XXX' as a specie are still in the 
+    network but they are not used in computing the reaction, like for
+    example PHOTON, it does not have an abundance and we do not keep
+    track of the number of photons, so it need not have a number with
+    which its abudnance can be tracked in self.abun[]   
+   
+   * reaction hash codes are set based on the original numbers assigned to
+     species and it doesnt depend on the order the reactnats or the 
+     products appear in the reaction input file. When computing the
+     hash code, the species are picked in the increasing order as 
+     they appeat in the sorted string array (using the sorted function)
+     
      self.species   # tuple containing the unique species objects in the network 
      self.__init__(fileName=None, baseSpecies=None)
      self.readDatabase(fileName)
@@ -13,7 +28,7 @@ from reaction import *
      self.setRxnAttributes(lineStr)
      self.parseReactions()
      self.getUniqueSpecies(baseSpecies)
-     self.updateSpeciesInReactions()
+     self.mapReactionSpeciesToSpecieObjectList()
      self.setup(databaseFname, baseSpecies):
      self.changeSpeciesNums( fileName )
      
@@ -35,10 +50,18 @@ from reaction import *
 class chemicalNetwork(specie, reaction):
 
     def __init__(self, fileName=None, baseSpecies=None, UMISTVER = None):
-        self.nReactions=None             # number of reactions in the network
+        self.nReactions=None           # number of reactions in the network
         self.reactions=[]              # reaction object list in the netowrk
-        self.nSpecs = None
-        self.species={}                # specie object list in the network
+
+        self.nReactionsRemoved=None  # number of reactions in the network
+        self.reactionsRemoved=[]     # reaction object list in the netowrk
+        
+        self.nSpecs = None             # number of active species in the network
+        self.species={}                # active specie object list in the network
+        
+        self.nSpecsRemoved = None    # number of not active species in the network
+        self.speciesRemoved={}       # not active specie object list in the network
+        
         self.fileName = fileName       # path of the ascii reaction file of the network
         self.baseSpecies = baseSpecies # object list of the base species
         self.nDens = None              # hydrogen gas ambient density
@@ -48,6 +71,8 @@ class chemicalNetwork(specie, reaction):
         self.Av = None
         self.G0 = None
         self.abun = None               # (nSpecies, 1) np array, it is by default initialized to -1
+        
+        self.pstr = '' # just for printintg purposes
         
         if UMISTVER != None:
             self.umistVer = UMISTVER
@@ -79,13 +104,13 @@ class chemicalNetwork(specie, reaction):
             if line[0]=='#':
                 continue
             fileStr += line
-            nRxn = nRxn + 1
+            nRxn += 1
         
         self.fileStr = fileStr
-        self.nRxn    = nRxn
+        self.nReactions = nRxn
         
         fObj.close()
-        print '     Read ', self.nRxn, 'reactions'
+        print '     Read ', self.nReactions, 'reactions'
 
     # define rxn object list for all the reaction from the ascii database lines
     # here the reactant and product objects are not set
@@ -132,24 +157,35 @@ class chemicalNetwork(specie, reaction):
         # in self.species. This saves memory and time, since only
         # modifying self.species would modify all the corresponding
         # species all the reactions whereever they occure 
-        self.updateSpeciesInReactions()
+        self.mapReactionSpeciesToSpecieObjectList()
         
         # defining the array where the abundances of the species are stored
         # and each entry is mapped to self.species[].abun, such that
         # self.species['XXX'].abun == self.abun[ self.species['XXX'].num ]
-        # the abundances are intiialized to -1 
-        self.abun = np.zeros( (len(self.species),1) ) - 1
+        # the abundances are intiialized to -1
+        self.initializeDefaultAbunBuffer() 
+        
+        self.nReactionsRemoved = len(self.reactionsRemoved)
+        self.nSpecsRemoved = len(self.speciesRemoved)
         
 
+    # mapping the species objects in all the reactions to the species
+    # object list in the network object (this object)...this is useful
+    # since instead of having a copy of a species which might occure in
+    # many reaction, it is just referenced to the species in the species list
+    # it is also useful since changin an attirbute of a species in the list
+    # would be visible to all the occurances in the network. such as...
     # setting the number_tag of the species objects in the reaction objects
     # such that it would be possible to construct the numeric representation of
     # the reactions, i.e instead of having : 
     #           HCN  +  H   ->  HNC  +   H
     # we get    '56' +  '9' ->   27  +  '9'
     # assuming HCN, HNC and H have indicies 56, 27 and 9 respectively
+    # and this number would be visible to all the instances where these
+    # species occure
     # WARNING : This should be called everytime an entry in self.species
-    #           is replaced (i.e it addrress changes)
-    def updateSpeciesInReactions(self):
+    #           is replaced (i.e it addrress changes) for ex by call
+    def mapReactionSpeciesToSpecieObjectList(self):
 
         print 'constructing numeric represntation of the network....',
         
@@ -160,12 +196,38 @@ class chemicalNetwork(specie, reaction):
 
         print 'compelte'
 
-    # set all the numbers of the species self.species[].num to None
-    def setSpeciesNumsToNone(self):
+    # remove species from the network. The species strings which appear
+    # in the list are moved to speciesRemoved list and the reactions with 
+    # the removed species are moved to reactionRemoved.
+    def removeSpecies(self, specStrList):
         
-        for specStr in self.species:      
-            self.species[specStr].num = None
+        print 'removing species from the network....'
+
+        for specStr in specStrList:
+            # moving the specie to be removed to self.speciesRemoved
+            # and update the numbers of spceis and removed one
+            self.speciesRemoved[ specStr ] = self.species.pop(specStr)
+            self.nSpecs = len(self.species)
+            self.nSpecsRemoved = len(self.speciesRemoved) 
+      
+            # moving the reactions containing the species to be removed to the
+            # self.reactionsRemoved list and updating the numbers. Starting from
+            # the last reaction and working backwards in the reaction list
+            n = self.nReactions
+            for i in np.arange(n):
+                if specStr in self.reactions[n-i-1].species:
+                    self.reactionsRemoved.append( self.reactions.pop(n-i-1) )
+                    
+            self.nReactions = len(self.reactions)
+            self.nReactionsRemoved = len(self.reactionsRemoved)
+
+        self.pstr = '     '
+        self.initializeDefaultAbunBuffer()
+        self.assignNumbersToSpecies()
         
+        print 'complete'
+
+            
     # assing the self.species[:].num to their index in the dictionary
     # and update these indecis in the chemical network as well
     # WARNING : it might happen that by mistake some species number is 
@@ -178,7 +240,8 @@ class chemicalNetwork(specie, reaction):
         self.setSpeciesNumsToNone()
                 
         if fileName == None:
-            print 'setting species number in the order they appear in self.species'
+            print self.pstr + 'setting species number in the order they appear in self.species'
+            self.pstr = '     '
             # assign the number 
             i = 0
             for specStr in self.species:
@@ -187,7 +250,8 @@ class chemicalNetwork(specie, reaction):
         else:
             # it might be a good idea to put this in the mesh database thing or mesh object
             # as a new dictionary and pass the dictionary object to this instead of a file
-            print 'setting species number in the order they appear in the file: ' + fileName
+            print self.pstr + 'setting species number in the order they appear in the file: ' + fileName
+            self.pstr = '     '
             
             fObj =  open(fileName, 'r')
             i = 0
@@ -198,27 +262,36 @@ class chemicalNetwork(specie, reaction):
                 if specStr in self.species:
                     self.species[ specStr ].num = int32(i)
                 else:
-                    print '%-12s from the file is not a species in the current network' % specStr 
+                    print self.pstr + '%-12s from the file is not a species in the current network' % specStr 
                 i += 1
             fObj.close() 
         
+        print  self.pstr + 'finished assigning the new species numbers'
+        
         # printintg the species which did not get a number assigned to
+        i = 0
         for spec in self.species.values():
             if spec.num == None:
-                print 'index of %-12s is missing in the file, it is kept as None' % spec.str
-         
+                print self.pstr + 'index of %-12s is missing in the file, it is kept as ' % spec.str, spec.num
+                i += 1
+                
+        if i != 0:
+            print self.pstr + 'A total of %d species will have no numbers' % i 
+        
         self.mapSpeciesAbundances()
-        
-        print 'assigned species number and mapped the abundances'
-        
+        self.pstr = ''        
         
     # map self.species[].abun to self.abun
+    # WARNING : species which do not have a number, get their abundance set to None
     def mapSpeciesAbundances(self):
         
         for specStr in self.species:
             specNum = self.species[specStr].num
             if specNum != None:
                 self.species[specStr].abun = self.abun[ specNum ]
+            else:
+                self.species[specStr].abun = None
+        print self.pstr + 'mapped spcies abundances to the abundance array'
             
     # each reaction has 7 species max involved (UMIST). In the UMIST2006 there are ~450
     # species. Each specie can be represented by a 9 bit integer ( we use an unsigned integer)
@@ -226,30 +299,76 @@ class chemicalNetwork(specie, reaction):
     # bits, which is unique as one of the involved in the reactions is. For example, the 
     # reaction :
     #       (0)   (1)    (2)        (3)   (4)    (5)    (6)
-    #       221 + 286          ---> 249 + 369
+    #       286 + 221          ---> 249 + 369  + 56
     # wpuld have a hash code :
-    #       (512^0)*221 + (512^1)*286 + (512^3)*249 + (512^4)*369   
+    #       (512^0)*221 + (512^1)*286 + (512^3)*56 + (512^4)*249 + (512^5)*369   
     def setReactionHashcodes(self):
 
         print 'setting reaction hashcodes....',        
         base=uint64(512)
-        allHashCodes = []
 
         for rxn in self.reactions:
             
             i = 0
-            for specStr in rxn.reactants:
-                rxn.hash += (base**i)*uint64( rxn.species[specStr].num ) 
+            for specStr in sorted(rxn.reactants):
+                rxn.hash += np.uint64((base**i))*np.uint64( rxn.species[specStr].num ) 
                 i += 1
 
             i = 0
-            for specStr in rxn.products:
-                rxn.hash += ( base**(3 + i) )*uint64( rxn.species[specStr].num )
+            for specStr in sorted(rxn.products):
+                rxn.hash += np.uint64( base**(3 + i) )*np.uint64( rxn.species[specStr].num )
                 i += 1
-    
-            allHashCodes.append(rxn.hash)
-
+            
         print 'complete'
+
+    # finds identical reactions which have the same reactants and the same
+    # products and returns a tuple holding the reaction indecis
+    # ( (ind1,ind2), (ind1,ind2)...)
+    def findIdenticalReactions(self):
+        
+        sets = ()
+        n = self.nReactions
+        hashes = np.zeros( n, dtype = np.uint64 )
+        inds   = np.zeros( n, dtype = np.uint32 )
+        
+        # collect hashes numpy arrays        
+        i = 0
+        for rxn in self.reactions:
+            hashes[i] = rxn.hash
+            inds[i]   = i
+            i += 1
+        
+        # indices of sorted hashes in increasing order
+        indsSorted = np.argsort(hashes, kind='quicksort')
+        hashes     = hashes[indsSorted]
+        inds       = inds[indsSorted]  
+        
+        # looping over the sorted hashes array and storing into
+        # tuple the indicies of the corresponding reactions with the same
+        # hash
+        i = 0
+        while i < n - 1:
+            hi = hashes[i]
+            
+            if hashes[i+1] == hi:
+                indsSameHash = (inds[i],)
+                # checking for the hashes of the reaction below it to see
+                # if there is more than one wit hthe same hash
+                j=1
+                while hashes[i+j] == hi:
+                    indsSameHash += (inds[i+j],)
+                    j += 1 
+                
+                i += j
+                
+                sets += (indsSameHash,)
+            else:
+                i += 1
+                
+        return sets
+    
+    #  write this method
+    #        self.getDuplicateReaction()       # matched the hashcodes to determine which reactions are duplicated
 
     # set the abundances of the species from an ascii input file
     # or from a numpy array. 
@@ -282,27 +401,6 @@ class chemicalNetwork(specie, reaction):
     def copyAbundancesFromArray(self, array):
         n = len(array)
         self.abun[0:n, 0] = array
- 
- 
-#    def findIdenticalReactions(self):
-#        # looking for identical reactions
-#        for j in arange(len(self.reactions)):
-#            rxn = self.reactions[j]
-#            found=0
-#            if allHashCodes[j] == -1: # if already been matched skip it
-#                continue
-#            for i in arange(len(allHashCodes[j+1:-1])):
-#                if (allHashCodes[i] == rxn.hash) and (rxn.id != self.reactions[i].id):
-#                    self.reactions[i].display(full=1)
-#                    allHashCodes[i]=-1  # replacing the hashcode by -1 to indicate it has been matched
-#                    found=1
-#            if found == 1:
-#                rxn.display(full=1)
-#                print '--------------------------------------------------'
-
-    #  write this method
-    #        self.getDuplicateReaction()       # matched the hashcodes to determine which reactions are duplicated
-
 
     # prints the reaction file without the header
     def printFile(self):
@@ -351,8 +449,43 @@ class chemicalNetwork(specie, reaction):
         rxn = reaction()
         rxn.setAllFromRxnStrArr( lineParsed )
         return rxn
-#'1', 'NN', 'H', 'CH', '', 'C', 'H2', '', '', '1.31E-10', '0.00', '80.0', 'C', '300', '2000', 'B', 'NIST'
+
+    # converts a umist99 reaction string line to one as it would be formatted in the umist06 database  
     def convertRxnLineToU06FormatStr( self, line ):
+        
+        # function which returns the type of the reaction based on its ID (table 5 in umist99 papper)
+        def getReactionType( rxnID ):
+                        
+            if rxnID >= 1 and rxnID <= 433:
+                return 'NN'
+            if rxnID >= 434 and rxnID <= 2606:
+                return 'IN'
+            if rxnID >= 2607 and rxnID <= 3144:
+                return 'CE'
+            if rxnID >= 3145 and rxnID <= 3175:
+                return 'II'
+            if rxnID >= 3176 and rxnID <= 3606:
+                return 'DR'
+            if rxnID >= 3607 and rxnID <= 3631:
+                return 'RR'
+            if rxnID >= 3632 and rxnID <= 3678:
+                return 'AD'
+            if rxnID >= 3679 and rxnID <= 3760:
+                return 'RA'
+            if rxnID >= 3761 and rxnID <= 3916:
+                return 'PH'
+            if rxnID >= 3917 and rxnID <= 3927:
+                return 'CP'
+            if rxnID >= 3928 and rxnID <= 4059:
+                return 'CR'
+            if rxnID >= 4060 and rxnID <= 4077:
+                return 'CL'
+            if rxnID >= 4078 and rxnID <= 4107:
+                return 'TR'
+            if rxnID >= 4108 and rxnID <= 4113:
+                return '-'
+
+            return ''
         
         pos = 0
         newLine = ''
@@ -360,11 +493,10 @@ class chemicalNetwork(specie, reaction):
         w = 4; 
         cmp = line[pos:(pos+4)].strip() # index
         newLine += cmp +','; pos += w
-        """
-        from the ID, set the type of the reaction
-        here i do it for a demosnteation by putting XX
-        """
-        newLine += 'XX' +',';  # <------------------------------ see table 5 in umits99
+        
+        rxnID = np.int32(cmp)
+        cmp = getReactionType( rxnID )
+        newLine += cmp +',';  
 
         w = 9;
         cmp = line[pos:(pos+10)].strip() #r1
@@ -400,30 +532,30 @@ class chemicalNetwork(specie, reaction):
         cmp = line[pos:(pos+w)].strip() #kind of data
         newLine += cmp +',';   pos += w
         w = 5;
-        cmp = line[pos:(pos+w)].strip() #Tlow
+        cmp = line[pos:(pos+w)].strip() #T_low
         newLine += cmp +',';   pos += w
         w = 5;
-        cmp = line[pos:(pos+w)].strip() #Thigh
+        cmp = line[pos:(pos+w)].strip() #T_high
         newLine += cmp +',';   pos += w
         w = 1;
-        cmp = line[pos:(pos+w)].strip() #err
+        cmp = line[pos:(pos+w)].strip() #accuracy code
         newLine += cmp +',';   pos += w
         w = 4;
         cmp = line[pos:(pos+w)].strip() #refCode
         newLine += cmp +',';   pos += w
 
-        print '---------------'
-        print line
-        print newLine
+        #print '---------------'
+        #print line
+        #print newLine
         
-        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-        asdasdasd
-        return ''
+        return newLine
+    
     # method that returns the indecies of the reactions containing the input specie
     # withReacts : a list of strings holding the reactants to be used as a filter
     # withProds  : a list of strings holding the reactants to be used as a filter
     # ex :
     # inds = filterReactions(withReacts = ['H','CN-'], withProds = ['HCN','e-'])
+
     def filterReactions(self, withReacts = None, withProds = None):
 
         rxnIndsFound = []
@@ -548,9 +680,13 @@ class chemicalNetwork(specie, reaction):
         self.setAv(Av)
         self.setG0(G0)
         self.setDens(nDens)
+        
+    def initializeDefaultAbunBuffer(self):
+        self.abun = np.zeros( (len(self.species), 1) ) - 1
+        print self.pstr + 'Reset default abundances.'
 
-    # change the number(index) 
-    #     self.species[:].num
-    #  of the species according to those in the file fileName which contains
-    #        specie_idx  speciesStr 
-    #def changeSpeciesNums( fileName ):
+    # set all the numbers of the species self.species[].num to None
+    def setSpeciesNumsToNone(self):
+        
+        for specStr in self.species:      
+            self.species[specStr].num = None

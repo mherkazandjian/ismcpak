@@ -38,16 +38,7 @@ class specie():
             print 'None ',  
         
         print '%-12s charge = %+-d  type = %+-d abun = %+-e' % (self.str, self.charge, self.type, self.getAbun() )
-        """
-        #printStr +=  
-        #
-        #    numPrnt = float(nan)
-        #else:
-        #    numPrnt = self.num
-            
-        #print self.num, self.str, self.charge, self.type, self.abun
-        print '%03d %-12s charge = %+-d  type = %d abun = %e' % (self.num, self.str, self.charge, self.type, self.abun[0]) 
-    #, self.comp
+
     # method that parses the components of species by counting the elements in each specie
     # make sure baseSpec has the species with String in a decreasing order in length
     # (except for the charge for example e-), i.e in this order
@@ -55,7 +46,6 @@ class specie():
     #     regular elements (Na, Cl,...)
     #     elements with a single letter Upper case (H, F, C...)
     #     species denoted with lower case letters ( e-)
-    """
     def getComponents(self, baseSpec):
 
         specStr = self.str
@@ -95,7 +85,11 @@ class specie():
         self.init = 1
         
     def getAbun(self):
-        return self.abun[0]
+        if self.abun != None:
+            return self.abun[0]
+        else:
+            return None
+        
     def setAbun(self, abun):
         self.abun[0] = abun
     

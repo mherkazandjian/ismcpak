@@ -33,7 +33,7 @@ class reaction():
         self.str = ''
         self.status = -1
         self.id   = -1
-        self.hash = int64(0)
+        self.hash = uint64(0)
         #--------------
         self.type = ''  # umist string for the reaction
         self.ntype = '' # numeric type/code of reaction
@@ -76,8 +76,11 @@ class reaction():
         self.setBeta(  float64(rxnStr[10]) )
         self.setGamma( float64(rxnStr[11])  )
         self.setSrc( rxnStr[12] )
-        self.setTl( float64(rxnStr[13]) )
-        self.setTu( float64(rxnStr[14]) )
+        # be more careful in setting the upper and lower temperature warnings
+        Tl = np.float64(rxnStr[13]) if len(rxnStr[13]) > 0 else -1 
+        self.setTl( Tl )
+        Tu = np.float64(rxnStr[14]) if len(rxnStr[14]) > 0 else -1 
+        self.setTu( Tu )
         self.setAccuracy( rxnStr[15] )
         self.setRefCode( rxnStr[16] )
     
@@ -183,11 +186,19 @@ class reaction():
             fmtStr = ""
             for i in [0,1,2]:
                 if i < self.nReactants:
-                    cmpnts += ( self.species[ self.reactants[i] ].num,)
-                    fmtStr += "%-10d  "    
+                    
+                    n = self.species[ self.reactants[i] ].num 
+                    
+                    if n != None:
+                        cmpnts += ( self.species[ self.reactants[i] ].num,)
+                        fmtStr += "%-10d  "
+                    else:
+                        cmpnts += ( self.species[ self.reactants[i] ].str,)
+                        fmtStr += "%-10s  "
                 else:
                     cmpnts += ('',)
-                    fmtStr += "%-10s  "   
+                    fmtStr += "%-10s  "
+                    
             print fmtStr % cmpnts,
         def printProdsNumeric  () :
             # collecting the numeric reprentations of the species to be printed into 
@@ -196,12 +207,18 @@ class reaction():
             fmtStr = ""
             for i in [0,1,2,4]:
                 if i < self.nProducts:
-                    cmpnts += (self.species[ self.products[i] ].num,)
-                    fmtStr += "%-10d"    
+                    
+                    n = self.species[ self.products[i] ].num 
+                    if n != None:
+                        cmpnts += (self.species[ self.products[i] ].num,)
+                        fmtStr += "%-10d"    
+                    else:
+                        cmpnts += (self.species[ self.products[i] ].str,)
+                        fmtStr += "%-10s  "   
                 else:
                     cmpnts += ('',)
                     fmtStr += "%-10s  "   
-            print fmtStr % cmpnts
+            print fmtStr % cmpnts,
         def printRxnNumeric    () :
             printReactsNumeric()
             print ' --> ',
