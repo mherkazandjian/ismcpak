@@ -6,6 +6,7 @@ import sys
 rxnFile       = 'data/rate99Fixed.inp'
 specNumFile   = 'data/species.inp'
 specAbunFile  = 'data/abun.out'
+csvFile       = 'data/network.csv'
 
 T        = 800.0
 Av       = 20.0
@@ -41,9 +42,13 @@ baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
               specie('e-'    , specType = 0 , charge=-1, init=1) ]
 
 t0 = time()
+# settin up the orignial netowrk
 net = chemicalNetwork(rxnFile, baseSpec, UMISTVER = 'umist99')
-
-
+# setting the cloud parameters
+net.setCloudParms(T, zeta, Av, albedo, nDens, G0)
+# dumping the Gephi file for visualizing the network
+net.writeNetworkGephiCSV(csvFile)        
+# finding indentical reactions and pinting their IDs
 sets = net.findIdenticalReactions()
 
 for set in sets:
@@ -51,8 +56,6 @@ for set in sets:
         print net.reactions[ind].str
     print '-----------------------------'
     
-    
-asdasdasd
 # set some species as inactive in the chemical network and assign new
 # indicies from a file
 #----------------------------------------------------------
@@ -117,9 +120,10 @@ print idxH, net.abun[ idxH ]
 """
 
 
-"""""
-net.setCloudParms(T, zeta, Av, albedo, nDens, G0)
+
+asdasd
 net.computeReactionConstants()
+"""
 net.computeRates()
 
 #net.printReactions(ids, format = "id type rxn cst rate" )

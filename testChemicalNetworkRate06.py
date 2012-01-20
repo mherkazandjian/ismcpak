@@ -16,6 +16,7 @@ albedo   = 0.6
 rxnFile  = 'data/RATE06.txt'
 abunSpecFname = 'data/speciesNumAndName.inp'
 
+csvFile  = 'data/net.csv'
 
 # elements and basic species from which all the other species are made
 baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
@@ -40,6 +41,15 @@ baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
 t0 = time()
 net = chemicalNetwork(rxnFile, baseSpec, UMISTVER = 'umist06')
 
+net.writeNetworkGephiCSV(csvFile)        
+asdasdasd
+
+sets = net.findIdenticalReactions()
+
+for set in sets:
+    for ind in set:
+        print net.reactions[ind].str
+    print '-----------------------------'
 
 # reading the species number and their corresponding indies and abundances from ascii files
 net.assignNumbersToSpecies(fileName = 'data/speciesNumAndName.inp')

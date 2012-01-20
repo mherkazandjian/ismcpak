@@ -19,7 +19,13 @@ from reaction import *
      products appear in the reaction input file. When computing the
      hash code, the species are picked in the increasing order as 
      they appeat in the sorted string array (using the sorted function)
-     
+
+   * write a method which merges reactions with the same hashcode into
+     one reaction where in different temperature ranges different temperatures
+     are set.
+
+   * write a method which checks if the reactions are balanced or not
+   
      self.species   # tuple containing the unique species objects in the network 
      self.__init__(fileName=None, baseSpecies=None)
      self.readDatabase(fileName)
@@ -84,12 +90,14 @@ class chemicalNetwork(specie, reaction):
         
     # setup all the chemical network
     def setup(self, networkFname, baseSpecies):
-        self.readNetworkFile(networkFname) # read the database into a buffer
-        self.parseReactions()              # parse the reaction lines from the database
-        self.getUniqueSpecies(baseSpecies) # fileter the unique species and parse them in their components
-        self.assignNumbersToSpecies()      # assingns the index of the specie in the dictionary
-        self.setReactionHashcodes()        # compute the hashcodes of the reactions
-        
+        self.readNetworkFile(networkFname)   # read the database into a buffer
+        self.parseReactions()                # parse the reaction lines from the database
+        self.getUniqueSpecies(baseSpecies)   # fileter the unique species and parse them in their components
+        self.assignNumbersToSpecies()        # assingns the index of the specie in the dictionary
+        self.setReactionHashcodes()          # compute the hashcodes of the reactions
+        self.updateReactionsTypes()          # make sure reaction types are correct
+        self.checkReactionsTypes()           # make sure reaction types are correct
+         
     # read and parses the UMIST 2006 reaction file without the header and assigns the 
     # variable fileStr and counts the number of reactions in the file 
     # sets : self.fileStr
@@ -321,6 +329,25 @@ class chemicalNetwork(specie, reaction):
             
         print 'complete'
 
+    # checks and updates the types of the reactions
+    def updateReactionsTypes(self): 
+        
+        # maybe it is better if the dictonary definig the reaction types
+        # based on what is in the reactants here instead of in the reaction class
+        for rxn in self.reactions:
+            rxn.updateType()
+        print 'updated reaction types'
+        
+    # checks and updates the types of the reactions
+    def checkReactionsTypes(self): 
+        
+        for rxn in self.reactions:
+            if rxn.type == '':
+                str = 'reaction types, reaction :\n%s\n has no type set' % rxn.str
+                raise NameError(str)
+
+        print 'reaction check completed...all passed.'
+                    
     # finds identical reactions which have the same reactants and the same
     # products and returns a tuple holding the reaction indecis
     # ( (ind1,ind2), (ind1,ind2)...)
@@ -367,9 +394,6 @@ class chemicalNetwork(specie, reaction):
                 
         return sets
     
-    #  write this method
-    #        self.getDuplicateReaction()       # matched the hashcodes to determine which reactions are duplicated
-
     # set the abundances of the species from an ascii input file
     # or from a numpy array. 
     # the file contains one abundance on each line. each value will be set to the
@@ -544,10 +568,6 @@ class chemicalNetwork(specie, reaction):
         cmp = line[pos:(pos+w)].strip() #refCode
         newLine += cmp +',';   pos += w
 
-        #print '---------------'
-        #print line
-        #print newLine
-        
         return newLine
     
     # method that returns the indecies of the reactions containing the input specie
@@ -590,26 +610,30 @@ class chemicalNetwork(specie, reaction):
 
     # compute the reaction constants
     def computeReactionConstants(self):
-
+        """
+        CONTINUE FROM HERE!!!!!!!!
+        DO IT THE SAME WAY IT IS DONE IN THE PDR CODE
+        THINK OF A MORE ELEGANT WAY AFTERWARDS 
+        """
+        def computePhotoRxnCnst(rxn):
+            return rxn.alpha * exp( - rxn.gamma * self.Av )
+        def computeCrpRxnCnst(rxn):
+            return rxn.alpha
+        def computeRrpPhotonRxnCnst(rxn):
+            return rxn.alpha * ((self.T / 300.0)**rxn.beta) * rxn.gamma / ( 1.0 - self.albedo )
+        def computeTwoBodyRxnRate(rxn):
+            return rxn.alpha * ((self.T / 300.0)**rxn.beta) * exp( - rxn.gamma / self.T ) 
+        reactionTypes = { 'PHOTON'   : computePhotoRxnCnst,
+                          'CRP'      : computeCrpRxnCnst,
+                          'CRPHOT'   : computeRrpPhotonRxnCnst,
+                          'twoBody'  : computeTwoBodyRxnRate }
+        
         # it might be a good idea to put a check if
         # temperature,A_v are set...         
         for rxn in self.reactions:
+            id = rxn.id
+            print id
             
-            # compute the constant for reactions involving a photon
-            if 'PHOTON' in rxn.reactants:
-                rxn.cst = rxn.alpha * exp( - rxn.gamma * self.Av )
-            else:
-                # compute the constant for reactions involving CRP
-                if 'CRP' in rxn.reactants:
-                    rxn.cst = rxn.alpha
-                else:
-                    # compute the constant for reactions involving CRPHOTON
-                    if 'CRPHOTON' in rxn.reactants:
-                        rxn.cst = rxn.alpha * ((self.T / 300.0)**rxn.beta) * rxn.gamma / ( 1.0 - self.albedo )
-                    else:
-                        # compute the constant for two body reactions
-                        rxn.cst = rxn.alpha * ((self.T / 300.0)**rxn.beta) * exp( - rxn.gamma / self.T )
-
 
     # compute the reaction constants and rates assuming all the abundances are set
     # adapted to new variables but need to check it!!!!
@@ -665,14 +689,6 @@ class chemicalNetwork(specie, reaction):
 
         return idsSorted
 
-    # set the temp, zeta, albed, Av
-    def setGasTemperature(self, T): self.T = T
-    def setCrRate(self, zeta)     : self.zeta = zeta
-    def setAlbed(self, albedo)    : self.albedo = albedo
-    def setAv(self, Av)           : self.Av = Av
-    def setG0(self, G0)           : self.G0 = G0
-    def setDens(self, nDens)      : self.nDens = nDens
-    
     def setCloudParms(self, T, zeta, Av, albedo, nDens, G0):
         self.setGasTemperature(T)
         self.setCrRate(zeta)
@@ -690,3 +706,48 @@ class chemicalNetwork(specie, reaction):
         
         for specStr in self.species:      
             self.species[specStr].num = None
+            
+    # writes a CSV file where each in each reaction the all the specie/product 
+    # pairs combination is treated as a node->edge pairs. For example :
+    # the nodes->edge pairs in the reaction :
+    #     C6H7+ +   e-   ----> C6H2 + H2   + H2  + H   (in ascii format  )
+    #      354  +  144          82  + 369  + 369 + 221 (in numeric format)
+    #  node, edge (list written to the CSV file
+    #   354,82
+    #   354,369
+    #   354,369
+    #   354,221
+    #   144,82
+    #   144,369
+    #   144,369
+    #   144,221
+    # NOTE : species which have their number as None are not included, such as 
+    #        PHOTON, CRP...
+    def writeNetworkGephiCSV(self, fName):
+        
+        fObj = open(fName, "w")
+        
+        fObj.write('source;target\n')
+        
+        for rxn in self.reactions:
+            for reactStr in rxn.reactants:
+                reactNum = self.species[reactStr].num
+                for prodStr in rxn.products:
+                    prodNum  = self.species[prodStr].num
+                    if reactNum == None or prodNum == None:
+                        continue
+                    else:
+                        outStr = '%s;%s\n' % (reactStr, prodStr)
+                    fObj.write(outStr)
+                    
+        fObj.close()
+        print 'Wrote the Gephi readable CSV file.'
+        
+    # set the temp, zeta, albed, Av
+    def setGasTemperature(self, T): self.T = T
+    def setCrRate(self, zeta)     : self.zeta = zeta
+    def setAlbed(self, albedo)    : self.albedo = albedo
+    def setAv(self, Av)           : self.Av = Av
+    def setG0(self, G0)           : self.G0 = G0
+    def setDens(self, nDens)      : self.nDens = nDens
+    

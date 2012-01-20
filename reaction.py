@@ -24,6 +24,9 @@ from specie import *
                self.setTu(Tu)
                self.setAccuracy(acc)
                self.setRefCode(refCode)
+               
+   * write a method which checks if the reaction is balanced or not
+
 """
 
 # class definition for a single reaction
@@ -83,6 +86,46 @@ class reaction():
         self.setTu( Tu )
         self.setAccuracy( rxnStr[15] )
         self.setRefCode( rxnStr[16] )
+
+    # if CUSTOM reactions are added to the reaction file, sometimes the type 
+    # of the reaction is missing. Here, the type of the reaction is set based
+    # on what is in the reactants. It is set to CP is it is a CRP reaction,
+    # CR is it is a CRPHOT reaction and to PH if it is a PHOTO reaction.
+    # otherwise, it is set to NB indicating a two or three body reaction  
+    def updateType(self):        
+        
+        if len(self.type) == 0:
+            
+            typeDict = { 'CRP'    : 'CP',
+                         'CRPHOT' : 'CR',
+                         'PHOTON' : 'PH' }
+            defualtType = 'NB'
+            
+            s1 = set( typeDict.keys() )
+            inter = s1.intersection( set(self.reactants))
+            
+            if len(inter) == 1:
+                reactStr = inter.pop()
+                newType = typeDict[reactStr]
+                #print 'setting the type of the reaction to UMIST type %s bec on of the reactants is reactants %s' % (newType, reactStr)
+                self.type = newType
+            else:
+                if len(inter) >= 2:
+                    #str = 'Error : reaction cannot have two matching entries from typeDict'
+                    raise NameError(str)
+                else:
+                    if self.type == '':
+                        #print 'setting reaction type to default'
+                        self.type = defualtType
+
+    # method that computes the reaction constant  
+    def setReactionConstantComputingFunction(self, functionDict):        
+        SETS THE FUNCTION WHICH COMPUTES THE REACTION CONSTANT FROM A FUNCTION NAME 
+        DICTIONARY
+
+    # method that computes the reaction constant  
+    def getReactionConstant(self, parameters):        
+        RETURNS THE REACTION CONSTANT BASED ON THE TEMPERATURE AND THE REST OF THE PARAMETERS
     
     # sets status to 1 indication the reaction IS being used
     def active(self):
@@ -167,7 +210,8 @@ class reaction():
             # species which do not exist by empty strings
             cmpnts = ()
             fmtStr = ""
-            for i in [0,1,2,4]:
+
+            for i in [0,1,2,3]:
                 if i < self.nProducts:
                     cmpnts += (self.products[i],)
                     fmtStr += "%-10s  "   
@@ -205,7 +249,7 @@ class reaction():
             # a tuple and filling the spcies which do not exist by empty strings
             cmpnts = ()
             fmtStr = ""
-            for i in [0,1,2,4]:
+            for i in [0,1,2,3]:
                 if i < self.nProducts:
                     
                     n = self.species[ self.products[i] ].num 
