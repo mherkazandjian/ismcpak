@@ -1,7 +1,5 @@
 import numpy as np
-
 import pylab as pyl
-import matplotlib.pyplot as plt
 
 class mesh( ):
     """
@@ -29,7 +27,12 @@ class mesh( ):
             dtMesh        = self.constructMeshDtype( hdr['nSpecs'], hdr['nSteps'])
             data          = np.fromfile( fileName, dtype = dtMesh, count = 1)
             self.data     = data[0]
-        
+            
+            #plotting stuff
+
+        self.fig = None
+        self.axs = None
+
     def meshFormat(self, nSpecs, nSteps):
         return [ 
                    ('hdr'    , np.dtype( self.headerFormat ()                ), 1),
@@ -40,12 +43,12 @@ class mesh( ):
     
     def headerFormat(self):
         return [ 
-                  ('version'  , np.int32  , 1),
-                  ('G0'       , np.float64, 1),
-                  ('nGas'     , np.float64, 1),
-                  ('gammaMech', np.float64, 1),
-                  ('nSteps'   , np.int32  , 1),
-                  ('nSpecs'   , np.int32  , 1),
+                  ('version'  , np.int32   ),
+                  ('G0'       , np.float64 ),
+                  ('nGas'     , np.float64 ),
+                  ('gammaMech', np.float64 ),
+                  ('nSteps'   , np.int32   ),
+                  ('nSpecs'   , np.int32   ),
                ]
         
     def stateFormat(self, nSpecs, nSteps):
@@ -91,50 +94,66 @@ class mesh( ):
     def setData(self, data):
         self.data = data
     
+    def setFigure(self, figObj, axObj):
+        self.fig = figObj
+        self.axs = axObj
+        
     def plot(self, eSpcs):
         
         data = self.data
         
-        fig, axs = plt.subplots(2, 2, sharex=True, sharey=False)
+        if self.fig == None:
+            self.fig, self.axs = plt.subplots(2, 2, sharex=True, sharey=False) 
 
-        fig.text(0.3, 0.04, '$A_V$')
-        fig.text(0.7, 0.04, '$A_V$')
-        fig.text(0.04, 0.25, 'Abun', rotation = 90)
-        fig.text(0.04, 0.75, 'T(K)', rotation = 90)
-        fig.text(1.0 - 0.08, 0.25, 'Abun', rotation = 90)
-        fig.text(1.0 - 0.08, 0.75, 'Abun', rotation = 90)
-
-
-        axs[0,0].axis([0, 20, 1, 10000])
-        axs[0,0].semilogy(data['state']['Av'],  data['state']['gasT'] , 'r' )
-        axs[0,0].semilogy(data['state']['Av'],  data['state']['dustT'], 'b' )
-        fig.text(0.4, 0.85, '$T_{gas}$' , color='r')
-        fig.text(0.4, 0.82, '$T_{dust}$', color='b')
+        self.fig.text(0.3, 0.04, '$A_V$')
+        self.fig.text(0.7, 0.04, '$A_V$')
+        self.fig.text(0.04, 0.25, 'Abun', rotation = 90)
+        self.fig.text(0.04, 0.75, 'T(K)', rotation = 90)
+        self.fig.text(1.0 - 0.08, 0.25, 'Abun', rotation = 90)
+        self.fig.text(1.0 - 0.08, 0.75, 'Abun', rotation = 90)
 
 
-        axs[0,1].axis([0, 20, 1e-12, 2])
-        axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH_P], 'r' )
-        axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH],   'g' )
-        axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH2],  'b' )
-        axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xe_N], 'c' )
-        fig.text(0.85, 0.84, '$H^+$' , color='r')
-        fig.text(0.85, 0.81, '$H$'   , color='g')
-        fig.text(0.85, 0.78, '$H_2$' , color='b')
-        fig.text(0.85, 0.75, '$e^-$' , color='c')
+        self.axs[0,0].axis([0, 20, 1, 10000])
+        self.axs[0,0].semilogy(data['state']['Av'],  data['state']['gasT'] , 'r' )
+        self.axs[0,0].semilogy(data['state']['Av'],  data['state']['dustT'], 'b' )
+        self.fig.text(0.4, 0.85, '$T_{gas}$' , color='r')
+        self.fig.text(0.4, 0.82, '$T_{dust}$', color='b')
+
+        self.axs[0,1].axis([0, 20, 1e-12, 2])
+        self.axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH_P], 'r' )
+        self.axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH],   'g' )
+        self.axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH2],  'b' )
+        self.axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xe_N], 'c' )
+        self.fig.text(0.85, 0.84, '$H^+$' , color='r')
+        self.fig.text(0.85, 0.81, '$H$'   , color='g')
+        self.fig.text(0.85, 0.78, '$H_2$' , color='b')
+        self.fig.text(0.85, 0.75, '$e^-$' , color='c')
 
 
-        axs[0,1].axis([0, 20, 1e-12, 2])
-        axs[1,0].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC_P], 'r' )
-        axs[1,0].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC],   'g' )
-        axs[1,0].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xCO],  'b' )
-        fig.text(0.4, 0.44, '$C^+$' , color='r')
-        fig.text(0.4, 0.41, '$C$'   , color='g')
-        fig.text(0.4, 0.38, '$CO$'  , color='b')
+        self.axs[0,1].axis([0, 20, 1e-12, 2])
+        self.axs[1,0].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC_P], 'r' )
+        self.axs[1,0].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC],   'g' )
+        self.axs[1,0].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xCO],  'b' )
+        self.fig.text(0.4, 0.44, '$C^+$' , color='r')
+        self.fig.text(0.4, 0.41, '$C$'   , color='g')
+        self.fig.text(0.4, 0.38, '$CO$'  , color='b')
 
-        axs[0,1].axis([0, 20, 1e-12, 2])
-        axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCN], 'r' )
-        axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHNC],   'g' )
-        axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCO_P],  'b' )
-        fig.text(0.8, 0.44, '$HCN$'   , color='r')
-        fig.text(0.8, 0.41, '$HNC$'   , color='g')
-        fig.text(0.8, 0.38, '$HCO^+$' , color='b')
+        self.axs[0,1].axis([0, 20, 1e-12, 2])
+        self.axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCN], 'r' )
+        self.axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHNC],   'g' )
+        self.axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCO_P],  'b' )
+        self.fig.text(0.8, 0.44, '$HCN$'   , color='r')
+        self.fig.text(0.8, 0.41, '$HNC$'   , color='g')
+        self.fig.text(0.8, 0.38, '$HCO^+$' , color='b')
+        
+    # clears the plotted lines in all the subplots
+    def clearLinesInSubPlots(self):
+        
+        if self.fig != None:
+            for axs in self.axs.flat:
+                n = len(axs.lines)
+                i = 0
+                while i < n:
+                    axs.lines.pop(0)
+                    i += 1
+        

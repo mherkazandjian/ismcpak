@@ -1,7 +1,7 @@
 from numpy import *
 
 from time import *
-
+import pylab as pyl
 from chemicalNetwork import *
 from enumSpecies import *
 from mesh import *

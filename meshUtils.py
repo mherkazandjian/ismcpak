@@ -4,6 +4,25 @@
  methods :
    arxvHdrFormat()
 
+ instance variables :
+    self.infoAll  : a numpy array of dtype arxvHdrDtype (see below) which contains 
+                    the info (headers) about all the meshes
+                    each entry in this array contains two things, information about the
+                    mesh and the parameters of the mesh. For example the elements
+                    x in self.infoAll[x] has the following contents : 
+                      self.infoAll[x]['info'][0]   mesh number 
+                      self.infoAll[x]['info'][1]   data file index ???
+                      self.infoAll[x]['info'][2]   offset from the start of file
+                      self.infoAll[x]['info'][3]   number of steps in the mesh  
+                      self.infoAll[x]['info'][4]   number of species
+     
+                      self.infoAll[x]['parms'][0]  G0
+                      self.infoAll[x]['parms'][1]  nGas
+                      self.infoAll[x]['parms'][2]  gammaMech
+                      self.infoAll[x]['parms'][3]  0.0, NOT USED
+                      self.infoAll[x]['parms'][4]  0.0  NOT USED
+                      
+    self.meshes  : a list of all the meshes of 'mesh' dtypes 
    
  by default, the prefix name of the individual mesh files is assumed to be
  mesh.dat-id-xxxxxx
@@ -162,7 +181,7 @@ class meshArxv():
                 
             nSteps = self.infoAll[i]['info'][3]
             nSpecs = self.infoAll[i]['info'][4]
-    
+        
             thisMeshDtype = mDummy.constructMeshDtype(nSpecs, nSteps)
             thisMeshData = np.fromfile( dbDataFObj, dtype = thisMeshDtype, count = 1)
             self.meshes.append( thisMeshData )                
@@ -186,3 +205,26 @@ class meshArxv():
                   ('info' , np.int64  , 5),
                   ('parms', np.float64, 5)
                ]
+        
+    # check archive integrity, this is a basic check where the information about the
+    # meshes in self.infoAll['info] is compared to those in self.data for each mes
+    def checkIntegrity(self):
+        diff = 0.0
+        for i in np.arange(self.nMeshes):
+            x1 = np.array([np.log10(self.infoAll[i]['parms'][0]),
+                           np.log10(self.infoAll[i]['parms'][1]),
+                           np.log10(self.infoAll[i]['parms'][2])])
+
+            x2 = np.array([np.log10(self.meshes[i]['hdr']['G0'][0]),
+                           np.log10(self.meshes[i]['hdr']['nGas'][0]),
+                           np.log10(self.meshes[i]['hdr']['gammaMech'][0])])
+
+            xdv = x2 - x1
+            diff +=  np.sqrt( np.dot(xdv,xdv) )
+            
+        if diff == 0.0:
+            print 'archive integrity test passed'
+        else:
+            str = 'archive integrity test failed. database file may be corrupt' 
+            raise NameError(str) 
+

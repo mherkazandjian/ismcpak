@@ -119,13 +119,13 @@ class reaction():
                         self.type = defualtType
 
     # method that computes the reaction constant  
-    def setReactionConstantComputingFunction(self, functionDict):        
-        SETS THE FUNCTION WHICH COMPUTES THE REACTION CONSTANT FROM A FUNCTION NAME 
-        DICTIONARY
+    def setReactionConstantComputingFunction(self, functionDict):          
+        a = 1#SETS THE FUNCTION WHICH COMPUTES THE REACTION CONSTANT FROM A FUNCTION NAME 
+        #DICTIONARY
 
     # method that computes the reaction constant  
     def getReactionConstant(self, parameters):        
-        RETURNS THE REACTION CONSTANT BASED ON THE TEMPERATURE AND THE REST OF THE PARAMETERS
+        a = 1 #RETURNS THE REACTION CONSTANT BASED ON THE TEMPERATURE AND THE REST OF THE PARAMETERS
     
     # sets status to 1 indication the reaction IS being used
     def active(self):

@@ -53,14 +53,11 @@ class enumSpecies():
         i = 0
         for line in fileIn:
             i = i + 1
-            if i <= 3:
-                continue
-            else :
-                lineParsed = line.split(' ')
-                specName = lineParsed[1]
-                specIdx  = int32(lineParsed[0])-self.offsetFromZero
+            lineParsed = line.split(' ')
+            specName = lineParsed[1]
+            specIdx  = int32(lineParsed[0])-self.offsetFromZero
                 
-                buff.append((specName, specIdx))
+            buff.append((specName, specIdx))
            
         self.buffer = buff 
     
@@ -106,8 +103,7 @@ class enumSpecies():
         for item in self.buffer:
             varName = 'x'+self.genVarCodeIDL_or_C_Py(item[0])
             attrNames.append(varName)
-        buffTmp = ' '.join(attrNames)
-        
+
         cls = namedtuple('specEnum', attrNames)
 
         for item in self.buffer:
