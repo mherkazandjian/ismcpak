@@ -8,10 +8,10 @@ class mesh( ):
     the class attributes are the same as the xxxxFormats defined below.
         
         m = mesh(path)
-        m.hdr     contains the info in the header
-        m.data    contains temperatures, abundances....
-        m.cooling contains all the cooling info
-        m.heating contains all the heating info
+        m.hdr     contains the info in the header         ( dtype )
+        m.data    contains temperatures, abundances....   ( dtype )
+        m.cooling contains all the cooling info           ( dtype )
+        m.heating contains all the heating info           ( dtype )
     """
 
     def __init__(self, fileName=None):
@@ -23,10 +23,14 @@ class mesh( ):
             # and re-reading the whole file into a mesh dtype
             dtHdr = np.dtype( self.headerFormat() )
             hdr   = np.fromfile(self.fName, dtype = dtHdr, count = 1 )
+            self.hdr = hdr[0]
             # re-reading the whole file, header and the data
             dtMesh        = self.constructMeshDtype( hdr['nSpecs'], hdr['nSteps'])
             data          = np.fromfile( fileName, dtype = dtMesh, count = 1)
             self.data     = data[0]
+        else:
+            self.data = None
+            self.hdr  = None
             
             #plotting stuff
 
@@ -105,39 +109,61 @@ class mesh( ):
         if self.fig == None:
             self.fig, self.axs = plt.subplots(2, 2, sharex=True, sharey=False) 
 
-        self.fig.text(0.3, 0.04, '$A_V$')
-        self.fig.text(0.7, 0.04, '$A_V$')
-        self.fig.text(0.04, 0.25, 'Abun', rotation = 90)
-        self.fig.text(0.04, 0.75, 'T(K)', rotation = 90)
-        self.fig.text(1.0 - 0.08, 0.25, 'Abun', rotation = 90)
-        self.fig.text(1.0 - 0.08, 0.75, 'Abun', rotation = 90)
+            
+        pyl.subplot(221)
+        pyl.hold(False)
+        pyl.semilogy(data['state']['Av'],  data['state']['gasT'] , 'r' )
+        pyl.hold()
+        pyl.semilogy(data['state']['Av'],  data['state']['dustT'], 'b' )
+        pyl.axis([0, 20, 1, 100000])
+        pyl.xlabel('$A_V$')
+        pyl.ylabel('$T(K)$')
+        pyl.text(0.4, 1e3, '$T_{gas}$' , color='r')
+        pyl.text(0.4, 1e4, '$T_{dust}$', color='b')
+        pyl.text(0.8, 5e5,'$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (np.log10(data['hdr']['G0']), np.log10(data['hdr']['nGas']), np.log10(data['hdr']['gammaMech']) ) )
 
+        pyl.subplot(222)
+        pyl.hold(False)
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH_P], 'r' )
+        pyl.hold()
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH],   'g' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH2],  'b' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xe_N], 'c' )
+        pyl.axis([0, 20, 1e-12, 2])
+        pyl.text(0.4, 1e-10, '$H^+$' , color='r')
+        pyl.text(0.4, 1e-9, '$H$'   , color='g')
+        pyl.text(0.4, 1e-8, '$H_2$'  , color='b')
+        pyl.text(0.4, 1e-7, '$e^-$'  , color='b')
+        pyl.xlabel('$A_V$')
+        pyl.ylabel('abun')
 
-        self.axs[0,0].axis([0, 20, 1, 10000])
-        self.axs[0,0].semilogy(data['state']['Av'],  data['state']['gasT'] , 'r' )
-        self.axs[0,0].semilogy(data['state']['Av'],  data['state']['dustT'], 'b' )
-        self.fig.text(0.4, 0.85, '$T_{gas}$' , color='r')
-        self.fig.text(0.4, 0.82, '$T_{dust}$', color='b')
+        pyl.subplot(223)
+        pyl.hold(False)
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC_P], 'r' )
+        pyl.hold()
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC],   'g' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xCO],  'b' )
+        pyl.axis([0, 20, 1e-12, 2])
+        pyl.text(0.4, 1e-10, '$C^+$' , color='r')
+        pyl.text(0.4, 1e-9, '$C$'   , color='g')
+        pyl.text(0.4, 1e-8, '$CO$'  , color='b')
+        pyl.xlabel('$A_V$')
+        pyl.ylabel('abun')
 
-        self.axs[0,1].axis([0, 20, 1e-12, 2])
-        self.axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH_P], 'r' )
-        self.axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH],   'g' )
-        self.axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH2],  'b' )
-        self.axs[0,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xe_N], 'c' )
-        self.fig.text(0.85, 0.84, '$H^+$' , color='r')
-        self.fig.text(0.85, 0.81, '$H$'   , color='g')
-        self.fig.text(0.85, 0.78, '$H_2$' , color='b')
-        self.fig.text(0.85, 0.75, '$e^-$' , color='c')
+        pyl.subplot(224)
+        pyl.hold(False)
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCN], 'r' )
+        pyl.hold()
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHNC],   'g' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCO_P],  'b' )
+        pyl.axis([0, 20, 1e-12, 2])
+        pyl.text(0.4, 1e-10, '$HCN$' , color='r')
+        pyl.text(0.4, 1e-9, '$HNC$'   , color='g')
+        pyl.text(0.4, 1e-8, '$HCO^+$'  , color='b')
+        pyl.xlabel('$A_V$')
+        pyl.ylabel('abun')
 
-
-        self.axs[0,1].axis([0, 20, 1e-12, 2])
-        self.axs[1,0].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC_P], 'r' )
-        self.axs[1,0].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC],   'g' )
-        self.axs[1,0].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xCO],  'b' )
-        self.fig.text(0.4, 0.44, '$C^+$' , color='r')
-        self.fig.text(0.4, 0.41, '$C$'   , color='g')
-        self.fig.text(0.4, 0.38, '$CO$'  , color='b')
-
+        """
         self.axs[0,1].axis([0, 20, 1e-12, 2])
         self.axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCN], 'r' )
         self.axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHNC],   'g' )
@@ -146,14 +172,8 @@ class mesh( ):
         self.fig.text(0.8, 0.41, '$HNC$'   , color='g')
         self.fig.text(0.8, 0.38, '$HCO^+$' , color='b')
         
-    # clears the plotted lines in all the subplots
-    def clearLinesInSubPlots(self):
-        
-        if self.fig != None:
-            for axs in self.axs.flat:
-                n = len(axs.lines)
-                i = 0
-                while i < n:
-                    axs.lines.pop(0)
-                    i += 1
+        self.fig.text(0.4, 0.95, '$\log_{10} G\_0 = $ %4.2f'          % np.log10(data['hdr']['G0']) )
+        self.fig.text(0.6, 0.95, '$\log_{10} n_{gas} = $ %4.2f'       % np.log10(data['hdr']['nGas']) )
+        self.fig.text(0.8, 0.95, '$\log_{10} \Gamma_{mech} = $ %4.2f' % np.log10(data['hdr']['gammaMech']) )
+        """
         
