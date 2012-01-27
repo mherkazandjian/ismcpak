@@ -147,9 +147,8 @@ class chemicalNetwork(specie, reaction):
         print 'Analyzing the checmical network.....',
         # put the base species in the dictionary
         for baseSpec in baseSpecies:
-            baseSpec.getComponents(baseSpecies)
             self.species[baseSpec.str] = baseSpec
-                
+
         # getting the unique species from all the reactions 
         for rxn in self.reactions:
             for spec in rxn.species.values():
@@ -160,7 +159,7 @@ class chemicalNetwork(specie, reaction):
                                         
         self.nSpecs = len(self.species)
         print 'Found ', self.nSpecs, ' unique species in the network'
-        
+
         # assign the the species object in the reactions to pointer to those
         # in self.species. This saves memory and time, since only
         # modifying self.species would modify all the corresponding
@@ -207,34 +206,52 @@ class chemicalNetwork(specie, reaction):
     # remove species from the network. The species strings which appear
     # in the list are moved to speciesRemoved list and the reactions with 
     # the removed species are moved to reactionRemoved.
-    def removeSpecies(self, specStrList):
+    def removeSpecies(self, species = None, underAbunFile = None):
         
-        print 'removing species from the network....'
+        
+        print 'removing species from the network....', 
+        
+        if species == None and underAbunFile != None:
+            print 'using the list from the file %s' % underAbunFile
+            # reading the species to be removed from a file
+            fObj =  open(underAbunFile, 'r')
+            setAsInactive = []
+            for line in fObj:
+                line = line.split()
+                
+                specStr = line[1]
+                setAsInactive.append(strip(specStr))
+            fObj.close() 
 
-        for specStr in specStrList:
-            # moving the specie to be removed to self.speciesRemoved
-            # and update the numbers of spceis and removed one
-            self.speciesRemoved[ specStr ] = self.species.pop(specStr)
-            self.nSpecs = len(self.species)
-            self.nSpecsRemoved = len(self.speciesRemoved) 
+            print 'species to be removed ', setAsInactive
+            species = setAsInactive
+            
+        if species != None:
+            specStrList = species
+        
+            for specStr in specStrList:
+                # moving the specie to be removed to self.speciesRemoved
+                # and update the numbers of spceis and removed one
+                self.speciesRemoved[ specStr ] = self.species.pop(specStr)
+                self.nSpecs = len(self.species)
+                self.nSpecsRemoved = len(self.speciesRemoved) 
       
-            # moving the reactions containing the species to be removed to the
-            # self.reactionsRemoved list and updating the numbers. Starting from
-            # the last reaction and working backwards in the reaction list
-            n = self.nReactions
-            for i in np.arange(n):
-                if specStr in self.reactions[n-i-1].species:
-                    self.reactionsRemoved.append( self.reactions.pop(n-i-1) )
+                # moving the reactions containing the species to be removed to the
+                # self.reactionsRemoved list and updating the numbers. Starting from
+                # the last reaction and working backwards in the reaction list
+                n = self.nReactions
+                for i in np.arange(n):
+                    if specStr in self.reactions[n-i-1].species:
+                        self.reactionsRemoved.append( self.reactions.pop(n-i-1) )
                     
-            self.nReactions = len(self.reactions)
-            self.nReactionsRemoved = len(self.reactionsRemoved)
+                self.nReactions = len(self.reactions)
+                self.nReactionsRemoved = len(self.reactionsRemoved)
 
         self.pstr = '     '
         self.initializeDefaultAbunBuffer()
         self.assignNumbersToSpecies()
         
         print 'complete'
-
             
     # assing the self.species[:].num to their index in the dictionary
     # and update these indecis in the chemical network as well
@@ -447,8 +464,14 @@ class chemicalNetwork(specie, reaction):
                         break
 
     # print all the species
-    def printSpecies(self):
-        for spec in self.species.values():
+    def printSpecies(self, removed = None):
+        
+        if removed == None:
+            specs = self.species.values()
+        else:          
+            specs = self.speciesRemoved.values()
+            
+        for spec in specs: 
             spec.show()
             
     # returns the index of the specie which matches the input string

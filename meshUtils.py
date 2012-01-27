@@ -89,6 +89,7 @@ class meshArxv():
         self.meshes     = None
         self.infoAll    = None
         self.nDbFiles   = None
+        self.chemNet    = None
          
     # read all the meshes files in the dir and construct the
     # database
@@ -226,5 +227,8 @@ class meshArxv():
             print 'archive integrity test passed'
         else:
             str = 'archive integrity test failed. database file may be corrupt' 
-            raise NameError(str) 
+            raise NameError(str)
+        
+    def setChemicalNetwork(self, chemNet):
+        self.chemNet = chemNet
 

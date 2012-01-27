@@ -102,9 +102,10 @@ class mesh( ):
         self.fig = figObj
         self.axs = axObj
         
-    def plot(self, eSpcs):
+    def plot(self, chemNet):
         
         data = self.data
+        spcs = chemNet.species
         
         if self.fig == None:
             self.fig, self.axs = plt.subplots(2, 2, sharex=True, sharey=False) 
@@ -124,25 +125,25 @@ class mesh( ):
 
         pyl.subplot(222)
         pyl.hold(False)
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH_P], 'r' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['H+'].num], 'r' )
         pyl.hold()
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH],   'g' )
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xH2],  'b' )
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xe_N], 'c' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['H'].num],   'g' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['H2'].num],  'b' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['e-'].num], 'c' )
         pyl.axis([0, 20, 1e-12, 2])
         pyl.text(0.4, 1e-10, '$H^+$' , color='r')
         pyl.text(0.4, 1e-9, '$H$'   , color='g')
         pyl.text(0.4, 1e-8, '$H_2$'  , color='b')
-        pyl.text(0.4, 1e-7, '$e^-$'  , color='b')
+        pyl.text(0.4, 1e-7, '$e^-$'  , color='c')
         pyl.xlabel('$A_V$')
         pyl.ylabel('abun')
 
         pyl.subplot(223)
         pyl.hold(False)
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC_P], 'r' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['C+'].num], 'r' )
         pyl.hold()
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xC],   'g' )
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xCO],  'b' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['C'].num],   'g' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['CO'].num],  'b' )
         pyl.axis([0, 20, 1e-12, 2])
         pyl.text(0.4, 1e-10, '$C^+$' , color='r')
         pyl.text(0.4, 1e-9, '$C$'   , color='g')
@@ -152,28 +153,13 @@ class mesh( ):
 
         pyl.subplot(224)
         pyl.hold(False)
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCN], 'r' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['HCN'].num], 'r' )
         pyl.hold()
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHNC],   'g' )
-        pyl.semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCO_P],  'b' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['HNC'].num],   'g' )
+        pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['HCO+'].num],  'b' )
         pyl.axis([0, 20, 1e-12, 2])
         pyl.text(0.4, 1e-10, '$HCN$' , color='r')
         pyl.text(0.4, 1e-9, '$HNC$'   , color='g')
         pyl.text(0.4, 1e-8, '$HCO^+$'  , color='b')
         pyl.xlabel('$A_V$')
         pyl.ylabel('abun')
-
-        """
-        self.axs[0,1].axis([0, 20, 1e-12, 2])
-        self.axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCN], 'r' )
-        self.axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHNC],   'g' )
-        self.axs[1,1].semilogy(data['state']['Av'],  data['state']['abun'][eSpcs.xHCO_P],  'b' )
-        self.fig.text(0.8, 0.44, '$HCN$'   , color='r')
-        self.fig.text(0.8, 0.41, '$HNC$'   , color='g')
-        self.fig.text(0.8, 0.38, '$HCO^+$' , color='b')
-        
-        self.fig.text(0.4, 0.95, '$\log_{10} G\_0 = $ %4.2f'          % np.log10(data['hdr']['G0']) )
-        self.fig.text(0.6, 0.95, '$\log_{10} n_{gas} = $ %4.2f'       % np.log10(data['hdr']['nGas']) )
-        self.fig.text(0.8, 0.95, '$\log_{10} \Gamma_{mech} = $ %4.2f' % np.log10(data['hdr']['gammaMech']) )
-        """
-        

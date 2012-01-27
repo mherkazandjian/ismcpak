@@ -11,7 +11,7 @@ import re
 # class definition for a single specie
 # --------------------------------------
 class specie():
-    def __init__(self, specStr, specType=None, charge=None, init=None):
+    def __init__(self, specStr, specType=None, charge=None, init=None, comp=None):
         self.type = specType   # -2 => ignore specie
                                # -1 => do not conisder it as a specie
                                #  0 => basic specie
@@ -19,10 +19,13 @@ class specie():
         self.str  = specStr    # string representation of the specie
         self.num  = None         # numeric representation of the specie
 
-        if specType == 0:               # a list holding the indicies of the basic species making 
-            self.comp  = [[specStr,1]]   # it up and the number number of each sub-specie
+        if comp == None:
+            if specType == 0:               # a list holding the indicies of the basic species making 
+                self.comp  = [[specStr,1]]   # it up and the number number of each sub-specie
+            else:
+                self.comp = []
         else:
-            self.comp = []
+            self.comp = comp
 
         self.charge = charge
         self.abun = None     # abundance of the specie relative to total H nuclei
@@ -33,11 +36,13 @@ class specie():
     def show(self):
 
         if self.num != None:
-            print '%04d ' % self.num,
+            print 'num = %04d ' % self.num,
+            print '%-12s charge = %+-d  type = %+-d abun = %+-e' % (self.str, self.charge, self.type, self.getAbun() ),
         else:
-            print 'None ',  
-        
-        print '%-12s charge = %+-d  type = %+-d abun = %+-e' % (self.str, self.charge, self.type, self.getAbun() )
+            print 'num = NA   ',   
+            print '%-12s charge = NA  type = %+-d abun = NA' % (self.str, self.type),
+
+        print self.comp
 
     # method that parses the components of species by counting the elements in each specie
     # make sure baseSpec has the species with String in a decreasing order in length
