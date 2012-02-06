@@ -9,9 +9,12 @@ class mesh( ):
         
         m = mesh(path)
         m.hdr     contains the info in the header         ( dtype )
-        m.data    contains temperatures, abundances....   ( dtype )
-        m.cooling contains all the cooling info           ( dtype )
-        m.heating contains all the heating info           ( dtype )
+        
+        m.data    contains everything abt the mesh        ( dtype ) 
+          data['hdr']     = m.hdr
+          data['state']   = temperatures, abundances.... 
+          data['cooling'] = cooling information
+          data['heating'] = heating information
     """
 
     def __init__(self, fileName=None):
@@ -19,31 +22,38 @@ class mesh( ):
         if fileName != None:
             self.fName = fileName
         
-            # reading on the header, constructing the dull mesh dtype
+            # reading the header, constructing the full mesh dtype
             # and re-reading the whole file into a mesh dtype
             dtHdr = np.dtype( self.headerFormat() )
             hdr   = np.fromfile(self.fName, dtype = dtHdr, count = 1 )
             self.hdr = hdr[0]
+
             # re-reading the whole file, header and the data
-            dtMesh        = self.constructMeshDtype( hdr['nSpecs'], hdr['nSteps'])
-            data          = np.fromfile( fileName, dtype = dtMesh, count = 1)
-            self.data     = data[0]
+            dtMesh    = self.constructMeshDtype( self.hdr['nSpecs'], self.hdr['nSteps'])
+            data      = np.fromfile( fileName, dtype = dtMesh, count = 1)
+            self.data = data[0]
         else:
             self.data = None
             self.hdr  = None
             
-            #plotting stuff
-
         self.fig = None
         self.axs = None
 
+    def constructMeshDtype(self, nSpecs, nSteps):
+        meshFormat = self.meshFormat( nSpecs, nSteps )
+        meshDtype  = np.dtype( meshFormat )
+        #print meshDtype
+        #adasdads
+        return  meshDtype
+
     def meshFormat(self, nSpecs, nSteps):
+         
         return [ 
-                   ('hdr'    , np.dtype( self.headerFormat ()                ), 1),
-                   ('state'  , np.dtype( self.stateFormat  ( nSpecs, nSteps) ), 1),
-                   ('heating', np.dtype( self.heatingFormat( nSteps)         ), 1),
-                   ('cooling', np.dtype( self.coolingFormat( nSteps)         ), 1),
-                ]
+                 ('hdr'    , np.dtype( self.headerFormat ()               ), 1),
+                 ('state'  , np.dtype( self.stateFormat  ( nSpecs, nSteps)), 1),
+                 ('heating', np.dtype( self.heatingFormat( nSteps)        ), 1),
+                 ('cooling', np.dtype( self.coolingFormat( nSteps)        ), 1),
+               ]
     
     def headerFormat(self):
         return [ 
@@ -56,35 +66,37 @@ class mesh( ):
                ]
         
     def stateFormat(self, nSpecs, nSteps):
-        return [
-                  ('gasT'  , np.float64, (nSteps, 1) ),
-                  ('dustT' , np.float64, (nSteps, 1) ),
-                  ('Av'    , np.float64, (nSteps, 1) ),
-                  ('abun'  , np.float64, (nSpecs, nSteps) ),
+        n = int(nSteps)
+        m = int(nSpecs)
+        fmt = [
+                  ('gasT'  , np.float64, (n, 1) ),
+                  ('dustT' , np.float64, (n, 1) ),
+                  ('Av'    , np.float64, (n, 1) ),
+                  ('abun'  , np.float64, (m, n) ),
                ]
+        return fmt
 
     def heatingFormat(self, nSteps):
+        n = int(nSteps)
         return [
-                  ('photo'    , np.float64, (nSteps, 1) ),
-                  ('cIon'     , np.float64, (nSteps, 1) ),
-                  ('molHydro' , np.float64, (nSteps, 1) ),
-                  ('H2pump'   , np.float64, (nSteps, 1) ),
-                  ('ggColl'   , np.float64, (nSteps, 1) ),
-                  ('visc'     , np.float64, (nSteps, 1) ),
-                  ('cr'       , np.float64, (nSteps, 1) ),
+                  ('photo'    , np.float64, (n, 1) ),
+                  ('cIon'     , np.float64, (n, 1) ),
+                  ('molHydro' , np.float64, (n, 1) ),
+                  ('H2pump'   , np.float64, (n, 1) ),
+                  ('ggColl'   , np.float64, (n, 1) ),
+                  ('visc'     , np.float64, (n, 1) ),
+                  ('cr'       , np.float64, (n, 1) ),
                ]
 
     def coolingFormat(self, nSteps):
+        n = int(nSteps)
         return [
-                  ('metaStable'    , np.float64, (nSteps, 1) ),
-                  ('fineStructure' , np.float64, (nSteps, 1) ),
-                  ('roVib'         , np.float64, (nSteps, 1) ),
-                  ('recom'         , np.float64, (nSteps, 1) ),
-                  ('lymanAlpha'    , np.float64, (nSteps, 1) ),
+                  ('metaStable'    , np.float64, (n, 1) ),
+                  ('fineStructure' , np.float64, (n, 1) ),
+                  ('roVib'         , np.float64, (n, 1) ),
+                  ('recom'         , np.float64, (n, 1) ),
+                  ('lymanAlpha'    , np.float64, (n, 1) ),
                ]
-
-    def constructMeshDtype(self, nSpecs, nSteps):
-        return np.dtype( self.meshFormat( nSpecs, nSteps ) ) 
     
     def getData(self):
         return self.data
@@ -108,7 +120,7 @@ class mesh( ):
         spcs = chemNet.species
         
         if self.fig == None:
-            self.fig, self.axs = plt.subplots(2, 2, sharex=True, sharey=False) 
+            self.fig, self.axs = pyl.subplots(2, 2, sharex=True, sharey=False) 
 
             
         pyl.subplot(221)

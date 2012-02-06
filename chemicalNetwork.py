@@ -127,9 +127,9 @@ class chemicalNetwork(specie, reaction):
         print 'Parsing reactions...',
 
         if self.umistVer == None:
-            str  = 'Error : cannot parse network reaction, unknown database\n'
-            str += '                   please set database version.'                 
-            raise NameError(str)
+            strng  = 'Error : cannot parse network reaction, unknown database\n'
+            strng += '                   please set database version.'                 
+            raise NameError(strng)
         
         print 'using '+ self.umistVer + ' format ',
         for line in (self.fileStr).splitlines():
@@ -360,8 +360,8 @@ class chemicalNetwork(specie, reaction):
         
         for rxn in self.reactions:
             if rxn.type == '':
-                str = 'reaction types, reaction :\n%s\n has no type set' % rxn.str
-                raise NameError(str)
+                strng = 'reaction types, reaction :\n%s\n has no type set' % rxn.str
+                raise NameError(strng)
 
         print 'reaction check completed...all passed.'
                     
@@ -538,58 +538,58 @@ class chemicalNetwork(specie, reaction):
         newLine = ''
         
         w = 4; 
-        cmp = line[pos:(pos+4)].strip() # index
-        newLine += cmp +','; pos += w
+        cpmnt = line[pos:(pos+4)].strip() # index
+        newLine += cpmnt +','; pos += w
         
-        rxnID = np.int32(cmp)
-        cmp = getReactionType( rxnID )
-        newLine += cmp +',';  
+        rxnID = np.int32(cpmnt)
+        cpmnt = getReactionType( rxnID )
+        newLine += cpmnt +',';  
 
         w = 9;
-        cmp = line[pos:(pos+10)].strip() #r1
-        newLine += cmp +',';  pos += w
+        cpmnt = line[pos:(pos+10)].strip() #r1
+        newLine += cpmnt +',';  pos += w
         w = 9;
-        cmp = line[pos:(pos+w)].strip() #r2
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #r2
+        newLine += cpmnt +',';   pos += w
         w = 9;
-        cmp = line[pos:(pos+w)].strip() #r3
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #r3
+        newLine += cpmnt +',';   pos += w
         w = 9;
-        cmp = line[pos:(pos+w)].strip() #p1
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #p1
+        newLine += cpmnt +',';   pos += w
         w = 9;
-        cmp = line[pos:(pos+w)].strip() #p3
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #p3
+        newLine += cpmnt +',';   pos += w
         w = 6;
-        cmp = line[pos:(pos+w)].strip() #p4
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #p4
+        newLine += cpmnt +',';   pos += w
         w = 5;
-        cmp = line[pos:(pos+w)].strip() #alpha
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #alpha
+        newLine += cpmnt +',';   pos += w
         w = 8;
-        cmp = line[pos:(pos+w)].strip() #beta
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #beta
+        newLine += cpmnt +',';   pos += w
         w = 8;
-        cmp = line[pos:(pos+w)].strip() #beta
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #beta
+        newLine += cpmnt +',';   pos += w
         w = 10;
-        cmp = line[pos:(pos+w)].strip() #gamma
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #gamma
+        newLine += cpmnt +',';   pos += w
         w = 1;
-        cmp = line[pos:(pos+w)].strip() #kind of data
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #kind of data
+        newLine += cpmnt +',';   pos += w
         w = 5;
-        cmp = line[pos:(pos+w)].strip() #T_low
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #T_low
+        newLine += cpmnt +',';   pos += w
         w = 5;
-        cmp = line[pos:(pos+w)].strip() #T_high
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #T_high
+        newLine += cpmnt +',';   pos += w
         w = 1;
-        cmp = line[pos:(pos+w)].strip() #accuracy code
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #accuracy code
+        newLine += cpmnt +',';   pos += w
         w = 4;
-        cmp = line[pos:(pos+w)].strip() #refCode
-        newLine += cmp +',';   pos += w
+        cpmnt = line[pos:(pos+w)].strip() #refCode
+        newLine += cpmnt +',';   pos += w
 
         return newLine
     
