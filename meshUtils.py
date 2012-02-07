@@ -248,47 +248,53 @@ class meshArxv():
         
         self.pltGmSec = -24.0
         
-        fig1 = pyl.figure(1, figsize=(6, 6))
-        axs1 = fig1.add_subplot(111)
+        # definig plotting windows and setting the locations of subplots
+        fig1 = pyl.figure(1, figsize=(12, 6))
+        axs1 = fig1.add_subplot(211)
+        axs1.set_position((0.1,0.6,0.3,0.3))
+        axs2 = fig1.add_subplot(212)        
+        axs2.set_position((0.6,0.6,0.2,0.2))
+        
+        fig2, axs2 = pyl.subplots(2, 2, sharex=True, sharey=False, figsize=(8,8))
+        pyl.figure(2)
+        pyl.subplots_adjust(wspace = 0.3, hspace = 0.2)
+
         msh = mesh()
 
         lG0All   = np.log10(self.infoAll['parms'][:,0])
         lnGasAll = np.log10(self.infoAll['parms'][:,1])
         lgmAll   = np.log10(self.infoAll['parms'][:,2])
         
-        
+        # text object which will show the section in gamma mech
+        tt = fig1.text(0.55, 0.02, '$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec )
+
+        # plot a section in gamma mech
         def plotThisSec():
+            
             pyl.figure(1)
-            pyl.subplot(111)
+            tt.set_text('$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)
+            
+            pyl.subplot(211)
             pyl.hold(False)
             indsThisSec = ( np.fabs(lgmAll - self.pltGmSec) < 1e-6 ).nonzero()
             pyl.plot( lnGasAll[indsThisSec], lG0All[indsThisSec] , 'bo' )
             pyl.xlim( xmin = -1, xmax = 7.0)
             pyl.ylim( ymin = -1, ymax = 7.0)
+            pyl.xlabel('$log_{10} n_{gas}$')
+            pyl.ylabel('$log_{10} G_0$')                        
             pyl.hold(True)
             pyl.draw()
 
-        plotThisSec()
-        
+        # defining the buttons to control mechanical heating section        
         def nextSec(event):
             self.pltGmSec += 1.0
-            print self.pltGmSec
             plotThisSec()
     
         def prevSec(event):
             self.pltGmSec -= 1.0
-            print self.pltGmSec
-            plotThisSec()
-
-        axNext = pyl.axes([0.81, 0.02, 0.1, 0.05])
-        bNext  = Button(axNext, 'Next')
-        bNext.on_clicked(nextSec)
-        axPrev = pyl.axes([0.61, 0.02, 0.1, 0.05])
-        bPrev = Button(axPrev, 'Prev')
-        bPrev.on_clicked(prevSec)
+            plotThisSec()        
         
-        fig2, axs2 = pyl.subplots(2, 2, sharex=True, sharey=False, figsize=(8,8))
-        
+        # defining the event when a point in a section is clicked
         def onB1Down(event):
             # get the x and y coords, flip y from top to bottom
             b      = event.button 
@@ -304,25 +310,38 @@ class meshArxv():
                     msh.setData( self.meshes[indMin][0] )
              
                     pyl.figure(1)
-                    pyl.subplot(111)
+                    pyl.subplot(211)
                     pyl.hold(False)
                     plotThisSec()
+                    pyl.title('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(msh.data['hdr']['nGas']), np.log10(msh.data['hdr']['G0']), np.log10(msh.data['hdr']['gammaMech'])))
                     pyl.hold(True)
                     pyl.plot( lnGasAll[indMin], lG0All[indMin], 'ro')
-                    pyl.title('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(msh.data['hdr']['nGas']), np.log10(msh.data['hdr']['G0']), np.log10(msh.data['hdr']['gammaMech'])))
-                    pyl.xlabel('$log_{10} n_{gas}$')
-                    pyl.ylabel('$log_{10} n_{Gas}$')
                     pyl.draw()
 
-                    
+                    pyl.subplot(212)
+                    pyl.plot([1,2,3,4])
+                     
                     pyl.figure(2)            
                     msh.setFigure(fig2, axs2)
                     msh.plot(self.chemNet)
                     
             pyl.draw()
-
+        
+        # attaching mouse click event to fig 1
         cid = fig1.canvas.mpl_connect('button_press_event', onB1Down)
 
+        plotThisSec()
+
+        # attaching the gamma mech button events
+        axPrev = pyl.axes([0.70, 0.02, 0.02, 0.02])
+        bPrev = Button(axPrev, '-')
+        bPrev.on_clicked(prevSec)
+
+        axNext = pyl.axes([0.73, 0.02, 0.02, 0.02])
+        bNext  = Button(axNext, '+')
+        bNext.on_clicked(nextSec)
+
+        # displaying
         pyl.figure(1)
         pyl.show()
         print 'browing data....'
