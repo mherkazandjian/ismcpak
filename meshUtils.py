@@ -78,6 +78,7 @@ import os
 import glob
 import numpy as np
 from matplotlib.widgets import Button
+from time import *
 
 from mesh import *
 
@@ -249,42 +250,68 @@ class meshArxv():
         self.pltGmSec = -24.0
         
         # definig plotting windows and setting the locations of subplots
-        fig1 = pyl.figure(1, figsize=(12, 6))
-        axs1 = fig1.add_subplot(211)
-        axs1.set_position((0.1,0.6,0.3,0.3))
-        axs2 = fig1.add_subplot(212)        
-        axs2.set_position((0.6,0.6,0.2,0.2))
+        #fig1, axs1 = pyl.figure(3, 3, figsize=(12, 12), sharex=False, sharey=False)
+        #ply.show()
+        fig1, axs1 = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(12,12))
         
-        fig2, axs2 = pyl.subplots(2, 2, sharex=True, sharey=False, figsize=(8,8))
-        pyl.figure(2)
-        pyl.subplots_adjust(wspace = 0.3, hspace = 0.2)
-
+        axsGrd = axs1[0,0];  axsGrd_n = 331;
+        axsGrd.set_position((0.1,0.7,0.25,0.25))
+        self.grdPlt = None
+        self.grdPointPlt = None
+        
+        left  = 0.07
+        bott  = 0.07
+        sz    = 0.20
+        vSpace = 0.01
+        hSpace = 0.01
+        axsAvPlts = np.array([ [axs1[1,0],axs1[1,1]], [axs1[2,0],axs1[2,1]] ])        
+        axsAvPlts[0,0].set_position((left              , bott + sz + vSpace, sz, sz))
+        axsAvPlts[0,1].set_position((left + sz + hSpace, bott + sz + vSpace, sz, sz))
+        axsAvPlts[1,0].set_position((left              , bott              , sz, sz))
+        axsAvPlts[1,1].set_position((left + sz + hSpace, bott              , sz, sz))
+        axsAvPlts_n = np.array( [[334,335],[337,338]])
+        
+        axsGrds = np.array( [ [axs1[0,1], axs1[0,2] ], [axs1[1,2], axs1[2,2] ] ])
+        axsGrds[0,0].set_position((0.8, 0.8, 0.1, 0.1))
+        axsGrds[0,1].set_position((0.8, 0.8, 0.1, 0.1))
+        axsGrds[1,0].set_position((0.8, 0.8, 0.1, 0.1))
+        axsGrds[1,1].set_position((0.8, 0.8, 0.1, 0.1))
+        
         msh = mesh()
 
         lG0All   = np.log10(self.infoAll['parms'][:,0])
         lnGasAll = np.log10(self.infoAll['parms'][:,1])
         lgmAll   = np.log10(self.infoAll['parms'][:,2])
         
-        # text object which will show the section in gamma mech
+        #text object which will show the section in gamma mech
         tt = fig1.text(0.55, 0.02, '$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec )
 
         # plot a section in gamma mech
+        
         def plotThisSec():
             
             pyl.figure(1)
             tt.set_text('$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)
             
-            pyl.subplot(211)
+            
+            pyl.subplot(axsGrd_n)
             pyl.hold(False)
             indsThisSec = ( np.fabs(lgmAll - self.pltGmSec) < 1e-6 ).nonzero()
-            pyl.plot( lnGasAll[indsThisSec], lG0All[indsThisSec] , 'bo' )
+            
+            if self.grdPlt == None:
+                self.grdPlt, = pyl.plot( lnGasAll[indsThisSec], lG0All[indsThisSec] , 'bo' )
+            else:
+                self.grdPlt.set_xdata( lnGasAll[indsThisSec] )
+                self.grdPlt.set_ydata( lG0All[indsThisSec] )
+             
             pyl.xlim( xmin = -1, xmax = 7.0)
             pyl.ylim( ymin = -1, ymax = 7.0)
             pyl.xlabel('$log_{10} n_{gas}$')
             pyl.ylabel('$log_{10} G_0$')                        
             pyl.hold(True)
+            
             pyl.draw()
-
+        
         # defining the buttons to control mechanical heating section        
         def nextSec(event):
             self.pltGmSec += 1.0
@@ -296,6 +323,9 @@ class meshArxv():
         
         # defining the event when a point in a section is clicked
         def onB1Down(event):
+            
+            ti = time()
+
             # get the x and y coords, flip y from top to bottom
             b      = event.button 
             x, y   = event.x, event.y
@@ -308,24 +338,34 @@ class meshArxv():
                     rMin = min(l2Distance)
                     indMin = l2Distance.argmin()
                     msh.setData( self.meshes[indMin][0] )
-             
+                    
                     pyl.figure(1)
-                    pyl.subplot(211)
+                    pyl.subplot(axsGrd_n)
                     pyl.hold(False)
+                    
                     plotThisSec()
+                    
                     pyl.title('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(msh.data['hdr']['nGas']), np.log10(msh.data['hdr']['G0']), np.log10(msh.data['hdr']['gammaMech'])))
                     pyl.hold(True)
-                    pyl.plot( lnGasAll[indMin], lG0All[indMin], 'ro')
-                    pyl.draw()
+                    
+                    if self.grdPointPlt == None:
+                        self.grdPointPlt, = pyl.plot( lnGasAll[indMin], lG0All[indMin], 'ro')
+                    else:
+                        self.grdPointPlt.set_color('b')
 
-                    pyl.subplot(212)
-                    pyl.plot([1,2,3,4])
-                     
-                    pyl.figure(2)            
-                    msh.setFigure(fig2, axs2)
+                        self.grdPointPlt.set_xdata( lnGasAll[indMin] )
+                        self.grdPointPlt.set_ydata( lG0All[indMin] )
+                        self.grdPointPlt.set_color('r')
+                
+                    pyl.draw()
+                    
+                    msh.setFigure(fig1, axs1, axsAvPlts_n)
                     msh.plot(self.chemNet)
                     
             pyl.draw()
+            tf = time()
+            print tf - ti
+        
         
         # attaching mouse click event to fig 1
         cid = fig1.canvas.mpl_connect('button_press_event', onB1Down)
@@ -340,8 +380,7 @@ class meshArxv():
         axNext = pyl.axes([0.73, 0.02, 0.02, 0.02])
         bNext  = Button(axNext, '+')
         bNext.on_clicked(nextSec)
-
+        
         # displaying
-        pyl.figure(1)
         pyl.show()
         print 'browing data....'

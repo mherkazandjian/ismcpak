@@ -110,9 +110,10 @@ class mesh( ):
     def setData(self, data):
         self.data = data
     
-    def setFigure(self, figObj, axObj):
+    def setFigure(self, figObj, axObj, axRef):
         self.fig = figObj
         self.axs = axObj
+        self.axsRef = axRef
         
     def plot(self, chemNet):
         
@@ -122,35 +123,54 @@ class mesh( ):
         if self.fig == None:
             self.fig, self.axs = pyl.subplots(2, 2, sharex=True, sharey=False) 
 
-            
-        pyl.subplot(221)
+        # subplot 0,0
+        pyl.subplot(self.axsRef[0,0])
         pyl.hold(False)
         pyl.semilogy(data['state']['Av'],  data['state']['gasT'] , 'r' )
         pyl.hold()
         pyl.semilogy(data['state']['Av'],  data['state']['dustT'], 'b' )
         pyl.axis([0, 20, 1, 100000])
-        pyl.xlabel('$A_V$')
         pyl.ylabel('$T(K)$')
         pyl.text(0.4, 1e3, '$T_{gas}$' , color='r')
         pyl.text(0.4, 1e4, '$T_{dust}$', color='b')
         pyl.text(0.8, 5e5,'$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (np.log10(data['hdr']['G0']), np.log10(data['hdr']['nGas']), np.log10(data['hdr']['gammaMech']) ) )
+        pyl.setp(pyl.gca(), xticks=[])
 
-        pyl.subplot(222)
+        # subplot 0,1        
+        pyl.subplot(self.axsRef[0,1])        
         pyl.hold(False)
+        
         pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['H+'].num], 'r' )
         pyl.hold()
         pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['H'].num],   'g' )
         pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['H2'].num],  'b' )
         pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['e-'].num], 'c' )
-        pyl.axis([0, 20, 1e-12, 2])
+        pyl.axis([0, 20.0, 1e-12, 2])
         pyl.text(0.4, 1e-10, '$H^+$' , color='r')
-        pyl.text(0.4, 1e-9, '$H$'   , color='g')
-        pyl.text(0.4, 1e-8, '$H_2$'  , color='b')
-        pyl.text(0.4, 1e-7, '$e^-$'  , color='c')
-        pyl.xlabel('$A_V$')
-        pyl.ylabel('abun')
-
-        pyl.subplot(223)
+        pyl.text(0.4, 1e-9 , '$H$'   , color='g')
+        pyl.text(0.4, 1e-8 , '$H_2$' , color='b')
+        pyl.text(0.4, 1e-7 , '$e^-$' , color='c')
+        ax1 = pyl.gca()        
+        ax2 = pyl.gca().twinx()
+        pyl.setp(ax1, xticks=[])
+        pyl.setp(ax2, xticks=[])
+        pyl.setp(ax2, 'ylim',(1e-12, 2) )
+        # redundant, but we do it just to get the right ticks on the y axis
+        ax2.semilogy(data['state']['Av'],  data['state']['abun'][spcs['H'].num],   'g' )
+        ax2.semilogy(data['state']['Av'],  data['state']['abun'][spcs['H2'].num],  'b' )
+        ax2.semilogy(data['state']['Av'],  data['state']['abun'][spcs['e-'].num], 'c' )
+        # deleting all the ticks on the first axis
+        for tick in ax1.yaxis.get_major_ticks():
+            tick.label1On = False
+            tick.label2On = False
+        # enabling y ticks on the second axis
+        for tick in ax2.yaxis.get_major_ticks():
+            tick.label1On = False
+            tick.label2On = True
+        ax2.set_ylabel('abun')
+        
+        # subplot 1,0        
+        pyl.subplot(self.axsRef[1,0])
         pyl.hold(False)
         pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['C+'].num], 'r' )
         pyl.hold()
@@ -163,7 +183,8 @@ class mesh( ):
         pyl.xlabel('$A_V$')
         pyl.ylabel('abun')
 
-        pyl.subplot(224)
+        # subplot 1,1        
+        pyl.subplot(self.axsRef[1,1])
         pyl.hold(False)
         pyl.semilogy(data['state']['Av'],  data['state']['abun'][spcs['HCN'].num], 'r' )
         pyl.hold()
@@ -174,4 +195,4 @@ class mesh( ):
         pyl.text(0.4, 1e-9, '$HNC$'   , color='g')
         pyl.text(0.4, 1e-8, '$HCO^+$'  , color='b')
         pyl.xlabel('$A_V$')
-        pyl.ylabel('abun')
+        pyl.setp(pyl.gca(), yticks=[])
