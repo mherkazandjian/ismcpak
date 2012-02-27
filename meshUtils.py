@@ -244,21 +244,36 @@ class meshArxv():
     def setChemicalNetwork(self, chemNet):
         self.chemNet = chemNet
         
+    def constructTemperatureGrid(self):
+        return 1
+         
     
+            
     def plotGrid(self):
         
         self.pltGmSec = -24.0
         
         # definig plotting windows and setting the locations of subplots
-        #fig1, axs1 = pyl.figure(3, 3, figsize=(12, 12), sharex=False, sharey=False)
-        #ply.show()
         fig1, axs1 = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(12,12))
         
+        # + - -
+        # - - - 
+        # - - -
         axsGrd = axs1[0,0];  axsGrd_n = 331;
         axsGrd.set_position((0.1,0.7,0.25,0.25))
-        self.grdPlt = None
-        self.grdPointPlt = None
-        
+        pyl.subplot(axsGrd_n)
+        pyl.hold(True)
+        self.grdPltPts1, = pyl.plot( [0], [0], 'bo' )
+        self.grdPltPts2, = pyl.plot( [1], [1], 'ro')
+        self.grdPltTitle  = pyl.title('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (0, 0, 0) )
+        pyl.xlim( xmin = -1, xmax = 7.0)
+        pyl.ylim( ymin = -1, ymax = 7.0)
+        pyl.xlabel('$log_{10} n_{gas}$')
+        pyl.ylabel('$log_{10} G_0$')
+               
+        # - - -
+        # + + -
+        # + + - 
         left  = 0.07
         bott  = 0.07
         sz    = 0.20
@@ -269,16 +284,61 @@ class meshArxv():
         axsAvPlts[0,1].set_position((left + sz + hSpace, bott + sz + vSpace, sz, sz))
         axsAvPlts[1,0].set_position((left              , bott              , sz, sz))
         axsAvPlts[1,1].set_position((left + sz + hSpace, bott              , sz, sz))
-        axsAvPlts_n = np.array( [[334,335],[337,338]])
+        axsAvPlts_n = np.array( [[334,335], [337,338]])
         
+        # - + +
+        # - - +
+        # - - +
+        left  = 0.50
+        bott  = 0.55
+        sz    = 0.20
+        vSpace = 0.005
+        hSpace = 0.005
+        # defining the new axes array
         axsGrds = np.array( [ [axs1[0,1], axs1[0,2] ], [axs1[1,2], axs1[2,2] ] ])
-        axsGrds[0,0].set_position((0.8, 0.8, 0.1, 0.1))
-        axsGrds[0,1].set_position((0.8, 0.8, 0.1, 0.1))
-        axsGrds[1,0].set_position((0.8, 0.8, 0.1, 0.1))
-        axsGrds[1,1].set_position((0.8, 0.8, 0.1, 0.1))
+        axsGrds[0,0].set_position((left              , bott + sz + vSpace, sz, sz))
+        axsGrds[0,1].set_position((left + sz + hSpace, bott + sz + vSpace, sz, sz))
+        axsGrds[1,0].set_position((left              , bott              , sz, sz))
+        axsGrds[1,1].set_position((left + sz + hSpace, bott              , sz, sz))
+        axsGrds_n = np.array( [[332,333], [336,339]])
+        # setting up the labels of the axes and the major ticks
+        pyl.subplot( axsGrds_n[0,0] )
+        pyl.ylabel( '$log_{10} G_0$' )
+        for tick in pyl.gca().xaxis.get_major_ticks():
+            tick.label1On = False
+        pyl.xlim( xmin = 0, xmax = 6)
+        pyl.ylim( ymin = 0, ymax = 6)
+        
+        pyl.subplot( axsGrds_n[0,1] )
+        for tick in pyl.gca().xaxis.get_major_ticks():
+            tick.label1On = False
+        for tick in pyl.gca().yaxis.get_major_ticks():
+            tick.label1On = False
+        pyl.xlim( xmin = 0, xmax = 6)
+        pyl.ylim( ymin = 0, ymax = 6)
+
+        pyl.subplot( axsGrds_n[1,0] )
+        pyl.xlabel( '$log_{10} n_{gas}$' )
+        pyl.ylabel( '$log_{10} G_0$' )
+        pyl.xlim( xmin = 0, xmax = 6)
+        pyl.ylim( ymin = 0, ymax = 6)
+        (pyl.gca().yaxis.get_major_ticks())[-1].label1On = False
+        (pyl.gca().xaxis.get_major_ticks())[-1].label1On = False
+        
+        pyl.subplot( axsGrds_n[1,1] )
+        pyl.xlabel( '$log_{10} n_{gas}$' )
+        for tick in pyl.gca().yaxis.get_major_ticks():
+            tick.label1On = False
+        pyl.xlim( xmin = 0, xmax = 6)
+        pyl.ylim( ymin = 0, ymax = 6)
+        
+        #pyl.ylim( xmin = 0, xmax = 6.0)
+        #pyl.plot([1,2,3,4,5])
         
         msh = mesh()
-
+        msh.setFigure(fig1, axs1, axsAvPlts_n)
+        msh.setupFigures()
+        
         lG0All   = np.log10(self.infoAll['parms'][:,0])
         lnGasAll = np.log10(self.infoAll['parms'][:,1])
         lgmAll   = np.log10(self.infoAll['parms'][:,2])
@@ -289,37 +349,21 @@ class meshArxv():
         # plot a section in gamma mech
         
         def plotThisSec():
-            
-            pyl.figure(1)
-            tt.set_text('$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)
-            
-            
-            pyl.subplot(axsGrd_n)
-            pyl.hold(False)
-            indsThisSec = ( np.fabs(lgmAll - self.pltGmSec) < 1e-6 ).nonzero()
-            
-            if self.grdPlt == None:
-                self.grdPlt, = pyl.plot( lnGasAll[indsThisSec], lG0All[indsThisSec] , 'bo' )
-            else:
-                self.grdPlt.set_xdata( lnGasAll[indsThisSec] )
-                self.grdPlt.set_ydata( lG0All[indsThisSec] )
-             
-            pyl.xlim( xmin = -1, xmax = 7.0)
-            pyl.ylim( ymin = -1, ymax = 7.0)
-            pyl.xlabel('$log_{10} n_{gas}$')
-            pyl.ylabel('$log_{10} G_0$')                        
-            pyl.hold(True)
-            
-            pyl.draw()
-        
+            tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)            
+            indsThisSec = ( np.fabs(lgmAll - self.pltGmSec) < 1e-6 ).nonzero()            
+            self.grdPltPts1.set_xdata( lnGasAll[indsThisSec] )
+            self.grdPltPts1.set_ydata( lG0All[indsThisSec]   )
+                                
         # defining the buttons to control mechanical heating section        
         def nextSec(event):
             self.pltGmSec += 1.0
             plotThisSec()
+            pyl.draw()
     
         def prevSec(event):
             self.pltGmSec -= 1.0
-            plotThisSec()        
+            plotThisSec()
+            pyl.draw()        
         
         # defining the event when a point in a section is clicked
         def onB1Down(event):
@@ -338,31 +382,19 @@ class meshArxv():
                     rMin = min(l2Distance)
                     indMin = l2Distance.argmin()
                     msh.setData( self.meshes[indMin][0] )
-                    
-                    pyl.figure(1)
-                    pyl.subplot(axsGrd_n)
-                    pyl.hold(False)
-                    
+                                        
                     plotThisSec()
                     
-                    pyl.title('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(msh.data['hdr']['nGas']), np.log10(msh.data['hdr']['G0']), np.log10(msh.data['hdr']['gammaMech'])))
-                    pyl.hold(True)
+                    self.grdPltTitle.set_text('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(msh.data['hdr']['nGas']), np.log10(msh.data['hdr']['G0']), np.log10(msh.data['hdr']['gammaMech'])))
                     
-                    if self.grdPointPlt == None:
-                        self.grdPointPlt, = pyl.plot( lnGasAll[indMin], lG0All[indMin], 'ro')
-                    else:
-                        self.grdPointPlt.set_color('b')
-
-                        self.grdPointPlt.set_xdata( lnGasAll[indMin] )
-                        self.grdPointPlt.set_ydata( lG0All[indMin] )
-                        self.grdPointPlt.set_color('r')
-                
-                    pyl.draw()
-                    
-                    msh.setFigure(fig1, axs1, axsAvPlts_n)
+                    self.grdPltPts2.set_xdata( lnGasAll[indMin] )
+                    self.grdPltPts2.set_ydata( lG0All[indMin] )
+                    self.grdPltPts2.set_color('r')
+                                        
                     msh.plot(self.chemNet)
                     
-            pyl.draw()
+                    pyl.draw()
+                    
             tf = time()
             print tf - ti
         
