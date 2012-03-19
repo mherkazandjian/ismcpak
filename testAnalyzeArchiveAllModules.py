@@ -3,7 +3,6 @@ from time import *
 import sys
 import pylab as pyl
 
-
 from chemicalNetwork import *
 from mesh import *
 from meshUtils import *
@@ -19,6 +18,8 @@ specNumFile   = 'data/species.inp'
 specAbunFile  = 'data/abun.out'
 underAbunFile = 'data/underabundant.inp'
 removeManual  = ['13CH3']
+
+gridsRes = 5
 
 T        = 800.0
 Av       = 20.0
@@ -70,6 +71,6 @@ net.assignNumbersToSpecies(fileName = specNumFile)
 # plotting stuff
 
 arxv.setChemicalNetwork(net)
-arxv.plotGrid()
+arxv.plotGrid(gridsRes)
 
 print 'done'

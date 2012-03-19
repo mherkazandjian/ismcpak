@@ -2,85 +2,62 @@ import numpy as np
 import pylab as pyl
 from ndmesh import *
 from time import *
+import utils
 
 # testing two 2 meshes
 #--------------------------------------
-nMin =  0.0; nMax = 6.0; dn = 0.25 # density range
-GMin = -0.5; GMax = 6.0; dG = 0.25 #G0 range
+nMin =  -2.0; nMax = 6.0;  nn  = 10 # density range # x axis (0)
+GMin =   0.0; GMax = 10.0; nG0 = 5  # G0 range      # y axis (1)
+#---------------------------------------
 
-gridCntrds = np.mgrid[ nMin:nMax:dn, GMin:GMax:dG ]  # cell centroid coordinates
-grid_spos  = np.mgrid[ nMin:nMax:dn, GMin:GMax:dG ]  # cell starting coordinates
-grid_epos  = np.mgrid[ nMin:nMax:dn, GMin:GMax:dG ]  # cell ending coordinates
+dn = np.float64((nMax - nMin)/nn)
+dG = np.float64((GMax - GMin)/nG0)
 
-# centroids
-gridCntrds[0,:] = gridCntrds[0,:] + dn/2.0
-gridCntrds[1,:] = gridCntrds[1,:] + dG/2.0 
+x = ndmesh( (nn, nG0), dtype=np.float64 )
+x.fill(0)
 
-# start pos
-grid_spos[0,:] = gridCntrds[0,:] - dn/2.0
-grid_spos[1,:] = gridCntrds[1,:] - dG/2.0 
+ranges = [ [nMin, nMax], [GMin, GMax] ]
+x.setup( ranges )
 
-# end pos
-grid_epos[0,:] = gridCntrds[0,:] + dn/2.0
-grid_epos[1,:] = gridCntrds[1,:] + dG/2.0 
+fig, axs = pyl.subplots(1, 2, figsize = (12,6) )
+ax1 = axs[0]; ax1_n = 121
+ax2 = axs[1]; ax2_n = 122
 
-""" 
-print  gridCntrds
-print '----------------'
-print  grid_spos
-print '----------------'
-print  grid_epos
-print '----------------'
-print gridCntrds[0,:,0] # row 1 centroids (fixed G0 varying n )
-print gridCntrds[0,0,:] # col 1 centroids (fixed n  varying G0)
-print '----------------'
-print gridCntrds[0,:,1] # row 2 centroids (fixed G0 varying n )
-print gridCntrds[0,2,:] # col  centroids (fixed n  varying G0)
-"""
+pyl.subplot(ax1_n)
+#fig = pyl.figure( figsize = (12,12) )
+#ax = pyl.gca()
+#fig.add_axes(ax)
 
-xc = grid_spos[0,:,:]
-yc = grid_spos[1,:,:]
-xe = grid_epos[0,:,:]
-ye = grid_epos[1,:,:]
+pyl.xlim( xmin = nMin, xmax = nMax)
+pyl.ylim( ymin = GMin, ymax = GMax)
 
-from matplotlib.lines import Line2D                        
-from matplotlib.artist import setp
- 
-fig = pyl.figure()
-ax = pyl.gca()
-pyl.xlim( xmin = -2, xmax = 12)
-pyl.ylim( ymin = -2, ymax = 12)
-fig.add_axes(ax)
+#pyl.plot([1,2,3,34,5])
+
+x.plotGrid(fig)
+x.plotCntrd(fig)
+
+#pyl.hold(True)
 
 
-shape = np.array(gridCntrds.shape)
-nDim   = shape[1]
-nCells = np.prod( shape[1::] )
-print "number of cells  = %d" % nCells
+pyl.subplot(ax2_n)
 
-gc = np.resize(gridCntrds, (2, nCells))
-gs = np.resize(grid_spos , (2, nCells))
-ge = np.resize(grid_epos , (2, nCells))
+xy = x.getCntrd()
+xc = xy[0,:]; yc = xy[1,:]
+x[:] = np.sin(xc + yc)
 
-t0 = time()
-allLines = ()
-for i in np.arange( nCells ):
-    poss = gs[:,i] # [xs, ys, zs...]
-    pose = ge[:,i] # [xe, ye, ze...]
-    
-    # extracting the starting and ending coords as individual variables for
-    # clarity
-    xs = poss[0]; xe = pose[0]
-    ys = poss[1]; ye = pose[1]
-    # defining the path for each reactangle
-    xPathRect = [ xs, xe, xe, xs, xs ]
-    yPathRect = [ ys, ys, ye, ye, ys ]
-    # plotting the rectangle
-    lines = pyl.plot( xPathRect , yPathRect )
-    allLines = allLines + (lines,)
-    
-setp(allLines, linewidth=0.5, color='r')
+xpt = [0.0, 0.0, 0.5, 0.99]
+ypt = [0.0, 0.5, 0.5, 0.5]
+vpt = [2.1, 3.3, 4.6, 5.9]
+xi =  utils.scale(xpt, 0, nn, 0, 1, integer=True)
+yi =  utils.scale(ypt, 0, nG0, 0, 1, integer=True)
+x[xi, yi] = vpt
 
-print 'time rendering          : %f s' % (time() - t0)
+ax2  = pyl.imshow( x.transpose(), cmap = pyl.cm.jet, origin = 'bottom', extent=[nMin, nMax, GMin, GMax] )
+
+pyl.hold(True)
+x.plotGrid(fig)
+x.plotCntrd(fig)
+
+pyl.contour(x, extent=[nMin, nMax, GMin, GMax])
 
 pyl.show()

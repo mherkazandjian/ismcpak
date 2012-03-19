@@ -22,8 +22,16 @@
                       self.infoAll[x]['parms'][3]  0.0, NOT USED
                       self.infoAll[x]['parms'][4]  0.0  NOT USED
                       
-    self.meshes  : a list of all the meshes of 'mesh' dtypes 
+    self.meshes  : a list of all the meshes of 'mesh' dtypes (see mesh.py)
    
+  for a mesh of at index 'i' in 
+     self.meshes[i]
+  the corresponding info in the header are accessed as follows :
+           
+   self.infoAll[i]['parms'][0]) which should be the same as self.meshes[i]['hdr']['G0'] 
+   self.infoAll[i]['parms'][1]) which should be the same as self.meshes[i]['hdr']['nGas']
+   self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
+     
  by default, the prefix name of the individual mesh files is assumed to be
  mesh.dat-id-xxxxxx
  
@@ -77,10 +85,15 @@
 import os
 import glob
 import numpy as np
+import pylab as pyl
 from matplotlib.widgets import Button
 from time import *
 
+
 from mesh import *
+from utils import *
+from ndmesh import *
+
 
 class meshArxv():
     
@@ -95,7 +108,10 @@ class meshArxv():
         self.chemNet    = None
         
         # variables used for plotting
-        self.pltGmSec = None
+        self.pltGmSec = None # the value of the section in Gmech selected
+        self.pltGrds  = None 
+        self.grds     = None # 2x2 ndmesh array object
+        self.grdsCbar = None
         
     # read all the meshes files in the dir and construct the
     # database
@@ -223,7 +239,7 @@ class meshArxv():
     # meshes in self.infoAll['info] is compared to those in self.data for each mes
     def checkIntegrity(self):
         diff = 0.0
-        for i in np.arange(self.nMeshes):
+        for i in np.arange(self .nMeshes):
             x1 = np.array([np.log10(self.infoAll[i]['parms'][0]),
                            np.log10(self.infoAll[i]['parms'][1]),
                            np.log10(self.infoAll[i]['parms'][2])])
@@ -246,16 +262,28 @@ class meshArxv():
         
     def constructTemperatureGrid(self):
         return 1
-         
     
+    def constructModelsGrid(self, log_nGas=None, log_G0=None):
+        
+        if log_nGas == None:
+            errStr = 'denisty range of the grid not set'
+            raise NameError(errStr)
+        if log_G0 == None:
+            errStr = 'FUV G0 range of the grid not set'
+            raise NameError(errStr)
+        #    
+        #class 
             
-    def plotGrid(self):
+         
+    def plotGrid(self, resGrids):
         
         self.pltGmSec = -24.0
         
         # definig plotting windows and setting the locations of subplots
         fig1, axs1 = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(12,12))
         
+        # the grid plot in n,G0 showing the points where models are present in the
+        # database
         # + - -
         # - - - 
         # - - -
@@ -270,7 +298,8 @@ class meshArxv():
         pyl.ylim( ymin = -1, ymax = 7.0)
         pyl.xlabel('$log_{10} n_{gas}$')
         pyl.ylabel('$log_{10} G_0$')
-               
+        
+        # the subplots where things are plotted as a function of Av       
         # - - -
         # + + -
         # + + - 
@@ -285,15 +314,18 @@ class meshArxv():
         axsAvPlts[1,0].set_position((left              , bott              , sz, sz))
         axsAvPlts[1,1].set_position((left + sz + hSpace, bott              , sz, sz))
         axsAvPlts_n = np.array( [[334,335], [337,338]])
-        
+
+        # the subplots where things are plotted in n,G0 plane (grid properties)               
         # - + +
         # - - +
         # - - +
         left  = 0.50
-        bott  = 0.55
+        bott  = 0.52
         sz    = 0.20
-        vSpace = 0.005
-        hSpace = 0.005
+        vSpace = 0.035
+        hSpace = 0.02
+        nMin  = 0.0; nMax  = 6.0;
+        G0Min = 0.0; G0Max = 6.0;
         # defining the new axes array
         axsGrds = np.array( [ [axs1[0,1], axs1[0,2] ], [axs1[1,2], axs1[2,2] ] ])
         axsGrds[0,0].set_position((left              , bott + sz + vSpace, sz, sz))
@@ -306,22 +338,22 @@ class meshArxv():
         pyl.ylabel( '$log_{10} G_0$' )
         for tick in pyl.gca().xaxis.get_major_ticks():
             tick.label1On = False
-        pyl.xlim( xmin = 0, xmax = 6)
-        pyl.ylim( ymin = 0, ymax = 6)
+        pyl.xlim( xmin = nMin , xmax = nMax )
+        pyl.ylim( ymin = G0Min, ymax = G0Max)
         
         pyl.subplot( axsGrds_n[0,1] )
         for tick in pyl.gca().xaxis.get_major_ticks():
             tick.label1On = False
         for tick in pyl.gca().yaxis.get_major_ticks():
             tick.label1On = False
-        pyl.xlim( xmin = 0, xmax = 6)
-        pyl.ylim( ymin = 0, ymax = 6)
+        pyl.xlim( xmin = nMin , xmax = nMax )
+        pyl.ylim( ymin = G0Min, ymax = G0Max)
 
         pyl.subplot( axsGrds_n[1,0] )
         pyl.xlabel( '$log_{10} n_{gas}$' )
         pyl.ylabel( '$log_{10} G_0$' )
-        pyl.xlim( xmin = 0, xmax = 6)
-        pyl.ylim( ymin = 0, ymax = 6)
+        pyl.xlim( xmin = nMin , xmax = nMax )
+        pyl.ylim( ymin = G0Min, ymax = G0Max)
         (pyl.gca().yaxis.get_major_ticks())[-1].label1On = False
         (pyl.gca().xaxis.get_major_ticks())[-1].label1On = False
         
@@ -329,12 +361,37 @@ class meshArxv():
         pyl.xlabel( '$log_{10} n_{gas}$' )
         for tick in pyl.gca().yaxis.get_major_ticks():
             tick.label1On = False
-        pyl.xlim( xmin = 0, xmax = 6)
-        pyl.ylim( ymin = 0, ymax = 6)
+        pyl.xlim( xmin = nMin , xmax = nMax )
+        pyl.ylim( ymin = G0Min, ymax = G0Max)
         
-        #pyl.ylim( xmin = 0, xmax = 6.0)
-        #pyl.plot([1,2,3,4,5])
+        # defining and intialising the ndmesh objects which will be used
+        # for computing the grid properties and then displayed
+                                #xaxis    yaxis 
+        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64 ), 
+                       ndmesh( (resGrids, resGrids), dtype=np.float64 )], 
+                      [ndmesh( (resGrids, resGrids), dtype=np.float64 ),
+                       ndmesh( (resGrids, resGrids), dtype=np.float64 )] ]  
+                        
+        # creating the axes for the colorbars
+        self.grdsCbarAxs = [ [pyl.axes([left, bott + sz + sz + vSpace + 0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz + sz + vSpace + 0.017, 0.2, 0.01] ) ],
+                             [pyl.axes([left, bott + sz +               0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz +               0.017, 0.2, 0.01] ) ] ]
         
+        for grdSubList in self.grds:
+            for grd in grdSubList:
+                # setting up the 2D meshes for the grids and initializing them
+                grd.fill(0)
+                grd.setup( [[nMin, nMax], [G0Min, G0Max]] )
+
+        for cbarAxsSubList in self.grdsCbarAxs:
+            for cbarAxs in cbarAxsSubList:
+                
+                for tick in cbarAxs.xaxis.get_major_ticks():
+                    tick.label1On = True
+                    tick.label2On = False
+                for tick in cbarAxs.yaxis.get_major_ticks():
+                    tick.label1On = False
+                    tick.label2On = False
+            
         msh = mesh()
         msh.setFigure(fig1, axs1, axsAvPlts_n)
         msh.setupFigures()
@@ -347,12 +404,53 @@ class meshArxv():
         tt = fig1.text(0.55, 0.02, '$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec )
 
         # plot a section in gamma mech
-        
         def plotThisSec():
             tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)            
             indsThisSec = ( np.fabs(lgmAll - self.pltGmSec) < 1e-6 ).nonzero()            
             self.grdPltPts1.set_xdata( lnGasAll[indsThisSec] )
             self.grdPltPts1.set_ydata( lG0All[indsThisSec]   )
+            
+            nx, ny = self.grds[0][0].shape
+            
+            # plotting the grids
+            # temperature grid (top left grid)
+            pyl.subplot( axsGrds_n[0, 0] )
+            self.grds[0][0][:]  = np.log10(np.random.rand( nx, ny ) * 10000.0)
+            tGasGrid = self.grds[0][0]
+            nInCells = tGasGrid.copy()
+            nInCells.fill(0.0)
+            
+            i = 30 #adfuahdlkajshdlk
+            print self.infoAll[i]['parms'][0]
+            print self.meshes[i]['hdr']['G0'][0]
+            surfGasT =  self.meshes[i]['state']['gasT'][0,0,0]
+            print surfGasT
+            asdasd
+            
+            im00 = self.grds[0][0].imshow(interpolation='nearest') 
+            cbar00 = pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
+            cbar00.set_ticks([0.0, 1.0, 2.0, 3.0, 4.0])
+                        
+            # some other diagnostic (top left grid)
+            pyl.subplot( axsGrds_n[0, 1] )
+            im01 = self.grds[0][1].imshow(interpolation='nearest')
+            self.grds[0][1][:]  = np.random.rand( nx, ny )
+            cbar01 = pyl.colorbar(im01, cax=self.grdsCbarAxs[0][1], ax=pyl.gca(), orientation = 'horizontal')
+            cbar01.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
+            # some other diagnostic (bottom left grid)
+            pyl.subplot( axsGrds_n[1, 0] )
+            im10 = self.grds[1][0].imshow(interpolation='nearest')
+            self.grds[1][0][:]  = np.random.rand( nx, ny )
+            cbar10 = pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
+            cbar10.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
+            # some other diagnostic (bottom right grid)
+            pyl.subplot( axsGrds_n[1, 1] )
+            im11 = self.grds[1][1].imshow(interpolation='nearest')
+            self.grds[1][1][:]  = np.random.rand( nx, ny )
+            cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
+            cbar11.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
+            
+            print 'done'
                                 
         # defining the buttons to control mechanical heating section        
         def nextSec(event):
