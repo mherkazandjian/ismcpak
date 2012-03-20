@@ -9,17 +9,17 @@ from meshUtils import *
 from enumSpecies import *
 
 #---------------------------Archive parameters-----------------------
-runDirPath    =  '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
-abunSpecFname = 'data/species.inp'
+runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
+abunSpecFname = '/home/mher/ism/code/ismcpak/data/species.inp'
 lgammaMechSec = -24.0
 #-----------------chemical network parameters------------------------
-rxnFile       = 'data/rate99Fixed.inp'
-specNumFile   = 'data/species.inp'
-specAbunFile  = 'data/abun.out'
-underAbunFile = 'data/underabundant.inp'
+rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
+specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
+specAbunFile  = '/home/mher/ism/code/ismcpak/data/abun.out'
+underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 
-gridsRes = 5
+gridsRes = 20
 
 T        = 800.0
 Av       = 20.0

@@ -304,7 +304,7 @@ class meshArxv():
         # + + -
         # + + - 
         left  = 0.07
-        bott  = 0.07
+        bott  = 0.05
         sz    = 0.20
         vSpace = 0.01
         hSpace = 0.01
@@ -319,8 +319,8 @@ class meshArxv():
         # - + +
         # - - +
         # - - +
-        left  = 0.50
-        bott  = 0.52
+        left  = 0.55
+        bott  = 0.45
         sz    = 0.20
         vSpace = 0.035
         hSpace = 0.02
@@ -406,7 +406,7 @@ class meshArxv():
         # plot a section in gamma mech
         def plotThisSec():
             tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)            
-            indsThisSec = ( np.fabs(lgmAll - self.pltGmSec) < 1e-6 ).nonzero()            
+            indsThisSec = np.nonzero( np.fabs(lgmAll - self.pltGmSec) < 1e-6 )[0]            
             self.grdPltPts1.set_xdata( lnGasAll[indsThisSec] )
             self.grdPltPts1.set_ydata( lG0All[indsThisSec]   )
             
@@ -415,17 +415,30 @@ class meshArxv():
             # plotting the grids
             # temperature grid (top left grid)
             pyl.subplot( axsGrds_n[0, 0] )
-            self.grds[0][0][:]  = np.log10(np.random.rand( nx, ny ) * 10000.0)
+            #self.grds[0][0][:]  = np.log10(np.random.rand( nx, ny ) * 10000.0)
             tGasGrid = self.grds[0][0]
             nInCells = tGasGrid.copy()
             nInCells.fill(0.0)
             
-            i = 30 #adfuahdlkajshdlk
-            print self.infoAll[i]['parms'][0]
-            print self.meshes[i]['hdr']['G0'][0]
-            surfGasT =  self.meshes[i]['state']['gasT'][0,0,0]
-            print surfGasT
-            asdasd
+            # computing the surface temperature grid
+            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+            for i in indsThisSec:
+                xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
+                yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
+                gasT = self.meshes[i]['state']['gasT'][0]
+                zThis = gasT[0,0]
+            
+                indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
+                indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+            
+                tGasGrid[indyInGrid][indxInGrid] += zThis
+                nInCells[indyInGrid][indxInGrid] += 1
+            
+            
+            print tGasGrid
+            print nInCells
+            tGasGrid[:] = np.log10(tGasGrid / nInCells)
+            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             im00 = self.grds[0][0].imshow(interpolation='nearest') 
             cbar00 = pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')

@@ -69,9 +69,9 @@ class mesh( ):
         n = int(nSteps)
         m = int(nSpecs)
         fmt = [
-                  ('gasT'  , np.float64, (n, 1) ),
-                  ('dustT' , np.float64, (n, 1) ),
-                  ('Av'    , np.float64, (n, 1) ),
+                  ('gasT'  , np.float64, (1, n) ),
+                  ('dustT' , np.float64, (1, n) ),
+                  ('Av'    , np.float64, (1, n) ),
                   ('abun'  , np.float64, (m, n) ),
                ]
         return fmt
@@ -79,23 +79,23 @@ class mesh( ):
     def heatingFormat(self, nSteps):
         n = int(nSteps)
         return [
-                  ('photo'    , np.float64, (n, 1) ),
-                  ('cIon'     , np.float64, (n, 1) ),
-                  ('molHydro' , np.float64, (n, 1) ),
-                  ('H2pump'   , np.float64, (n, 1) ),
-                  ('ggColl'   , np.float64, (n, 1) ),
-                  ('visc'     , np.float64, (n, 1) ),
-                  ('cr'       , np.float64, (n, 1) ),
+                  ('photo'    , np.float64, (1, n) ),
+                  ('cIon'     , np.float64, (1, n) ),
+                  ('molHydro' , np.float64, (1, n) ),
+                  ('H2pump'   , np.float64, (1, n) ),
+                  ('ggColl'   , np.float64, (1, n) ),
+                  ('visc'     , np.float64, (1, n) ),
+                  ('cr'       , np.float64, (1, n) ),
                ]
 
     def coolingFormat(self, nSteps):
         n = int(nSteps)
         return [
-                  ('metaStable'    , np.float64, (n, 1) ),
-                  ('fineStructure' , np.float64, (n, 1) ),
-                  ('roVib'         , np.float64, (n, 1) ),
-                  ('recom'         , np.float64, (n, 1) ),
-                  ('lymanAlpha'    , np.float64, (n, 1) ),
+                  ('metaStable'    , np.float64, (1, n) ),
+                  ('fineStructure' , np.float64, (1, n) ),
+                  ('roVib'         , np.float64, (1, n) ),
+                  ('recom'         , np.float64, (1, n) ),
+                  ('lymanAlpha'    , np.float64, (1, n) ),
                ]
     
     def getData(self):
