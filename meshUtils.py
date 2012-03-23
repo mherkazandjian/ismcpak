@@ -1,52 +1,66 @@
 """
  this class generates and manipulates archives of meshes
   
- methods :
+ METHODS :
+ ---------
    arxvHdrFormat()
 
- instance variables :
-    self.infoAll  : a numpy array of dtype arxvHdrDtype (see below) which contains 
-                    the info (headers) about all the meshes
-                    each entry in this array contains two things, information about the
-                    mesh and the parameters of the mesh. For example the elements
-                    x in self.infoAll[x] has the following contents : 
-                      self.infoAll[x]['info'][0]   mesh number 
-                      self.infoAll[x]['info'][1]   0 ( for now)
-                      self.infoAll[x]['info'][2]   offset from the start of file
-                      self.infoAll[x]['info'][3]   number of steps in the mesh  
-                      self.infoAll[x]['info'][4]   number of species
+ INSTANCE VARIABLES :
+ -------------------
+  --infoAll  : a numpy array of dtype arxvHdrDtype (see below) which contains 
+               the info (headers) about all the meshes
+               each entry in this array contains two things, information about the
+               mesh and the parameters of the mesh. For example the elements
+               x in self.infoAll[x] has the following contents : 
+                  self.infoAll[x]['info'][0]   mesh number 
+                  self.infoAll[x]['info'][1]   0 ( for now)
+                  self.infoAll[x]['info'][2]   offset from the start of file
+                  self.infoAll[x]['info'][3]   number of steps in the mesh  
+                  self.infoAll[x]['info'][4]   number of species
      
-                      self.infoAll[x]['parms'][0]  G0
-                      self.infoAll[x]['parms'][1]  nGas
-                      self.infoAll[x]['parms'][2]  gammaMech
-                      self.infoAll[x]['parms'][3]  0.0, NOT USED
-                      self.infoAll[x]['parms'][4]  0.0  NOT USED
+                  self.infoAll[x]['parms'][0]  G0
+                  self.infoAll[x]['parms'][1]  nGas
+                  self.infoAll[x]['parms'][2]  gammaMech
+                  self.infoAll[x]['parms'][3]  0.0, NOT USED
+                  self.infoAll[x]['parms'][4]  0.0  NOT USED
                       
-    self.meshes  : a list of all the meshes of 'mesh' dtypes (see mesh.py)
-   
-  for a mesh of at index 'i' in 
-     self.meshes[i]
-  the corresponding info in the header are accessed as follows :
+  --self.meshes  : a list of all the meshes of 'mesh' dtypes (see mesh.py)
+    
+        for a mesh of at index 'i' in 
+           self.meshes[i]
+        the corresponding info in the header are accessed as follows :
+        
+        self.infoAll[i]['parms'][0]) which should be the same as self.meshes[i]['hdr']['G0'] 
+        self.infoAll[i]['parms'][1]) which should be the same as self.meshes[i]['hdr']['nGas']
+        self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
+
+  --nMeshes : nump.long64 
+        number of meshes in the database
+  --ver : numpy int32 array [3]
+        version number of the database data   
+  --nDbFiles : numpy.int32 
+        number of database files
+  --chemNet : object of class type chemicalNetwork
+        holds info about the chemical network used
+
            
-   self.infoAll[i]['parms'][0]) which should be the same as self.meshes[i]['hdr']['G0'] 
-   self.infoAll[i]['parms'][1]) which should be the same as self.meshes[i]['hdr']['nGas']
-   self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
-     
+ FILES AND THEIR FORMATS
+ ----------------------- 
  by default, the prefix name of the individual mesh files is assumed to be
  mesh.dat-id-xxxxxx
  
  the mesh database files are assumed to have the same prefix, for example, if the
  database file provided is foo, then this routine will assume (or write) 
-    foo.info
-    foo.db
+     foo.info
+     foo.db
  for now the database can be stored into a single file and not split into
  multiple files.  
  
-  the database for the meshes is constructed of two binary files:
-   foo.info : holding all the information about the meshes, locations and parameters
-   foo.db   : holds the data for all the meshes
+ the database for the meshes is constructed of two binary files:
+     foo.info : holding all the information about the meshes, locations and parameters
+     foo.db   : holds the data for all the meshes
    
-    the info file has the following structure :
+ the info file has the following structure :
     
     - version number    : int32 int32 int32
     - nMeshes           : int32 
@@ -239,7 +253,7 @@ class meshArxv():
     # meshes in self.infoAll['info] is compared to those in self.data for each mes
     def checkIntegrity(self):
         diff = 0.0
-        for i in np.arange(self .nMeshes):
+        for i in np.arange(self.nMeshes):
             x1 = np.array([np.log10(self.infoAll[i]['parms'][0]),
                            np.log10(self.infoAll[i]['parms'][1]),
                            np.log10(self.infoAll[i]['parms'][2])])
@@ -405,6 +419,9 @@ class meshArxv():
 
         # plot a section in gamma mech
         def plotThisSec():
+            
+            spcs = self.chemNet.species
+            
             tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)            
             indsThisSec = np.nonzero( np.fabs(lgmAll - self.pltGmSec) < 1e-6 )[0]            
             self.grdPltPts1.set_xdata( lnGasAll[indsThisSec] )
@@ -414,8 +431,8 @@ class meshArxv():
             
             # plotting the grids
             # temperature grid (top left grid)
+            #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[0, 0] )
-            #self.grds[0][0][:]  = np.log10(np.random.rand( nx, ny ) * 10000.0)
             tGasGrid = self.grds[0][0]
             nInCells = tGasGrid.copy()
             nInCells.fill(0.0)
@@ -438,6 +455,7 @@ class meshArxv():
             print tGasGrid
             print nInCells
             tGasGrid[:] = np.log10(tGasGrid / nInCells)
+            del nInCells
             #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             im00 = self.grds[0][0].imshow(interpolation='nearest') 
@@ -445,18 +463,55 @@ class meshArxv():
             cbar00.set_ticks([0.0, 1.0, 2.0, 3.0, 4.0])
                         
             # some other diagnostic (top left grid)
+            #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[0, 1] )
-            im01 = self.grds[0][1].imshow(interpolation='nearest')
-            self.grds[0][1][:]  = np.random.rand( nx, ny )
+            abunGrid = self.grds[0][1] 
+            nInCells = abunGrid.copy()
+            nInCells.fill(0.0)
+            
+            
+            # computing the surface temperature grid
+            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+            for i in indsThisSec:
+                xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
+                yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
+                abun = self.meshes[i]['state']['abun'][0]
+                specIdx = spcs['e-'].num
+                slabIdx = 0
+                print abun.shape
+                print spcs['e-'].num
+                abunThis = abun[specIdx][slabIdx]
+                print abunThis ###kkkk the specie abundance
+                ###### CONTINUE FROM HERE
+                """
+                zThis = gasT[0,0]
+            
+                indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
+                indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+            
+                tGasGrid[indyInGrid][indxInGrid] += zThis
+                nInCells[indyInGrid][indxInGrid] += 1
+                """
+            
+            #print tGasGrid
+            #print nInCells
+            #tGasGrid[:] = np.log10(tGasGrid / nInCells)
+            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+            #im01 = self.grds[0][1].imshow(interpolation='nearest')
+            #self.grds[0][1][:]  = np.random.rand( nx, ny )
             cbar01 = pyl.colorbar(im01, cax=self.grdsCbarAxs[0][1], ax=pyl.gca(), orientation = 'horizontal')
             cbar01.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
+            
             # some other diagnostic (bottom left grid)
+            #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[1, 0] )
             im10 = self.grds[1][0].imshow(interpolation='nearest')
             self.grds[1][0][:]  = np.random.rand( nx, ny )
             cbar10 = pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
             cbar10.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
             # some other diagnostic (bottom right grid)
+            #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[1, 1] )
             im11 = self.grds[1][1].imshow(interpolation='nearest')
             self.grds[1][1][:]  = np.random.rand( nx, ny )

@@ -67,10 +67,10 @@ net.removeSpecies( underAbunFile = underAbunFile )
 net.removeSpecies( species = removeManual )
 # reading the species number and their corresponding indies and abundances from ascii files
 net.assignNumbersToSpecies(fileName = specNumFile)
+arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 #-------------------------------------------------------------------
 # plotting stuff
 
-arxv.setChemicalNetwork(net)
 arxv.plotGrid(gridsRes)
 
 print 'done'
