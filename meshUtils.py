@@ -107,7 +107,7 @@ from time import *
 from mesh import *
 from utils import *
 from ndmesh import *
-
+from ismUtils import *
 
 class meshArxv():
     
@@ -436,14 +436,14 @@ class meshArxv():
             tGasGrid = self.grds[0][0]
             nInCells = tGasGrid.copy()
             nInCells.fill(0.0)
+            tGasGrid.fill(0.0)
             
             # computing the surface temperature grid
-            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             for i in indsThisSec:
                 xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
                 yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
                 gasT = self.meshes[i]['state']['gasT'][0]
-                zThis = gasT[0,0]
+                zThis = gasT[0,0]   #<-----------
             
                 indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
                 indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
@@ -456,60 +456,86 @@ class meshArxv():
             print nInCells
             tGasGrid[:] = np.log10(tGasGrid / nInCells)
             del nInCells
-            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
             
             im00 = self.grds[0][0].imshow(interpolation='nearest') 
             cbar00 = pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
             cbar00.set_ticks([0.0, 1.0, 2.0, 3.0, 4.0])
                         
+            specStr = 'CO'
             # some other diagnostic (top left grid)
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[0, 1] )
             abunGrid = self.grds[0][1] 
             nInCells = abunGrid.copy()
+            abunGrid.fill(0.0)
             nInCells.fill(0.0)
-            
-            
-            # computing the surface temperature grid
-            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+            # computing the abundace of a specie
             for i in indsThisSec:
                 xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
                 yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
-                abun = self.meshes[i]['state']['abun'][0]
-                specIdx = spcs['e-'].num
+                
+                abunAllSpcs = self.meshes[i]['state']['abun'][0]
+                specIdx = spcs[specStr].num
                 slabIdx = 0
-                print abun.shape
-                print spcs['e-'].num
-                abunThis = abun[specIdx][slabIdx]
-                print abunThis ###kkkk the specie abundance
-                ###### CONTINUE FROM HERE
-                """
-                zThis = gasT[0,0]
-            
+                zThis = abunAllSpcs[specIdx][slabIdx]  #<----------- 
+
                 indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
                 indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
             
-                tGasGrid[indyInGrid][indxInGrid] += zThis
+                abunGrid[indyInGrid][indxInGrid] += zThis
                 nInCells[indyInGrid][indxInGrid] += 1
-                """
             
-            #print tGasGrid
+            
+            #print abunGrid
             #print nInCells
-            #tGasGrid[:] = np.log10(tGasGrid / nInCells)
-            #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+            abunGrid[:] = np.log10(abunGrid / nInCells)
+            #print abunGrid            
+            del nInCells
 
-            #im01 = self.grds[0][1].imshow(interpolation='nearest')
-            #self.grds[0][1][:]  = np.random.rand( nx, ny )
+            im01 = self.grds[0][1].imshow(interpolation='nearest')
             cbar01 = pyl.colorbar(im01, cax=self.grdsCbarAxs[0][1], ax=pyl.gca(), orientation = 'horizontal')
-            cbar01.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
+            cbar01.set_ticks([-4.0, -3.0, -2.0, -1.0, 0.0])
             
             # some other diagnostic (bottom left grid)
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[1, 0] )
+            colDensGrid = self.grds[1][0] 
+            nInCells = colDensGrid.copy()
+            colDensGrid.fill(0.0)
+            nInCells.fill(0.0)
+
+            # computing the abundace of a specie
+            for i in indsThisSec:
+                xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
+                yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
+                
+                abunAllSpcs = self.meshes[i]['state']['abun'][0]
+                specIdx = spcs[specStr].num
+                Av = self.meshes[i]['state']['Av'][0][0,:]
+                nDensThisSpec = (10**xThis)*abunAllSpcs[specIdx][:]
+                dxSlabs = getSlabThicknessFromAv(Av, 10**xThis, 2.0)     #;;;; use the input metallicity from the driver
+                colDensThisSpec = np.sum( dxSlabs * nDensThisSpec[0:-1] ) #;;;; eventually use all the abundances and do not exclude the last slab
+                
+                zThis = colDensThisSpec  # <---------------
+                #print zThis 
+
+                indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
+                indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+            
+                colDensGrid[indyInGrid][indxInGrid] += zThis
+                nInCells[indyInGrid][indxInGrid] += 1
+
+            colDensGrid[:] = np.log10(colDensGrid / nInCells)
+            print colDensGrid
+
             im10 = self.grds[1][0].imshow(interpolation='nearest')
-            self.grds[1][0][:]  = np.random.rand( nx, ny )
             cbar10 = pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
-            cbar10.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
+            cbarTickValues =  [15, 16, 17, 18, 18.5, 18.7, 18.9, 19, 19.05, 20]
+            cbar10.set_ticks( cbarTickValues )
+            self.grds[1][0].plotContour( levels = cbarTickValues )
+            
+            
             # some other diagnostic (bottom right grid)
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[1, 1] )

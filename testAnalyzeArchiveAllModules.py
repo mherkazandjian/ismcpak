@@ -12,6 +12,7 @@ from enumSpecies import *
 runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
 abunSpecFname = '/home/mher/ism/code/ismcpak/data/species.inp'
 lgammaMechSec = -24.0
+metallicity   = 2.0
 #-----------------chemical network parameters------------------------
 rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
 specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
@@ -19,7 +20,7 @@ specAbunFile  = '/home/mher/ism/code/ismcpak/data/abun.out'
 underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 
-gridsRes = 20
+gridsRes = 10
 
 T        = 800.0
 Av       = 20.0

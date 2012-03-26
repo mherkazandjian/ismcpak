@@ -15,6 +15,10 @@ class mesh( ):
           data['state']   = temperatures, abundances.... 
           data['cooling'] = cooling information
           data['heating'] = heating information
+          
+    templates to extract 1D arrays along the slab
+         Av         = self.data['state']['Av'][0][0,:]
+         abunSpecie = self.data['state']['abun'][0]
     """
 
     def __init__(self, fileName=None):
