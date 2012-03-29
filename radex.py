@@ -16,9 +16,12 @@ class radex( ):
         getInFileParm(parm)
         getInFile()
         genInputFileContentAsStr()
-        getOutpur()
+        getRawOutput()
         run()
         parseOutput()  
+        tansitionInfo = getTransition( upper )
+        warnings = getWarnings()
+        nIter = getNIter()
     """
 
     def __init__(self, execPath):
@@ -29,6 +32,8 @@ class radex( ):
         self.proccess    = None     # the subprocess.Popen object
         self.rawOutput   = None     # the output of the run
         self.lineInfo    = None     # line information from the output
+        self.warnings    = None     # the warnings dumped by radex
+        self.nIter       = None     # number of iterations 
         self.outputHdr   = None     # the header of the output, should be 
                                     # consistent with inFile
         self.transitions = None
@@ -84,60 +89,39 @@ class radex( ):
         self.rawOutput = radexOutput 
         
     # run radex with the set input 
-    def getOutput(self):
-        return self.output
+    def getRawOutput(self):
+        return self.rawOutput
 
     def parseOutput(self):
-        
-        header = {}
         
         output = self.rawOutput
         lines  =  output.splitlines()
         nLines = len(lines)
         
-        # getting the number of iterations
-        lineSplt = lines[4].split()
-        if lineSplt[0] != 'Warning:':
-            header['nIter'] = np.int32(lineSplt[2])
-            header['converged'] = 1
-        else:
-            header['nIter'] = np.int32(lineSplt[6])
-            header['converged'] = 0
-
-        lineNum = 5
-        # getting the rest of the header
-        lineSplt = lines[lineNum].split(':')
-        header['version'] = lineSplt[1]
-        lineNum += 1
-        lineSplt = lines[lineNum].split(':')
-        header['geometry'] = lineSplt[1]
-        lineNum += 1
-        lineSplt = lines[lineNum].split(':')
-        header['molDataFile'] = lineSplt[1]
-        lineNum += 1         
-        lineSplt = lines[lineNum].split(':')
-        header['tKin'] = np.float64(lineSplt[1])
+        # looking for the part of the output after the warning
+        i = 4 # 5th line (skipping into)
+        while True:
+            if lines[i][0] == '*' and lines[i+1][0] == '*':
+                break
+            i += 1
         
-        collPartnerDens = np.zeros(self.nCollPart) 
-        for i in np.arange(self.nCollPart ):
-            lineNum += 1
-            lineSplt = lines[lineNum].split(':')
-            collPartnerDens[i] = np.float64(lineSplt[1])
-        header['collPartDens'] = collPartnerDens 
+        self.warnings = lines[4:i]  # extracting the warning
+        #print self.warnings
+        
+        # collecting the header
+        lineNumHdrStart = i
+        while True:
+            if lines[i][0] == '*' and lines[i+1][0] != '*':
+                break
+            i += 1
+        lineNumHdrEnd = i+1
+        
+        self.outputHdr = lines[lineNumHdrStart:lineNumHdrEnd]
+        #print  self.outputHdr
 
-        lineNum += 1         
-        lineSplt = lines[lineNum].split(':')
-        header['tBack'] = np.float64(lineSplt[1])
-
-        lineNum += 1         
-        lineSplt = lines[lineNum].split(':')
-        header['molnDens'] = np.float64(lineSplt[1])
-
-        lineNum += 1         
-        lineSplt = lines[lineNum].split(':')
-        header['lineWidth'] = np.float64(lineSplt[1])
-
-        self.outputHdr = header 
+        lineNum = lineNumHdrEnd
+        lineSplt = lines[lineNum].split()
+        self.nIter = np.int32(lineSplt[3])          
         
         transitions = []
         #--------------------------------------------------------------------------
@@ -161,10 +145,24 @@ class radex( ):
             
             return info
         #--------------------------------------------------------------------------
-            
-        lineNum += 4        
+
+        lineNum += 3        
         for line in lines[lineNum:nLines-1]:
             transition = parseLineData(line)
             transitions.append(transition)
             
         self.transitions = transitions
+
+    def getTransition(self, upper):
+        
+        for transition in self.transitions:
+            if transition['upper'] == upper :
+                return transition
+            
+        #if upper value is not found, return Null
+        return None
+    
+    def getWarnings(self):
+        return self.warnings
+    def getNIter(self):
+        return self.nIter

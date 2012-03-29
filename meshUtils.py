@@ -108,6 +108,7 @@ from mesh import *
 from utils import *
 from ndmesh import *
 from ismUtils import *
+from radex import *
 
 class meshArxv():
     
@@ -430,7 +431,7 @@ class meshArxv():
             nx, ny = self.grds[0][0].shape
             
             # plotting the grids
-            # temperature grid (top left grid)
+            # ---> temperature grid (top left grid)
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[0, 0] )
             tGasGrid = self.grds[0][0]
@@ -463,6 +464,7 @@ class meshArxv():
                         
             specStr = 'CO'
             # some other diagnostic (top left grid)
+            # ---> plotting abundances
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[0, 1] )
             abunGrid = self.grds[0][1] 
@@ -498,6 +500,7 @@ class meshArxv():
             cbar01.set_ticks([-4.0, -3.0, -2.0, -1.0, 0.0])
             
             # some other diagnostic (bottom left grid)
+            # ---> plotting column densities
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[1, 0] )
             colDensGrid = self.grds[1][0] 
@@ -513,7 +516,7 @@ class meshArxv():
                 abunAllSpcs = self.meshes[i]['state']['abun'][0]
                 specIdx = spcs[specStr].num
                 Av = self.meshes[i]['state']['Av'][0][0,:]
-                nDensThisSpec = (10**xThis)*abunAllSpcs[specIdx][:]
+                nDensThisSpec = (10**xThis)*abunAllSpcs[ specIdx ][:]
                 dxSlabs = getSlabThicknessFromAv(Av, 10**xThis, 2.0)     #;;;; use the input metallicity from the driver
                 colDensThisSpec = np.sum( dxSlabs * nDensThisSpec[0:-1] ) #;;;; eventually use all the abundances and do not exclude the last slab
                 
@@ -537,13 +540,101 @@ class meshArxv():
             
             
             # some other diagnostic (bottom right grid)
+            # ---> plotting line intensities
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[1, 1] )
-            im11 = self.grds[1][1].imshow(interpolation='nearest')
-            self.grds[1][1][:]  = np.random.rand( nx, ny )
-            cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
-            cbar11.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
+            lineIntense = self.grds[1][1] 
+            nInCells = lineIntense.copy()
+            lineIntense.fill(0.0)
+            nInCells.fill(0.0)
+
+            radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
+            radexObj = radex(radexPath)
+            inFile = { 'molData'                : 'co.dat'                                ,
+                       'outPath'                : 'foo'                                   ,
+                       'freqRange'              : [0, 50000]                              ,
+                       'tKin'                   : None                                    ,
+                       'collisionPartners'      : ['H2']                                  ,
+                       'nDensCollisionPartners' : [None]                                  ,
+                       'tBack'                  : 2.73                                    ,
+                       'molnDens'               : None                                   ,
+                       'lineWidth'              : 1.0                                     ,
+                       'runAnother'             : 1                                       }
+            radexObj.setInFile( inFile )
+
+            radexObj.setInFileParm('tKin', 23.0)
+            radexObj.setInFileParm('nDensCollisionPartners', [1e3])
+            radexObj.setInFileParm('molnDens', 1e18)
+            radexObj.run()
             
+            radexObj.parseOutput()
+            CO10 = radexObj.getTransition(1)  # getting the info of the transiotion from 1->0
+            print CO10['fluxcgs']
+
+            nDone = 0
+            # computing the abundace of a specie
+            for i in indsThisSec:
+                xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
+                yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
+                
+                abunAllSpcs = self.meshes[i]['state']['abun'][0]
+                specIdx = spcs[specStr].num
+                Av = self.meshes[i]['state']['Av'][0][0,:]
+                nDensThisSpec = (10**xThis)*abunAllSpcs[ specIdx ][:]
+                dxSlabs = getSlabThicknessFromAv(Av, 10**xThis, 2.0)      #;;;; use the input metallicity from the driver
+                
+                # column density of the specie whose emiision will be computed
+                colDensThisSpec = np.sum( dxSlabs * nDensThisSpec[0:-1] ) #;;;; eventually use all the abundances and do not exclude the last slab
+                # volume number density of hydrogen nuclei
+                #nDensH2 = (10**xThis)*abunAllSpcs[ spcs['H2'].num ][:]
+                nDensH2 = 1e3 # <------- use the correct one
+                # gas kinetic temperature
+                gasT = self.meshes[i]['state']['gasT'][0]
+                gasTRadex = gasT[0,-1]
+                if gasTRadex > 1e4 :
+                    gasTRadex = 9999.0
+                
+                
+                #print 'grid parameters '
+                #print ' log(nGas) = %f' % xThis
+                #print ' log(G0)   = %f' % yThis
+                #print ' gMech     = %f' % self.pltGmSec
+                #print 'parameters varied in radex'
+                #print 'gasT = %f' % (gasT[0,-1])
+                #print 'H2 density = %e' % (nDensH2)
+                #print 'N(CO) = % e ' % (colDensThisSpec)
+                                
+                radexObj.setInFileParm('tKin', gasTRadex)
+                radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
+                radexObj.setInFileParm('molnDens', colDensThisSpec)
+                radexObj.run()
+            
+                #print radexObj.getRawOutput()
+                #print '      ---------------------'
+                radexObj.parseOutput()
+                CO10 = radexObj.getTransition(1)  # getting the info of the transiotion from 1->0
+                #print 'CO 1->0 flux (erg cm^-2 s^-1) = %e ' % (CO10['fluxcgs'])
+                
+                zThis = CO10['fluxcgs']
+
+                indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
+                indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+            
+                lineIntense[indyInGrid][indxInGrid] += zThis
+                nInCells[indyInGrid][indxInGrid] += 1
+                #print 'press a key to continue...'
+                #print input()
+                nDone += 1
+                print 100.0*np.float64(nDone)/np.float64(len(indsThisSec))
+                
+            lineIntense[:] = np.log10(lineIntense / nInCells)
+            print lineIntense
+
+            im11 = self.grds[1][1].imshow(interpolation='nearest')
+            cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
+            cbarTickValues =  [-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1]
+            cbar10.set_ticks( cbarTickValues )
+            self.grds[1][1].plotContour( levels = cbarTickValues )
             print 'done'
                                 
         # defining the buttons to control mechanical heating section        

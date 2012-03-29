@@ -20,7 +20,7 @@ specAbunFile  = '/home/mher/ism/code/ismcpak/data/abun.out'
 underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 
-gridsRes = 10
+gridsRes = 20
 
 T        = 800.0
 Av       = 20.0
