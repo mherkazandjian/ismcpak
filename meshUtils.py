@@ -290,9 +290,9 @@ class meshArxv():
         #class 
             
          
-    def plotGrid(self, resGrids):
+    def plotGrid(self, resGrids, lgammaMechSec):
         
-        self.pltGmSec = -24.0
+        self.pltGmSec = lgammaMechSec
         
         # definig plotting windows and setting the locations of subplots
         fig1, axs1 = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(12,12))
@@ -462,6 +462,7 @@ class meshArxv():
             cbar00 = pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
             cbar00.set_ticks([0.0, 1.0, 2.0, 3.0, 4.0])
                         
+            #specStr = 'CO'
             specStr = 'CO'
             # some other diagnostic (top left grid)
             # ---> plotting abundances
@@ -534,9 +535,10 @@ class meshArxv():
 
             im10 = self.grds[1][0].imshow(interpolation='nearest')
             cbar10 = pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
-            cbarTickValues =  [15, 16, 17, 18, 18.5, 18.7, 18.9, 19, 19.05, 20]
+            cbarTickValues =  [15, 16, 17, 18, 19, 20]
+            contourValues  =  [15, 16, 17, 18, 18.5, 18.7, 18.9, 19, 19.05, 20] #CO
             cbar10.set_ticks( cbarTickValues )
-            self.grds[1][0].plotContour( levels = cbarTickValues )
+            self.grds[1][0].plotContour( levels = contourValues )
             
             
             # some other diagnostic (bottom right grid)
@@ -550,7 +552,8 @@ class meshArxv():
 
             radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
             radexObj = radex(radexPath)
-            inFile = { 'molData'                : 'co.dat'                                ,
+#            inFile = { 'molData'                : 'co.dat'                                ,
+            inFile = { 'molData'                : 'hcn.dat'                                ,
                        'outPath'                : 'foo'                                   ,
                        'freqRange'              : [0, 50000]                              ,
                        'tKin'                   : None                                    ,
@@ -603,7 +606,8 @@ class meshArxv():
                 #print 'gasT = %f' % (gasT[0,-1])
                 #print 'H2 density = %e' % (nDensH2)
                 #print 'N(CO) = % e ' % (colDensThisSpec)
-                                
+                
+                print gasTRadex, nDensH2, colDensThisSpec          
                 radexObj.setInFileParm('tKin', gasTRadex)
                 radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
                 radexObj.setInFileParm('molnDens', colDensThisSpec)
@@ -612,10 +616,16 @@ class meshArxv():
                 #print radexObj.getRawOutput()
                 #print '      ---------------------'
                 radexObj.parseOutput()
-                CO10 = radexObj.getTransition(1)  # getting the info of the transiotion from 1->0
+                CO10 = radexObj.getTransition(1)  # get1e17ting the info of the transiotion from 1->0
+
+                ####
+                CO10to9 = radexObj.getTransition(10)  # getting the info of the transiotion from 1->0
+                CO3to2  = radexObj.getTransition(3)  # getting the info of the transiotion from 1->0
                 #print 'CO 1->0 flux (erg cm^-2 s^-1) = %e ' % (CO10['fluxcgs'])
                 
-                zThis = CO10['fluxcgs']
+                
+                #zThis = CO10['fluxcgs']
+                zThis = CO10to9['fluxcgs']/CO3to2['fluxcgs']
 
                 indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
                 indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
@@ -626,15 +636,22 @@ class meshArxv():
                 #print input()
                 nDone += 1
                 print 100.0*np.float64(nDone)/np.float64(len(indsThisSec))
-                
+                print '----------------------------------------------------' 
+            
             lineIntense[:] = np.log10(lineIntense / nInCells)
             print lineIntense
 
             im11 = self.grds[1][1].imshow(interpolation='nearest')
             cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
-            cbarTickValues =  [-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1]
-            cbar10.set_ticks( cbarTickValues )
+            #cbarTickValues =  [-12, -11, -10, -9, -8, -7, -6, -5, -4]
+            cbarTickValues =  [-2, -1, 0, 1, 2]
+            cbar11.set_ticks( cbarTickValues )
             self.grds[1][1].plotContour( levels = cbarTickValues )
+            
+            
+            
+            
+            
             print 'done'
                                 
         # defining the buttons to control mechanical heating section        

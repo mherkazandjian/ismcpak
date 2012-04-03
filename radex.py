@@ -131,7 +131,7 @@ class radex( ):
             info = {}
             
             lineSplt = line.split()
-            
+            #print lineSplt
             info['upper'   ] = np.int32(lineSplt[0]) 
             info['lower'   ] = np.int32(lineSplt[1]) 
             info['E_up'    ] = np.float64(lineSplt[2]) 

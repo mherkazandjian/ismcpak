@@ -8,10 +8,22 @@ from mesh import *
 from meshUtils import *
 from enumSpecies import *
 
+# runs
+#   uniformSweep2-z-2/
+#   uniformSweep2-highRes-z-1.0
+#   uniformSweep2-z-0.5
+#   
+#   uniformSweep2-z-1.0-no-mech
+#   uniformSweep2-z-2-no-mech
+#   uniformSweep2-z-0.5-no-mech
+# 
 #---------------------------Archive parameters-----------------------
+#runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
 runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
+
+
 abunSpecFname = '/home/mher/ism/code/ismcpak/data/species.inp'
-lgammaMechSec = -24.0
+lgammaMechSec = -20.0
 metallicity   = 2.0
 #-----------------chemical network parameters------------------------
 rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
@@ -72,6 +84,6 @@ arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 #-------------------------------------------------------------------
 # plotting stuff
 
-arxv.plotGrid(gridsRes)
+arxv.plotGrid(gridsRes, lgammaMechSec )
 
 print 'done'

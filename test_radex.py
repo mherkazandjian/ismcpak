@@ -1,3 +1,7 @@
+"""
+driver script to run radex through python and read back the output
+"""
+
 from radex import *
 import subprocess
 from time import *
@@ -8,22 +12,23 @@ radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
 inFile = { 'molData'                : 'co.dat'                              ,
            'outPath'                : 'foo'                              ,
            'freqRange'              : [0, 50000]                              ,
-           'tKin'                   : 20.0                                    ,
+           'tKin'                   : 20.0                           ,
            'collisionPartners'      : ['H2']                                  ,
-           'nDensCollisionPartners' : [1e2]                                   ,
+           'nDensCollisionPartners' : [1000.0]                                   ,
            'tBack'                  : 2.73                                    ,
-           'molnDens'               : 1e24                                    ,
+           'molnDens'               : 1e17                                    ,
            'lineWidth'              : 1.0                                     ,
            'runAnother'             : 1                                       }
 
 # creating the radex process instance
 radexObj = radex(radexPath)
 
+
 t0 = time()
 # setting put the parameters, running and parsing the output
 radexObj.setInFile( inFile )
 radexObj.run()
-#print radexObj.getRawOutput()           
+print radexObj.getRawOutput()           
 radexObj.parseOutput()
 t1 = time()
 
