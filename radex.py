@@ -254,7 +254,7 @@ class radex( ):
     
             yPlot[i] = yThis
         pyl.plot(xPlot, yPlot)
-        pyl.axis([np.min(Jall), np.max(Jall), 0, 10])
+        pyl.axis([np.min(Jall), np.max(Jall), -1, np.max(yPlot)])
 
 
         subPlotNum += nx 
