@@ -22,6 +22,7 @@ class radex( ):
         tansitionInfo = getTransition( upper )
         warnings = getWarnings()
         nIter = getNIter()
+        fig, axs = setupPlot(nx) # sets up the object to plot the radex output
     """
 
     def __init__(self, execPath):
@@ -37,6 +38,10 @@ class radex( ):
         self.outputHdr   = None     # the header of the output, should be 
                                     # consistent with inFile
         self.transitions = None
+
+        #plotting attributes
+        self.fig = None
+        self.axs = None
         
     def setInFileParm(self, parm, value):
         self.inFile[parm] = value
@@ -166,3 +171,141 @@ class radex( ):
         return self.warnings
     def getNIter(self):
         return self.nIter
+    
+    # sets up the object to plot the radex output ( nx rows and four coluns)
+    def setupPlot(self, nx):
+        # axs[0,0] is the one in the top left corner
+        self.fig, self.axs = pyl.subplots(4, nx, sharex = False, sharey = False, figsize=(8,8) )
+
+        pyl.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9,
+                            wspace=0.0, hspace=0.0)
+        
+        return (self.fig, self.axs)
+    
+    # plots the output of a certain model in a certain column in a predefined figure
+    def plotModelInFigureColumn(self, Jall, colNum, title, axsArg = None):
+        
+        if axsArg == None:
+            axs = self.axs
+        else:
+            axs = axsArg
+            
+        nx = axs.shape[1]
+        
+        plotInColumn = colNum
+        subPlotNum   = plotInColumn + 1  
+
+        nJ = len(Jall)
+        #----------------flux-------------------------
+        pyl.subplot(4, nx, subPlotNum)
+        pyl.hold(True)
+        xPlot = Jall
+        yPlot = np.ndarray(nJ, dtype=np.float64)
+        for i in np.arange(nJ):
+    
+            Jthis = Jall[i]
+            xPlot[i] = Jthis
+    
+            transition = self.getTransition( Jthis )
+            yThis = transition['fluxcgs'] 
+            yPlot[i] = yThis
+            
+        pyl.semilogy(xPlot, yPlot)
+        pyl.axis([np.min(Jall), np.max(Jall),1e-10, 1])        
+        
+        #---------------Tex and T_R--------------------------
+        subPlotNum += nx
+        pyl.subplot(4, nx, subPlotNum)
+        pyl.hold(True)
+
+        xPlot = Jall
+        yPlot1 = np.ndarray(nJ, dtype=np.float64)
+        yPlot2 = np.ndarray(nJ, dtype=np.float64)
+        for i in np.arange(nJ):
+    
+            Jthis = Jall[i]
+    
+            xPlot[i] = Jthis
+    
+            transition = self.getTransition( Jthis )
+            yThis1 = transition['Tex']
+            yThis2 = transition['T_R'] 
+    
+            yPlot1[i] = yThis1
+            yPlot2[i] = yThis2
+        pyl.semilogy(xPlot, yPlot1, 'b')
+        pyl.semilogy(xPlot, yPlot2, 'r')
+        pyl.axis([np.min(Jall), np.max(Jall), 1, 10000])
+
+        subPlotNum += nx 
+        pyl.subplot(4, nx, subPlotNum)
+        pyl.hold(True)
+
+        xPlot = Jall
+        yPlot = np.ndarray(nJ, dtype=np.float64)
+        for i in np.arange(nJ):
+    
+            Jthis = Jall[i]
+    
+            xPlot[i] = Jthis
+    
+            transition = self.getTransition( Jthis )
+            yThis = transition['tau'] 
+    
+            yPlot[i] = yThis
+        pyl.plot(xPlot, yPlot)
+        pyl.axis([np.min(Jall), np.max(Jall), 0, 10])
+
+
+        subPlotNum += nx 
+        pyl.subplot(4, nx, subPlotNum)
+        pyl.hold(True)
+
+        xPlot = Jall
+        yPlot1 = np.ndarray(nJ, dtype=np.float64)
+        yPlot2 = np.ndarray(nJ, dtype=np.float64)
+        for i in np.arange(nJ):
+    
+            Jthis = Jall[i]
+    
+            xPlot[i] = Jthis
+    
+            transition = self.getTransition( Jthis )
+            yThis1 = transition['pop_up']
+            yThis2 = transition['pop_down'] 
+    
+            yPlot1[i] = yThis1
+            yPlot2[i] = yThis2
+        pyl.semilogy(xPlot, yPlot1, 'b')
+        pyl.semilogy(xPlot, yPlot2, 'r')
+        pyl.axis([np.min(Jall), np.max(Jall), 1e-10, 1])
+
+        # plotting the ylabels of the axes
+        pyl.subplot(4, nx, 0*nx + 1);  pyl.ylabel('Flux')
+        pyl.subplot(4, nx, 1*nx + 1);  pyl.ylabel('Tex, Trot')
+        pyl.subplot(4, nx, 2*nx + 1);  pyl.ylabel('tau')
+        pyl.subplot(4, nx, 3*nx + 1);  pyl.ylabel('pop dens')
+        # plotting the xlabels
+        for i in np.arange(nx+1):
+            pyl.subplot(4, nx, 3*nx + i);  pyl.xlabel('J')
+        # plotting the title
+        pyl.subplot(4, nx, colNum + 1); pyl.title(title)
+
+        # cleaning the tick labels and plotting the labels
+        # removing the x label from the top rows
+        for axsRow in axs[0:-1]:
+            for ax in axsRow:
+                for tick in ax.axes.xaxis.get_major_ticks():
+                    tick.label1On = False
+
+        # removing the y label from columns rows next to the first one
+        for axsCol in axs[:, 1:nx]:
+            for ax in axsCol:
+                for tick in ax.axes.yaxis.get_major_ticks():
+                    tick.label1On = False
+
+        for ax in np.hstack( (axs[4-1], axs[: ,0]) ):
+            xticks = ax.axes.xaxis.get_major_ticks()
+            yticks = ax.axes.yaxis.get_major_ticks()
+            for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
+                tick.label1On = False
