@@ -15,6 +15,8 @@ class radex( ):
         setInFile(inFile)
         getInFileParm(parm)
         getInFile()
+        setStatus( True|False )
+        status = getStatus()
         genInputFileContentAsStr()
         getRawOutput()
         run()
@@ -38,6 +40,8 @@ class radex( ):
         self.outputHdr   = None     # the header of the output, should be 
                                     # consistent with inFile
         self.transitions = None
+        self.status      = None     # if suceeded with or without warning, True else False
+                                    
 
         #plotting attributes
         self.fig = None
@@ -52,6 +56,10 @@ class radex( ):
         self.inFile = inFile
     def getInFile(self):
         return self.inFile
+    def getStatus(self):
+        return self.status
+    def setStatus(self, status):
+        self.status = status
     
     def genInputFileContentAsStr(self):
         
@@ -76,22 +84,51 @@ class radex( ):
         
         return strng
 
+    def checkParameters(self):
+        
+        cond = True
+        inFile = self.inFile
+        
+        # checking for correct range for the kinetic temperature
+        if inFile['tKin'] < 0.1 or inFile['tKin'] > 1e4 :
+            cond = False
+        # checking for correct range for the densities of the collion partners
+        for i, collPartner in enumerate(inFile['collisionPartners']):
+            nDens = inFile['nDensCollisionPartners'][i]
+            if nDens < 1e-4 or nDens > 1e4 :
+                cond = False
+        # checking for correct range for the species column density
+        if inFile['molnDens'] < 1e5 or inFile['molnDens'] > 1e25:
+            cond = False
+              
+        self.status = cond
+        return cond
+    
     # run radex with the set input 
-    def run(self):
-        radexInput = self.genInputFileContentAsStr()
-        #print '###################'
-        #print radexInput
-        #print '###################'
-        self.proccess = subprocess.Popen(self.execPath           , 
-                                         stdin=subprocess.PIPE   ,  
-                                         stdout=subprocess.PIPE  ,  
-                                         stderr=subprocess.PIPE  )
-        radexOutput = self.proccess.communicate(input=radexInput)[0]
-        #print self.proccess.poll()
-        #print '-----------------'
-        #print radexOutput
-        #print '-----------------'
-        self.rawOutput = radexOutput 
+    def run(self, checkInput = None ):
+        
+        if checkInput == True:
+            self.checkParameters()
+            
+        if self.status == True :
+        
+            radexInput = self.genInputFileContentAsStr()
+            #print '###################'
+            #print radexInput
+            #print '###################'
+            self.proccess = subprocess.Popen(self.execPath           , 
+                                             stdin=subprocess.PIPE   ,  
+                                             stdout=subprocess.PIPE  ,  
+                                             stderr=subprocess.PIPE  )
+            radexOutput = self.proccess.communicate(input=radexInput)[0]
+            #print self.proccess.poll()
+            #print '-----------------'
+            #print radexOutput
+            #print '-----------------'
+            self.rawOutput = radexOutput
+            
+        
+        return self.status
         
     # run radex with the set input 
     def getRawOutput(self):

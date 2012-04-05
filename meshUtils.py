@@ -540,7 +540,7 @@ class meshArxv():
             cbar10.set_ticks( cbarTickValues )
             self.grds[1][0].plotContour( levels = contourValues )
             
-            
+            """
             # some other diagnostic (bottom right grid)
             # ---> plotting line intensities
             #--------------------------------------------------------------
@@ -647,7 +647,7 @@ class meshArxv():
             cbarTickValues =  [-2, -1, 0, 1, 2]
             cbar11.set_ticks( cbarTickValues )
             self.grds[1][1].plotContour( levels = cbarTickValues )
-            
+            """
             
             
             
