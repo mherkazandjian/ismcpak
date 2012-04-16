@@ -38,11 +38,7 @@ baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
               specie('e-'    , specType = 0 , charge=-1, init=1) ]
 #------------------------------------------------------------------
 
-#specFileUsed = enumSpecies(abunSpecFname, offsetFromZero=1 )
-#eSpcs = specFileUsed.genPythonClass(offset=0)
-
 m = mesh(meshFname);
-
 net = chemicalNetwork(rxnFile, baseSpec, UMISTVER = 'umist99')
 # reading the species to be removed from a file
 net.removeSpecies( underAbunFile = underAbunFile )
@@ -51,6 +47,7 @@ net.removeSpecies( species = removeManual )
 net.assignNumbersToSpecies(fileName = specNumFile)
 
 m.plot( net)
+
 pyl.show()
 print 'done'
 

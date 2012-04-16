@@ -65,7 +65,7 @@ baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
 # reading the archive
 print 'setting up the archive'
 t0 = time()
-arxv = meshArxv(  )
+arxv = meshArxv( metallicity = metallicity )
 arxv.readDb( runDirPath )
 arxv.checkIntegrity()
 print 'time reading %f' % (time() - t0)

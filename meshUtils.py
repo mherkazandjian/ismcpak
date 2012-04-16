@@ -112,7 +112,7 @@ from radex import *
 
 class meshArxv():
     
-    def __init__(self):
+    def __init__(self, *args, **kwrds):
         
         # instance variables
         self.nMeshes    = None
@@ -127,6 +127,11 @@ class meshArxv():
         self.pltGrds  = None 
         self.grds     = None # 2x2 ndmesh array object
         self.grdsCbar = None
+        
+        if 'metallicity' in kwrds:
+            self.set_metallicity( kwrds['metallicity'] )
+        else:
+            self.metallicity = None
         
     # read all the meshes files in the dir and construct the
     # database
@@ -406,10 +411,13 @@ class meshArxv():
                 for tick in cbarAxs.yaxis.get_major_ticks():
                     tick.label1On = False
                     tick.label2On = False
-            
+        
+        # setting up a dummy mesh object to use its plotting functionalities
         msh = mesh()
-        msh.setFigure(fig1, axs1, axsAvPlts_n)
+        msh.setFigureObjects(fig1, axs1, axsAvPlts_n)
         msh.setupFigures()
+        msh.set_chemNet( self.chemNet )
+        msh.set_metallicity( self.metallicity )
         
         lG0All   = np.log10(self.infoAll['parms'][:,0])
         lnGasAll = np.log10(self.infoAll['parms'][:,1])
@@ -444,8 +452,8 @@ class meshArxv():
                 xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
                 yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
                 gasT = self.meshes[i]['state']['gasT'][0]
-                zThis = gasT[0,0]   #<-----------
-            
+                zThis = gasT[0]
+
                 indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
                 indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
             
@@ -453,8 +461,8 @@ class meshArxv():
                 nInCells[indyInGrid][indxInGrid] += 1
             
             
-            print tGasGrid
-            print nInCells
+            #print tGasGrid
+            #print nInCells
             tGasGrid[:] = np.log10(tGasGrid / nInCells)
             del nInCells
             
@@ -513,10 +521,9 @@ class meshArxv():
             for i in indsThisSec:
                 xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
                 yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
-                
                 abunAllSpcs = self.meshes[i]['state']['abun'][0]
                 specIdx = spcs[specStr].num
-                Av = self.meshes[i]['state']['Av'][0][0,:]
+                Av = self.meshes[i]['state']['Av'][0,:]
                 nDensThisSpec = (10**xThis)*abunAllSpcs[ specIdx ][:]
                 dxSlabs = getSlabThicknessFromAv(Av, 10**xThis, 2.0)     #;;;; use the input metallicity from the driver
                 colDensThisSpec = np.sum( dxSlabs * nDensThisSpec[0:-1] ) #;;;; eventually use all the abundances and do not exclude the last slab
@@ -531,7 +538,7 @@ class meshArxv():
                 nInCells[indyInGrid][indxInGrid] += 1
 
             colDensGrid[:] = np.log10(colDensGrid / nInCells)
-            print colDensGrid
+            #print colDensGrid
 
             im10 = self.grds[1][0].imshow(interpolation='nearest')
             cbar10 = pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
@@ -691,7 +698,7 @@ class meshArxv():
                     self.grdPltPts2.set_ydata( lG0All[indMin] )
                     self.grdPltPts2.set_color('r')
                                         
-                    msh.plot(self.chemNet)
+                    msh.plot()
                     
                     pyl.draw()
                     
@@ -716,3 +723,7 @@ class meshArxv():
         # displaying
         pyl.show()
         print 'browing data....'
+    
+    # setters and getters
+    def set_metallicity(self, metallicity):
+        self.metallicity = metallicity

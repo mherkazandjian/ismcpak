@@ -1,6 +1,8 @@
 import numpy as np
 import pylab as pyl
 
+from ismUtils import getSlabThicknessFromAv
+
 class mesh( ):
     """
     This class read a PDR mesh and returns an object containing all the data of that mesh
@@ -21,7 +23,7 @@ class mesh( ):
          abunSpecie = self.data['state']['abun'][0]
     """
 
-    def __init__(self, fileName=None):
+    def __init__(self, fileName=None, chemNet = None, metallicity = None):
         
         if fileName != None:
             self.fName = fileName
@@ -40,11 +42,22 @@ class mesh( ):
             self.data = None
             self.hdr  = None
             
+        if chemNet != None:
+            self.set_chemNet(chemNet)
+        else:
+            self.chemNet = None
+
+        if metallicity != None:
+            self.set_metallicity(metallicity)
+        else:
+            self.metallicity = None
+            
         self.figInit = 0
         self.fig     = None
         self.axs     = None
         self.axsRef  = None
 
+        
     def constructMeshDtype(self, nSpecs, nSteps):
         meshFormat = self.meshFormat( nSpecs, nSteps )
         meshDtype  = np.dtype( meshFormat )
@@ -75,9 +88,9 @@ class mesh( ):
         n = int(nSteps)
         m = int(nSpecs)
         fmt = [
-                  ('gasT'  , np.float64, (1, n) ),
-                  ('dustT' , np.float64, (1, n) ),
-                  ('Av'    , np.float64, (1, n) ),
+                  ('gasT'  , np.float64, ( n) ),
+                  ('dustT' , np.float64, ( n) ),
+                  ('Av'    , np.float64, ( n) ),
                   ('abun'  , np.float64, (m, n) ),
                ]
         return fmt
@@ -85,23 +98,23 @@ class mesh( ):
     def heatingFormat(self, nSteps):
         n = int(nSteps)
         return [
-                  ('photo'    , np.float64, (1, n) ),
-                  ('cIon'     , np.float64, (1, n) ),
-                  ('molHydro' , np.float64, (1, n) ),
-                  ('H2pump'   , np.float64, (1, n) ),
-                  ('ggColl'   , np.float64, (1, n) ),
-                  ('visc'     , np.float64, (1, n) ),
-                  ('cr'       , np.float64, (1, n) ),
+                  ('photo'    , np.float64, ( n) ),
+                  ('cIon'     , np.float64, ( n) ),
+                  ('molHydro' , np.float64, ( n) ),
+                  ('H2pump'   , np.float64, ( n) ),
+                  ('ggColl'   , np.float64, ( n) ),
+                  ('visc'     , np.float64, ( n) ),
+                  ('cr'       , np.float64, ( n) ),
                ]
 
     def coolingFormat(self, nSteps):
         n = int(nSteps)
         return [
-                  ('metaStable'    , np.float64, (1, n) ),
-                  ('fineStructure' , np.float64, (1, n) ),
-                  ('roVib'         , np.float64, (1, n) ),
-                  ('recom'         , np.float64, (1, n) ),
-                  ('lymanAlpha'    , np.float64, (1, n) ),
+                  ('metaStable'    , np.float64, ( n) ),
+                  ('fineStructure' , np.float64, ( n) ),
+                  ('roVib'         , np.float64, ( n) ),
+                  ('recom'         , np.float64, ( n) ),
+                  ('lymanAlpha'    , np.float64, ( n) ),
                ]
     
     def getData(self):
@@ -116,7 +129,7 @@ class mesh( ):
     def setData(self, data):
         self.data = data
     
-    def setFigure(self, figObj=None, axObj=None, axRef=None):
+    def setFigureObjects(self, figObj=None, axObj=None, axRef=None):
         
         if figObj != None and axObj != None and axRef != None:
             pass
@@ -132,7 +145,7 @@ class mesh( ):
     def setupFigures(self):
         
         if self.figInit == 0:
-            self.setFigure()
+            self.setFigureObjects()
             
         # subplot 0,0        
         pyl.subplot(self.axsRef[0,0])
@@ -213,7 +226,13 @@ class mesh( ):
             tick.label1On = False
         #pyl.setp(pyl.gca(), yticks=[])
         
-    def plot(self, chemNet):
+    def plot(self):
+        
+        if self.chemNet == None:
+            strng = "Error : chemical networ object not set." 
+            raise NameError(strng)
+        else:
+            chemNet = self.chemNet
         
         if self.figInit == 0:
             self.setupFigures()
@@ -257,3 +276,68 @@ class mesh( ):
         self.plt11Spec2Plt.set_ydata( data['state']['abun'][spcs['HNC'].num] )
         self.plt11Spec3Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec3Plt.set_ydata( data['state']['abun'][spcs['HCO+'].num] )
+
+        print '------------------------------'
+        print self.getRadexParameters('H2', 'CO', 2*0.01)
+        print '------------------------------'
+        
+    #  computes the weighted average temperature, weighted XX density with which  
+    #  YY species collide and and total column of a species YY in the reigon
+    # of the slab where the abundance of XX is above the XX_threshold 
+    def getRadexParameters(self, colliderStr=None, speciesStr=None, threshold=None):
+
+        coll = colliderStr
+        spec = speciesStr
+        xMin = threshold
+        
+        # checking the metallciity
+        if self.metallicity == None:
+            strng = "Error : metallicity of mesh not set"
+        else:
+            Z = self.metallicity
+            
+        m   = self
+        net = self.chemNet 
+        
+        nGas = m.data['hdr']['nGas']
+        Av   = m.data['state']['Av']
+        gasT = m.data['state']['gasT']
+
+        xSpec  = m.data['state']['abun'][net.species[spec].num]
+        xColl  = m.data['state']['abun'][net.species[coll].num]
+        inds = np.nonzero( xColl  > xMin  )
+
+        if len(inds) == 0:
+            return (None, None, None)
+        
+        # assigning the thickness of the last slab to the one before the last one
+        dx    = getSlabThicknessFromAv(Av, nGas, Z)
+        dxNew = np.ndarray( len(dx)+1, dtype = np.float64 )
+        dxNew[0:-1] = dx
+        dxNew[-1]   = dx[-1]
+        dx = dxNew
+
+        # selecting the slabs which are usefull
+        Av    = Av[inds]
+        dx    = dx[inds]
+        xSpec = xSpec[inds]
+        gasT  = gasT[inds]
+        xColl = xColl[inds]
+        print xColl
+        # calculating the means
+        nSpec     = xSpec * nGas
+        nColl     = xColl * nGas
+        NCO       = nSpec * dx 
+        N_specLVG = np.sum(NCO)
+
+        TMean     = np.sum( NCO*gasT  ) / N_specLVG
+        nCollMean = np.sum( NCO*nColl ) / N_specLVG
+        
+        return (TMean, nCollMean, N_specLVG)
+    
+
+    def set_chemNet(self, chemNet):
+        self.chemNet = chemNet
+    def set_metallicity(self, metallicity):
+        self.metallicity = metallicity
+    
