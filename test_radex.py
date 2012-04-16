@@ -15,9 +15,9 @@ inFile = { 'molData'                : 'co.dat'                              ,
            'freqRange'              : [0, 50000]                              ,
            'tKin'                   : 100.0                           ,
            'collisionPartners'      : ['H2']                                  ,
-           'nDensCollisionPartners' : [1000.0]                                   ,
+           'nDensCollisionPartners' : [1e12]                                   ,
            'tBack'                  : 2.73                                    ,
-           'molnDens'               : -1                                    ,
+           'molnDens'               : 1e18                                    ,
            'lineWidth'              : 1.0                                     ,
            'runAnother'             : 1                                       }
 

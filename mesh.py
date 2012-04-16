@@ -40,8 +40,10 @@ class mesh( ):
             self.data = None
             self.hdr  = None
             
-        self.fig = None
-        self.axs = None
+        self.figInit = 0
+        self.fig     = None
+        self.axs     = None
+        self.axsRef  = None
 
     def constructMeshDtype(self, nSpecs, nSteps):
         meshFormat = self.meshFormat( nSpecs, nSteps )
@@ -114,12 +116,24 @@ class mesh( ):
     def setData(self, data):
         self.data = data
     
-    def setFigure(self, figObj, axObj, axRef):
-        self.fig = figObj
-        self.axs = axObj
-        self.axsRef = axRef
+    def setFigure(self, figObj=None, axObj=None, axRef=None):
+        
+        if figObj != None and axObj != None and axRef != None:
+            pass
+        else:
+            figObj, axObj = pyl.subplots(2, 2, sharex=False, sharey=False, figsize=(12,12))
+            axRef = np.array( [[221,222], [223,224]])   
+
+        self.fig     = figObj
+        self.axs     = axObj
+        self.axsRef  = axRef        
+        self.figInit = 1
         
     def setupFigures(self):
+        
+        if self.figInit == 0:
+            self.setFigure()
+            
         # subplot 0,0        
         pyl.subplot(self.axsRef[0,0])
         pyl.hold(False)
@@ -201,6 +215,9 @@ class mesh( ):
         
     def plot(self, chemNet):
         
+        if self.figInit == 0:
+            self.setupFigures()
+            
         data = self.data
         spcs = chemNet.species
         
@@ -213,7 +230,7 @@ class mesh( ):
         self.plt00tdustPlt.set_xdata( data['state']['Av'] )
         self.plt00tdustPlt.set_ydata( data['state']['dustT'] )
         self.plt00Ttl.set_text('$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (np.log10(data['hdr']['G0']), np.log10(data['hdr']['nGas']), np.log10(data['hdr']['gammaMech']) ) )
-
+        
         # subplot 0,1
         self.plt01Spec1Plt.set_xdata( data['state']['Av'] )
         self.plt01Spec1Plt.set_ydata( data['state']['abun'][spcs['H+'].num] )

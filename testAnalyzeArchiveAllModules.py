@@ -28,7 +28,6 @@ metallicity   = 2.0
 #-----------------chemical network parameters------------------------
 rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
 specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
-specAbunFile  = '/home/mher/ism/code/ismcpak/data/abun.out'
 underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 

@@ -95,7 +95,7 @@ class radex( ):
         # checking for correct range for the densities of the collion partners
         for i, collPartner in enumerate(inFile['collisionPartners']):
             nDens = inFile['nDensCollisionPartners'][i]
-            if nDens < 1e-4 or nDens > 1e4 :
+            if nDens < 1e-4 or nDens > 1e12 :
                 cond = False
         # checking for correct range for the species column density
         if inFile['molnDens'] < 1e5 or inFile['molnDens'] > 1e25:
