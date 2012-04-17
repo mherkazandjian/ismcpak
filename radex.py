@@ -88,7 +88,12 @@ class radex( ):
         
         cond = True
         inFile = self.inFile
-        
+
+        for item in inFile:
+            if inFile[item] == None:
+                strng = 'Error : missing input parameter %s ' % (item)
+                raise NameError(strng)
+            
         # checking for correct range for the kinetic temperature
         if inFile['tKin'] < 0.1 or inFile['tKin'] > 1e4 :
             cond = False
@@ -109,6 +114,8 @@ class radex( ):
         
         if checkInput == True:
             self.checkParameters()
+        else:
+            self.status = True    
             
         if self.status == True :
         
@@ -127,7 +134,6 @@ class radex( ):
             #print '-----------------'
             self.rawOutput = radexOutput
             
-        
         return self.status
         
     # run radex with the set input 
@@ -210,7 +216,11 @@ class radex( ):
         return self.nIter
     
     # sets up the object to plot the radex output ( nx rows and four coluns)
-    def setupPlot(self, nx):
+    def setupPlot(self, nx = None):
+        
+        if nx == None:
+            nx = 1
+            
         # axs[0,0] is the one in the top left corner
         self.fig, self.axs = pyl.subplots(4, nx, sharex = False, sharey = False, figsize=(8,8) )
 
@@ -220,15 +230,19 @@ class radex( ):
         return (self.fig, self.axs)
     
     # plots the output of a certain model in a certain column in a predefined figure
-    def plotModelInFigureColumn(self, Jall, colNum, title, axsArg = None):
-        
+    def plotModelInFigureColumn(self, Jall=None, colNum=None, title=None, axsArg = None):
+                    
         if axsArg == None:
             axs = self.axs
         else:
             axs = axsArg
-            
-        nx = axs.shape[1]
         
+        # deciding if it is just one model of many models (on plotted in each column)
+        if len(axs.shape) == 1:
+            nx = 1
+        else:
+            nx = axs.shape[1]
+            
         plotInColumn = colNum
         subPlotNum   = plotInColumn + 1  
 
@@ -245,6 +259,7 @@ class radex( ):
     
             transition = self.getTransition( Jthis )
             yThis = transition['fluxcgs'] 
+            
             yPlot[i] = yThis
             
         pyl.semilogy(xPlot, yPlot)
@@ -328,21 +343,43 @@ class radex( ):
         # plotting the title
         pyl.subplot(4, nx, colNum + 1); pyl.title(title)
 
+        ### MAKE THESE MORE ELEGENT
         # cleaning the tick labels and plotting the labels
         # removing the x label from the top rows
-        for axsRow in axs[0:-1]:
-            for ax in axsRow:
+        if nx > 1:
+            for axsRow in axs[0:-1]:
+                for ax in axsRow:
+                    for tick in ax.axes.xaxis.get_major_ticks():
+                        tick.label1On = False
+        else:
+            for ax in axs[0:-1]:
                 for tick in ax.axes.xaxis.get_major_ticks():
                     tick.label1On = False
 
         # removing the y label from columns rows next to the first one
-        for axsCol in axs[:, 1:nx]:
-            for ax in axsCol:
-                for tick in ax.axes.yaxis.get_major_ticks():
-                    tick.label1On = False
+        if nx > 1:
+            for axsCol in axs[:, 1:nx]:
+                for ax in axsCol:
+                    for tick in ax.axes.yaxis.get_major_ticks():
+                        tick.label1On = False
 
-        for ax in np.hstack( (axs[4-1], axs[: ,0]) ):
-            xticks = ax.axes.xaxis.get_major_ticks()
-            yticks = ax.axes.yaxis.get_major_ticks()
-            for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
-                tick.label1On = False
+        # removing the 
+        
+        if nx > 1:
+            for ax in np.hstack( (axs[4-1], axs[: ,0]) ):
+                xticks = ax.axes.xaxis.get_major_ticks()
+                yticks = ax.axes.yaxis.get_major_ticks()
+                for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
+                    tick.label1On = False
+        else:
+            for ax in np.hstack( (axs[4-1], axs[0]) ):
+                xticks = ax.axes.xaxis.get_major_ticks()
+                yticks = ax.axes.yaxis.get_major_ticks()
+                for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
+                    tick.label1On = False
+                    
+    def plotModel(self):
+        self.setupPlot(nx=1)
+        self.plotModelInFigureColumn(Jall=np.arange(10)+1, colNum=0, title='')   
+        pyl.show()
+        

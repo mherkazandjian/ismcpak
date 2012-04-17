@@ -1,5 +1,6 @@
 import numpy as np
 import pylab as pyl
+import inspect
 
 from ismUtils import getSlabThicknessFromAv
 
@@ -276,10 +277,6 @@ class mesh( ):
         self.plt11Spec2Plt.set_ydata( data['state']['abun'][spcs['HNC'].num] )
         self.plt11Spec3Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec3Plt.set_ydata( data['state']['abun'][spcs['HCO+'].num] )
-
-        print '------------------------------'
-        print self.getRadexParameters('H2', 'CO', 2*0.01)
-        print '------------------------------'
         
     #  computes the weighted average temperature, weighted XX density with which  
     #  YY species collide and and total column of a species YY in the reigon
@@ -293,6 +290,7 @@ class mesh( ):
         # checking the metallciity
         if self.metallicity == None:
             strng = "Error : metallicity of mesh not set"
+            raise NameError(strng)
         else:
             Z = self.metallicity
             
@@ -323,7 +321,7 @@ class mesh( ):
         xSpec = xSpec[inds]
         gasT  = gasT[inds]
         xColl = xColl[inds]
-        print xColl
+        #print xColl
         # calculating the means
         nSpec     = xSpec * nGas
         nColl     = xColl * nGas
@@ -333,6 +331,7 @@ class mesh( ):
         TMean     = np.sum( NCO*gasT  ) / N_specLVG
         nCollMean = np.sum( NCO*nColl ) / N_specLVG
         
+        #print 'gas T at the end of the slab = ', gasT[-1] 
         return (TMean, nCollMean, N_specLVG)
     
 

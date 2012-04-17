@@ -229,7 +229,7 @@ class meshArxv():
             thisMeshDtype = mDummy.constructMeshDtype(nSpecs, nSteps)
             thisMeshData = np.fromfile( dbDataFObj, dtype = thisMeshDtype, count = 1)
 
-            self.meshes.append( thisMeshData )                
+            self.meshes.append( thisMeshData[0] )                
             checkNum = np.fromfile( dbDataFObj, dtype = np.int64, count = 1)
             
             if checkNum != self.infoAll[i]['info'][2]:
@@ -264,9 +264,9 @@ class meshArxv():
                            np.log10(self.infoAll[i]['parms'][1]),
                            np.log10(self.infoAll[i]['parms'][2])])
 
-            x2 = np.array([np.log10(self.meshes[i]['hdr']['G0'][0]),
-                           np.log10(self.meshes[i]['hdr']['nGas'][0]),
-                           np.log10(self.meshes[i]['hdr']['gammaMech'][0])])
+            x2 = np.array([np.log10(self.meshes[i]['hdr']['G0']),
+                           np.log10(self.meshes[i]['hdr']['nGas']),
+                           np.log10(self.meshes[i]['hdr']['gammaMech'])])
 
             xdv = x2 - x1
             diff +=  np.sqrt( np.dot(xdv,xdv) )
@@ -449,9 +449,9 @@ class meshArxv():
             
             # computing the surface temperature grid
             for i in indsThisSec:
-                xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
-                yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
-                gasT = self.meshes[i]['state']['gasT'][0]
+                xThis = np.log10(self.meshes[i]['hdr']['G0'])
+                yThis = np.log10(self.meshes[i]['hdr']['nGas'])
+                gasT = self.meshes[i]['state']['gasT']
                 zThis = gasT[0]
 
                 indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
@@ -483,10 +483,10 @@ class meshArxv():
 
             # computing the abundace of a specie
             for i in indsThisSec:
-                xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
-                yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
+                xThis = np.log10(self.meshes[i]['hdr']['G0'])
+                yThis = np.log10(self.meshes[i]['hdr']['nGas'])
                 
-                abunAllSpcs = self.meshes[i]['state']['abun'][0]
+                abunAllSpcs = self.meshes[i]['state']['abun']
                 specIdx = spcs[specStr].num
                 slabIdx = 0
                 zThis = abunAllSpcs[specIdx][slabIdx]  #<----------- 
@@ -519,11 +519,11 @@ class meshArxv():
 
             # computing the abundace of a specie
             for i in indsThisSec:
-                xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
-                yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
-                abunAllSpcs = self.meshes[i]['state']['abun'][0]
+                xThis = np.log10(self.meshes[i]['hdr']['G0'])
+                yThis = np.log10(self.meshes[i]['hdr']['nGas'])
+                abunAllSpcs = self.meshes[i]['state']['abun']
                 specIdx = spcs[specStr].num
-                Av = self.meshes[i]['state']['Av'][0,:]
+                Av = self.meshes[i]['state']['Av']
                 nDensThisSpec = (10**xThis)*abunAllSpcs[ specIdx ][:]
                 dxSlabs = getSlabThicknessFromAv(Av, 10**xThis, 2.0)     #;;;; use the input metallicity from the driver
                 colDensThisSpec = np.sum( dxSlabs * nDensThisSpec[0:-1] ) #;;;; eventually use all the abundances and do not exclude the last slab
@@ -546,6 +546,7 @@ class meshArxv():
             contourValues  =  [15, 16, 17, 18, 18.5, 18.7, 18.9, 19, 19.05, 20] #CO
             cbar10.set_ticks( cbarTickValues )
             self.grds[1][0].plotContour( levels = contourValues )
+            
             
             """
             # some other diagnostic (bottom right grid)
@@ -571,68 +572,46 @@ class meshArxv():
                        'lineWidth'              : 1.0                                     ,
                        'runAnother'             : 1                                       }
             radexObj.setInFile( inFile )
-
-            radexObj.setInFileParm('tKin', 23.0)
-            radexObj.setInFileParm('nDensCollisionPartners', [1e3])
-            radexObj.setInFileParm('molnDens', 1e18)
-            radexObj.run()
             
-            radexObj.parseOutput()
-            CO10 = radexObj.getTransition(1)  # getting the info of the transiotion from 1->0
-            print CO10['fluxcgs']
-
+            every = 10
             nDone = 0
             # computing the abundace of a specie
-            for i in indsThisSec:
-                xThis = np.log10(self.meshes[i]['hdr']['G0'][0])
-                yThis = np.log10(self.meshes[i]['hdr']['nGas'][0])
+            for i in indsThisSec[0::every]:
+                xThis = np.log10(self.meshes[i]['hdr']['G0'])
+                yThis = np.log10(self.meshes[i]['hdr']['nGas'])
                 
-                abunAllSpcs = self.meshes[i]['state']['abun'][0]
-                specIdx = spcs[specStr].num
-                Av = self.meshes[i]['state']['Av'][0][0,:]
-                nDensThisSpec = (10**xThis)*abunAllSpcs[ specIdx ][:]
-                dxSlabs = getSlabThicknessFromAv(Av, 10**xThis, 2.0)      #;;;; use the input metallicity from the driver
+                thisMeshObj = mesh(None, self.chemNet, self.metallicity)
+                thisMeshObj.setData( self.meshes[i] )
+
+                (gasTRadex, nDensH2, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2', specStr, 2*0.01)
                 
-                # column density of the specie whose emiision will be computed
-                colDensThisSpec = np.sum( dxSlabs * nDensThisSpec[0:-1] ) #;;;; eventually use all the abundances and do not exclude the last slab
-                # volume number density of hydrogen nuclei
-                #nDensH2 = (10**xThis)*abunAllSpcs[ spcs['H2'].num ][:]
-                nDensH2 = 1e3 # <------- use the correct one
-                # gas kinetic temperature
-                gasT = self.meshes[i]['state']['gasT'][0]
-                gasTRadex = gasT[0,-1]
-                if gasTRadex > 1e4 :
-                    gasTRadex = 9999.0
+                if gasTRadex == None:
+                    print 'not enough H2'
+                    continue
                 
-                
-                #print 'grid parameters '
-                #print ' log(nGas) = %f' % xThis
-                #print ' log(G0)   = %f' % yThis
-                #print ' gMech     = %f' % self.pltGmSec
-                #print 'parameters varied in radex'
-                #print 'gasT = %f' % (gasT[0,-1])
-                #print 'H2 density = %e' % (nDensH2)
-                #print 'N(CO) = % e ' % (colDensThisSpec)
-                
-                print gasTRadex, nDensH2, colDensThisSpec          
+                print gasTRadex, nDensH2, colDensThisSpec        
                 radexObj.setInFileParm('tKin', gasTRadex)
                 radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
                 radexObj.setInFileParm('molnDens', colDensThisSpec)
-                radexObj.run()
-            
+                radexObj.run( checkInput = True )
+
+                print radexObj.getStatus()
+                if radexObj.getStatus() == False:
+                    print 'radex Failed'
+                    continue
+                
                 #print radexObj.getRawOutput()
                 #print '      ---------------------'
                 radexObj.parseOutput()
                 CO10 = radexObj.getTransition(1)  # get1e17ting the info of the transiotion from 1->0
-
+                
                 ####
                 CO10to9 = radexObj.getTransition(10)  # getting the info of the transiotion from 1->0
                 CO3to2  = radexObj.getTransition(3)  # getting the info of the transiotion from 1->0
                 #print 'CO 1->0 flux (erg cm^-2 s^-1) = %e ' % (CO10['fluxcgs'])
                 
-                
-                #zThis = CO10['fluxcgs']
-                zThis = CO10to9['fluxcgs']/CO3to2['fluxcgs']
+                zThis = CO10['fluxcgs']
+                #zThis = CO10to9['fluxcgs']/CO3to2['fluxcgs']
 
                 indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
                 indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
@@ -655,9 +634,6 @@ class meshArxv():
             cbar11.set_ticks( cbarTickValues )
             self.grds[1][1].plotContour( levels = cbarTickValues )
             """
-            
-            
-            
             
             print 'done'
                                 
@@ -688,10 +664,8 @@ class meshArxv():
                     l2Distance  = np.sqrt( (yd - lG0All )**2 + (xd - lnGasAll)**2 + (self.pltGmSec - lgmAll)**2 )
                     rMin = min(l2Distance)
                     indMin = l2Distance.argmin()
-                    msh.setData( self.meshes[indMin][0] )
+                    msh.setData( self.meshes[indMin] )
                                         
-                    plotThisSec()
-                    
                     self.grdPltTitle.set_text('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(msh.data['hdr']['nGas']), np.log10(msh.data['hdr']['G0']), np.log10(msh.data['hdr']['gammaMech'])))
                     
                     self.grdPltPts2.set_xdata( lnGasAll[indMin] )
@@ -699,6 +673,37 @@ class meshArxv():
                     self.grdPltPts2.set_color('r')
                                         
                     msh.plot()
+                    
+                    #----------------------------------------------------
+                    radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
+                    radexObj = radex(radexPath)
+                    inFile = { 'molData'                : 'hcn.dat'                                ,
+                               'outPath'                : 'foo'                                   ,
+                               'freqRange'              : [0, 50000]                              ,
+                               'tKin'                   : None                                    ,
+                               'collisionPartners'      : ['H2']                                  ,
+                               'nDensCollisionPartners' : [None]                                  ,
+                               'tBack'                  : 2.73                                    ,
+                               'molnDens'               : None                                   ,
+                               'lineWidth'              : 1.0                                     ,
+                               'runAnother'             : 1                                       }
+                    radexObj.setInFile( inFile )
+
+                    (gasTRadex, nDensH2, colDensThisSpec,) = msh.getRadexParameters('H2', 'CO', 2*0.01)
+                
+                    if gasTRadex == None:
+                        print 'not enough H2'
+                
+                    print gasTRadex, nDensH2, colDensThisSpec        
+                    radexObj.setInFileParm('tKin', gasTRadex)
+                    radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
+                    radexObj.setInFileParm('molnDens', colDensThisSpec)
+                    radexObj.run( checkInput = True )
+
+                    print radexObj.getStatus()
+                    if radexObj.getStatus() == False:
+                        print 'radex Failed'
+                    #----------------------------------------------------
                     
                     pyl.draw()
                     

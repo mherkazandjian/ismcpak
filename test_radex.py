@@ -7,6 +7,7 @@ from radex import *
 import subprocess
 from time import *
 
+
 # path of the radex excutable
 radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'  
 # parameters that will be passed to radex
@@ -55,7 +56,11 @@ if radexObj.getStatus() == True :
     for transition in radexObj.transitions:
         print transition['upper'], transition['lower'], transition['fluxcgs']
 
+    radexObj.plotModel()
+    pyl.show()
+    
 else:
     print 'something went wrong'
+     
      
     
