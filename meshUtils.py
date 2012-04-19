@@ -127,11 +127,14 @@ class meshArxv():
         self.pltGrds  = None 
         self.grds     = None # 2x2 ndmesh array object
         self.grdsCbar = None
+        self.pltRadex = None
         
         if 'metallicity' in kwrds:
             self.set_metallicity( kwrds['metallicity'] )
         else:
             self.metallicity = None
+            
+        self.radexObj = None
         
     # read all the meshes files in the dir and construct the
     # database
@@ -412,6 +415,18 @@ class meshArxv():
                     tick.label1On = False
                     tick.label2On = False
         
+        # setting up the axes to plot the radex output for each selected model
+        
+        left  = 0.65
+        bott  = 0.07
+        sz    = 0.08
+        vSpace = 0.0
+        self.pltRadex = [ pyl.axes([left, bott + 0*sz          , 3*sz, sz ]),
+                          pyl.axes([left, bott + 1*sz + vSpace , 3*sz, sz ]),
+                          pyl.axes([left, bott + 2*sz + vSpace , 3*sz, sz ]),
+                          pyl.axes([left, bott + 3*sz + vSpace , 3*sz, sz ]) ]                           
+        
+        
         # setting up a dummy mesh object to use its plotting functionalities
         msh = mesh()
         msh.setFigureObjects(fig1, axs1, axsAvPlts_n)
@@ -674,35 +689,46 @@ class meshArxv():
                                         
                     msh.plot()
                     
+                    """
                     #----------------------------------------------------
-                    radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
-                    radexObj = radex(radexPath)
-                    inFile = { 'molData'                : 'hcn.dat'                                ,
-                               'outPath'                : 'foo'                                   ,
-                               'freqRange'              : [0, 50000]                              ,
-                               'tKin'                   : None                                    ,
-                               'collisionPartners'      : ['H2']                                  ,
-                               'nDensCollisionPartners' : [None]                                  ,
-                               'tBack'                  : 2.73                                    ,
-                               'molnDens'               : None                                   ,
-                               'lineWidth'              : 1.0                                     ,
-                               'runAnother'             : 1                                       }
-                    radexObj.setInFile( inFile )
-
+                    if self.radexObj == None:                                                
+                        radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
+                        self.radexObj = radex(radexPath)
+                        
+                        
+                        inFile = {'molData'                : 'co.dat'                                ,
+                                  'outPath'                : 'foo'                                   ,
+                                  'freqRange'              : [0, 50000]                              ,
+                                  'tKin'                   : None                                    ,
+                                  'collisionPartners'      : ['H2']                                  ,
+                                  'nDensCollisionPartners' : [None]                                  ,
+                                  'tBack'                  : 2.73                                    ,
+                                  'molnDens'               : None                                   ,
+                                  'lineWidth'              : 1.0                                     ,
+                                  'runAnother'             : 1                                       }
+                        self.radexObj.setInFile( inFile )
+                        
+                    self.radexObj.setupPlot(nx=1)
+                    
                     (gasTRadex, nDensH2, colDensThisSpec,) = msh.getRadexParameters('H2', 'CO', 2*0.01)
                 
                     if gasTRadex == None:
                         print 'not enough H2'
                 
                     print gasTRadex, nDensH2, colDensThisSpec        
-                    radexObj.setInFileParm('tKin', gasTRadex)
-                    radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
-                    radexObj.setInFileParm('molnDens', colDensThisSpec)
-                    radexObj.run( checkInput = True )
+                    self.radexObj.setInFileParm('tKin', gasTRadex)
+                    self.radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
+                    self.radexObj.setInFileParm('molnDens', colDensThisSpec)
+                    
+                    self.radexObj.setDefaultStatus()
+                    self.radexObj.run( checkInput = True )
 
-                    print radexObj.getStatus()
-                    if radexObj.getStatus() == False:
+                    if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
+                        self.radexObj.plotModelInFigureColumn(Jall=np.arange(10)+1, colNum=0, title='')
+                    else:
                         print 'radex Failed'
+                        print self.radexObj.warnings
+                    """ 
                     #----------------------------------------------------
                     
                     pyl.draw()

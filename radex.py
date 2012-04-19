@@ -2,11 +2,17 @@ import numpy as np
 import pylab as pyl
 import subprocess
 from string import *
-import re
+#import re
 
 class radex( ):
     """
     this class interfaces between radex. i.e run radex through python.
+    
+    after calling run(), this sets the flag determining whether the run
+    was successfull or not : 
+        status =     => run was successful
+        status = 2    => run was successfull, but with warnings
+        status = 3    => run was successfull, but with warnings
     
     methods :
         __init__
@@ -19,7 +25,7 @@ class radex( ):
         status = getStatus()
         genInputFileContentAsStr()
         getRawOutput()
-        run()
+        run( checkInput = False (default) | True )
         parseOutput()  
         tansitionInfo = getTransition( upper )
         warnings = getWarnings()
@@ -40,8 +46,17 @@ class radex( ):
         self.outputHdr   = None     # the header of the output, should be 
                                     # consistent with inFile
         self.transitions = None
-        self.status      = None     # if suceeded with or without warning, True else False
-                                    
+        self.FLAGS       = {'DEFAULT'  : 0x000,   # default status, should be called before each run
+                            'ERROR'    : 0x001,   # failed
+                            'PARMSOK'  : 0x002,   # parameters are ok
+                            'RUNOK'    : 0x004,   # radex did all the iterations (but not neccesarly converged)
+                            'SUCCESS'  : 0x008,   # succeeded with no major warning (output should make sense)      
+                            'WARNING'  : 0x010,   # success with warnings, warning are
+                                                  # assigned to self.warnings
+                            'ITERWARN' : 0x020}   # number of iterations warning
+                            
+                             
+        self.status      = self.FLAGS['DEFAULT']
 
         #plotting attributes
         self.fig = None
@@ -60,6 +75,8 @@ class radex( ):
         return self.status
     def setStatus(self, status):
         self.status = status
+    def setDefaultStatus(self):
+        self.status = self.FLAGS['DEFAULT']
     
     def genInputFileContentAsStr(self):
         
@@ -85,8 +102,6 @@ class radex( ):
         return strng
 
     def checkParameters(self):
-        
-        cond = True
         inFile = self.inFile
 
         for item in inFile:
@@ -96,28 +111,33 @@ class radex( ):
             
         # checking for correct range for the kinetic temperature
         if inFile['tKin'] < 0.1 or inFile['tKin'] > 1e4 :
-            cond = False
+            self.status |= self.FLAGS['ERROR']
+            
         # checking for correct range for the densities of the collion partners
         for i, collPartner in enumerate(inFile['collisionPartners']):
             nDens = inFile['nDensCollisionPartners'][i]
             if nDens < 1e-4 or nDens > 1e12 :
-                cond = False
+                self.status |= self.FLAGS['ERROR']
+                
         # checking for correct range for the species column density
         if inFile['molnDens'] < 1e5 or inFile['molnDens'] > 1e25:
-            cond = False
+            self.status |= self.FLAGS['ERROR']
               
-        self.status = cond
-        return cond
-    
+        if self.status & self.FLAGS['ERROR']:
+            return self.FLAGS['ERROR']
+        else:
+            self.status |= self.FLAGS['PARMSOK']
+            return self.FLAGS['PARMSOK']
+
     # run radex with the set input 
     def run(self, checkInput = None ):
-        
+                        
         if checkInput == True:
             self.checkParameters()
         else:
-            self.status = True    
+            self.status |= self.FLAGS['PARMSOK']    
             
-        if self.status == True :
+        if self.status &  self.FLAGS['PARMSOK']:
         
             radexInput = self.genInputFileContentAsStr()
             #print '###################'
@@ -133,6 +153,14 @@ class radex( ):
             #print radexOutput
             #print '-----------------'
             self.rawOutput = radexOutput
+            self.parseOutput()
+            self.status |= self.FLAGS['RUNOK']
+        
+            if self.nIter == 10000:  # ;;; get this from radex.inc
+                self.status |= self.FLAGS['WARNING']
+                self.status |= self.FLAGS['ITERWARN']
+            else:
+                self.status |= self.FLAGS['SUCCESS']
             
         return self.status
         
@@ -220,13 +248,11 @@ class radex( ):
         
         if nx == None:
             nx = 1
-            
+
         # axs[0,0] is the one in the top left corner
         self.fig, self.axs = pyl.subplots(4, nx, sharex = False, sharey = False, figsize=(8,8) )
-
         pyl.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9,
                             wspace=0.0, hspace=0.0)
-        
         return (self.fig, self.axs)
     
     # plots the output of a certain model in a certain column in a predefined figure

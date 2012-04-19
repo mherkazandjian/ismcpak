@@ -4,7 +4,6 @@ A single LVG run
 """
 
 from radex import *
-import subprocess
 from time import *
 
 
@@ -16,7 +15,7 @@ inFile = { 'molData'                : 'co.dat'                              ,
            'freqRange'              : [0, 50000]                              ,
            'tKin'                   : 100.0                           ,
            'collisionPartners'      : ['H2']                                  ,
-           'nDensCollisionPartners' : [1e12]                                   ,
+           'nDensCollisionPartners' : [1e4]                                   ,
            'tBack'                  : 2.73                                    ,
            'molnDens'               : 1e18                                    ,
            'lineWidth'              : 1.0                                     ,
@@ -25,42 +24,40 @@ inFile = { 'molData'                : 'co.dat'                              ,
 # creating the radex process instance
 radexObj = radex(radexPath)
 
-
 t0 = time()
 # setting put the parameters, running and parsing the output
 radexObj.setInFile( inFile )
+
 radexObj.run( checkInput = True)
 
-if radexObj.getStatus() == True :
+if radexObj.getStatus() &  radexObj.FLAGS['SUCCESS'] :
     
-    print radexObj.getRawOutput()
+        print radexObj.getRawOutput()
 
-    radexObj.parseOutput()
-    t1 = time()
+        radexObj.parseOutput()
+        t1 = time()
 
-    print 'time running radex = %f ' % (t1 - t0)
-
-    print 'warnings'
-    print '--------'
-    print radexObj.warnings
+        print 'time running radex = %f ' % (t1 - t0)
     
-    print 'number of iterations = %d' % radexObj.getNIter() 
-    hcop10 = radexObj.getTransition(1)  # getting the info of the transiotion from 1->0
-    #print hcop10
-    
-    # printing all transitions and fluxes
-    print 'header'
-    print '------'
-    print radexObj.outputHdr
-    
-    for transition in radexObj.transitions:
-        print transition['upper'], transition['lower'], transition['fluxcgs']
-
-    radexObj.plotModel()
-    pyl.show()
+        print 'number of iterations = %d' % radexObj.getNIter() 
+        hcop10 = radexObj.getTransition(1)  # getting the info of the transiotion from 1->0
+        #print hcop10
+        
+        # printing all transitions and fluxes
+        print 'header'
+        print '------'
+        print radexObj.outputHdr
+        
+        for transition in radexObj.transitions:
+            print transition['upper'], transition['lower'], transition['fluxcgs']
+        
+        radexObj.plotModel()
+        pyl.show()
     
 else:
-    print 'something went wrong'
-     
-     
-    
+    if radexObj.getStatus() &  radexObj.FLAGS['ITERWARN']:
+        print 'did not converge'
+        
+        print 'warnings'
+        print '--------'
+        print radexObj.warnings
