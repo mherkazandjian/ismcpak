@@ -18,27 +18,22 @@ from enumSpecies import *
 #   uniformSweep2-z-0.5-no-mech
 # 
 #---------------------------Archive parameters-----------------------
-#runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
-runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
-
-
+runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
+#runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
+gridsRes      = 10
 abunSpecFname = '/home/mher/ism/code/ismcpak/data/species.inp'
-lgammaMechSec = -30.0
+lgammaMechSec = -16.0
 metallicity   = 2.0
+radexParms    = { 'specStr' : 'CO',
+                  'molData' : 'co.dat',  #make a dict which guesses molData from specStr
+                  'xH2_Min' : 2*0.01  }
 #-----------------chemical network parameters------------------------
 rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
 specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
 underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 
-gridsRes = 10
 
-T        = 800.0
-Av       = 20.0
-nDens    = 10**5.5
-G0       = 10**5
-zeta     = 5e-17
-albedo   = 0.6
 
 # elements and basic species from which all the other species are made
 baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
@@ -83,6 +78,6 @@ arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 #-------------------------------------------------------------------
 # plotting stuff
 
-arxv.plotGrid(gridsRes, lgammaMechSec )
+arxv.plotGrid(gridsRes, lgammaMechSec, radexParms)
 
 print 'done'

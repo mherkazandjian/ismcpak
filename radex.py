@@ -257,8 +257,6 @@ class radex( ):
         
         if fig == None and axs == None:
             self.makeAxes(nx)
-            #setup axes and labels
-            #self.setupPlots
         else:
             self.setAxes(fig, axs)
             

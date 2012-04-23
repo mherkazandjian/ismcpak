@@ -301,11 +301,11 @@ class mesh( ):
         Av   = m.data['state']['Av']
         gasT = m.data['state']['gasT']
 
-        xSpec  = m.data['state']['abun'][net.species[spec].num]
-        xColl  = m.data['state']['abun'][net.species[coll].num]
+        xSpec  = m.data['state']['abun'][ net.species[spec].num ]
+        xColl  = m.data['state']['abun'][ net.species[coll].num ]
         inds = np.nonzero( xColl  > xMin  )
 
-        if len(inds) == 0:
+        if len(inds[0]) == 0:
             return (None, None, None)
         
         # assigning the thickness of the last slab to the one before the last one

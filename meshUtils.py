@@ -128,13 +128,15 @@ class meshArxv():
         self.grds     = None # 2x2 ndmesh array object
         self.grdsCbar = None
         self.pltRadex = None
+        self.fig      = None
         
         if 'metallicity' in kwrds:
             self.set_metallicity( kwrds['metallicity'] )
         else:
             self.metallicity = None
             
-        self.radexObj = None
+        self.radexObj   = None
+        self.radexParms = None
         
     # read all the meshes files in the dir and construct the
     # database
@@ -298,12 +300,14 @@ class meshArxv():
         #class 
             
          
-    def plotGrid(self, resGrids, lgammaMechSec):
+    def plotGrid(self, resGrids, lgammaMechSec, radexParms):
         
-        self.pltGmSec = lgammaMechSec
+        self.pltGmSec   = lgammaMechSec
+        self.radexParms = radexParms
         
         # definig plotting windows and setting the locations of subplots
         fig1, axs1 = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(12,12))
+        self.fig = fig1
         
         # the grid plot in n,G0 showing the points where models are present in the
         # database
@@ -416,7 +420,6 @@ class meshArxv():
                     tick.label2On = False
         
         # setting up the axes to plot the radex output for each selected model
-        
         left  = 0.65
         bott  = 0.07
         sz    = 0.08
@@ -424,7 +427,8 @@ class meshArxv():
         self.pltRadex = [ pyl.axes([left, bott + 0*sz          , 3*sz, sz ]),
                           pyl.axes([left, bott + 1*sz + vSpace , 3*sz, sz ]),
                           pyl.axes([left, bott + 2*sz + vSpace , 3*sz, sz ]),
-                          pyl.axes([left, bott + 3*sz + vSpace , 3*sz, sz ]) ]                           
+                          pyl.axes([left, bott + 3*sz + vSpace , 3*sz, sz ]) ]
+        self.pltRadex = np.array(self.pltRadex)                           
         
         
         # setting up a dummy mesh object to use its plotting functionalities
@@ -485,8 +489,7 @@ class meshArxv():
             cbar00 = pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
             cbar00.set_ticks([0.0, 1.0, 2.0, 3.0, 4.0])
                         
-            #specStr = 'CO'
-            specStr = 'CO'
+            specStr = self.radexParms['specStr']
             # some other diagnostic (top left grid)
             # ---> plotting abundances
             #--------------------------------------------------------------
@@ -540,9 +543,14 @@ class meshArxv():
                 specIdx = spcs[specStr].num
                 Av = self.meshes[i]['state']['Av']
                 nDensThisSpec = (10**xThis)*abunAllSpcs[ specIdx ][:]
-                dxSlabs = getSlabThicknessFromAv(Av, 10**xThis, 2.0)     #;;;; use the input metallicity from the driver
-                colDensThisSpec = np.sum( dxSlabs * nDensThisSpec[0:-1] ) #;;;; eventually use all the abundances and do not exclude the last slab
+                # setting the thickness of the last slab to the one before it
+                dxSlabs          =  getSlabThicknessFromAv(Av, 10**xThis, self.metallicity)
+                dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
+                dxSlabsNew[0:-1] =  dxSlabs
+                dxSlabsNew[-1]   =  dxSlabs[-1]
+                dxSlabs          =  dxSlabsNew
                 
+                colDensThisSpec = np.sum( dxSlabs * nDensThisSpec )     
                 zThis = colDensThisSpec  # <---------------
                 #print zThis 
 
@@ -563,7 +571,6 @@ class meshArxv():
             self.grds[1][0].plotContour( levels = contourValues )
             
             
-            """
             # some other diagnostic (bottom right grid)
             # ---> plotting line intensities
             #--------------------------------------------------------------
@@ -575,8 +582,8 @@ class meshArxv():
 
             radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
             radexObj = radex(radexPath)
-#            inFile = { 'molData'                : 'co.dat'                                ,
-            inFile = { 'molData'                : 'hcn.dat'                                ,
+
+            inFile = { 'molData'                : self.radexParms['molData']              ,
                        'outPath'                : 'foo'                                   ,
                        'freqRange'              : [0, 50000]                              ,
                        'tKin'                   : None                                    ,
@@ -588,36 +595,42 @@ class meshArxv():
                        'runAnother'             : 1                                       }
             radexObj.setInFile( inFile )
             
-            every = 10
+            every = 1
             nDone = 0
             # computing the abundace of a specie
             for i in indsThisSec[0::every]:
                 xThis = np.log10(self.meshes[i]['hdr']['G0'])
                 yThis = np.log10(self.meshes[i]['hdr']['nGas'])
                 
-                thisMeshObj = mesh(None, self.chemNet, self.metallicity)
+                thisMeshObj = mesh( None, self.chemNet, self.metallicity)
                 thisMeshObj.setData( self.meshes[i] )
 
-                (gasTRadex, nDensH2, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2', specStr, 2*0.01)
+                (gasTRadex, nDensH2, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2', 
+                                                                                        self.radexParms['specStr'],
+                                                                                        self.radexParms['xH2_Min'])
                 
                 if gasTRadex == None:
-                    print 'not enough H2'
+                    print 'radexGrid : not enough H2'
                     continue
                 
-                print gasTRadex, nDensH2, colDensThisSpec        
+                print 'radexGrid : radex parms : ', gasTRadex, nDensH2, colDensThisSpec        
                 radexObj.setInFileParm('tKin', gasTRadex)
                 radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
                 radexObj.setInFileParm('molnDens', colDensThisSpec)
-                radexObj.run( checkInput = True )
+                status = radexObj.run( checkInput = True )
 
-                print radexObj.getStatus()
-                if radexObj.getStatus() == False:
-                    print 'radex Failed'
+                if status & radexObj.FLAGS['SUCCESS']:
+                    print 'radexGrid : converged with no warnings'
+                else:
+                    print 'radexGrid : converged with warnings'
+                    print '------------------------------------'
+                    print radexObj.getWarnings()
+                    print '------------------------------------'
                     continue
                 
                 #print radexObj.getRawOutput()
                 #print '      ---------------------'
-                radexObj.parseOutput()
+                #radexObj.parseOutput()
                 CO10 = radexObj.getTransition(1)  # get1e17ting the info of the transiotion from 1->0
                 
                 ####
@@ -636,11 +649,11 @@ class meshArxv():
                 #print 'press a key to continue...'
                 #print input()
                 nDone += 1
-                print 100.0*np.float64(nDone)/np.float64(len(indsThisSec))
+                print 100.0*np.float64(nDone)/np.float64(len(indsThisSec)), '%'
                 print '----------------------------------------------------' 
             
             lineIntense[:] = np.log10(lineIntense / nInCells)
-            print lineIntense
+            #print lineIntense
 
             im11 = self.grds[1][1].imshow(interpolation='nearest')
             cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
@@ -648,7 +661,7 @@ class meshArxv():
             cbarTickValues =  [-2, -1, 0, 1, 2]
             cbar11.set_ticks( cbarTickValues )
             self.grds[1][1].plotContour( levels = cbarTickValues )
-            """
+            
             
             print 'done'
                                 
@@ -689,7 +702,7 @@ class meshArxv():
                                         
                     msh.plot()
                     
-                    """
+                    
                     #----------------------------------------------------
                     if self.radexObj == None:                                                
                         radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
@@ -703,33 +716,38 @@ class meshArxv():
                                   'collisionPartners'      : ['H2']                                  ,
                                   'nDensCollisionPartners' : [None]                                  ,
                                   'tBack'                  : 2.73                                    ,
-                                  'molnDens'               : None                                   ,
+                                  'molnDens'               : None                                    ,
                                   'lineWidth'              : 1.0                                     ,
                                   'runAnother'             : 1                                       }
                         self.radexObj.setInFile( inFile )
+                       
                         
-                    self.radexObj.setupPlot(nx=1)
+                    self.radexObj.setupPlot(nx = 1, fig = self.fig, axs = self.pltRadex)
                     
-                    (gasTRadex, nDensH2, colDensThisSpec,) = msh.getRadexParameters('H2', 'CO', 2*0.01)
+                    (gasTRadex, nDensH2, colDensThisSpec,) = msh.getRadexParameters('H2', 
+                                                                                    self.radexParms['specStr'], 
+                                                                                    self.radexParms['xH2_Min'])
                 
                     if gasTRadex == None:
                         print 'not enough H2'
-                
-                    print gasTRadex, nDensH2, colDensThisSpec        
-                    self.radexObj.setInFileParm('tKin', gasTRadex)
-                    self.radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
-                    self.radexObj.setInFileParm('molnDens', colDensThisSpec)
-                    
-                    self.radexObj.setDefaultStatus()
-                    self.radexObj.run( checkInput = True )
-
-                    if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
-                        self.radexObj.plotModelInFigureColumn(Jall=np.arange(10)+1, colNum=0, title='')
                     else:
-                        print 'radex Failed'
-                        print self.radexObj.warnings
-                    """ 
-                    #----------------------------------------------------
+                
+                        print 'Radex input parms : ', gasTRadex, nDensH2, colDensThisSpec
+                            
+                        self.radexObj.setInFileParm('tKin', gasTRadex)
+                        self.radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
+                        self.radexObj.setInFileParm('molnDens', colDensThisSpec)
+                    
+                        self.radexObj.setDefaultStatus()
+                        self.radexObj.run( checkInput = True )
+
+                        if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
+                            self.radexObj.plotModelInFigureColumn(Jall=np.arange(20) + 1, inAxes=self.pltRadex, title='')
+                            self.radexObj.setLabels()
+                        else:
+                            print 'radex Failed'
+                            print self.radexObj.warnings 
+                        #----------------------------------------------------
                     
                     pyl.draw()
                     
