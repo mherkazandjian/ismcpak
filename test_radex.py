@@ -13,11 +13,11 @@ radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
 inFile = { 'molData'                : 'co.dat'                              ,
            'outPath'                : 'foo'                              ,
            'freqRange'              : [0, 50000]                              ,
-           'tKin'                   : 100.0                           ,
+           'tKin'                   : 40.0                           ,
            'collisionPartners'      : ['H2']                                  ,
            'nDensCollisionPartners' : [1e4]                                   ,
            'tBack'                  : 2.73                                    ,
-           'molnDens'               : 1e18                                    ,
+           'molnDens'               : 1e17                                    ,
            'lineWidth'              : 1.0                                     ,
            'runAnother'             : 1                                       }
 
@@ -50,10 +50,8 @@ if radexObj.getStatus() &  radexObj.FLAGS['SUCCESS'] :
         
         for transition in radexObj.transitions:
             print transition['upper'], transition['lower'], transition['fluxcgs']
-        
+               
         radexObj.plotModel()
-        pyl.show()
-    
 else:
     if radexObj.getStatus() &  radexObj.FLAGS['ITERWARN']:
         print 'did not converge'

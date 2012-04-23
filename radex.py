@@ -61,6 +61,8 @@ class radex( ):
         #plotting attributes
         self.fig = None
         self.axs = None
+        self.nx  = None
+        self.ny  = 4
         
     def setInFileParm(self, parm, value):
         self.inFile[parm] = value
@@ -242,40 +244,45 @@ class radex( ):
         return self.warnings
     def getNIter(self):
         return self.nIter
-    
-    # sets up the object to plot the radex output ( nx rows and four coluns)
-    def setupPlot(self, nx = None):
+
+    # set the axes and figure objects
+    def setAxes(self, fig, axs):
+        self.axs = axs
+        self.fig = fig
         
+    # sets up the object to plot the radex output ( nx rows and four coluns)
+    def setupPlot(self, nx = None, fig = None, axs = None):
+        
+        self.nx = nx
+        
+        if fig == None and axs == None:
+            self.makeAxes(nx)
+            #setup axes and labels
+            #self.setupPlots
+        else:
+            self.setAxes(fig, axs)
+            
+        return (self.fig, self.axs)
+            
+    
+    def makeAxes(self, nx = None):
+
         if nx == None:
             nx = 1
 
         # axs[0,0] is the one in the top left corner
-        self.fig, self.axs = pyl.subplots(4, nx, sharex = False, sharey = False, figsize=(8,8) )
-        pyl.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9,
-                            wspace=0.0, hspace=0.0)
-        return (self.fig, self.axs)
-    
-    # plots the output of a certain model in a certain column in a predefined figure
-    def plotModelInFigureColumn(self, Jall=None, colNum=None, title=None, axsArg = None):
-                    
-        if axsArg == None:
-            axs = self.axs
-        else:
-            axs = axsArg
+        fig, axs = pyl.subplots(4, nx, sharex = False, sharey = False, figsize=(8,8) )
+        pyl.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.0, hspace=0.0)
+        self.setAxes(fig, axs)
         
-        # deciding if it is just one model of many models (on plotted in each column)
-        if len(axs.shape) == 1:
-            nx = 1
-        else:
-            nx = axs.shape[1]
-            
-        plotInColumn = colNum
-        subPlotNum   = plotInColumn + 1  
-
+    # plots the output of a certain model in a certain column in a predefined figure
+    def plotModelInFigureColumn(self, Jall=None, inAxes=None, title=None):
+                                
         nJ = len(Jall)
         #----------------flux-------------------------
-        pyl.subplot(4, nx, subPlotNum)
-        pyl.hold(True)
+        axes = inAxes[0]
+        axes.lines = []
+        
         xPlot = Jall
         yPlot = np.ndarray(nJ, dtype=np.float64)
         for i in np.arange(nJ):
@@ -288,13 +295,12 @@ class radex( ):
             
             yPlot[i] = yThis
             
-        pyl.semilogy(xPlot, yPlot)
-        pyl.axis([np.min(Jall), np.max(Jall),1e-10, 1])        
-        
+        axes.semilogy(xPlot, yPlot, 'b')
+        axes.axis([np.min(Jall), np.max(Jall), 1e-10, 1e-3])
+
         #---------------Tex and T_R--------------------------
-        subPlotNum += nx
-        pyl.subplot(4, nx, subPlotNum)
-        pyl.hold(True)
+        axes = inAxes[1]
+        axes.lines = []        
 
         xPlot = Jall
         yPlot1 = np.ndarray(nJ, dtype=np.float64)
@@ -311,13 +317,13 @@ class radex( ):
     
             yPlot1[i] = yThis1
             yPlot2[i] = yThis2
-        pyl.semilogy(xPlot, yPlot1, 'b')
-        pyl.semilogy(xPlot, yPlot2, 'r')
-        pyl.axis([np.min(Jall), np.max(Jall), 1, 10000])
+        axes.semilogy(xPlot, yPlot1, 'b')
+        axes.semilogy(xPlot, yPlot2, 'r')
+        axes.axis([np.min(Jall), np.max(Jall), 1, 10000])
 
-        subPlotNum += nx 
-        pyl.subplot(4, nx, subPlotNum)
-        pyl.hold(True)
+        #------------------optical depth----------------------------------
+        axes = inAxes[2]
+        axes.lines = []        
 
         xPlot = Jall
         yPlot = np.ndarray(nJ, dtype=np.float64)
@@ -331,13 +337,12 @@ class radex( ):
             yThis = transition['tau'] 
     
             yPlot[i] = yThis
-        pyl.plot(xPlot, yPlot)
-        pyl.axis([np.min(Jall), np.max(Jall), -1, np.max(yPlot)])
+        axes.plot(xPlot, yPlot, 'b')
+        axes.axis([np.min(Jall), np.max(Jall), -1, np.max(yPlot)])
 
-
-        subPlotNum += nx 
-        pyl.subplot(4, nx, subPlotNum)
-        pyl.hold(True)
+        #------------------population densities-----------------------------
+        axes = inAxes[3]
+        axes.lines = []        
 
         xPlot = Jall
         yPlot1 = np.ndarray(nJ, dtype=np.float64)
@@ -354,58 +359,68 @@ class radex( ):
     
             yPlot1[i] = yThis1
             yPlot2[i] = yThis2
-        pyl.semilogy(xPlot, yPlot1, 'b')
-        pyl.semilogy(xPlot, yPlot2, 'r')
-        pyl.axis([np.min(Jall), np.max(Jall), 1e-10, 1])
-
-        # plotting the ylabels of the axes
-        pyl.subplot(4, nx, 0*nx + 1);  pyl.ylabel('Flux')
-        pyl.subplot(4, nx, 1*nx + 1);  pyl.ylabel('Tex, Trot')
-        pyl.subplot(4, nx, 2*nx + 1);  pyl.ylabel('tau')
-        pyl.subplot(4, nx, 3*nx + 1);  pyl.ylabel('pop dens')
-        # plotting the xlabels
-        for i in np.arange(nx+1):
-            pyl.subplot(4, nx, 3*nx + i);  pyl.xlabel('J')
-        # plotting the title
-        pyl.subplot(4, nx, colNum + 1); pyl.title(title)
-
-        ### MAKE THESE MORE ELEGENT
-        # cleaning the tick labels and plotting the labels
-        # removing the x label from the top rows
-        if nx > 1:
-            for axsRow in axs[0:-1]:
-                for ax in axsRow:
-                    for tick in ax.axes.xaxis.get_major_ticks():
-                        tick.label1On = False
-        else:
-            for ax in axs[0:-1]:
-                for tick in ax.axes.xaxis.get_major_ticks():
-                    tick.label1On = False
-
-        # removing the y label from columns rows next to the first one
-        if nx > 1:
-            for axsCol in axs[:, 1:nx]:
-                for ax in axsCol:
-                    for tick in ax.axes.yaxis.get_major_ticks():
-                        tick.label1On = False
-
-        # removing the 
+        axes.semilogy(xPlot, yPlot1, 'b')
+        axes.semilogy(xPlot, yPlot2, 'r')
+        axes.axis([np.min(Jall), np.max(Jall), 1e-10, 1])
+    
+    # set the appropriate labels of all the axes
+    def setLabels(self):
         
-        if nx > 1:
-            for ax in np.hstack( (axs[4-1], axs[: ,0]) ):
-                xticks = ax.axes.xaxis.get_major_ticks()
-                yticks = ax.axes.yaxis.get_major_ticks()
-                for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
-                    tick.label1On = False
+        axs = self.axs
+        def removeAll_xLabels(ax):
+            for tick in ax.axes.xaxis.get_major_ticks():
+                tick.label1On = False
+        def removeAll_yLabels(ax):
+            for tick in ax.axes.yaxis.get_major_ticks():
+                tick.label1On = False
+                        
+        if self.nx == 1:
+            axsLeft = axs.tolist()
+            axsBotm = [axs[3]]
         else:
-            for ax in np.hstack( (axs[4-1], axs[0]) ):
-                xticks = ax.axes.xaxis.get_major_ticks()
-                yticks = ax.axes.yaxis.get_major_ticks()
-                for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
-                    tick.label1On = False
+            axsLeft = axs[:,0].tolist()
+            axsBotm = axs[3,:].tolist()
+
+            # removing all y labels
+            for axRow in axs[0:-1]:
+                for ax in axRow[1:]:
+                    removeAll_xLabels(ax)
+                    removeAll_yLabels(ax)
+        
+        # removing the xlabeles of from the left axes            
+        for ax in axsLeft[0:-1]:
+            removeAll_xLabels(ax)
+        # removing the xlabeles of from the left axes            
+        for ax in axsBotm[1:]:
+            removeAll_yLabels(ax)
                     
+        # plotting the ylabels of the axes            
+        axsLeft[0].set_ylabel('Flux')
+        axsLeft[1].set_ylabel('Tex, Trot')
+        axsLeft[2].set_ylabel('tau')
+        axsLeft[3].set_ylabel('pop dens')
+        # plotting the xlabels
+        for ax in axsBotm:
+            ax.set_xlabel('J')
+
+        # removing the firt and last labels from the bottom and left axes
+        for ax in axsBotm + axsLeft:
+            xticks = ax.axes.xaxis.get_major_ticks()
+            yticks = ax.axes.yaxis.get_major_ticks()
+            for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
+                tick.label1On = False
+
+        #removing all labels from axes with no lines (only for multiple models)
+        if self.nx > 1:
+            for ax in axsBotm:
+                if len(ax.lines) == 0:
+                    removeAll_xLabels(ax)
+                    ax.set_xlabel('')
+    
+    # plotting a single model
     def plotModel(self):
-        self.setupPlot(nx=1)
-        self.plotModelInFigureColumn(Jall=np.arange(10)+1, colNum=0, title='')   
+        self.setupPlot(nx = 1)
+        self.plotModelInFigureColumn(Jall=np.arange(10)+1, inAxes = self.axs, title='')
+        self.setLabels()   
         pyl.show()
         
