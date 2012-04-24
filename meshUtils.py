@@ -580,22 +580,27 @@ class meshArxv():
             lineIntense.fill(0.0)
             nInCells.fill(0.0)
 
-            radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
+            radexPath      = '/home/mher/ism/code/radex/Radex/bin/radex'
+            molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
             radexObj = radex(radexPath)
-
-            inFile = { 'molData'                : self.radexParms['molData']              ,
-                       'outPath'                : 'foo'                                   ,
-                       'freqRange'              : [0, 50000]                              ,
-                       'tKin'                   : None                                    ,
-                       'collisionPartners'      : ['H2']                                  ,
-                       'nDensCollisionPartners' : [None]                                  ,
-                       'tBack'                  : 2.73                                    ,
-                       'molnDens'               : None                                   ,
-                       'lineWidth'              : 1.0                                     ,
-                       'runAnother'             : 1                                       }
+             
+            # make this more elegent and set the paths ONCE
+            molDataPath = molDataDirPath + '/' + radexObj.moldataFiles[self.radexParms['specStr']] 
+            print molDataPath
+            
+            inFile = { 'molData'                : molDataPath     ,
+                       'outPath'                : 'foo'           ,
+                       'freqRange'              : [0, 50000]      ,
+                       'tKin'                   : None            ,
+                       'collisionPartners'      : ['H2']          ,
+                       'nDensCollisionPartners' : [None]          ,
+                       'tBack'                  : 2.73            ,
+                       'molnDens'               : None            ,
+                       'lineWidth'              : 1.0             ,
+                       'runAnother'             : 1               }
             radexObj.setInFile( inFile )
             
-            every = 1
+            every = 10
             nDone = 0
             # computing the abundace of a specie
             for i in indsThisSec[0::every]:
@@ -704,21 +709,26 @@ class meshArxv():
                     
                     
                     #----------------------------------------------------
-                    if self.radexObj == None:                                                
-                        radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
+                    if self.radexObj == None:       
+                        
+                        radexPath      = '/home/mher/ism/code/radex/Radex/bin/radex'
+                        molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
                         self.radexObj = radex(radexPath)
-                        
-                        
-                        inFile = {'molData'                : 'co.dat'                                ,
-                                  'outPath'                : 'foo'                                   ,
-                                  'freqRange'              : [0, 50000]                              ,
-                                  'tKin'                   : None                                    ,
-                                  'collisionPartners'      : ['H2']                                  ,
-                                  'nDensCollisionPartners' : [None]                                  ,
-                                  'tBack'                  : 2.73                                    ,
-                                  'molnDens'               : None                                    ,
-                                  'lineWidth'              : 1.0                                     ,
-                                  'runAnother'             : 1                                       }
+             
+                        # make this more elegent and set the paths ONCE
+                        molDataPath = molDataDirPath + '/' + self.radexObj.moldataFiles[self.radexParms['specStr']] 
+                        print molDataPath
+                                         
+                        inFile = {'molData'                : molDataPath ,
+                                  'outPath'                : 'foo'       ,
+                                  'freqRange'              : [0, 50000]  ,
+                                  'tKin'                   : None        ,
+                                  'collisionPartners'      : ['H2']      ,
+                                  'nDensCollisionPartners' : [None]      ,
+                                  'tBack'                  : 2.73        ,
+                                  'molnDens'               : None        ,
+                                  'lineWidth'              : 1.0         ,
+                                  'runAnother'             : 1           }
                         self.radexObj.setInFile( inFile )
                        
                         

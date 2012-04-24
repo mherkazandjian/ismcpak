@@ -3,10 +3,11 @@ from time import *
 from chemicalNetwork import *
 import sys
 
-rxnFile       = 'data/rate99Fixed.inp'
-specNumFile   = 'data/species.inp'
-specAbunFile  = 'data/abun.out'
-csvFile       = 'data/network.csv'
+rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
+specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
+specAbunFile  = '/home/mher/ism/code/ismcpak/data/abun.out'
+underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
+csvFile       = '/home/mher/ism/code/ismcpak/data/network.csv'
 
 T        = 800.0
 Av       = 20.0
@@ -61,7 +62,7 @@ for set in sets:
 #----------------------------------------------------------
 
 # reading the species to be removed from a file
-fObj =  open('data/underabundant.inp', 'r')
+fObj =  open(underAbunFile, 'r')
 setAsInactive = []
 for line in fObj:
     line = line.split()
@@ -94,6 +95,13 @@ net.printReactions(inds[0:5], format = 'type rxn')
 print 'specie detailed info:'
 net.species['HCN'].show()
 
+#net.species['HCN'].hasBaseSpecies(['H'])
+x =[ [spec[0], spec[1].hasBaseSpecies(['N', 'H'])] for spec in net.species.items()] 
+for itm in x:
+    if itm[1] == True:
+        print itm 
+print x
+
 """
 print 'MESSING WITH THE NETWORK MANUALLY, JUST TO CHECK IF SPECIES ARE MAPPED CORRECTLY'
 print '-----------------------------------------------------------------------------' 
@@ -119,10 +127,7 @@ net.species['H'].show()
 print idxH, net.abun[ idxH ]
 """
 
-
-
-asdasd
-net.computeReactionConstants()
+#net.computeReactionConstants()
 """
 net.computeRates()
 

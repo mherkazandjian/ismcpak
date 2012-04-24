@@ -1,38 +1,20 @@
 from numpy import *
+
 from time import *
-import sys
 import pylab as pyl
-
 from chemicalNetwork import *
-from mesh import *
-from meshUtils import *
 from enumSpecies import *
+from mesh import *
+from ismUtils import *
 
-# runs
-#   uniformSweep2-z-2/
-#   uniformSweep2-highRes-z-1.0
-#   uniformSweep2-z-0.5
-#   
-#   uniformSweep2-z-1.0-no-mech
-#   uniformSweep2-z-2-no-mech
-#   uniformSweep2-z-0.5-no-mech
-# 
-#---------------------------Archive parameters-----------------------
-#runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
-runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
-gridsRes      = 10
-abunSpecFname = '/home/mher/ism/code/ismcpak/data/species.inp'
-lgammaMechSec = -30.0
+#------------------mesh data file-------------------------------------
+meshFname     = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/meshes/mesh.dat-id-002920'
 metallicity   = 2.0
-radexParms    = { 'specStr' : 'CO',
-                  'xH2_Min' : 2*0.01  }
 #-----------------chemical network parameters------------------------
 rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
 specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
 underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
-
-
 
 # elements and basic species from which all the other species are made
 baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
@@ -56,27 +38,21 @@ baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
               specie('S'     , specType = 0 , charge=0 , init=1),
               specie('e-'    , specType = 0 , charge=-1, init=1) ]
 #------------------------------------------------------------------
-# reading the archive
-print 'setting up the archive'
-t0 = time()
-arxv = meshArxv( metallicity = metallicity )
-arxv.readDb( runDirPath )
-arxv.checkIntegrity()
-print 'time reading %f' % (time() - t0)
-#------------------------------------------------------------------
-# read and setting up the chemical network used in the 
-t0 = time()
-# settin up the orignial netowrk
 net = chemicalNetwork(rxnFile, baseSpec, UMISTVER = 'umist99')
 # reading the species to be removed from a file
 net.removeSpecies( underAbunFile = underAbunFile )
 net.removeSpecies( species = removeManual )
 # reading the species number and their corresponding indies and abundances from ascii files
 net.assignNumbersToSpecies(fileName = specNumFile)
-arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
-#-------------------------------------------------------------------
-# plotting stuff
 
-arxv.plotGrid(gridsRes, lgammaMechSec, radexParms)
+# setting up the PDR slab
+m = mesh(meshFname, net, metallicity)
+TMean1, nH2Mean1, NCOLVG1, = m.getRadexParameters('H2', 'CO', 2*0.01)
+print TMean1, nH2Mean1, NCOLVG1
 
+m.plot()
+
+pyl.show()
 print 'done'
+
+# 378.37764026 1182.21211321 8.05680609553e+18

@@ -89,6 +89,21 @@ class specie():
         # succcessfully processes
         self.init = 1
         
+    # returns True if the base species in specList ['XX','YY'] are in self.comp
+    #     ex : print net.species['HCN'].hasComponents(['H','N','C'])
+    #     ex : print net.species['13C'].hasComponents(['C'])
+    def hasBaseSpecies(self, specStrList ):
+        
+        hasAllComponents = True
+        
+        cmpntsStrList = [ strng for strng, n in self.comp ]
+        
+        for specStr in specStrList:
+            if specStr not in cmpntsStrList:
+                hasAllComponents &= False  
+                
+        return hasAllComponents
+        
     def getAbun(self):
         if self.abun != None:
             return self.abun[0]

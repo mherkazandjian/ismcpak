@@ -35,15 +35,22 @@ class radex( ):
 
     def __init__(self, execPath):
         
-        self.execPath    = execPath # absolute path to the radex executable
-        self.inFile      = None     # dictionary holding all the input parameters
-        self.nCollPart   = None     # number of collision partners
-        self.proccess    = None     # the subprocess.Popen object
-        self.rawOutput   = None     # the output of the run
-        self.lineInfo    = None     # line information from the output
-        self.warnings    = None     # the warnings dumped by radex
-        self.nIter       = None     # number of iterations 
-        self.outputHdr   = None     # the header of the output, should be 
+        self.execPath     = execPath # absolute path to the radex executable
+        self.moldataFiles =  { 'CO'   : 'co.dat'       ,
+                               '13CO' : '13co.dat'     ,
+                               'HCO+' : 'hco+@xpol.dat',
+                               'HCN'  : 'hcn.dat'      ,
+                               'HNC'  : 'hnc.dat'      ,
+                               'CS'   : 'cs@xpol.dat'  ,
+                               'CN'   : 'cn.dat'       }
+        self.inFile       = None     # dictionary holding all the input parameters
+        self.nCollPart    = None     # number of collision partners
+        self.proccess     = None     # the subprocess.Popen object
+        self.rawOutput    = None     # the output of the run
+        self.lineInfo     = None     # line information from the output
+        self.warnings     = None     # the warnings dumped by radex
+        self.nIter        = None     # number of iterations 
+        self.outputHdr    = None     # the header of the output, should be 
                                     # consistent with inFile
         self.transitions = None
         self.FLAGS       = {'DEFAULT'  : 0x000,   # default status, should be called before each run
@@ -208,6 +215,7 @@ class radex( ):
         def parseLineData( line ):
             info = {}
             
+            #print self.rawOutput
             lineSplt = line.split()
             #print lineSplt
             info['upper'   ] = np.int32(lineSplt[0]) 
