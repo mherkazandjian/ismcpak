@@ -1,41 +1,27 @@
 import numpy as np
 import pylab as pyl
 import subprocess
-from string import *
-#import re
+
+"""@package docstring
+
+This is a python module through which RADEX can be called from python.
+Plotting features are also included to visualize the output. Minor modifications
+for the RADEX source are required to make it easier to the python module to parse
+the output. Otherwise, the numerics are left intact. See 
+    www.strw.leidenuniv.nl/~moldata/radex.html 
+for more details on RADEX.
+"""
+
+__author__ = 'Mher V. Kazandjian'
 
 class radex( ):
-    """
-    this class interfaces between radex. i.e run radex through python.
-    
-    after calling run(), this sets the flag determining whether the run
-    was successfull or not : 
-        status =     => run was successful
-        status = 2    => run was successfull, but with warnings
-        status = 3    => run was successfull, but with warnings
-    
-    methods :
-        __init__
-        setInFileParm(parm, value)
-        
-        setInFile(inFile)
-        getInFileParm(parm)
-        getInFile()
-        setStatus( True|False )
-        status = getStatus()
-        genInputFileContentAsStr()
-        getRawOutput()
-        run( checkInput = False (default) | True )
-        parseOutput()  
-        tansitionInfo = getTransition( upper )
-        warnings = getWarnings()
-        nIter = getNIter()
-        fig, axs = setupPlot(nx) # sets up the object to plot the radex output
-    """
-
+    """ 111 """
     def __init__(self, execPath):
-        
-        self.execPath     = execPath # absolute path to the radex executable
+        """ 222 """
+    
+        ## class variable 1
+        self.execPath     = execPath 
+        ## class variable 2
         self.moldataFiles =  { 'CO'   : 'co.dat'       ,
                                '13CO' : '13co.dat'     ,
                                'HCO+' : 'hco+@xpol.dat',
@@ -43,16 +29,25 @@ class radex( ):
                                'HNC'  : 'hnc.dat'      ,
                                'CS'   : 'cs@xpol.dat'  ,
                                'CN'   : 'cn.dat'       }
-        self.inFile       = None     # dictionary holding all the input parameters
-        self.nCollPart    = None     # number of collision partners
-        self.proccess     = None     # the subprocess.Popen object
-        self.rawOutput    = None     # the output of the run
-        self.lineInfo     = None     # line information from the output
-        self.warnings     = None     # the warnings dumped by radex
-        self.nIter        = None     # number of iterations 
-        self.outputHdr    = None     # the header of the output, should be 
-                                    # consistent with inFile
+        ## dictionary holding all the input parameters
+        self.inFile       = None     
+        ## number of collision partners
+        self.nCollPart    = None     
+        ## the subprocess.Popen object
+        self.proccess     = None     
+        ## the output of the run
+        self.rawOutput    = None 
+            ## line information from the output    
+        self.lineInfo     = None 
+        ## the warnings dumped by radex
+        self.warnings     = None     
+        ## number of iterations
+        self.nIter        = None
+        ## asdasd      
+        self.outputHdr    = None  
+        ## the header of the output, should be consistent with inFile
         self.transitions = None
+        ## aaaaaaaaa 
         self.FLAGS       = {'DEFAULT'  : 0x000,   # default status, should be called before each run
                             'ERROR'    : 0x001,   # failed
                             'PARMSOK'  : 0x002,   # parameters are ok
@@ -62,33 +57,44 @@ class radex( ):
                                                   # assigned to self.warnings
                             'ITERWARN' : 0x020}   # number of iterations warning
                             
-                             
+        ## asdadadad
         self.status      = self.FLAGS['DEFAULT']
-
         #plotting attributes
+        ## a
         self.fig = None
+        ## b
         self.axs = None
+        ## c
         self.nx  = None
+        ## d
         self.ny  = 4
         
     def setInFileParm(self, parm, value):
+        """setInFileParm(parm, value)"""
         self.inFile[parm] = value
     def getInFileParm(self, parm):
+        """getInFileParm(parm)"""
         return self.inFile[parm]
 
     def setInFile(self, inFile):
+        """setInFile(inFile)"""
         self.inFile = inFile
     def getInFile(self):
+        """getInFile()"""
         return self.inFile
+    
     def getStatus(self):
+        """status = getStatus()"""
         return self.status
     def setStatus(self, status):
+        """setStatus( True|False )"""
         self.status = status
     def setDefaultStatus(self):
+        """ ;;; """
         self.status = self.FLAGS['DEFAULT']
     
     def genInputFileContentAsStr(self):
-        
+        """genInputFileContentAsStr()"""
         self.nCollPart = len(self.inFile['collisionPartners'])
         
         strng = ''
@@ -111,6 +117,7 @@ class radex( ):
         return strng
 
     def checkParameters(self):
+        """ ;;; """
         inFile = self.inFile
 
         for item in inFile:
@@ -139,8 +146,8 @@ class radex( ):
             return self.FLAGS['PARMSOK']
 
     # run radex with the set input 
-    def run(self, checkInput = None ):
-                        
+    def run(self, checkInput = None, verbose = None ):
+        """ run( checkInput = False (default) | True ) """                
         if checkInput == True:
             self.checkParameters()
         else:
@@ -157,10 +164,11 @@ class radex( ):
                                              stdout=subprocess.PIPE  ,  
                                              stderr=subprocess.PIPE  )
             radexOutput = self.proccess.communicate(input=radexInput)[0]
-            #print self.proccess.poll()
-            #print '-----------------'
-            #print radexOutput
-            #print '-----------------'
+            
+            if verbose != None:
+                print '---------------------------------------------------------------------'
+                print radexOutput
+                print '---------------------------------------------------------------------'
             self.rawOutput = radexOutput
             self.parseOutput()
             self.status |= self.FLAGS['RUNOK']
@@ -175,10 +183,11 @@ class radex( ):
         
     # run radex with the set input 
     def getRawOutput(self):
+        """getRawOutput()"""
         return self.rawOutput
 
     def parseOutput(self):
-        
+        """parseOutput()"""        
         output = self.rawOutput
         lines  =  output.splitlines()
         nLines = len(lines)
@@ -218,8 +227,8 @@ class radex( ):
             #print self.rawOutput
             lineSplt = line.split()
             #print lineSplt
-            info['upper'   ] = np.int32(lineSplt[0]) 
-            info['lower'   ] = np.int32(lineSplt[1]) 
+            info['upper'   ] = lineSplt[0] 
+            info['lower'   ] = lineSplt[1] 
             info['E_up'    ] = np.float64(lineSplt[2]) 
             info['Tex'     ] = np.float64(lineSplt[5]) 
             info['tau'     ] = np.float64(lineSplt[6]) 
@@ -239,18 +248,15 @@ class radex( ):
             
         self.transitions = transitions
 
-    def getTransition(self, upper):
-        
-        for transition in self.transitions:
-            if transition['upper'] == upper :
-                return transition
-            
-        #if upper value is not found, return Null
-        return None
+    def getTransition(self, idx):
+        """tansitionInfo = getTransition( upper )"""
+        return self.transitions[idx]
     
     def getWarnings(self):
+        """ warnings = getWarnings() """
         return self.warnings
     def getNIter(self):
+        """nIter = getNIter()"""
         return self.nIter
 
     # set the axes and figure objects
@@ -260,6 +266,7 @@ class radex( ):
         
     # sets up the object to plot the radex output ( nx rows and four coluns)
     def setupPlot(self, nx = None, fig = None, axs = None):
+        """fig, axs = setupPlot(nx) # sets up the object to plot the radex output"""
         
         self.nx = nx
         
@@ -278,46 +285,65 @@ class radex( ):
 
         # axs[0,0] is the one in the top left corner
         fig, axs = pyl.subplots(4, nx, sharex = False, sharey = False, figsize=(8,8) )
-        pyl.subplots_adjust(left=0.1, bottom=0.1, right=0.9, top=0.9, wspace=0.0, hspace=0.0)
+        pyl.subplots_adjust(left=0.1, bottom=0.15, right=0.95, top=0.95, wspace=0.0, hspace=0.0)
         self.setAxes(fig, axs)
         
     # plots the output of a certain model in a certain column in a predefined figure
-    def plotModelInFigureColumn(self, Jall=None, inAxes=None, title=None):
-                                
-        nJ = len(Jall)
+    def plotModelInFigureColumn(self, allTrans=None, inAxes=None, title=None):
+        
+        nTrans = len(allTrans)
         #----------------flux-------------------------
         axes = inAxes[0]
         axes.lines = []
+        xticksStrs = ()
         
-        xPlot = Jall
-        yPlot = np.ndarray(nJ, dtype=np.float64)
-        for i in np.arange(nJ):
+        xPlot = allTrans
+        yPlot = np.ndarray(nTrans, dtype=np.float64)
+        for i in np.arange(nTrans):
     
-            Jthis = Jall[i]
-            xPlot[i] = Jthis
+            thisTrans = allTrans[i]
+            xPlot[i] = thisTrans
     
-            transition = self.getTransition( Jthis )
+            transition = self.getTransition( thisTrans )
             yThis = transition['fluxcgs'] 
             
             yPlot[i] = yThis
             
+            # construncting the latex string of the transitions
+            upperStr = transition['upper'].split('_')
+            if len(upperStr) == 2:
+                upperStr = '%s_{%s}'% (upperStr[0], upperStr[1])
+            else:
+                upperStr = upperStr[0]
+            lowerStr = transition['lower'].split('_')
+            if len(lowerStr) == 2:
+                lowerStr = '%s_{%s}'% (lowerStr[0], lowerStr[1])
+            else:
+                lowerStr = lowerStr[0]
+
+            
+            thisTickStr = '$%s-%s$' %( upperStr, lowerStr )
+            xticksStrs = xticksStrs + (thisTickStr ,)
+            
         axes.semilogy(xPlot, yPlot, 'b')
-        axes.axis([np.min(Jall), np.max(Jall), 1e-10, 1e-3])
+        axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1e-3])
+        axes.set_xticklabels( xticksStrs, rotation = -45 )
+        
 
         #---------------Tex and T_R--------------------------
         axes = inAxes[1]
         axes.lines = []        
 
-        xPlot = Jall
-        yPlot1 = np.ndarray(nJ, dtype=np.float64)
-        yPlot2 = np.ndarray(nJ, dtype=np.float64)
-        for i in np.arange(nJ):
+        xPlot = allTrans
+        yPlot1 = np.ndarray(nTrans, dtype=np.float64)
+        yPlot2 = np.ndarray(nTrans, dtype=np.float64)
+        for i in np.arange(nTrans):
     
-            Jthis = Jall[i]
+            thisTrans = allTrans[i]
     
-            xPlot[i] = Jthis
+            xPlot[i] = thisTrans
     
-            transition = self.getTransition( Jthis )
+            transition = self.getTransition( thisTrans )
             yThis1 = transition['Tex']
             yThis2 = transition['T_R'] 
     
@@ -325,41 +351,43 @@ class radex( ):
             yPlot2[i] = yThis2
         axes.semilogy(xPlot, yPlot1, 'b')
         axes.semilogy(xPlot, yPlot2, 'r')
-        axes.axis([np.min(Jall), np.max(Jall), 1, 10000])
-
+        axes.axis([np.min(allTrans), np.max(allTrans), 1, 10000])
+        axes.set_xticklabels( xticksStrs, rotation = -45 )
+        
         #------------------optical depth----------------------------------
         axes = inAxes[2]
         axes.lines = []        
 
-        xPlot = Jall
-        yPlot = np.ndarray(nJ, dtype=np.float64)
-        for i in np.arange(nJ):
+        xPlot = allTrans
+        yPlot = np.ndarray(nTrans, dtype=np.float64)
+        for i in np.arange(nTrans):
     
-            Jthis = Jall[i]
+            thisTrans = allTrans[i]
     
-            xPlot[i] = Jthis
+            xPlot[i] = thisTrans
     
-            transition = self.getTransition( Jthis )
+            transition = self.getTransition( thisTrans )
             yThis = transition['tau'] 
     
             yPlot[i] = yThis
         axes.plot(xPlot, yPlot, 'b')
-        axes.axis([np.min(Jall), np.max(Jall), -1, np.max(yPlot)])
-
+        axes.axis([np.min(allTrans), np.max(allTrans), -1, np.max(yPlot)])
+        axes.set_xticklabels( xticksStrs, rotation = -45 )
+        
         #------------------population densities-----------------------------
         axes = inAxes[3]
         axes.lines = []        
 
-        xPlot = Jall
-        yPlot1 = np.ndarray(nJ, dtype=np.float64)
-        yPlot2 = np.ndarray(nJ, dtype=np.float64)
-        for i in np.arange(nJ):
+        xPlot = allTrans
+        yPlot1 = np.ndarray(nTrans, dtype=np.float64)
+        yPlot2 = np.ndarray(nTrans, dtype=np.float64)
+        for i in np.arange(nTrans):
     
-            Jthis = Jall[i]
+            thisTrans = allTrans[i]
     
-            xPlot[i] = Jthis
+            xPlot[i] = thisTrans
     
-            transition = self.getTransition( Jthis )
+            transition = self.getTransition( thisTrans )
             yThis1 = transition['pop_up']
             yThis2 = transition['pop_down'] 
     
@@ -367,7 +395,8 @@ class radex( ):
             yPlot2[i] = yThis2
         axes.semilogy(xPlot, yPlot1, 'b')
         axes.semilogy(xPlot, yPlot2, 'r')
-        axes.axis([np.min(Jall), np.max(Jall), 1e-10, 1])
+        axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1])
+        axes.set_xticklabels( xticksStrs, rotation = -45 )
     
     # set the appropriate labels of all the axes
     def setLabels(self):
@@ -407,7 +436,7 @@ class radex( ):
         axsLeft[3].set_ylabel('pop dens')
         # plotting the xlabels
         for ax in axsBotm:
-            ax.set_xlabel('J')
+            ax.set_xlabel('Trans') #;;; use the up-down string (rotated 90 deg) to plot the trans labele
 
         # removing the firt and last labels from the bottom and left axes
         for ax in axsBotm + axsLeft:
@@ -426,7 +455,7 @@ class radex( ):
     # plotting a single model
     def plotModel(self):
         self.setupPlot(nx = 1)
-        self.plotModelInFigureColumn(Jall=np.arange(10)+1, inAxes = self.axs, title='')
+        self.plotModelInFigureColumn( allTrans = np.arange(10), inAxes = self.axs, title='')
         self.setLabels()   
         pyl.show()
         

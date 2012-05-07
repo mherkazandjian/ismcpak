@@ -600,7 +600,7 @@ class meshArxv():
                        'runAnother'             : 1               }
             radexObj.setInFile( inFile )
             
-            every = 10
+            every = 1
             nDone = 0
             # computing the abundace of a specie
             for i in indsThisSec[0::every]:
