@@ -1,27 +1,42 @@
+## @file radex.py
+#  implementation of the radex interface in python
+
 import numpy as np
 import pylab as pyl
 import subprocess
 
-"""@package docstring
+## @package Radex
+# Radex   
+# @author: Mher V. Kazandjian
+# @date  : 2012-Mar-05
+# @version: xxx
+# @section Radex This is a python module through which RADEX can be called from python.
+# Plotting features are also included to visualize the output. Minor modifications
+# for the RADEX source are required to make it easier to the python module to parse
+# the output. Otherwise, the numerics are left intact. See 
+# www.strw.leidenuniv.nl/~moldata/radex.html 
+# for more details on RADEX.
+# @section AAA BBB
+# asdasdad
 
-This is a python module through which RADEX can be called from python.
-Plotting features are also included to visualize the output. Minor modifications
-for the RADEX source are required to make it easier to the python module to parse
-the output. Otherwise, the numerics are left intact. See 
-    www.strw.leidenuniv.nl/~moldata/radex.html 
-for more details on RADEX.
-"""
-
-__author__ = 'Mher V. Kazandjian'
-
+## Radex class
+#  Radex implementation
+#  @todo : docment the order in which things must be called
 class radex( ):
-    """ 111 """
-    def __init__(self, execPath):
-        """ 222 """
+    """a wrapper class which runs radex parses its output into objects.""" 
     
-        ## class variable 1
+    ## Initializes some of the instance variables needed to run radex.
+    #  @param execPath (String) The path to the radex executable
+    #  @param molDataDir (String) The Path to the directory containing the transition data for the species
+    def __init__(self, execPath, molDataDir):
+    
+        ## string : Path to the radex executable 
         self.execPath     = execPath 
-        ## class variable 2
+        ## string : Path to the directory containing the transition data for the species
+        self.molDataDir   = molDataDir
+        ## dict : dictonary for the species files, the keys of this dict are as follows 
+        #  (see radex.py for an example) :\n
+        #  SPECIE_STRING : FILENAME
         self.moldataFiles =  { 'CO'   : 'co.dat'       ,
                                '13CO' : '13co.dat'     ,
                                'HCO+' : 'hco+@xpol.dat',
@@ -29,26 +44,64 @@ class radex( ):
                                'HNC'  : 'hnc.dat'      ,
                                'CS'   : 'cs@xpol.dat'  ,
                                'CN'   : 'cn.dat'       }
-        ## dictionary holding all the input parameters
+        ## dict : dictionary holding all the input parameters. It is used to construct the input
+        #  parameter file that is piped to the radex executable. It should be of the form :\n
+        #  \code
+        #  inFile = { 'molData'                : 'co.dat'    ,
+        #             'outPath'                : 'foo'       ,
+        #             'freqRange'              : [0, 50000]  ,
+        #             'tKin'                   : 10.0        ,
+        #             'collisionPartners'      : ['H2']      ,
+        #             'nDensCollisionPartners' : [1e3]       ,
+        #             'tBack'                  : 2.73        ,
+        #             'molnDens'               : 1e14        ,
+        #             'lineWidth'              : 1.0         ,
+        #             'runAnother'             : 1           }
+        #  \endcode
+        #  All of the items in this dict correspond to the same parameters in radex except
+        #  'collisionPartners' and 'nDensCollisionPartners'. 'collisionPartners' is
+        #  a list of strings of species such as 'H2', or 'H' :\n
+        #  \code 'collisionPartners' : ['H2'] \endcode
+        #  or        
+        #  \code 'collisionPartners' : ['H2','H+','e-'] \endcode
+        #  'nDensCollisionPartners' should be a list of the same length holding the 
+        #  number density of each collision partner respectively. For example :
+        #  \code 'nDensCollisionPartners' : [1e3] \endcode
+        #  or        
+        #  \code 'nDensCollisionPartners' : [1e3, 1e1, 1e-2] \endcode
         self.inFile       = None     
-        ## number of collision partners
+        ## integer : number of collision partners. This is the length of the list self.inFile['collisionPartners']
         self.nCollPart    = None     
-        ## the subprocess.Popen object
+        ## subproccess.popen object : Object used to communicate with the executable
         self.proccess     = None     
-        ## the output of the run
+        ## string : the output of the run which would be dumped by RADEX when ran standalone 
         self.rawOutput    = None 
-            ## line information from the output    
-        self.lineInfo     = None 
-        ## the warnings dumped by radex
-        self.warnings     = None     
-        ## number of iterations
+        ## list of strings : A list of strings containing the dumped by radex, if any. If there are
+        #  any warnings, the appropriate flag is set in \code self.FLAGS \endcode
+        self.warnings     = None
+        ## integer : number of iterations used when the run finishes.
         self.nIter        = None
-        ## asdasd      
+        ## string : the header of the raw output. This is useful for inspecting wheather the 
+        #  input parameters were constructed properly.
         self.outputHdr    = None  
-        ## the header of the output, should be consistent with inFile
+        ## dict list : A list containing all the information of the computed lines.
+        #  each item in the list is a dictionary with the following keys 
+        #  (they are extracted from self.rawOutput) : 
+        #    \verbatim
+        #    'upper'    : string (the upper level of the transition) 
+        #    'lower'    : string (the lower level of the transition) 
+        #    'E_up'     : numpy.float64 ( Enery of the upper level ) 
+        #    'Tex'      : numpy.float64 ( computed excitation temperatur )
+        #    'tau'      : numpy.float64 ( computed optical depth )
+        #    'T_R'      : numpy.float64 ( computed rotational temperature )
+        #    'pop_up'   : numpy.float64 ( computed population density in the upper level )
+        #    'pop_down' : numpy.float64 ( computed population density in the lower level )
+        #    'fluxKkms' : numpy.float64 ( computed flux in \f$K.km^{-1}.s^{-1}\f$ )
+        #    'fluxcgs'  : numpy.float64 ( computed flux in cgs )
+        #    \endverbatim 
         self.transitions = None
-        ## aaaaaaaaa 
-        self.FLAGS       = {'DEFAULT'  : 0x000,   # default status, should be called before each run
+        ## dict : Flags set when running radex which can be used to examing the output 
+        self.FLAGS       = {'DEFAULT'  : 0x000,   # \code default status, should be called before each run \endcode
                             'ERROR'    : 0x001,   # failed
                             'PARMSOK'  : 0x002,   # parameters are ok
                             'RUNOK'    : 0x004,   # radex did all the iterations (but not neccesarly converged)
@@ -57,44 +110,42 @@ class radex( ):
                                                   # assigned to self.warnings
                             'ITERWARN' : 0x020}   # number of iterations warning
                             
-        ## asdadadad
+        ## intger : the default stauts set from self.FLAGS
         self.status      = self.FLAGS['DEFAULT']
-        #plotting attributes
-        ## a
+        # plotting attributes
+        ## matplotlib.figure object : when set, the output is plotted in this figure
         self.fig = None
-        ## b
+        ## matplotlib.axes object : run output are plotted in this axes object
         self.axs = None
-        ## c
+        ## integer : number of models to run and plot
         self.nx  = None
-        ## d
+        ## integer : number of horizontal division in the figure (default)
         self.ny  = 4
         
+    ## sets keys in the self.inFile dict
+    #  @param parm  (String) A key to be modified or added in the self.inFile dict
+    #  @param value (abitrary) The value to be set to the key  
     def setInFileParm(self, parm, value):
-        """setInFileParm(parm, value)"""
         self.inFile[parm] = value
+    ## returns a parameter from self.inFile given the key in the dict
+    #  @param parm (str) : the string used to extract the vlaue from the dict
     def getInFileParm(self, parm):
-        """getInFileParm(parm)"""
         return self.inFile[parm]
-
     def setInFile(self, inFile):
-        """setInFile(inFile)"""
         self.inFile = inFile
     def getInFile(self):
-        """getInFile()"""
         return self.inFile
-    
     def getStatus(self):
-        """status = getStatus()"""
         return self.status
     def setStatus(self, status):
-        """setStatus( True|False )"""
         self.status = status
+    ## sets the default status
     def setDefaultStatus(self):
-        """ ;;; """
         self.status = self.FLAGS['DEFAULT']
-    
+    ### generates the parameter file contents from self.inFile, which can be passed to the 
+    #   radex executable, as a string. 
+    #   @return: (str)
     def genInputFileContentAsStr(self):
-        """genInputFileContentAsStr()"""
         self.nCollPart = len(self.inFile['collisionPartners'])
         
         strng = ''
@@ -116,8 +167,12 @@ class radex( ):
         
         return strng
 
+    ## chech whether the contents of self.inFile are within the ranges where
+    #  RADEX can work.  
+    #  @raise exception: NameException
+    #  @attention This method sets the value of self.status. The flag 'PARMSOK' is set
+    #  if the paramteres are ok, 'ERROR' is set otherwise
     def checkParameters(self):
-        """ ;;; """
         inFile = self.inFile
 
         for item in inFile:
@@ -145,9 +200,17 @@ class radex( ):
             self.status |= self.FLAGS['PARMSOK']
             return self.FLAGS['PARMSOK']
 
-    # run radex with the set input 
+    ## run the radex executable.
+    #  @param checkInput (bool): By default this is False. In this case, the input
+    #  parameters are not checked and the flag 'PARMSOK' (see #FLAGS) is set to self.#status. 
+    #  Otherwise, set this to True to force a paremter input check. 
+    #  @param verbose (bool)   : By default this is False. Set it to True to
+    #  to write the raw output to stdout 
+    #  @return (int) #status \n upon a successful run, 'RUNOK' and 'SUCCESS' flags are set. If the number of iterations
+    #  excceeds 10,000 'RUNOK','WARNING' and 'ITERWARN' flags are set. if the 'PARMSOK' is true
+    #  self.#rawoutput and self.#transitions are set, otherwise they remaine None
+    #  @todo: extract other warnings also, not just the one due to the max iterations
     def run(self, checkInput = None, verbose = None ):
-        """ run( checkInput = False (default) | True ) """                
         if checkInput == True:
             self.checkParameters()
         else:
@@ -181,13 +244,13 @@ class radex( ):
             
         return self.status
         
-    # run radex with the set input 
     def getRawOutput(self):
-        """getRawOutput()"""
         return self.rawOutput
 
+    ## Once radex exectues and dumps transition information, this method is used
+    #  to extract the line data.
+    #  @return None\n The instance variable self.#transitions is set
     def parseOutput(self):
-        """parseOutput()"""        
         output = self.rawOutput
         lines  =  output.splitlines()
         nLines = len(lines)
@@ -248,23 +311,25 @@ class radex( ):
             
         self.transitions = transitions
 
+    ## This method can be used to extract individual transition information from the self.#transitions 
+    #  list. For example, for CO, getTransition(0) would return the transition info for the 1-0 
+    #  transition
+    #  @param idx The index of the transition in the transition list. must be between 0 and len(self.#transitions) 
+    #  @return (dict:self.#transitions item)
     def getTransition(self, idx):
-        """tansitionInfo = getTransition( upper )"""
         return self.transitions[idx]
     
     def getWarnings(self):
-        """ warnings = getWarnings() """
         return self.warnings
     def getNIter(self):
-        """nIter = getNIter()"""
         return self.nIter
 
-    # set the axes and figure objects
+    ## set the axes and figure objects
     def setAxes(self, fig, axs):
         self.axs = axs
         self.fig = fig
         
-    # sets up the object to plot the radex output ( nx rows and four coluns)
+    ## sets up the object to plot the radex output ( nx rows and four coluns)
     def setupPlot(self, nx = None, fig = None, axs = None):
         """fig, axs = setupPlot(nx) # sets up the object to plot the radex output"""
         
@@ -277,7 +342,7 @@ class radex( ):
             
         return (self.fig, self.axs)
             
-    
+    ## make Axes
     def makeAxes(self, nx = None):
 
         if nx == None:
@@ -288,7 +353,7 @@ class radex( ):
         pyl.subplots_adjust(left=0.1, bottom=0.15, right=0.95, top=0.95, wspace=0.0, hspace=0.0)
         self.setAxes(fig, axs)
         
-    # plots the output of a certain model in a certain column in a predefined figure
+    ## plots the output of a certain model in a certain column in a predefined figure
     def plotModelInFigureColumn(self, allTrans=None, inAxes=None, title=None):
         
         nTrans = len(allTrans)
@@ -398,7 +463,7 @@ class radex( ):
         axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1])
         axes.set_xticklabels( xticksStrs, rotation = -45 )
     
-    # set the appropriate labels of all the axes
+    ## set the appropriate labels of all the axes
     def setLabels(self):
         
         axs = self.axs
@@ -452,7 +517,7 @@ class radex( ):
                     removeAll_xLabels(ax)
                     ax.set_xlabel('')
     
-    # plotting a single model
+    ## plotting a single model
     def plotModel(self):
         self.setupPlot(nx = 1)
         self.plotModelInFigureColumn( allTrans = np.arange(10), inAxes = self.axs, title='')
