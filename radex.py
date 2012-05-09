@@ -16,14 +16,15 @@ import subprocess
 # the output. Otherwise, the numerics are left intact. See 
 # www.strw.leidenuniv.nl/~moldata/radex.html 
 # for more details on RADEX.
-# @section AAA BBB
-# asdasdad
+# @section Examples 
+# A simple example on using this package/class is test_radex.py. A less trivial example
+# is radexView.py
 
-## Radex class
-#  Radex implementation
+## Radex class. 
+#  A wrapper class which runs radex parses its output into objects. see test_radex.py
+#  and radexView.py for examples on using this class. 
 #  @todo : docment the order in which things must be called
 class radex( ):
-    """a wrapper class which runs radex parses its output into objects.""" 
     
     ## Initializes some of the instance variables needed to run radex.
     #  @param execPath (String) The path to the radex executable
@@ -37,7 +38,11 @@ class radex( ):
         ## dict : dictonary for the species files, the keys of this dict are as follows 
         #  (see radex.py for an example) :\n
         #  SPECIE_STRING : FILENAME
-        self.moldataFiles =  { 'CO'   : 'co.dat'       ,
+        #  @todo implement a method to generate this dict automatically from all the files
+        #  in the directory molDataFiles\n
+        #  also implement a dict for the collision partners like 'e-' : 'e', but it might not
+        #  be necessary since RADEX takes both 'e' and 'e-'
+        self.molDataFiles =  { 'CO'   : 'co.dat'       ,
                                '13CO' : '13co.dat'     ,
                                'HCO+' : 'hco+@xpol.dat',
                                'HCN'  : 'hcn.dat'      ,
@@ -47,8 +52,7 @@ class radex( ):
         ## dict : dictionary holding all the input parameters. It is used to construct the input
         #  parameter file that is piped to the radex executable. It should be of the form :\n
         #  \code
-        #  inFile = { 'molData'                : 'co.dat'    ,
-        #             'outPath'                : 'foo'       ,
+        #  inFile = { 'specStr'                : 'CO'        ,
         #             'freqRange'              : [0, 50000]  ,
         #             'tKin'                   : 10.0        ,
         #             'collisionPartners'      : ['H2']      ,
@@ -59,8 +63,8 @@ class radex( ):
         #             'runAnother'             : 1           }
         #  \endcode
         #  All of the items in this dict correspond to the same parameters in radex except
-        #  'collisionPartners' and 'nDensCollisionPartners'. 'collisionPartners' is
-        #  a list of strings of species such as 'H2', or 'H' :\n
+        #  'collisionPartners' and 'nDensCollisionPartners', 'molDataDir' and 'specStr'. 
+        #  'collisionPartners' is a list of strings of species such as 'H2', or 'H' :\n
         #  \code 'collisionPartners' : ['H2'] \endcode
         #  or        
         #  \code 'collisionPartners' : ['H2','H+','e-'] \endcode
@@ -69,6 +73,8 @@ class radex( ):
         #  \code 'nDensCollisionPartners' : [1e3] \endcode
         #  or        
         #  \code 'nDensCollisionPartners' : [1e3, 1e1, 1e-2] \endcode
+        #  the parameter molData in the input parameter file is constructed by appending
+        #  the value of 'specStr' to self.#molDataDir 
         self.inFile       = None     
         ## integer : number of collision partners. This is the length of the list self.inFile['collisionPartners']
         self.nCollPart    = None     
@@ -77,7 +83,7 @@ class radex( ):
         ## string : the output of the run which would be dumped by RADEX when ran standalone 
         self.rawOutput    = None 
         ## list of strings : A list of strings containing the dumped by radex, if any. If there are
-        #  any warnings, the appropriate flag is set in \code self.FLAGS \endcode
+        #  any warnings, the appropriate flag is set in self.#FLAGS
         self.warnings     = None
         ## integer : number of iterations used when the run finishes.
         self.nIter        = None
@@ -100,22 +106,32 @@ class radex( ):
         #    'fluxcgs'  : numpy.float64 ( computed flux in cgs )
         #    \endverbatim 
         self.transitions = None
-        ## dict : Flags set when running radex which can be used to examing the output 
-        self.FLAGS       = {'DEFAULT'  : 0x000,   # \code default status, should be called before each run \endcode
-                            'ERROR'    : 0x001,   # failed
-                            'PARMSOK'  : 0x002,   # parameters are ok
-                            'RUNOK'    : 0x004,   # radex did all the iterations (but not neccesarly converged)
-                            'SUCCESS'  : 0x008,   # succeeded with no major warning (output should make sense)      
-                            'WARNING'  : 0x010,   # success with warnings, warning are
-                                                  # assigned to self.warnings
-                            'ITERWARN' : 0x020}   # number of iterations warning
+        ## dict : Flags set when running radex which can be used to examing the output. The flags are :
+        # \verbatim
+        #  'DEFAULT'  : Default status, should be called before each run 
+        #  'ERROR'    : failed 
+        #  'PARMSOK'  : parameters are ok 
+        #  'RUNOK'    : radex did all the iterations (but not neccesarly converged)
+        #  'SUCCESS'  : succeeded with no major warning (output should make sense)
+        #  'WARNING'  : success with warnings, warning are assigned to self.warnings 
+        #  'ITERWARN' : number of iterations warning
+        # \endverbatim See the source for the value of each flag
+        self.FLAGS       = {'DEFAULT': 0x000, 'ERROR'  : 0x001, 'PARMSOK' : 0x002, 'RUNOK': 0x004,   
+                            'SUCCESS': 0x008, 'WARNING': 0x010, 'ITERWARN': 0x020}   
                             
-        ## intger : the default stauts set from self.FLAGS
+        ## intger : the default stauts set from self.FLAGS. The flags are set in a bitwise fashion.
+        #  To check if a flag is set, it can be done in the following way :
+        #  \code self.getStatus() & self.FLAGS['FLAG'] \endcode
+        #  if the flag is set, it returns a number greater than 0, if not 
+        #  it returns a zero. (for more details on the values of the flags, see radex.py)
         self.status      = self.FLAGS['DEFAULT']
         # plotting attributes
         ## matplotlib.figure object : when set, the output is plotted in this figure
         self.fig = None
-        ## matplotlib.axes object : run output are plotted in this axes object
+        ## nump.ndarry matplotlib.axes object : run output are plotted in these axes objects
+        # for a single model self.axs has the shape (4,). When nx is larger than 1, the shape
+        # of self.#axs is  (4,nx). In other words, self.#axs is the object returned by
+        # self.fig, self.axs = pylab.subplots(4, nx )
         self.axs = None
         ## integer : number of models to run and plot
         self.nx  = None
@@ -137,21 +153,41 @@ class radex( ):
         return self.inFile
     def getStatus(self):
         return self.status
+    def getRawOutput(self):
+        return self.rawOutput
     def setStatus(self, status):
         self.status = status
     ## sets the default status
     def setDefaultStatus(self):
         self.status = self.FLAGS['DEFAULT']
-    ### generates the parameter file contents from self.inFile, which can be passed to the 
+    ## This method can be used to extract individual transition information from the self.#transitions 
+    #  list. For example, for CO, getTransition(0) would return the transition info for the 1-0 
+    #  transition
+    #  @param idx The index of the transition in the transition list. must be between 0 and len(self.#transitions) 
+    #  @return (dict:self.#transitions item)
+    def getTransition(self, idx):
+        return self.transitions[idx]
+    
+    def getWarnings(self):
+        return self.warnings
+    def getNIter(self):
+        return self.nIter
+
+    ## set the axes and figure objects
+    def setAxes(self, fig, axs):
+        self.axs = axs
+        self.fig = fig
+
+    ## generates the parameter file contents from self.inFile, which can be passed to the 
     #   radex executable, as a string. 
     #   @return: (str)
     def genInputFileContentAsStr(self):
         self.nCollPart = len(self.inFile['collisionPartners'])
         
         strng = ''
-        
-        strng  += '%s\n' % self.inFile['molData']
-        strng  += '%s\n' % self.inFile['outPath']
+
+        strng  += '%s/%s\n' % (self.molDataDir, self.molDataFiles[ self.inFile['specStr'] ])
+        strng  += 'foo\n'
         strng  += '%d %d\n' % (self.inFile['freqRange'][0], self.inFile['freqRange'][1])
         strng  += '%f\n' % (self.inFile['tKin'])
         strng  += '%d\n' % self.nCollPart
@@ -208,7 +244,7 @@ class radex( ):
     #  to write the raw output to stdout 
     #  @return (int) #status \n upon a successful run, 'RUNOK' and 'SUCCESS' flags are set. If the number of iterations
     #  excceeds 10,000 'RUNOK','WARNING' and 'ITERWARN' flags are set. if the 'PARMSOK' is true
-    #  self.#rawoutput and self.#transitions are set, otherwise they remaine None
+    #  self.#rawOutput and self.#transitions are set, otherwise they remaine None
     #  @todo: extract other warnings also, not just the one due to the max iterations
     def run(self, checkInput = None, verbose = None ):
         if checkInput == True:
@@ -219,9 +255,11 @@ class radex( ):
         if self.status &  self.FLAGS['PARMSOK']:
         
             radexInput = self.genInputFileContentAsStr()
-            #print '###################'
-            #print radexInput
-            #print '###################'
+            if verbose != None:
+                print '---------------------------------------------'
+                print radexInput
+                print '---------------------------------------------'
+            
             self.proccess = subprocess.Popen(self.execPath           , 
                                              stdin=subprocess.PIPE   ,  
                                              stdout=subprocess.PIPE  ,  
@@ -244,9 +282,6 @@ class radex( ):
             
         return self.status
         
-    def getRawOutput(self):
-        return self.rawOutput
-
     ## Once radex exectues and dumps transition information, this method is used
     #  to extract the line data.
     #  @return None\n The instance variable self.#transitions is set
@@ -310,28 +345,20 @@ class radex( ):
             transitions.append(transition)
             
         self.transitions = transitions
-
-    ## This method can be used to extract individual transition information from the self.#transitions 
-    #  list. For example, for CO, getTransition(0) would return the transition info for the 1-0 
-    #  transition
-    #  @param idx The index of the transition in the transition list. must be between 0 and len(self.#transitions) 
-    #  @return (dict:self.#transitions item)
-    def getTransition(self, idx):
-        return self.transitions[idx]
-    
-    def getWarnings(self):
-        return self.warnings
-    def getNIter(self):
-        return self.nIter
-
-    ## set the axes and figure objects
-    def setAxes(self, fig, axs):
-        self.axs = axs
-        self.fig = fig
         
-    ## sets up the object to plot the radex output ( nx rows and four coluns)
+    # -------------------------- Plotting Methods ---------------------------------
+    # -----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
+    
+    ## sets up the object to plot the radex output 
+    #  @param nx (integer) the number of vertical columns to setup (one model per column)
+    #  @param fig ( matplotlib.figure object ) Set this object to use a figure which
+    #  is pre-defined, otherwise, a new figure object is created. If this is not set
+    #  the axs keyword is igonored and a self.#axs object is created.  
+    #  @param axs ( numpy.ndarray of matplotlib.axes object ) The axes where the models will
+    #  be plotted. Should have dimensions nx x 4
+    #  @return  (self.#fig, self.#axs)\n in this method, also self.nx is set to nx
     def setupPlot(self, nx = None, fig = None, axs = None):
-        """fig, axs = setupPlot(nx) # sets up the object to plot the radex output"""
         
         self.nx = nx
         
@@ -342,7 +369,8 @@ class radex( ):
             
         return (self.fig, self.axs)
             
-    ## make Axes
+    ## creates and assings the self.#fig and self.#axs attributes
+    #  @param nx (see #setupPlot)  
     def makeAxes(self, nx = None):
 
         if nx == None:
@@ -354,6 +382,12 @@ class radex( ):
         self.setAxes(fig, axs)
         
     ## plots the output of a certain model in a certain column in a predefined figure
+    #  @param allTrans (integer list or numpy.int32) The indicies of the transitions in self.#transitions whose
+    #  data should be plotted, ex : numpy. 
+    #  @param inAxes ( nump.ndarray matplorlib.axes ) The axes colomn in which the model info will
+    #  be plotted. Fluxes are plotted in inAxes[0], T_ex, T_rot are plotted in inAxes[1], 
+    #  optical depth in inAxes[2] and population densiities in inAxes[3]
+    #  @param title (string) The title to be written at the top of the axes column  
     def plotModelInFigureColumn(self, allTrans=None, inAxes=None, title=None):
         
         nTrans = len(allTrans)
@@ -518,6 +552,7 @@ class radex( ):
                     ax.set_xlabel('')
     
     ## plotting a single model
+    #  @todo allow for a choice of the number of transitions to be plotted
     def plotModel(self):
         self.setupPlot(nx = 1)
         self.plotModelInFigureColumn( allTrans = np.arange(10), inAxes = self.axs, title='')

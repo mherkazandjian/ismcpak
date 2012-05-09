@@ -424,10 +424,10 @@ class meshArxv():
         bott  = 0.07
         sz    = 0.08
         vSpace = 0.0
-        self.pltRadex = [ pyl.axes([left, bott + 0*sz          , 3*sz, sz ]),
-                          pyl.axes([left, bott + 1*sz + vSpace , 3*sz, sz ]),
-                          pyl.axes([left, bott + 2*sz + vSpace , 3*sz, sz ]),
-                          pyl.axes([left, bott + 3*sz + vSpace , 3*sz, sz ]) ]
+        self.pltRadex = [pyl.axes([left, bott + 3*sz + vSpace , 3*sz, sz ]),
+                         pyl.axes([left, bott + 2*sz + vSpace , 3*sz, sz ]),
+                         pyl.axes([left, bott + 1*sz + vSpace , 3*sz, sz ]), 
+                         pyl.axes([left, bott + 0*sz          , 3*sz, sz ])]
         self.pltRadex = np.array(self.pltRadex)                           
         
         
@@ -580,16 +580,8 @@ class meshArxv():
             lineIntense.fill(0.0)
             nInCells.fill(0.0)
 
-            radexPath      = '/home/mher/ism/code/radex/Radex/bin/radex'
-            molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
-            radexObj = radex(radexPath)
-             
-            # make this more elegent and set the paths ONCE
-            molDataPath = molDataDirPath + '/' + radexObj.moldataFiles[self.radexParms['specStr']] 
-            print molDataPath
-            
-            inFile = { 'molData'                : molDataPath     ,
-                       'outPath'                : 'foo'           ,
+            radexObj = radex(self.radexParms['radexPath'], self.radexParms['molDataDirPath'])
+            inFile = { 'specStr'                : self.radexParms['specStr'],
                        'freqRange'              : [0, 50000]      ,
                        'tKin'                   : None            ,
                        'collisionPartners'      : ['H2']          ,
@@ -600,7 +592,7 @@ class meshArxv():
                        'runAnother'             : 1               }
             radexObj.setInFile( inFile )
             
-            every = 1
+            every = 10
             nDone = 0
             # computing the abundace of a specie
             for i in indsThisSec[0::every]:
@@ -711,15 +703,8 @@ class meshArxv():
                     #----------------------------------------------------
                     if self.radexObj == None:       
                         
-                        radexPath      = '/home/mher/ism/code/radex/Radex/bin/radex'
-                        molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
-                        self.radexObj = radex(radexPath)
-             
-                        # make this more elegent and set the paths ONCE
-                        molDataPath = molDataDirPath + '/' + self.radexObj.moldataFiles[self.radexParms['specStr']] 
-                        print molDataPath
-                                         
-                        inFile = {'molData'                : molDataPath ,
+                        self.radexObj = radex(self.radexParms['radexPath'], self.radexParms['molDataDirPath'])                 
+                        inFile = {'specStr'                : self.radexParms['specStr'],
                                   'outPath'                : 'foo'       ,
                                   'freqRange'              : [0, 50000]  ,
                                   'tKin'                   : None        ,
@@ -752,7 +737,7 @@ class meshArxv():
                         self.radexObj.run( checkInput = True )
 
                         if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
-                            self.radexObj.plotModelInFigureColumn(Jall=np.arange(20) + 1, inAxes=self.pltRadex, title='')
+                            self.radexObj.plotModelInFigureColumn(allTrans=np.arange(20) + 1, inAxes=self.pltRadex, title='')
                             self.radexObj.setLabels()
                         else:
                             print 'radex Failed'

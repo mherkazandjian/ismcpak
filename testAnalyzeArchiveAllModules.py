@@ -24,8 +24,11 @@ gridsRes      = 10
 abunSpecFname = '/home/mher/ism/code/ismcpak/data/species.inp'
 lgammaMechSec = -30.0
 metallicity   = 2.0
-radexParms    = { 'specStr' : 'CO',
-                  'xH2_Min' : 2*0.01  }
+
+radexParms    = { 'radexPath'      : '/home/mher/ism/code/radex/Radex/bin/radex',  
+                  'molDataDirPath' : '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
+                  'specStr'        : 'CO',
+                  'xH2_Min'        : 2*0.01  }
 #-----------------chemical network parameters------------------------
 rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
 specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'

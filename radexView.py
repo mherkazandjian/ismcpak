@@ -12,18 +12,19 @@ from radex import *
 Jall = np.arange(20) + 1
 
 # path of the radex excutable
-radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'  
+radexPath = '/home/mher/ism/code/radex/Radex/bin/radex' 
+molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
+
 # parameters that will be passed to radex
-inFile = { 'molData'                : 'co.dat'                              ,
-           'outPath'                : 'foo'                              ,
-           'freqRange'              : [0, 500000]                              ,
-           'tKin'                   : None                           ,
-           'collisionPartners'      : ['H2']                                  ,
-           'nDensCollisionPartners' : [100.0]                                   ,
-           'tBack'                  : 2.73                                    ,
-           'molnDens'               : 1e18                                    ,
-           'lineWidth'              : 1.0                                     ,
-           'runAnother'             : 1                                       }
+inFile = { 'specStr'                : 'CO'          ,
+           'freqRange'              : [0, 500000]   ,
+           'tKin'                   : None          ,
+           'collisionPartners'      : ['H2']        ,
+           'nDensCollisionPartners' : [100.0]       ,
+           'tBack'                  : 2.73          ,
+           'molnDens'               : 1e18          ,
+           'lineWidth'              : 1.0           ,
+           'runAnother'             : 1             }
 
 """
 inFile['molnDens'] = 1e23
@@ -51,7 +52,7 @@ parms = ( ('molnDens', 1e16),
 
 
 # creating the radex process instance
-radexObj = radex(radexPath)
+radexObj = radex(radexPath, molDataDirPath)
 radexObj.setInFile( inFile )
 fig, axs = radexObj.setupPlot( len(parms) )
 

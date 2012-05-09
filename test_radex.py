@@ -12,8 +12,8 @@ radexPath      = '/home/mher/ism/code/radex/Radex/bin/radex'
 molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 
 # parameters that will be passed to radex single partner
-inFile = { 'molData'                : 'co.dat'                              ,
-           'outPath'                : 'foo'                              ,
+"""
+inFile = { 'specStr'                : 'CN'                              ,
            'freqRange'              : [0, 50000]                              ,
            'tKin'                   : 10.0                                    ,
            'collisionPartners'      : ['H2']                              ,
@@ -22,22 +22,21 @@ inFile = { 'molData'                : 'co.dat'                              ,
            'molnDens'               : 1e14                                    ,
            'lineWidth'              : 1.0                                     ,
            'runAnother'             : 1                                       }
-
 """
+
 # parameters that will be passed to radex multiple partners
-inFile = { 'molData'                : 'c+.dat'                                ,
-           'outPath'                : 'foo'                                   ,
+inFile = { 'specStr'                : 'CO'                                ,
            'freqRange'              : [0, 50000]                              ,
            'tKin'                   : 300.0                                    ,
-           'collisionPartners'      : ['H2','H' , 'e', 'H+', 'He']            ,
+           'collisionPartners'      : ['H2','H' , 'e-', 'H+', 'He']            ,
            'nDensCollisionPartners' : [1e1 , 1e2, 1e2, 1e1 , 1e3 ]            ,
            'tBack'                  : 2.73                                    ,
            'molnDens'               : 1e18                                    ,
            'lineWidth'              : 1.0                                     ,
            'runAnother'             : 1                                       }
-"""
+
 # creating the radex process instance
-radexObj = radex(radexPath)
+radexObj = radex(radexPath, molDataDirPath)
 
 t0 = time()
 # setting put the parameters, running and parsing the output
@@ -47,8 +46,6 @@ radexObj.run( checkInput = True, verbose = True)
 
 if radexObj.getStatus() &  radexObj.FLAGS['SUCCESS'] :
     
-        print radexObj.getRawOutput()
-
         radexObj.parseOutput()
         t1 = time()
 
