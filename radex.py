@@ -388,7 +388,7 @@ class radex( ):
     #  be plotted. Fluxes are plotted in inAxes[0], T_ex, T_rot are plotted in inAxes[1], 
     #  optical depth in inAxes[2] and population densiities in inAxes[3]
     #  @param title (string) The title to be written at the top of the axes column  
-    def plotModelInFigureColumn(self, allTrans=None, inAxes=None, title=None):
+    def plotModelInFigureColumn(self, allTrans = None, inAxes = None, title = None):
         
         nTrans = len(allTrans)
         #----------------flux-------------------------
@@ -426,6 +426,7 @@ class radex( ):
             
         axes.semilogy(xPlot, yPlot, 'b')
         axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1e-3])
+        axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
         
 
@@ -451,6 +452,7 @@ class radex( ):
         axes.semilogy(xPlot, yPlot1, 'b')
         axes.semilogy(xPlot, yPlot2, 'r')
         axes.axis([np.min(allTrans), np.max(allTrans), 1, 10000])
+        axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
         
         #------------------optical depth----------------------------------
@@ -471,6 +473,7 @@ class radex( ):
             yPlot[i] = yThis
         axes.plot(xPlot, yPlot, 'b')
         axes.axis([np.min(allTrans), np.max(allTrans), -1, np.max(yPlot)])
+        axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
         
         #------------------population densities-----------------------------
@@ -495,6 +498,7 @@ class radex( ):
         axes.semilogy(xPlot, yPlot1, 'b')
         axes.semilogy(xPlot, yPlot2, 'r')
         axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1])
+        axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
     
     ## set the appropriate labels of all the axes

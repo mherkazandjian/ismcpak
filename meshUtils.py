@@ -570,7 +570,7 @@ class meshArxv():
             cbar10.set_ticks( cbarTickValues )
             self.grds[1][0].plotContour( levels = contourValues )
             
-            
+            """
             # some other diagnostic (bottom right grid)
             # ---> plotting line intensities
             #--------------------------------------------------------------
@@ -592,7 +592,7 @@ class meshArxv():
                        'runAnother'             : 1               }
             radexObj.setInFile( inFile )
             
-            every = 10
+            every = 1
             nDone = 0
             # computing the abundace of a specie
             for i in indsThisSec[0::every]:
@@ -602,9 +602,10 @@ class meshArxv():
                 thisMeshObj = mesh( None, self.chemNet, self.metallicity)
                 thisMeshObj.setData( self.meshes[i] )
 
-                (gasTRadex, nDensH2, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2', 
+                (gasTRadex, nColls, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2', 
                                                                                         self.radexParms['specStr'],
                                                                                         self.radexParms['xH2_Min'])
+                nDensH2 = nColls['H2']
                 
                 if gasTRadex == None:
                     print 'radexGrid : not enough H2'
@@ -658,7 +659,7 @@ class meshArxv():
             cbarTickValues =  [-2, -1, 0, 1, 2]
             cbar11.set_ticks( cbarTickValues )
             self.grds[1][1].plotContour( levels = cbarTickValues )
-            
+            """
             
             print 'done'
                                 
@@ -719,15 +720,20 @@ class meshArxv():
                         
                     self.radexObj.setupPlot(nx = 1, fig = self.fig, axs = self.pltRadex)
                     
-                    (gasTRadex, nDensH2, colDensThisSpec,) = msh.getRadexParameters('H2', 
-                                                                                    self.radexParms['specStr'], 
-                                                                                    self.radexParms['xH2_Min'])
-                
+                    (gasTRadex, nColls, colDensThisSpec,) = msh.getRadexParameters('H2', 
+                                                                                   self.radexParms['specStr'], 
+                                                                                   self.radexParms['xH2_Min'])
+                    nDensH2 = nColls['H2']
+                    print 'TAKE THE SPCEICIES TO BE INCLUDED AS COLLIDERS FROM THE DRIVER'
+                    print 'IN THIS CASE, IF IT COMPLIES WITH THE MIN/MAX RADEX REQUIREMENTS'
+                    print 'PASS IT TO THE RADEX PARAMETERS OTHERWISE, KEEP THE COLLIDERS '
+                    print 'THAT COMPLY.'
+                    asdaasdasd
                     if gasTRadex == None:
                         print 'not enough H2'
                     else:
                 
-                        print 'Radex input parms : ', gasTRadex, nDensH2, colDensThisSpec
+                        print 'Radex input parms : ', gasTRadex, nColls, colDensThisSpec
                             
                         self.radexObj.setInFileParm('tKin', gasTRadex)
                         self.radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
@@ -737,7 +743,10 @@ class meshArxv():
                         self.radexObj.run( checkInput = True )
 
                         if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
-                            self.radexObj.plotModelInFigureColumn(allTrans=np.arange(20) + 1, inAxes=self.pltRadex, title='')
+                            
+                            self.radexObj.plotModelInFigureColumn(allTrans = np.arange(20),
+                                                                  inAxes = self.pltRadex, 
+                                                                  title='')
                             self.radexObj.setLabels()
                         else:
                             print 'radex Failed'

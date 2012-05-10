@@ -172,11 +172,13 @@ class mesh( ):
         self.plt01Spec2Plt, = pyl.semilogy([1],  [1], 'g' )
         self.plt01Spec3Plt, = pyl.semilogy([1],  [1], 'b' )
         self.plt01Spec4Plt, = pyl.semilogy([1],  [1], 'c' )
+        self.plt01Spec5Plt, = pyl.semilogy([1],  [1], 'y' )
         pyl.axis([0, 20.0, 1e-12, 2])
         pyl.text(0.4, 1e-10, '$H^+$' , color='r')
         pyl.text(0.4, 1e-9 , '$H$'   , color='g')
         pyl.text(0.4, 1e-8 , '$H_2$' , color='b')
-        pyl.text(0.4, 1e-7 , '$e^-$' , color='c')
+        pyl.text(0.4, 1e-11 ,'$e^-$' , color='c')
+        pyl.text(0.4, 1e-12 ,'$He$'  , color='y')
         self.plt01ax1 = pyl.gca()
         for tick in self.plt01ax1.xaxis.get_major_ticks():
             tick.label1On = False
@@ -184,8 +186,8 @@ class mesh( ):
         pyl.setp(self.plt01ax2, 'ylim',(1e-12, 2) )
         pyl.setp(self.plt01ax2, 'xlim',(0, 20) )
         # redundant, but we do it just to get the right ticks on the y axis
-        self.plt01ax2.semilogy([1],  [1],   'g' )
-        self.plt01ax2.semilogy([1],  [1],  'b' )
+        self.plt01ax2.semilogy([1],  [1], 'g' )
+        self.plt01ax2.semilogy([1],  [1], 'b' )
         self.plt01ax2.semilogy([1],  [1], 'c' )
         # deleting all the ticks on the first axis
         for tick in self.plt01ax1.yaxis.get_major_ticks():
@@ -204,7 +206,9 @@ class mesh( ):
         pyl.hold()
         self.plt10Spec2Plt, = pyl.semilogy([1],  [1], 'g' )
         self.plt10Spec3Plt, = pyl.semilogy([1],  [1], 'b' )
+        self.plt10Spec4Plt, = pyl.semilogy([1],  [1], 'c' )
         pyl.axis([0, 20, 1e-12, 2])
+        pyl.text(0.4, 1e-11 , '$O$'   , color='c')
         pyl.text(0.4, 1e-10, '$C^+$' , color='r')
         pyl.text(0.4, 1e-9 , '$C$'   , color='g')
         pyl.text(0.4, 1e-8 , '$CO$'  , color='b')
@@ -260,7 +264,13 @@ class mesh( ):
         self.plt01Spec3Plt.set_ydata( data['state']['abun'][spcs['H2'].num] )
         self.plt01Spec4Plt.set_xdata( data['state']['Av'] )
         self.plt01Spec4Plt.set_ydata( data['state']['abun'][spcs['e-'].num] )
-        
+        self.plt01Spec5Plt.set_xdata( data['state']['Av'] )
+        self.plt01Spec5Plt.set_ydata( data['state']['abun'][spcs['He'].num] )
+        print spcs['He'].num
+        print data['state']['abun'][spcs['He'].num]
+        print 'SEE WHY THE ABUNDANCE OF HE is 0.085 ALWAYS!!!!!!!!! '
+        print 'MAYBE SOME INDEXING PROBLEM'
+        asdasdad
         
         # subplot 1,0
         self.plt10Spec1Plt.set_xdata( data['state']['Av'] )
@@ -269,6 +279,8 @@ class mesh( ):
         self.plt10Spec2Plt.set_ydata( data['state']['abun'][spcs['C'].num] )
         self.plt10Spec3Plt.set_xdata( data['state']['Av'] )
         self.plt10Spec3Plt.set_ydata( data['state']['abun'][spcs['CO'].num] )
+        self.plt10Spec4Plt.set_xdata( data['state']['Av'] )
+        self.plt10Spec4Plt.set_ydata( data['state']['abun'][spcs['O'].num] )
 
         # subplot 1,1
         self.plt11Spec1Plt.set_xdata( data['state']['Av'] )
@@ -278,9 +290,12 @@ class mesh( ):
         self.plt11Spec3Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec3Plt.set_ydata( data['state']['abun'][spcs['HCO+'].num] )
         
-    #  computes the weighted average temperature, weighted XX density with which  
-    #  YY species collide and and total column of a species YY in the reigon
-    # of the slab where the abundance of XX is above the XX_threshold 
+    ## computes the average temperature, weighted by the column density of the XX
+    #  specie. which collides with YY_i other species. The average density of the 
+    #  YY_i species is also weighed by the column density of the specie XX in each
+    #  slab. Only slabs which have abundances greater than XX_threshold are taken
+    #  into account in computing N(XX) and the average collider densities and the 
+    #  average temepratures.
     def getRadexParameters(self, colliderStr=None, speciesStr=None, threshold=None):
 
         coll = colliderStr
@@ -301,9 +316,14 @@ class mesh( ):
         Av   = m.data['state']['Av']
         gasT = m.data['state']['gasT']
 
-        xSpec  = m.data['state']['abun'][ net.species[spec].num ]
-        xColl  = m.data['state']['abun'][ net.species[coll].num ]
-        inds = np.nonzero( xColl  > xMin  )
+        xSpec   = m.data['state']['abun'][ net.species[spec].num ]
+        xColle  = m.data['state']['abun'][ net.species['e-'].num ]
+        xCollHP = m.data['state']['abun'][ net.species['H+'].num ]
+        xCollH  = m.data['state']['abun'][ net.species['H'].num ]
+        xCollHe = m.data['state']['abun'][ net.species['He'].num ]
+        xCollH2 = m.data['state']['abun'][ net.species['H2'].num ]
+
+        inds = np.nonzero( xCollH2  > xMin  )
 
         if len(inds[0]) == 0:
             return (None, None, None)
@@ -320,19 +340,41 @@ class mesh( ):
         dx    = dx[inds]
         xSpec = xSpec[inds]
         gasT  = gasT[inds]
-        xColl = xColl[inds]
-        #print xColl
-        # calculating the means
-        nSpec     = xSpec * nGas
-        nColl     = xColl * nGas
-        NCO       = nSpec * dx 
-        N_specLVG = np.sum(NCO)
+        xColle  = xColle[inds]
+        xCollHP = xCollHP[inds]
+        xCollH  = xCollH[inds]
+        xCollHe = xCollHe[inds]
+        xCollH2 = xCollH2[inds]
 
-        TMean     = np.sum( NCO*gasT  ) / N_specLVG
-        nCollMean = np.sum( NCO*nColl ) / N_specLVG
+        #print xCollH2
+        # calculating the means
+        nSpec    = xSpec * nGas
+        nColle   = xColle * nGas
+        nCollHP  = xCollHP * nGas
+        nCollH   = xCollH * nGas
+        nCollHe  = xCollHe * nGas
+        nCollH2  = xCollH2 * nGas
         
-        #print 'gas T at the end of the slab = ', gasT[-1] 
-        return (TMean, nCollMean, N_specLVG)
+        NSpec     = nSpec * dx 
+        N_specLVG = np.sum(NSpec)
+
+        TMean       = np.sum( NSpec*gasT    ) / N_specLVG
+        nColleMean  = np.sum( NSpec*nColle  ) / N_specLVG
+        nCollHPMean = np.sum( NSpec*nCollHP ) / N_specLVG
+        nCollHMean  = np.sum( NSpec*nCollH  ) / N_specLVG
+        nCollHeMean = np.sum( NSpec*nCollHe ) / N_specLVG
+        nCollH2Mean = np.sum( NSpec*nCollH2 ) / N_specLVG
+        
+        #print 'mesh.py:gas T at the end of the slab = ', gasT[-1] 
+        return (
+                TMean, 
+                {'e-':nColleMean, 
+                 'H+':nCollHPMean,
+                 'H' :nCollHMean,
+                 'He':nCollHeMean,
+                 'H2':nCollH2Mean },
+                 N_specLVG
+                 )
     
 
     def set_chemNet(self, chemNet):

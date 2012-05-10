@@ -47,8 +47,8 @@ net.assignNumbersToSpecies(fileName = specNumFile)
 
 # setting up the PDR slab
 m = mesh(meshFname, net, metallicity)
-TMean1, nH2Mean1, NCOLVG1, = m.getRadexParameters('H2', 'CO', 2*0.01)
-print TMean1, nH2Mean1, NCOLVG1
+TMean1, nColls, NCOLVG1, = m.getRadexParameters('H2', 'CO', 2*0.01)
+print TMean1, nColls, NCOLVG1
 
 m.plot()
 
