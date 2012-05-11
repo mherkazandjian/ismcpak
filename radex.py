@@ -178,6 +178,17 @@ class radex( ):
         self.axs = axs
         self.fig = fig
 
+    ## removes colliders from the dictionary of the self.#inFile when they are not in the
+    #  ranges that radex accepts
+    def filterColliders(self):
+        # removing the colliders which have abundances less than the one range 
+        # that radex accepts
+        for (i, nDense) in enumerate(self.inFile['nDensCollisionPartners']):
+            if nDense > 1e12 or nDense < 1e-4:
+                self.inFile['nDensCollisionPartners'].pop(i)
+                self.inFile['collisionPartners'].pop(i)
+        asdasd
+                
     ## generates the parameter file contents from self.inFile, which can be passed to the 
     #   radex executable, as a string. 
     #   @return: (str)
@@ -200,7 +211,7 @@ class radex( ):
         strng += '%e\n' % self.inFile['molnDens']
         strng += '%f\n' % self.inFile['lineWidth']
         strng += '%d'   % self.inFile['runAnother']
-        
+        print strng
         return strng
 
     ## chech whether the contents of self.inFile are within the ranges where

@@ -266,11 +266,6 @@ class mesh( ):
         self.plt01Spec4Plt.set_ydata( data['state']['abun'][spcs['e-'].num] )
         self.plt01Spec5Plt.set_xdata( data['state']['Av'] )
         self.plt01Spec5Plt.set_ydata( data['state']['abun'][spcs['He'].num] )
-        print spcs['He'].num
-        print data['state']['abun'][spcs['He'].num]
-        print 'SEE WHY THE ABUNDANCE OF HE is 0.085 ALWAYS!!!!!!!!! '
-        print 'MAYBE SOME INDEXING PROBLEM'
-        asdasdad
         
         # subplot 1,0
         self.plt10Spec1Plt.set_xdata( data['state']['Av'] )
@@ -358,24 +353,27 @@ class mesh( ):
         NSpec     = nSpec * dx 
         N_specLVG = np.sum(NSpec)
 
-        TMean       = np.sum( NSpec*gasT    ) / N_specLVG
+        TMean = np.sum( NSpec*gasT    ) / N_specLVG
         nColleMean  = np.sum( NSpec*nColle  ) / N_specLVG
         nCollHPMean = np.sum( NSpec*nCollHP ) / N_specLVG
         nCollHMean  = np.sum( NSpec*nCollH  ) / N_specLVG
         nCollHeMean = np.sum( NSpec*nCollHe ) / N_specLVG
         nCollH2Mean = np.sum( NSpec*nCollH2 ) / N_specLVG
         
+        nDenseColl = {'e-': nColleMean ,
+                      'H+': nCollHPMean,
+                      'H' : nCollHMean ,
+                      'He': nCollHeMean,
+                      'H2': nCollH2Mean}
+            
         #print 'mesh.py:gas T at the end of the slab = ', gasT[-1] 
         return (
                 TMean, 
-                {'e-':nColleMean, 
-                 'H+':nCollHPMean,
-                 'H' :nCollHMean,
-                 'He':nCollHeMean,
-                 'H2':nCollH2Mean },
-                 N_specLVG
-                 )
+                nDenseColl,
+                N_specLVG
+                )
     
+
 
     def set_chemNet(self, chemNet):
         self.chemNet = chemNet

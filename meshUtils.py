@@ -709,8 +709,8 @@ class meshArxv():
                                   'outPath'                : 'foo'       ,
                                   'freqRange'              : [0, 50000]  ,
                                   'tKin'                   : None        ,
-                                  'collisionPartners'      : ['H2']      ,
-                                  'nDensCollisionPartners' : [None]      ,
+                                  'collisionPartners'      : None      ,
+                                  'nDensCollisionPartners' : None      ,
                                   'tBack'                  : 2.73        ,
                                   'molnDens'               : None        ,
                                   'lineWidth'              : 1.0         ,
@@ -723,22 +723,26 @@ class meshArxv():
                     (gasTRadex, nColls, colDensThisSpec,) = msh.getRadexParameters('H2', 
                                                                                    self.radexParms['specStr'], 
                                                                                    self.radexParms['xH2_Min'])
-                    nDensH2 = nColls['H2']
-                    print 'TAKE THE SPCEICIES TO BE INCLUDED AS COLLIDERS FROM THE DRIVER'
-                    print 'IN THIS CASE, IF IT COMPLIES WITH THE MIN/MAX RADEX REQUIREMENTS'
-                    print 'PASS IT TO THE RADEX PARAMETERS OTHERWISE, KEEP THE COLLIDERS '
-                    print 'THAT COMPLY.'
-                    asdaasdasd
+                    # getting the collider densities in the same order of the supplied input spcie string list 
+                    nDensColls = [ nColls[specStr] for specStr in self.radexParms['collisionPartners'] ]
+                    #print nDensColls
+
                     if gasTRadex == None:
                         print 'not enough H2'
                     else:
                 
                         print 'Radex input parms : ', gasTRadex, nColls, colDensThisSpec
-                            
+    
                         self.radexObj.setInFileParm('tKin', gasTRadex)
-                        self.radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
+                        self.radexObj.setInFileParm('collisionPartners', self.radexParms['collisionPartners'] )
+                        self.radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
                         self.radexObj.setInFileParm('molnDens', colDensThisSpec)
                     
+                        self.radexObj.filterColliders()
+                        print 'ONCE FILTERED AND CHECKED THE COLLIDERS, IF NO COLLIDERS EXIST DO NOT RUN'
+                        print 'RADEX'
+                        asdasdads
+                        
                         self.radexObj.setDefaultStatus()
                         self.radexObj.run( checkInput = True )
 
