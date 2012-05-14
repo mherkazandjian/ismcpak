@@ -570,7 +570,6 @@ class meshArxv():
             cbar10.set_ticks( cbarTickValues )
             self.grds[1][0].plotContour( levels = contourValues )
             
-            """
             # some other diagnostic (bottom right grid)
             # ---> plotting line intensities
             #--------------------------------------------------------------
@@ -584,14 +583,15 @@ class meshArxv():
             inFile = { 'specStr'                : self.radexParms['specStr'],
                        'freqRange'              : [0, 50000]      ,
                        'tKin'                   : None            ,
-                       'collisionPartners'      : ['H2']          ,
-                       'nDensCollisionPartners' : [None]          ,
+                       'collisionPartners'      : None            ,
+                       'nDensCollisionPartners' : None            ,
                        'tBack'                  : 2.73            ,
                        'molnDens'               : None            ,
                        'lineWidth'              : 1.0             ,
                        'runAnother'             : 1               }
             radexObj.setInFile( inFile )
-            
+
+            """
             every = 1
             nDone = 0
             # computing the abundace of a specie
@@ -602,19 +602,28 @@ class meshArxv():
                 thisMeshObj = mesh( None, self.chemNet, self.metallicity)
                 thisMeshObj.setData( self.meshes[i] )
 
-                (gasTRadex, nColls, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2', 
-                                                                                        self.radexParms['specStr'],
-                                                                                        self.radexParms['xH2_Min'])
-                nDensH2 = nColls['H2']
-                
-                if gasTRadex == None:
-                    print 'radexGrid : not enough H2'
-                    continue
-                
-                print 'radexGrid : radex parms : ', gasTRadex, nDensH2, colDensThisSpec        
+                (gasTRadex, nColls, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2',  # ;;; this parameter is redundant
+                                                                                       self.radexParms['specStr'],  
+                                                                                       self.radexParms['xH2_Min'])  # ;;; this parameter is redundant
+
+                # getting the collider densities in the same order of the supplied input spcie string list 
+                nDensColls = [ nColls[collSpecStr] for collSpecStr in self.radexParms['collisionPartners'] ]
+                collsStr   = list(self.radexParms['collisionPartners'])
+                #print 'input coll species', self.radexParms['collisionPartners'] 
+                #print 'nColls after putting them in the right order = ', nDensColls
+
+                print 'radexGrid : radex parms : ', gasTRadex, nDensColls, colDensThisSpec
                 radexObj.setInFileParm('tKin', gasTRadex)
-                radexObj.setInFileParm('nDensCollisionPartners', [nDensH2])
+                radexObj.setInFileParm('collisionPartners', collsStr )
+                radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
                 radexObj.setInFileParm('molnDens', colDensThisSpec)
+
+                radexObj.filterColliders()
+                
+                if len(radexObj.inFile['collisionPartners']) == 0:
+                    print 'not enough colliders'
+                    continue
+                        
                 status = radexObj.run( checkInput = True )
 
                 if status & radexObj.FLAGS['SUCCESS']:
@@ -632,8 +641,8 @@ class meshArxv():
                 CO10 = radexObj.getTransition(1)  # get1e17ting the info of the transiotion from 1->0
                 
                 ####
-                CO10to9 = radexObj.getTransition(10)  # getting the info of the transiotion from 1->0
-                CO3to2  = radexObj.getTransition(3)  # getting the info of the transiotion from 1->0
+                #CO10to9 = radexObj.getTransition(10)  # getting the info of the transiotion from 1->0
+                #CO3to2  = radexObj.getTransition(3)  # getting the info of the transiotion from 1->0
                 #print 'CO 1->0 flux (erg cm^-2 s^-1) = %e ' % (CO10['fluxcgs'])
                 
                 zThis = CO10['fluxcgs']
@@ -707,7 +716,7 @@ class meshArxv():
                         self.radexObj = radex(self.radexParms['radexPath'], self.radexParms['molDataDirPath'])                 
                         inFile = {'specStr'                : self.radexParms['specStr'],
                                   'outPath'                : 'foo'       ,
-                                  'freqRange'              : [0, 50000]  ,
+                                  'freqRange'              : [0, 0]  ,
                                   'tKin'                   : None        ,
                                   'collisionPartners'      : None      ,
                                   'nDensCollisionPartners' : None      ,
@@ -720,31 +729,32 @@ class meshArxv():
                         
                     self.radexObj.setupPlot(nx = 1, fig = self.fig, axs = self.pltRadex)
                     
-                    (gasTRadex, nColls, colDensThisSpec,) = msh.getRadexParameters('H2', 
+                    (gasTRadex, nColls, colDensThisSpec,) = msh.getRadexParameters('H2',   # ;;; this parameter is redundant 
                                                                                    self.radexParms['specStr'], 
-                                                                                   self.radexParms['xH2_Min'])
+                                                                                   self.radexParms['xH2_Min'])  # ;;; this parameter is redundant
+    
                     # getting the collider densities in the same order of the supplied input spcie string list 
-                    nDensColls = [ nColls[specStr] for specStr in self.radexParms['collisionPartners'] ]
-                    #print nDensColls
+                    nDensColls = [ nColls[collSpecStr] for collSpecStr in self.radexParms['collisionPartners'] ]
+                    collsStr   = list(self.radexParms['collisionPartners'])
+                    #print 'input coll species', self.radexParms['collisionPartners'] 
+                    #print 'nColls after putting them in the right order = ', nDensColls
 
-                    if gasTRadex == None:
-                        print 'not enough H2'
+                    self.radexObj.setInFileParm('tKin', gasTRadex)
+                    self.radexObj.setInFileParm('collisionPartners', collsStr )
+                    self.radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
+                    self.radexObj.setInFileParm('molnDens', colDensThisSpec)
+                    
+                    self.radexObj.filterColliders()
+                    
+                        
+                    if len(self.radexObj.inFile['collisionPartners']) == 0:
+                        print 'not enough colliders'
                     else:
                 
-                        print 'Radex input parms : ', gasTRadex, nColls, colDensThisSpec
-    
-                        self.radexObj.setInFileParm('tKin', gasTRadex)
-                        self.radexObj.setInFileParm('collisionPartners', self.radexParms['collisionPartners'] )
-                        self.radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
-                        self.radexObj.setInFileParm('molnDens', colDensThisSpec)
-                    
-                        self.radexObj.filterColliders()
-                        print 'ONCE FILTERED AND CHECKED THE COLLIDERS, IF NO COLLIDERS EXIST DO NOT RUN'
-                        print 'RADEX'
-                        asdasdads
-                        
+                        print 'Radex input parms computed from the slab: ', gasTRadex, nColls, colDensThisSpec
+                            
                         self.radexObj.setDefaultStatus()
-                        self.radexObj.run( checkInput = True )
+                        self.radexObj.run( checkInput = True, verbose = True )
 
                         if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
                             
@@ -753,8 +763,8 @@ class meshArxv():
                                                                   title='')
                             self.radexObj.setLabels()
                         else:
-                            print 'radex Failed'
-                            print self.radexObj.warnings 
+                            for warning in self.radexObj.warnings:
+                                print 'meshUtils.py : ', warning  
                         #----------------------------------------------------
                     
                     pyl.draw()

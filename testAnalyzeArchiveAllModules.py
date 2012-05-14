@@ -27,17 +27,19 @@ metallicity   = 2.0
 
 radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  
                   'molDataDirPath'    : '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                  'specStr'           : 'CO',
+                  'specStr'           : 'O',
 #                  'xH2_Min'          : 2*0.0000000001
                   'xH2_Min'           : -1.0,
-                  'collisionPartners' : ['H2','H+','He','H','e-']
+                  'collisionPartners' : ['H2','H+','H']
+#                  'collisionPartners' : ['H2','H','H+','e-']
+#                  'collisionPartners' : ['H2']
+#                  'collisionPartners' : ['H2','H+','e-','H']
                 }
 #-----------------chemical network parameters------------------------
 rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
 specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
 underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
-
 
 
 # elements and basic species from which all the other species are made

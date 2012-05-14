@@ -318,9 +318,8 @@ class mesh( ):
         xCollHe = m.data['state']['abun'][ net.species['He'].num ]
         xCollH2 = m.data['state']['abun'][ net.species['H2'].num ]
 
-        inds = np.nonzero( xCollH2  > xMin  )
-
-        if len(inds[0]) == 0:
+        inds = np.nonzero( xCollH2  > xMin  ) # ;;; remove this later
+        if len(inds[0]) == 0:                 # ;;; remove this later
             return (None, None, None)
         
         # assigning the thickness of the last slab to the one before the last one

@@ -48,6 +48,9 @@ class radex( ):
                                'HCN'  : 'hcn.dat'      ,
                                'HNC'  : 'hnc.dat'      ,
                                'CS'   : 'cs@xpol.dat'  ,
+                               'C'    : 'catom.dat'    ,
+                               'C+'   : 'c+.dat'       ,
+                               'O'    : 'oatom.dat'    ,
                                'CN'   : 'cn.dat'       }
         ## dict : dictionary holding all the input parameters. It is used to construct the input
         #  parameter file that is piped to the radex executable. It should be of the form :\n
@@ -178,16 +181,17 @@ class radex( ):
         self.axs = axs
         self.fig = fig
 
-    ## removes colliders from the dictionary of the self.#inFile when they are not in the
-    #  ranges that radex accepts
+    ## removes colliders from the dictionary of the self.#inFile if their density 
+    #  is less than the minimum accepted value by RADEX (for now, this ie 1e-3 cm^{-3} )
     def filterColliders(self):
         # removing the colliders which have abundances less than the one range 
         # that radex accepts
         for (i, nDense) in enumerate(self.inFile['nDensCollisionPartners']):
-            if nDense > 1e12 or nDense < 1e-4:
+            if nDense <= 1e-3:
+                print 'poped ', self.inFile['nDensCollisionPartners'][i], self.inFile['collisionPartners'][i]
                 self.inFile['nDensCollisionPartners'].pop(i)
                 self.inFile['collisionPartners'].pop(i)
-        asdasd
+                 
                 
     ## generates the parameter file contents from self.inFile, which can be passed to the 
     #   radex executable, as a string. 
@@ -211,7 +215,7 @@ class radex( ):
         strng += '%e\n' % self.inFile['molnDens']
         strng += '%f\n' % self.inFile['lineWidth']
         strng += '%d'   % self.inFile['runAnother']
-        print strng
+        print '------------\n%s\n-----------------\n' % strng
         return strng
 
     ## chech whether the contents of self.inFile are within the ranges where
@@ -234,7 +238,7 @@ class radex( ):
         # checking for correct range for the densities of the collion partners
         for i, collPartner in enumerate(inFile['collisionPartners']):
             nDens = inFile['nDensCollisionPartners'][i]
-            if nDens < 1e-4 or nDens > 1e12 :
+            if nDens < 1e-3 or nDens > 1e12 :
                 self.status |= self.FLAGS['ERROR']
                 
         # checking for correct range for the species column density
@@ -258,15 +262,16 @@ class radex( ):
     #  self.#rawOutput and self.#transitions are set, otherwise they remaine None
     #  @todo: extract other warnings also, not just the one due to the max iterations
     def run(self, checkInput = None, verbose = None ):
+        
         if checkInput == True:
             self.checkParameters()
         else:
             self.status |= self.FLAGS['PARMSOK']    
-            
+
         if self.status &  self.FLAGS['PARMSOK']:
         
             radexInput = self.genInputFileContentAsStr()
-            if verbose != None:
+            if verbose == True:
                 print '---------------------------------------------'
                 print radexInput
                 print '---------------------------------------------'
@@ -277,10 +282,6 @@ class radex( ):
                                              stderr=subprocess.PIPE  )
             radexOutput = self.proccess.communicate(input=radexInput)[0]
             
-            if verbose != None:
-                print '---------------------------------------------------------------------'
-                print radexOutput
-                print '---------------------------------------------------------------------'
             self.rawOutput = radexOutput
             self.parseOutput()
             self.status |= self.FLAGS['RUNOK']
@@ -291,12 +292,18 @@ class radex( ):
             else:
                 self.status |= self.FLAGS['SUCCESS']
             
+            if verbose == True:
+                print '-------------raw output of Radex stdout------------------'
+                print radexOutput
+                print '---------------------------------------------------------------------'
+                
         return self.status
         
     ## Once radex exectues and dumps transition information, this method is used
     #  to extract the line data.
     #  @return None\n The instance variable self.#transitions is set
     def parseOutput(self):
+        print self.rawOutput
         output = self.rawOutput
         lines  =  output.splitlines()
         nLines = len(lines)
