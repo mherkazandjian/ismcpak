@@ -215,7 +215,7 @@ class radex( ):
         strng += '%e\n' % self.inFile['molnDens']
         strng += '%f\n' % self.inFile['lineWidth']
         strng += '%d'   % self.inFile['runAnother']
-        print '------------\n%s\n-----------------\n' % strng
+        #print '------------\n%s\n-----------------\n' % strng
         return strng
 
     ## chech whether the contents of self.inFile are within the ranges where
@@ -225,14 +225,14 @@ class radex( ):
     #  if the paramteres are ok, 'ERROR' is set otherwise
     def checkParameters(self):
         inFile = self.inFile
-
+        
         for item in inFile:
             if inFile[item] == None:
                 strng = 'Error : missing input parameter %s ' % (item)
                 raise NameError(strng)
             
         # checking for correct range for the kinetic temperature
-        if inFile['tKin'] < 0.1 or inFile['tKin'] > 1e4 :
+        if inFile['tKin'] <= 0.1 or inFile['tKin'] >= 1e4 :
             self.status |= self.FLAGS['ERROR']
             
         # checking for correct range for the densities of the collion partners
@@ -261,6 +261,8 @@ class radex( ):
     #  excceeds 10,000 'RUNOK','WARNING' and 'ITERWARN' flags are set. if the 'PARMSOK' is true
     #  self.#rawOutput and self.#transitions are set, otherwise they remaine None
     #  @todo: extract other warnings also, not just the one due to the max iterations
+    #  @warning: when running the same radex instance multiple times, make sure to set the 
+    #  status to the default before calling self.#run using self.#setDefaultStatus()
     def run(self, checkInput = None, verbose = None ):
         
         if checkInput == True:
@@ -303,7 +305,7 @@ class radex( ):
     #  to extract the line data.
     #  @return None\n The instance variable self.#transitions is set
     def parseOutput(self):
-        print self.rawOutput
+        #print self.rawOutput
         output = self.rawOutput
         lines  =  output.splitlines()
         nLines = len(lines)
@@ -408,6 +410,9 @@ class radex( ):
     #  @param title (string) The title to be written at the top of the axes column  
     def plotModelInFigureColumn(self, allTrans = None, inAxes = None, title = None):
         
+        if allTrans == None:
+            allTrans =  np.arange( len(self.transitions) )
+            
         nTrans = len(allTrans)
         #----------------flux-------------------------
         axes = inAxes[0]
@@ -577,7 +582,7 @@ class radex( ):
     #  @todo allow for a choice of the number of transitions to be plotted
     def plotModel(self):
         self.setupPlot(nx = 1)
-        self.plotModelInFigureColumn( allTrans = np.arange(10), inAxes = self.axs, title='')
+        self.plotModelInFigureColumn( allTrans = None, inAxes = self.axs, title='')
         self.setLabels()   
         pyl.show()
         

@@ -19,21 +19,21 @@ from enumSpecies import *
 # 
 #---------------------------Archive parameters-----------------------
 #runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
-runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
+runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-highRes-z-1.0/'
 gridsRes      = 10
-abunSpecFname = '/home/mher/ism/code/ismcpak/data/species.inp'
-lgammaMechSec = -30.0
-metallicity   = 2.0
+lgammaMechSec = -24.0
+metallicity   = 1.0
 
 radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  
                   'molDataDirPath'    : '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                  'specStr'           : 'O',
+                  'specStr'           : 'CO',
 #                  'xH2_Min'          : 2*0.0000000001
                   'xH2_Min'           : -1.0,
-                  'collisionPartners' : ['H2','H+','H']
+                  'collisionPartners' : ['H2','H+','H'],
 #                  'collisionPartners' : ['H2','H','H+','e-']
 #                  'collisionPartners' : ['H2']
 #                  'collisionPartners' : ['H2','H+','e-','H']
+                  'plotTransitionInGrid' : 0
                 }
 #-----------------chemical network parameters------------------------
 rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
@@ -87,4 +87,5 @@ arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 
 arxv.plotGrid(gridsRes, lgammaMechSec, radexParms)
 
+pyl.show()
 print 'done'

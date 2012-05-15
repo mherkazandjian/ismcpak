@@ -25,8 +25,8 @@ inFile = { 'specStr'                : 'CN'                              ,
 """
 
 # parameters that will be passed to radex multiple partners
-inFile = { 'specStr'                : 'CO'                                ,
-           'freqRange'              : [0, 50000]                              ,
+inFile = { 'specStr'                : 'C+'                                ,
+           'freqRange'              : [0, 0]                              ,
            'tKin'                   : 300.0                                    ,
            'collisionPartners'      : ['H2','H' , 'e-', 'H+', 'He']            ,
            'nDensCollisionPartners' : [1e1 , 1e2, 1e2, 1e1 , 1e3 ]            ,

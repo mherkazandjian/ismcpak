@@ -591,7 +591,7 @@ class meshArxv():
                        'runAnother'             : 1               }
             radexObj.setInFile( inFile )
 
-            """
+            transitionNum = self.radexParms['plotTransitionInGrid']
             every = 1
             nDone = 0
             # computing the abundace of a specie
@@ -623,7 +623,8 @@ class meshArxv():
                 if len(radexObj.inFile['collisionPartners']) == 0:
                     print 'not enough colliders'
                     continue
-                        
+                
+                radexObj.setDefaultStatus()
                 status = radexObj.run( checkInput = True )
 
                 if status & radexObj.FLAGS['SUCCESS']:
@@ -634,20 +635,10 @@ class meshArxv():
                     print radexObj.getWarnings()
                     print '------------------------------------'
                     continue
-                
-                #print radexObj.getRawOutput()
-                #print '      ---------------------'
-                #radexObj.parseOutput()
-                CO10 = radexObj.getTransition(1)  # get1e17ting the info of the transiotion from 1->0
-                
-                ####
-                #CO10to9 = radexObj.getTransition(10)  # getting the info of the transiotion from 1->0
-                #CO3to2  = radexObj.getTransition(3)  # getting the info of the transiotion from 1->0
-                #print 'CO 1->0 flux (erg cm^-2 s^-1) = %e ' % (CO10['fluxcgs'])
-                
-                zThis = CO10['fluxcgs']
-                #zThis = CO10to9['fluxcgs']/CO3to2['fluxcgs']
-
+                               
+                transition = radexObj.getTransition( transitionNum )
+                zThis = transition['fluxcgs']
+                                
                 indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
                 indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
             
@@ -659,7 +650,20 @@ class meshArxv():
                 print 100.0*np.float64(nDone)/np.float64(len(indsThisSec)), '%'
                 print '----------------------------------------------------' 
             
-            lineIntense[:] = np.log10(lineIntense / nInCells)
+            lineIntense[:] = lineIntense / nInCells
+
+            #-----writing the grid to a file -------------------------
+            fName = ('%s/%s-%s-%s-%.1f%d.npy') % ('/home/mher/ism/docs/paper02/lineData',
+                                                self.radexParms['specStr'],
+                                                transition['upper'],
+                                                transition['lower'],
+                                                self.metallicity,
+                                                self.pltGmSec)
+            print fName
+            np.save(fName, lineIntense )
+            #------ done writing the data to a file -------------------
+            
+            lineIntense[:] = np.log10(lineIntense)
             #print lineIntense
 
             im11 = self.grds[1][1].imshow(interpolation='nearest')
@@ -668,7 +672,7 @@ class meshArxv():
             cbarTickValues =  [-2, -1, 0, 1, 2]
             cbar11.set_ticks( cbarTickValues )
             self.grds[1][1].plotContour( levels = cbarTickValues )
-            """
+            
             
             print 'done'
                                 
@@ -758,7 +762,7 @@ class meshArxv():
 
                         if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
                             
-                            self.radexObj.plotModelInFigureColumn(allTrans = np.arange(20),
+                            self.radexObj.plotModelInFigureColumn(allTrans = None,
                                                                   inAxes = self.pltRadex, 
                                                                   title='')
                             self.radexObj.setLabels()
@@ -771,7 +775,7 @@ class meshArxv():
                     
             tf = time()
             print tf - ti
-        
+        #----------------------------end method onB1Down---------------------------------
         
         # attaching mouse click event to fig 1
         cid = fig1.canvas.mpl_connect('button_press_event', onB1Down)
@@ -788,7 +792,7 @@ class meshArxv():
         bNext.on_clicked(nextSec)
         
         # displaying
-        pyl.show()
+        pyl.draw()
         print 'browing data....'
     
     # setters and getters

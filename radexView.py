@@ -16,7 +16,7 @@ radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
 molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 
 # parameters that will be passed to radex
-inFile = { 'specStr'                : 'CO'          ,
+inFile = { 'specStr'                : 'O'          ,
            'freqRange'              : [0, 500000]   ,
            'tKin'                   : None          ,
            'collisionPartners'      : ['H2']        ,
