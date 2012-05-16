@@ -102,7 +102,7 @@ import numpy as np
 import pylab as pyl
 from matplotlib.widgets import Button
 from time import *
-
+#import gc
 
 from mesh import *
 from utils import *
@@ -126,9 +126,12 @@ class meshArxv():
         self.pltGmSec = None # the value of the section in Gmech selected
         self.pltGrds  = None 
         self.grds     = None # 2x2 ndmesh array object
-        self.grdsCbar = None
+        self.grdsCbarAxs = None
         self.pltRadex = None
         self.fig      = None
+        self.grdPltPts1 = None
+        self.grdPltPts2 = None
+        self.grdPltTitle = None
         
         if 'metallicity' in kwrds:
             self.set_metallicity( kwrds['metallicity'] )
@@ -295,18 +298,234 @@ class meshArxv():
             raise NameError(errStr)
         if log_G0 == None:
             errStr = 'FUV G0 range of the grid not set'
-            raise NameError(errStr)
-        #    
-        #class 
-            
-         
-    def plotGrid(self, resGrids, lgammaMechSec, radexParms):
+            raise NameError(errStr)            
+
+    def computeSurfaceTemperatureGrid( self, meshInds ):
+        spcs = self.chemNet.species
+        tGasGrid = self.grds[0][0]
+        nInCells = tGasGrid.copy()
+        nInCells.fill(0.0)
+        tGasGrid.fill(0.0)
+        nx, ny = tGasGrid.shape
+
+        # computing the surface temperature grid
+        for i in meshInds:
+            xThis = np.log10(self.meshes[i]['hdr']['G0'])
+            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
+            gasT = self.meshes[i]['state']['gasT']
+            zThis = gasT[0]
+
+            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
+            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
         
+            tGasGrid[indyInGrid][indxInGrid] += zThis
+            nInCells[indyInGrid][indxInGrid] += 1
+        
+        #print tGasGrid
+        #print nInCells
+        tGasGrid[:] = np.log10(tGasGrid / nInCells)
+        
+    def computeAbundanceAtSurfaceGrid( self, meshInds, specStr ):
+        abunGrid = self.grds[0][1] 
+        nInCells = abunGrid.copy()
+        abunGrid.fill(0.0)
+        nInCells.fill(0.0)
+        nx, ny = abunGrid.shape
+        
+        # computing the abundace of a specie
+        for i in meshInds:
+            xThis = np.log10(self.meshes[i]['hdr']['G0'])
+            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
+            
+            abunAllSpcs = self.meshes[i]['state']['abun']
+            specIdx = self.chemNet.species[specStr].num
+            slabIdx = 0
+            zThis = abunAllSpcs[specIdx][slabIdx]  #<----------- 
+
+            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
+            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+        
+            abunGrid[indyInGrid][indxInGrid] += zThis
+            nInCells[indyInGrid][indxInGrid] += 1
+        
+        abunGrid[:] = np.log10(abunGrid / nInCells)
+
+    def computeColumnDensityGrid( self, meshInds, specStr ):            
+        colDensGrid = self.grds[1][0] 
+        nInCells = colDensGrid.copy()
+        colDensGrid.fill(0.0)
+        nInCells.fill(0.0)
+        nx, ny = colDensGrid.shape
+
+        # computing the abundace of a specie
+        for i in meshInds:
+            xThis = np.log10(self.meshes[i]['hdr']['G0'])
+            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
+            abunAllSpcs = self.meshes[i]['state']['abun']
+            specIdx = self.chemNet.species[specStr].num
+            Av = self.meshes[i]['state']['Av']
+            nDensThisSpec = (10**xThis)*abunAllSpcs[ specIdx ][:]
+            # setting the thickness of the last slab to the one before it
+            dxSlabs          =  getSlabThicknessFromAv(Av, 10**xThis, self.metallicity)
+            dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
+            dxSlabsNew[0:-1] =  dxSlabs
+            dxSlabsNew[-1]   =  dxSlabs[-1]
+            dxSlabs          =  dxSlabsNew
+            
+            colDensThisSpec = np.sum( dxSlabs * nDensThisSpec )     
+            zThis = colDensThisSpec  # <---------------
+            #print zThis 
+
+            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
+            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+        
+            colDensGrid[indyInGrid][indxInGrid] += zThis
+            nInCells[indyInGrid][indxInGrid] += 1
+
+        colDensGrid[:] = np.log10(colDensGrid / nInCells)
+
+    def computeLineEmissionLvgGrid( self, meshInds, specStr):
+        lineIntense = self.grds[1][1] 
+        nInCells = lineIntense.copy()
+        lineIntense.fill(0.0)
+        nInCells.fill(0.0)
+        nx, ny = lineIntense.shape
+        
+        radexObj = radex(self.radexParms['radexPath'], self.radexParms['molDataDirPath'])
+        inFile = { 'specStr'                : self.radexParms['specStr'],
+                   'freqRange'              : [0, 50000]      ,
+                   'tKin'                   : None            ,
+                   'collisionPartners'      : None            ,
+                   'nDensCollisionPartners' : None            ,
+                   'tBack'                  : 2.73            ,
+                   'molnDens'               : None            ,
+                   'lineWidth'              : 1.0             ,
+                   'runAnother'             : 1               }
+        radexObj.setInFile( inFile )
+
+        transitionNum = self.radexParms['plotTransitionInGrid']
+        every = 100
+        nDone = 0
+        upper = None
+        lower = None
+        # computing the abundace of a specie
+        for i in meshInds[0::every]:
+            xThis = np.log10(self.meshes[i]['hdr']['G0'])
+            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
+            
+            thisMeshObj = mesh( None, self.chemNet, self.metallicity)
+            thisMeshObj.setData( self.meshes[i] )
+
+            (gasTRadex, nColls, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2',  # ;;; this parameter is redundant
+                                                                                   self.radexParms['specStr'],  
+                                                                                   self.radexParms['xH2_Min'])  # ;;; this parameter is redundant
+
+            # getting the collider densities in the same order of the supplied input spcie string list 
+            nDensColls = [ nColls[collSpecStr] for collSpecStr in self.radexParms['collisionPartners'] ]
+            collsStr   = list(self.radexParms['collisionPartners'])
+            #print 'input coll species', self.radexParms['collisionPartners'] 
+            #print 'nColls after putting them in the right order = ', nDensColls
+
+            print 'radexGrid : radex parms : ', gasTRadex, nDensColls, colDensThisSpec
+            radexObj.setInFileParm('tKin', gasTRadex)
+            radexObj.setInFileParm('collisionPartners', collsStr )
+            radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
+            radexObj.setInFileParm('molnDens', colDensThisSpec)
+
+            radexObj.filterColliders()
+            
+            if len(radexObj.inFile['collisionPartners']) == 0:
+                print 'not enough colliders'
+                continue
+            
+            radexObj.setDefaultStatus()
+            status = radexObj.run( checkInput = True )
+
+            if status & radexObj.FLAGS['SUCCESS']:
+                print 'radexGrid : converged with no warnings'
+            else:
+                print 'radexGrid : converged with warnings'
+                print '------------------------------------'
+                print radexObj.getWarnings()
+                print '------------------------------------'
+                continue
+                           
+            transition = radexObj.getTransition( transitionNum )
+            upper = transition['upper']
+            lower = transition['lower']
+            zThis = transition['fluxcgs']
+                            
+            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
+            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+        
+            lineIntense[indyInGrid][indxInGrid] += zThis
+            nInCells[indyInGrid][indxInGrid] += 1
+            #print 'press a key to continue...'
+            #print input()
+            nDone += 1
+            print 100.0*np.float64(nDone)/np.float64(len(meshInds)), '%'
+            print '----------------------------------------------------' 
+        
+        lineIntense[:] = lineIntense / nInCells
+
+        #-----writing the grid to a file -------------------------
+        fName = ('%s/%s-%s-%s-%.1f%d.npy') % ('/home/mher/ism/docs/paper02/lineData',
+                                            self.radexParms['specStr'],
+                                            upper,
+                                            lower,
+                                            self.metallicity,
+                                            self.pltGmSec)
+        print fName
+        np.save(fName, lineIntense )
+        #------ done writing the data to a file -------------------
+        
+        lineIntense[:] = np.log10(lineIntense)
+        #print lineIntense
+
+    def saveGridsToFiles( self, resGrids, lgammaMechSec, radexParms ):
         self.pltGmSec   = lgammaMechSec
         self.radexParms = radexParms
+
+                                #xaxis    yaxis 
+        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64 ), 
+                       ndmesh( (resGrids, resGrids), dtype=np.float64 )], 
+                      [ndmesh( (resGrids, resGrids), dtype=np.float64 ),
+                       ndmesh( (resGrids, resGrids), dtype=np.float64 )] ]  
+
+        nMin  = 0.0; nMax  = 6.0;
+        G0Min = 0.0; G0Max = 6.0;
+                        
+        for grdSubList in self.grds:
+            for grd in grdSubList:
+                # setting up the 2D meshes for the grids and initializing them
+                grd.fill(0)
+                grd.setup( [[nMin, nMax], [G0Min, G0Max]] )
         
+        # setting up a dummy mesh object to use its plotting functionalities
+        msh = mesh()
+        msh.set_chemNet( self.chemNet )
+        msh.set_metallicity( self.metallicity )
+        
+        lG0All   = np.log10(self.infoAll['parms'][:,0])
+        lnGasAll = np.log10(self.infoAll['parms'][:,1])
+        lgmAll   = np.log10(self.infoAll['parms'][:,2])
+        
+        indsThisSec = np.nonzero( np.fabs(lgmAll - self.pltGmSec) < 1e-6 )[0]
+        #self.computeSurfaceTemperatureGrid( indsThisSec )
+        #self.computeAbundanceAtSurfaceGrid( indsThisSec, self.radexParms['specStr'] )
+        #self.computeColumnDensityGrid( indsThisSec, self.radexParms['specStr'] )
+        self.computeLineEmissionLvgGrid(indsThisSec, self.radexParms['specStr'])
+
+                    
+    
+    #################################################################################         
+    def plotGrid(self, resGrids, lgammaMechSec, radexParms):
+
+        self.pltGmSec   = lgammaMechSec
+        self.radexParms = radexParms
+
         # definig plotting windows and setting the locations of subplots
-        fig1, axs1 = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(12,12))
+        fig1, axs1, = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(12,12))
         self.fig = fig1
         
         # the grid plot in n,G0 showing the points where models are present in the
@@ -325,7 +544,7 @@ class meshArxv():
         pyl.ylim( ymin = -1, ymax = 7.0)
         pyl.xlabel('$log_{10} n_{gas}$')
         pyl.ylabel('$log_{10} G_0$')
-        
+
         # the subplots where things are plotted as a function of Av       
         # - - -
         # + + -
@@ -393,6 +612,7 @@ class meshArxv():
         
         # defining and intialising the ndmesh objects which will be used
         # for computing the grid properties and then displayed
+
                                 #xaxis    yaxis 
         self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64 ), 
                        ndmesh( (resGrids, resGrids), dtype=np.float64 )], 
@@ -402,7 +622,7 @@ class meshArxv():
         # creating the axes for the colorbars
         self.grdsCbarAxs = [ [pyl.axes([left, bott + sz + sz + vSpace + 0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz + sz + vSpace + 0.017, 0.2, 0.01] ) ],
                              [pyl.axes([left, bott + sz +               0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz +               0.017, 0.2, 0.01] ) ] ]
-        
+                
         for grdSubList in self.grds:
             for grd in grdSubList:
                 # setting up the 2D meshes for the grids and initializing them
@@ -430,7 +650,6 @@ class meshArxv():
                          pyl.axes([left, bott + 0*sz          , 3*sz, sz ])]
         self.pltRadex = np.array(self.pltRadex)                           
         
-        
         # setting up a dummy mesh object to use its plotting functionalities
         msh = mesh()
         msh.setFigureObjects(fig1, axs1, axsAvPlts_n)
@@ -444,238 +663,68 @@ class meshArxv():
         
         #text object which will show the section in gamma mech
         tt = fig1.text(0.55, 0.02, '$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec )
+        
 
         # plot a section in gamma mech
         def plotThisSec():
-            
-            spcs = self.chemNet.species
             
             tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)            
             indsThisSec = np.nonzero( np.fabs(lgmAll - self.pltGmSec) < 1e-6 )[0]            
             self.grdPltPts1.set_xdata( lnGasAll[indsThisSec] )
             self.grdPltPts1.set_ydata( lG0All[indsThisSec]   )
             
-            nx, ny = self.grds[0][0].shape
-            
             # plotting the grids
             # ---> temperature grid (top left grid)
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[0, 0] )
-            tGasGrid = self.grds[0][0]
-            nInCells = tGasGrid.copy()
-            nInCells.fill(0.0)
-            tGasGrid.fill(0.0)
-            
-            # computing the surface temperature grid
-            for i in indsThisSec:
-                xThis = np.log10(self.meshes[i]['hdr']['G0'])
-                yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-                gasT = self.meshes[i]['state']['gasT']
-                zThis = gasT[0]
-
-                indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
-                indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
-            
-                tGasGrid[indyInGrid][indxInGrid] += zThis
-                nInCells[indyInGrid][indxInGrid] += 1
-            
-            
-            #print tGasGrid
-            #print nInCells
-            tGasGrid[:] = np.log10(tGasGrid / nInCells)
-            del nInCells
-            
+            ###
+            self.computeSurfaceTemperatureGrid( indsThisSec )
+            ###
             im00 = self.grds[0][0].imshow(interpolation='nearest') 
             cbar00 = pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
             cbar00.set_ticks([0.0, 1.0, 2.0, 3.0, 4.0])
-                        
-            specStr = self.radexParms['specStr']
+
             # some other diagnostic (top left grid)
             # ---> plotting abundances
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[0, 1] )
-            abunGrid = self.grds[0][1] 
-            nInCells = abunGrid.copy()
-            abunGrid.fill(0.0)
-            nInCells.fill(0.0)
-
-            # computing the abundace of a specie
-            for i in indsThisSec:
-                xThis = np.log10(self.meshes[i]['hdr']['G0'])
-                yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-                
-                abunAllSpcs = self.meshes[i]['state']['abun']
-                specIdx = spcs[specStr].num
-                slabIdx = 0
-                zThis = abunAllSpcs[specIdx][slabIdx]  #<----------- 
-
-                indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
-                indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
-            
-                abunGrid[indyInGrid][indxInGrid] += zThis
-                nInCells[indyInGrid][indxInGrid] += 1
-            
-            
-            #print abunGrid
-            #print nInCells
-            abunGrid[:] = np.log10(abunGrid / nInCells)
-            #print abunGrid            
-            del nInCells
-
+            ###
+            self.computeAbundanceAtSurfaceGrid( indsThisSec, self.radexParms['specStr'] )
+            ###
             im01 = self.grds[0][1].imshow(interpolation='nearest')
             cbar01 = pyl.colorbar(im01, cax=self.grdsCbarAxs[0][1], ax=pyl.gca(), orientation = 'horizontal')
             cbar01.set_ticks([-4.0, -3.0, -2.0, -1.0, 0.0])
-            
+
             # some other diagnostic (bottom left grid)
             # ---> plotting column densities
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[1, 0] )
-            colDensGrid = self.grds[1][0] 
-            nInCells = colDensGrid.copy()
-            colDensGrid.fill(0.0)
-            nInCells.fill(0.0)
-
-            # computing the abundace of a specie
-            for i in indsThisSec:
-                xThis = np.log10(self.meshes[i]['hdr']['G0'])
-                yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-                abunAllSpcs = self.meshes[i]['state']['abun']
-                specIdx = spcs[specStr].num
-                Av = self.meshes[i]['state']['Av']
-                nDensThisSpec = (10**xThis)*abunAllSpcs[ specIdx ][:]
-                # setting the thickness of the last slab to the one before it
-                dxSlabs          =  getSlabThicknessFromAv(Av, 10**xThis, self.metallicity)
-                dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
-                dxSlabsNew[0:-1] =  dxSlabs
-                dxSlabsNew[-1]   =  dxSlabs[-1]
-                dxSlabs          =  dxSlabsNew
-                
-                colDensThisSpec = np.sum( dxSlabs * nDensThisSpec )     
-                zThis = colDensThisSpec  # <---------------
-                #print zThis 
-
-                indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
-                indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
-            
-                colDensGrid[indyInGrid][indxInGrid] += zThis
-                nInCells[indyInGrid][indxInGrid] += 1
-
-            colDensGrid[:] = np.log10(colDensGrid / nInCells)
-            #print colDensGrid
-
+            ###
+            self.computeColumnDensityGrid( indsThisSec, self.radexParms['specStr'] )
+            ###
             im10 = self.grds[1][0].imshow(interpolation='nearest')
             cbar10 = pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
             cbarTickValues =  [15, 16, 17, 18, 19, 20]
             contourValues  =  [15, 16, 17, 18, 18.5, 18.7, 18.9, 19, 19.05, 20] #CO
             cbar10.set_ticks( cbarTickValues )
             self.grds[1][0].plotContour( levels = contourValues )
-            
+                   
             # some other diagnostic (bottom right grid)
             # ---> plotting line intensities
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[1, 1] )
-            lineIntense = self.grds[1][1] 
-            nInCells = lineIntense.copy()
-            lineIntense.fill(0.0)
-            nInCells.fill(0.0)
-
-            radexObj = radex(self.radexParms['radexPath'], self.radexParms['molDataDirPath'])
-            inFile = { 'specStr'                : self.radexParms['specStr'],
-                       'freqRange'              : [0, 50000]      ,
-                       'tKin'                   : None            ,
-                       'collisionPartners'      : None            ,
-                       'nDensCollisionPartners' : None            ,
-                       'tBack'                  : 2.73            ,
-                       'molnDens'               : None            ,
-                       'lineWidth'              : 1.0             ,
-                       'runAnother'             : 1               }
-            radexObj.setInFile( inFile )
-
-            transitionNum = self.radexParms['plotTransitionInGrid']
-            every = 1
-            nDone = 0
-            # computing the abundace of a specie
-            for i in indsThisSec[0::every]:
-                xThis = np.log10(self.meshes[i]['hdr']['G0'])
-                yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-                
-                thisMeshObj = mesh( None, self.chemNet, self.metallicity)
-                thisMeshObj.setData( self.meshes[i] )
-
-                (gasTRadex, nColls, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2',  # ;;; this parameter is redundant
-                                                                                       self.radexParms['specStr'],  
-                                                                                       self.radexParms['xH2_Min'])  # ;;; this parameter is redundant
-
-                # getting the collider densities in the same order of the supplied input spcie string list 
-                nDensColls = [ nColls[collSpecStr] for collSpecStr in self.radexParms['collisionPartners'] ]
-                collsStr   = list(self.radexParms['collisionPartners'])
-                #print 'input coll species', self.radexParms['collisionPartners'] 
-                #print 'nColls after putting them in the right order = ', nDensColls
-
-                print 'radexGrid : radex parms : ', gasTRadex, nDensColls, colDensThisSpec
-                radexObj.setInFileParm('tKin', gasTRadex)
-                radexObj.setInFileParm('collisionPartners', collsStr )
-                radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
-                radexObj.setInFileParm('molnDens', colDensThisSpec)
-
-                radexObj.filterColliders()
-                
-                if len(radexObj.inFile['collisionPartners']) == 0:
-                    print 'not enough colliders'
-                    continue
-                
-                radexObj.setDefaultStatus()
-                status = radexObj.run( checkInput = True )
-
-                if status & radexObj.FLAGS['SUCCESS']:
-                    print 'radexGrid : converged with no warnings'
-                else:
-                    print 'radexGrid : converged with warnings'
-                    print '------------------------------------'
-                    print radexObj.getWarnings()
-                    print '------------------------------------'
-                    continue
-                               
-                transition = radexObj.getTransition( transitionNum )
-                zThis = transition['fluxcgs']
-                                
-                indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
-                indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
-            
-                lineIntense[indyInGrid][indxInGrid] += zThis
-                nInCells[indyInGrid][indxInGrid] += 1
-                #print 'press a key to continue...'
-                #print input()
-                nDone += 1
-                print 100.0*np.float64(nDone)/np.float64(len(indsThisSec)), '%'
-                print '----------------------------------------------------' 
-            
-            lineIntense[:] = lineIntense / nInCells
-
-            #-----writing the grid to a file -------------------------
-            fName = ('%s/%s-%s-%s-%.1f%d.npy') % ('/home/mher/ism/docs/paper02/lineData',
-                                                self.radexParms['specStr'],
-                                                transition['upper'],
-                                                transition['lower'],
-                                                self.metallicity,
-                                                self.pltGmSec)
-            print fName
-            np.save(fName, lineIntense )
-            #------ done writing the data to a file -------------------
-            
-            lineIntense[:] = np.log10(lineIntense)
-            #print lineIntense
-
+            ###
+            self.computeLineEmissionLvgGrid(indsThisSec, self.radexParms['specStr'])
+            ###
             im11 = self.grds[1][1].imshow(interpolation='nearest')
             cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
             #cbarTickValues =  [-12, -11, -10, -9, -8, -7, -6, -5, -4]
             cbarTickValues =  [-2, -1, 0, 1, 2]
             cbar11.set_ticks( cbarTickValues )
             self.grds[1][1].plotContour( levels = cbarTickValues )
-            
-            
             print 'done'
-                                
+        
+                         
         # defining the buttons to control mechanical heating section        
         def nextSec(event):
             self.pltGmSec += 1.0
@@ -779,7 +828,7 @@ class meshArxv():
         
         # attaching mouse click event to fig 1
         cid = fig1.canvas.mpl_connect('button_press_event', onB1Down)
-
+        
         plotThisSec()
 
         # attaching the gamma mech button events
@@ -794,7 +843,23 @@ class meshArxv():
         # displaying
         pyl.draw()
         print 'browing data....'
-    
+
     # setters and getters
     def set_metallicity(self, metallicity):
         self.metallicity = metallicity
+        
+    ## clears all the bufferes allocated in the instance
+    def clear(self):
+        del self.infoAll
+        del self.nDbFiles
+        del self.chemNet
+        del self.pltGmSec
+        del self.radexParms
+        del self.fig
+        del self.grdPltPts1
+        del self.grdPltPts2
+        del self.grdPltTitle
+        del self.grds  
+        del self.grdsCbarAxs
+        del self.pltRadex
+        pyl.close()
