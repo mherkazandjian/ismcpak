@@ -215,7 +215,7 @@ class radex( ):
         strng += '%e\n' % self.inFile['molnDens']
         strng += '%f\n' % self.inFile['lineWidth']
         strng += '%d'   % self.inFile['runAnother']
-        #print '------------\n%s\n-----------------\n' % strng
+        print '------------\n%s\n-----------------\n' % strng
         return strng
 
     ## chech whether the contents of self.inFile are within the ranges where
@@ -305,67 +305,72 @@ class radex( ):
     #  to extract the line data.
     #  @return None\n The instance variable self.#transitions is set
     def parseOutput(self):
-        #print self.rawOutput
-        output = self.rawOutput
-        lines  =  output.splitlines()
-        nLines = len(lines)
         
-        # looking for the part of the output after the warning
-        i = 4 # 5th line (skipping into)
-        while True:
-            if lines[i][0] == '*' and lines[i+1][0] == '*':
-                break
-            i += 1
-        
-        self.warnings = lines[4:i]  # extracting the warning
-        #print self.warnings
-        
-        # collecting the header
-        lineNumHdrStart = i
-        while True:
-            if lines[i][0] == '*' and lines[i+1][0] != '*':
-                break
-            i += 1
-        lineNumHdrEnd = i+1
-        
-        self.outputHdr = lines[lineNumHdrStart:lineNumHdrEnd]
-        #print  self.outputHdr
-
-        lineNum = lineNumHdrEnd
-        lineSplt = lines[lineNum].split()
-        self.nIter = np.int32(lineSplt[3])          
-        
-        transitions = []
-        #--------------------------------------------------------------------------
-        # parses a line containing the info of a transition line and returns a dict
-        # of the into
-        def parseLineData( line ):
-            info = {}
-            
+        try:
             #print self.rawOutput
-            lineSplt = line.split()
-            #print lineSplt
-            info['upper'   ] = lineSplt[0] 
-            info['lower'   ] = lineSplt[1] 
-            info['E_up'    ] = np.float64(lineSplt[2]) 
-            info['Tex'     ] = np.float64(lineSplt[5]) 
-            info['tau'     ] = np.float64(lineSplt[6]) 
-            info['T_R'     ] = np.float64(lineSplt[7]) 
-            info['pop_up'  ] = np.float64(lineSplt[8]) 
-            info['pop_down'] = np.float64(lineSplt[9]) 
-            info['fluxKkms'] = np.float64(lineSplt[10]) 
-            info['fluxcgs' ] = np.float64(lineSplt[11]) 
+            output = self.rawOutput
+            lines  =  output.splitlines()
+            nLines = len(lines)
             
-            return info
-        #--------------------------------------------------------------------------
-
-        lineNum += 3        
-        for line in lines[lineNum:nLines-1]:
-            transition = parseLineData(line)
-            transitions.append(transition)
+            # looking for the part of the output after the warning
+            i = 4 # 5th line (skipping into)
+            while True:
+                if lines[i][0] == '*' and lines[i+1][0] == '*':
+                    break
+                i += 1
             
-        self.transitions = transitions
-        
+            self.warnings = lines[4:i]  # extracting the warning
+            #print self.warnings
+            
+            # collecting the header
+            lineNumHdrStart = i
+            while True:
+                if lines[i][0] == '*' and lines[i+1][0] != '*':
+                    break
+                i += 1
+            lineNumHdrEnd = i+1
+            
+            self.outputHdr = lines[lineNumHdrStart:lineNumHdrEnd]
+            #print  self.outputHdr
+    
+            lineNum = lineNumHdrEnd
+            lineSplt = lines[lineNum].split()
+            self.nIter = np.int32(lineSplt[3])          
+            
+            transitions = []
+            #--------------------------------------------------------------------------
+            # parses a line containing the info of a transition line and returns a dict
+            # of the into
+            def parseLineData( line ):
+                info = {}
+                
+                #print self.rawOutput
+                lineSplt = line.split()
+                #print lineSplt
+                info['upper'   ] = lineSplt[0] 
+                info['lower'   ] = lineSplt[1] 
+                info['E_up'    ] = np.float64(lineSplt[2]) 
+                info['Tex'     ] = np.float64(lineSplt[5]) 
+                info['tau'     ] = np.float64(lineSplt[6]) 
+                info['T_R'     ] = np.float64(lineSplt[7]) 
+                info['pop_up'  ] = np.float64(lineSplt[8]) 
+                info['pop_down'] = np.float64(lineSplt[9]) 
+                info['fluxKkms'] = np.float64(lineSplt[10]) 
+                info['fluxcgs' ] = np.float64(lineSplt[11]) 
+                
+                return info
+            #--------------------------------------------------------------------------
+    
+            lineNum += 3        
+            for line in lines[lineNum:nLines-1]:
+                transition = parseLineData(line)
+                transitions.append(transition)
+                
+            self.transitions = transitions
+        except (ValueError, IndexError):
+            print self.rawOutput
+            errStr = 'parsing the output failed'
+            raise NameError(errStr)
     # -------------------------- Plotting Methods ---------------------------------
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------

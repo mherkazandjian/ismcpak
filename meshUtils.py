@@ -404,7 +404,7 @@ class meshArxv():
         radexObj.setInFile( inFile )
 
         transitionNum = self.radexParms['plotTransitionInGrid']
-        every = 100
+        every = 1
         nDone = 0
         upper = None
         lower = None
@@ -415,6 +415,8 @@ class meshArxv():
             
             thisMeshObj = mesh( None, self.chemNet, self.metallicity)
             thisMeshObj.setData( self.meshes[i] )
+            
+            print 'pdr mesh index =  %d : ' % i
 
             (gasTRadex, nColls, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2',  # ;;; this parameter is redundant
                                                                                    self.radexParms['specStr'],  
@@ -451,8 +453,8 @@ class meshArxv():
                 continue
                            
             transition = radexObj.getTransition( transitionNum )
-            upper = transition['upper']
-            lower = transition['lower']
+            upperStr = transition['upper']
+            lowerStr = transition['lower']
             zThis = transition['fluxcgs']
                             
             indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
@@ -468,16 +470,17 @@ class meshArxv():
         
         lineIntense[:] = lineIntense / nInCells
 
-        #-----writing the grid to a file -------------------------
-        fName = ('%s/%s-%s-%s-%.1f%d.npy') % ('/home/mher/ism/docs/paper02/lineData',
-                                            self.radexParms['specStr'],
-                                            upper,
-                                            lower,
-                                            self.metallicity,
-                                            self.pltGmSec)
-        print fName
-        np.save(fName, lineIntense )
-        #------ done writing the data to a file -------------------
+        if nDone > 0:
+            #-----writing the grid to a file -------------------------
+            fName = ('%s/%s-%s-%s-%.1f%d.npy') % ('/home/mher/ism/docs/paper02/lineData',
+                                                  self.radexParms['specStr'],
+                                                  upperStr,
+                                                  lowerStr,
+                                                  self.metallicity,
+                                                  self.pltGmSec)
+            print fName
+            np.save(fName, lineIntense )
+            #------ done writing the data to a file -------------------
         
         lineIntense[:] = np.log10(lineIntense)
         #print lineIntense
