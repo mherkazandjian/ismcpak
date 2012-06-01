@@ -92,12 +92,20 @@ def runGrid(runDirPath, metallicity, lgammaMechSec, RadexSpecStr, RadexTransitio
 #------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------
 
+"""
 species = (
               ('CO',[0,1,2,5,9,15]), 
               ('HCN',[0,1,2,3]), 
               ('HNC',[0,1,2,3]), 
               ('HCO+',[0,1,2,3])
           )
+"""
+
+species = (
+              ('CO',[3, 6]),
+              ('CO',[3, 6])
+          )
+
 z = 0.5
 archive = '/home/mher/ism/runs/oneSided/uniformSweep2-z-0.5-no-mech/'
 for (specStr, transitions) in species:

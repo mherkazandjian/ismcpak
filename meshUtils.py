@@ -404,7 +404,7 @@ class meshArxv():
         radexObj.setInFile( inFile )
 
         transitionNum = self.radexParms['plotTransitionInGrid']
-        every = 100
+        every = 1
         nDone = 0
         upper = None
         lower = None
