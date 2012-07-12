@@ -25,23 +25,14 @@ import subprocess
 #  and radexView.py for examples on using this class. 
 #  @todo : docment the order in which things must be called
 class radex( ):
-    
-    ## Initializes some of the instance variables needed to run radex.
-    #  @param execPath (String) The path to the radex executable
-    #  @param molDataDir (String) The Path to the directory containing the transition data for the species
+    """radex interface module
+    """
+
     def __init__(self, execPath, molDataDir):
-    
-        ## string : Path to the radex executable 
-        self.execPath     = execPath 
-        ## string : Path to the directory containing the transition data for the species
-        self.molDataDir   = molDataDir
-        ## dict : dictonary for the species files, the keys of this dict are as follows 
-        #  (see radex.py for an example) :\n
-        #  SPECIE_STRING : FILENAME
-        #  @todo implement a method to generate this dict automatically from all the files
-        #  in the directory molDataFiles\n
-        #  also implement a dict for the collision partners like 'e-' : 'e', but it might not
-        #  be necessary since RADEX takes both 'e' and 'e-'
+        """Initializes some of the instance variables needed to run radex."""
+        
+        self.execPath     = execPath   #: string : The path to the radex executable 
+        self.molDataDir   = molDataDir #: string : Path to the directory containing the transition data for the species
         self.molDataFiles =  { 'CO'   : 'co.dat'       ,
                                '13CO' : '13co.dat'     ,
                                'HCO+' : 'hco+@xpol.dat',
@@ -52,33 +43,69 @@ class radex( ):
                                'C+'   : 'c+.dat'       ,
                                'O'    : 'oatom.dat'    ,
                                'CN'   : 'cn.dat'       }
-        ## dict : dictionary holding all the input parameters. It is used to construct the input
-        #  parameter file that is piped to the radex executable. It should be of the form :\n
-        #  \code
-        #  inFile = { 'specStr'                : 'CO'        ,
-        #             'freqRange'              : [0, 50000]  ,
-        #             'tKin'                   : 10.0        ,
-        #             'collisionPartners'      : ['H2']      ,
-        #             'nDensCollisionPartners' : [1e3]       ,
-        #             'tBack'                  : 2.73        ,
-        #             'molnDens'               : 1e14        ,
-        #             'lineWidth'              : 1.0         ,
-        #             'runAnother'             : 1           }
-        #  \endcode
-        #  All of the items in this dict correspond to the same parameters in radex except
-        #  'collisionPartners' and 'nDensCollisionPartners', 'molDataDir' and 'specStr'. 
-        #  'collisionPartners' is a list of strings of species such as 'H2', or 'H' :\n
-        #  \code 'collisionPartners' : ['H2'] \endcode
-        #  or        
-        #  \code 'collisionPartners' : ['H2','H+','e-'] \endcode
-        #  'nDensCollisionPartners' should be a list of the same length holding the 
-        #  number density of each collision partner respectively. For example :
-        #  \code 'nDensCollisionPartners' : [1e3] \endcode
-        #  or        
-        #  \code 'nDensCollisionPartners' : [1e3, 1e1, 1e-2] \endcode
-        #  the parameter molData in the input parameter file is constructed by appending
-        #  the value of 'specStr' to self.#molDataDir 
+        """ dict : dictonary for the species files, the keys of this dict are as follows 
+        (see radex.py for an example) : \n
+          SPECIE_STRING : FILENAME
+
+        .. literalinclude:: radex.py
+           :lines: 35-44
+           :linenos:
+
+        .. todo:: implement a method to generate this dict automatically from all the files
+                  in the directory molDataFiles
+
+        .. todo:: also implement a dict for the collision partners like 'e-' : 'e', but it might not
+                  be necessary since RADEX takes both 'e' and 'e-'
+        """
         self.inFile       = None     
+        """
+        dict : dictionary holding all the input parameters. It is used to construct the input
+          parameter file that is piped to the radex executable. It should be of the form
+          
+          .. code-block:: python
+             :linenos:
+
+             inFile = { 'specStr'                : 'CO'        ,
+                        'freqRange'              : [0, 50000]  ,
+                        'tKin'                   : 10.0        ,
+                        'collisionPartners'      : ['H2']      ,
+                        'nDensCollisionPartners' : [1e3]       ,
+                        'tBack'                  : 2.73        ,
+                        'molnDens'               : 1e14        ,
+                        'lineWidth'              : 1.0         ,
+                        'runAnother'             : 1           }
+             
+             
+        All of the items in this dict correspond to the same parameters in radex except:
+        'collisionPartners' and 'nDensCollisionPartners', 'molDataDir' and 'specStr'. 
+        'collisionPartners' is a list of strings of species such as 'H2', or 'H' :
+
+        .. code-block:: python
+
+           'collisionPartners' : ['H2'] 
+
+        or
+
+        .. code-block:: python
+
+           'collisionPartners' : ['H2','H+','e-']
+
+        'nDensCollisionPartners' should be a list of the same length holding the 
+        number density of each collision partner respectively. For example :
+        
+        .. code-block:: python
+          
+           'nDensCollisionPartners' : [1e3]
+
+        or
+           
+        .. code-block:: python
+        
+           'nDensCollisionPartners' : [1e3, 1e1, 1e-2]
+           
+        the parameter molData in the input parameter file is constructed by appending
+        the value of 'specStr' to self.molDataDir 
+        """
         ## integer : number of collision partners. This is the length of the list self.inFile['collisionPartners']
         self.nCollPart    = None     
         ## subproccess.popen object : Object used to communicate with the executable
@@ -142,9 +169,16 @@ class radex( ):
         self.ny  = 4
         
     ## sets keys in the self.inFile dict
-    #  @param parm  (String) A key to be modified or added in the self.inFile dict
-    #  @param value (abitrary) The value to be set to the key  
+    #  @param parm  (String) 
+    #  @param value (abitrary) 
     def setInFileParm(self, parm, value):
+        """This method sets values to the parameters to be passed to radex.
+
+        :param parm: A key to be modified or added in the self.inFile dict.
+        :type name: str.
+        :param value: The value to be set to the key.
+        :type value: arbitrary [depends on the key to be modified, see :data:`inFile` documentation]
+        """
         self.inFile[parm] = value
     ## returns a parameter from self.inFile given the key in the dict
     #  @param parm (str) : the string used to extract the vlaue from the dict

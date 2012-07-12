@@ -324,6 +324,42 @@ class meshArxv():
         #print tGasGrid
         #print nInCells
         tGasGrid[:] = np.log10(tGasGrid / nInCells)
+
+    # produce the grid for heating or cooling determined with
+    #    whichThermal = 'heating' | 'cooling'
+    # and the specific process is determined by 
+    #   whichProcsess = string
+    def computeHeatingCoolingGrid( self, meshInds, slabIndex, whichThermal, whichProcess ):
+        
+        grid = self.grds[1][1]
+        nInCells = grid.copy()
+        nInCells.fill(0.0)
+        grid.fill(0.0)
+        nx, ny = grid.shape
+
+        # computing the surface temperature grid
+        for i in meshInds:
+            xThis = np.log10(self.meshes[i]['hdr']['G0'])
+            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
+            
+            #proc  = self.meshes[i][whichThermal][whichProcess]
+            proc1  = self.meshes[i]['heating']['totalHeat']  
+            proc2  = self.meshes[i]['heating']['totalCool']  
+            proc   = proc1 / proc2
+            
+            print proc
+            
+            zThis = proc[slabIndex]
+
+            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
+            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+        
+            grid[indyInGrid][indxInGrid] += zThis
+            nInCells[indyInGrid][indxInGrid] += 1
+        
+        #print tGasGrid
+        #print nInCells
+        grid[:] = np.log10(grid / nInCells)
         
     def computeAbundanceAtSurfaceGrid( self, meshInds, specStr ):
         abunGrid = self.grds[0][1] 
@@ -404,7 +440,7 @@ class meshArxv():
         radexObj.setInFile( inFile )
 
         transitionNum = self.radexParms['plotTransitionInGrid']
-        every = 1
+        every = 100
         nDone = 0
         upper = None
         lower = None
@@ -472,19 +508,23 @@ class meshArxv():
 
         if nDone > 0:
             #-----writing the grid to a file -------------------------
+            # ;;;; dump all the transitions
             fName = ('%s/%s-%s-%s-%.1f%d.npy') % ('/home/mher/ism/docs/paper02/lineData',
                                                   self.radexParms['specStr'],
                                                   upperStr,
                                                   lowerStr,
                                                   self.metallicity,
                                                   self.pltGmSec)
-            print fName
+            print fName 
             np.save(fName, lineIntense )
             #------ done writing the data to a file -------------------
         
         lineIntense[:] = np.log10(lineIntense)
         #print lineIntense
 
+    # sets up a grid, and runs the LVG models over the grid
+    # the computed grid of emission stuff is saved in the LVG 
+    # method.
     def saveGridsToFiles( self, resGrids, lgammaMechSec, radexParms ):
         self.pltGmSec   = lgammaMechSec
         self.radexParms = radexParms
@@ -717,12 +757,16 @@ class meshArxv():
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[1, 1] )
             ###
+            """
             self.computeLineEmissionLvgGrid(indsThisSec, self.radexParms['specStr'])
-            ###
-            im11 = self.grds[1][1].imshow(interpolation='nearest')
-            cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
             #cbarTickValues =  [-12, -11, -10, -9, -8, -7, -6, -5, -4]
             cbarTickValues =  [-2, -1, 0, 1, 2]
+            """
+            ###
+            self.computeHeatingCoolingGrid(indsThisSec, 0, 'heating', 'photo' )
+            ###
+            im11 = self.grds[1][1].imshow(interpolation='nearest')
+            cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')            
             cbar11.set_ticks( cbarTickValues )
             self.grds[1][1].plotContour( levels = cbarTickValues )
             print 'done'

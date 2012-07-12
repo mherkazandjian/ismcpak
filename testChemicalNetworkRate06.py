@@ -1,7 +1,8 @@
 from numpy import *
 from time import *
-from chemicalNetwork import *
 import sys
+
+from chemicalNetwork import *
 
 T        = 800.0
 Av       = 20.0
@@ -42,7 +43,7 @@ t0 = time()
 net = chemicalNetwork(rxnFile, baseSpec, UMISTVER = 'umist06')
 
 net.writeNetworkGephiCSV(csvFile)        
-asdasdasd
+#asdasdasd
 
 sets = net.findIdenticalReactions()
 

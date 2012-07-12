@@ -16,8 +16,9 @@ class mesh( ):
         m.data    contains everything abt the mesh        ( dtype ) 
           data['hdr']     = m.hdr
           data['state']   = temperatures, abundances.... 
-          data['cooling'] = cooling information
-          data['heating'] = heating information
+          data['thermo']  = total heating and cooling  
+          data['cooling'] = detailed info about cooling
+          data['heating'] = detailed info about heating
           
     templates to extract 1D arrays along the slab
          Av         = self.data['state']['Av'][0][0,:]
@@ -71,6 +72,7 @@ class mesh( ):
         return [ 
                  ('hdr'    , np.dtype( self.headerFormat ()               ), 1),
                  ('state'  , np.dtype( self.stateFormat  ( nSpecs, nSteps)), 1),
+                 ('therm'  , np.dtype( self.thermoFormat( nSteps)         ), 1),
                  ('heating', np.dtype( self.heatingFormat( nSteps)        ), 1),
                  ('cooling', np.dtype( self.coolingFormat( nSteps)        ), 1),
                ]
@@ -96,16 +98,23 @@ class mesh( ):
                ]
         return fmt
 
+    def thermoFormat(self, nSteps):
+        n = int(nSteps)
+        return [
+                  ('heating', np.float64, (n) ),
+                  ('cooling', np.float64, (n) ),
+               ]
+
     def heatingFormat(self, nSteps):
         n = int(nSteps)
         return [
-                  ('photo'    , np.float64, ( n) ),
-                  ('cIon'     , np.float64, ( n) ),
-                  ('molHydro' , np.float64, ( n) ),
-                  ('H2pump'   , np.float64, ( n) ),
-                  ('ggColl'   , np.float64, ( n) ),
-                  ('visc'     , np.float64, ( n) ),
-                  ('cr'       , np.float64, ( n) ),
+                  ('photo'    , np.float64, (n) ),
+                  ('cIon'     , np.float64, (n) ),
+                  ('molHydro' , np.float64, (n) ),
+                  ('H2pump'   , np.float64, (n) ),
+                  ('ggColl'   , np.float64, (n) ),
+                  ('visc'     , np.float64, (n) ),
+                  ('cr'       , np.float64, (n) ),
                ]
 
     def coolingFormat(self, nSteps):
@@ -372,6 +381,8 @@ class mesh( ):
                 N_specLVG
                 )
     
+    ## 
+    def getRadexParameters(self, colliderStr=None, speciesStr=None, threshold=None):
 
 
     def set_chemNet(self, chemNet):

@@ -86,6 +86,6 @@ arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 # plotting stuff
 
 arxv.plotGrid(gridsRes, lgammaMechSec, radexParms)
-arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
+#arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
 pyl.show()
 print 'done'

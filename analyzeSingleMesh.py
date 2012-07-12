@@ -8,7 +8,7 @@ from mesh import *
 from ismUtils import *
 
 #------------------mesh data file-------------------------------------
-meshFname     = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/meshes/mesh.dat-id-002920'
+meshFname     = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/meshes/mesh.dat-id-000119'
 metallicity   = 2.0
 #-----------------chemical network parameters------------------------
 rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
@@ -51,6 +51,11 @@ TMean1, nColls, NCOLVG1, = m.getRadexParameters('H2', 'CO', 2*0.01)
 print TMean1, nColls, NCOLVG1
 
 m.plot()
+
+fig2 = pyl.figure()
+pyl.plot(m.data['therm']['heating'],'r')
+pyl.hold(True)
+pyl.plot(m.data['therm']['cooling'],'ro')
 
 pyl.show()
 print 'done'
