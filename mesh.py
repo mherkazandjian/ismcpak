@@ -380,11 +380,59 @@ class mesh( ):
                 nDenseColl,
                 N_specLVG
                 )
+
+    def plotMeshGeometry(self):
+        
+        fig = pyl.figure()
+        axs = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+        
+        #Av = self.data['state']['Av']
+        AvMax  = 30.0
+        dAvMin = 0.001
+        
+        Av = 0.0
+        
+        print Av
+        
+        dAv = dAvMin
+        
+        while Av <= AvMax + 1e-10:
+            
+            Av += dAv
+             
+            if Av < 1.0:
+                dAv = 10.0**(int(np.log10(Av)))
+                
+            print Av
+                
+
+        """
+        while dAv < 1.0:
+            
+            
+        Av = [dAv]
+        
+        Av = np.arange(31)
+        for i in np.arange(30):
+            if i > 0 and i <= 10: 
+                Av[i] = np.float64(i)/100
+            if i > 10 and i <= 20:
+                Av[i] = np.float64(i)/10
+            if i <= 10: 
+                Av[i] = np.float64(i)/100
+            
+            
+        y  = np.ones(Av.shape)
+        #asdasd
+        axs.semilogx(Av, y, 'r')
+        axs.semilogx(Av, y, 'ro')
+
+        axs.set_ylim( ymin=0, ymax=2)
+        axs.set_xlim( xmin=0.01, xmax=10)
+        #axs.xaxis.set_scale('log')
+        pyl.show()
+        """
     
-    ## 
-    def getRadexParameters(self, colliderStr=None, speciesStr=None, threshold=None):
-
-
     def set_chemNet(self, chemNet):
         self.chemNet = chemNet
     def set_metallicity(self, metallicity):

@@ -105,6 +105,7 @@ pyl.plot(m.data['therm']['heating'],'r')
 pyl.hold(True)
 pyl.plot(m.data['therm']['cooling'],'ro')
 
+m.plotMeshGeometry()
 pyl.show()
 print 'done'
 
