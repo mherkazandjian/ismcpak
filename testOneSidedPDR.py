@@ -17,9 +17,9 @@ pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none
 #----------------------------
 
 metallicity = 1.0   # in terms of solar metallicity 
-rho   = 3.0         # log of it
-G0    = 5.0         # log of it
-Lmech = 1e-30
+rho         = 3.0         # log of it
+G0          = 5.0         # log of it
+Lmech       = 1e-30
 
 outputDir = '/home/mher/ism/runs/oneSided/test/'
             
@@ -36,7 +36,7 @@ pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);
 pdr.set_CTol                       (1e-3);
 pdr.set_metalicity                 (metallicity);
-pdr.set_AvMax                      (20.0);
+pdr.set_AvMax                      (1.0);
 pdr.set_slabSizeCrit               (0.5);
 pdr.set_min_deltaAv                (0.01);
 pdr.set_max_deltaAv                (0.5);
@@ -49,11 +49,9 @@ print 'number of models to run = ', 1
 pdr.initialize()
 ids, err = pdr.add_mesh(rho, 1000.0, G0, Lmech)
 
-"""
 pdr.calc_equilibrium()
 mshErr,err = pdr.get_errorFlags(ids)
 T,err = pdr.get_temperature(ids)
-"""
 
 #------------------mesh data file-------------------------------------
 meshFname     = outputDir + 'meshes/mesh.dat-id-000000'

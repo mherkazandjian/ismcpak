@@ -13,12 +13,47 @@ class mesh( ):
         m = mesh(path)
         m.hdr     contains the info in the header         ( dtype )
         
-        m.data    contains everything abt the mesh        ( dtype ) 
+        m.data    contains everything abt the mesh        ( dtype )
+          ( for files in binary format 1) 
           data['hdr']     = m.hdr
-          data['state']   = temperatures, abundances.... 
-          data['thermo']  = total heating and cooling  
+                     ['version']
+                     ['G0']
+                     [remaining tags in self.headerFormat] 
+          data['state']   = temperatures, abundances....
+                       ['gasT']
+                       ['dustT']
+                       [ remaining tags in self.stateFormat ]
+          data['therm']  = total heating and cooling  
+                       ['heating']
+                       ['cooling']
           data['cooling'] = detailed info about cooling
+                         ['metaStable']
+                         ['fineStructure']
+                         ['roVib']
+                         [remainig tags in self.coolingFormat]
           data['heating'] = detailed info about heating
+                         ['photo']
+                         ['cIon']
+                         ['molHydro']
+                         [remainig tags in self.heatingFormat]
+          ( binary file of format 2 have the follwing extra data)
+          data['metaStableCoolingCmponents']
+                                            ['C']
+                                            ['C+']
+                                            ['Fe']
+                                            [remainig species in self.coolingFormatMetaStable]
+          data['fineStructureCoolingComponents']
+                                                ['Si']
+                                                      ['popDens']
+                                                                 ['0']
+                                                                 ['1']
+                                                      ['rate']
+                                                              ['1-0']
+                                                [remainig species in self.coolingFormatFineStructure]
+          data['selfSheilding']
+                               ['H2']
+                               ['CO']
+                               ['13CO']
           
     templates to extract 1D arrays along the slab
          Av         = self.data['state']['Av'][0][0,:]
@@ -31,12 +66,12 @@ class mesh( ):
             self.fName = fileName
         
             # reading the header, constructing the full mesh dtype
-            # and re-reading the whole file into a mesh dtype
             dtHdr = np.dtype( self.headerFormat() )
             hdr   = np.fromfile(self.fName, dtype = dtHdr, count = 1 )
             self.hdr = hdr[0]
 
-            # re-reading the whole file, header and the data
+            # re-reading the whole file and constructing the full dtype
+            # with the header info read above 
             dtMesh    = self.constructMeshDtype( self.hdr['nSpecs'], self.hdr['nSteps'])
             data      = np.fromfile( fileName, dtype = dtMesh, count = 1)
             self.data = data[0]
@@ -63,19 +98,25 @@ class mesh( ):
     def constructMeshDtype(self, nSpecs, nSteps):
         meshFormat = self.meshFormat( nSpecs, nSteps )
         meshDtype  = np.dtype( meshFormat )
-        #print meshDtype
-        #adasdads
         return  meshDtype
 
     def meshFormat(self, nSpecs, nSteps):
-         
-        return [ 
-                 ('hdr'    , np.dtype( self.headerFormat ()               ), 1),
+        
+        dt =  [  ('hdr'    , np.dtype( self.headerFormat ()               ), 1),
                  ('state'  , np.dtype( self.stateFormat  ( nSpecs, nSteps)), 1),
                  ('therm'  , np.dtype( self.thermoFormat( nSteps)         ), 1),
                  ('heating', np.dtype( self.heatingFormat( nSteps)        ), 1),
                  ('cooling', np.dtype( self.coolingFormat( nSteps)        ), 1),
-               ]
+              ]
+
+        # if the data file version is the second version, append the rest of the 
+        # file format to be read, detailed cooling and self sheilding stuff
+        if self.hdr[0] == 2:
+            dt.append( ('metaStableCoolingCmponents'    , np.dtype( self.coolingFormaMetaStable(nSteps))    , 1), )
+            dt.append( ('fineStructureCoolingComponents', np.dtype( self.coolingFormatFineStructure(nSteps)), 1), )
+            dt.append( ('selfSheilding'                 , np.dtype( self.selfSheildingFormat( nSteps))      , 1), )
+            
+        return dt
     
     def headerFormat(self):
         return [ 
@@ -126,7 +167,60 @@ class mesh( ):
                   ('recom'         , np.float64, ( n) ),
                   ('lymanAlpha'    , np.float64, ( n) ),
                ]
-    
+
+    def coolingFormaMetaStable(self, nSteps):
+        
+        n = np.int32(nSteps)
+        return [
+                  ('C'  , np.float64, (n) ),
+                  ('C+' , np.float64, (n) ),
+                  ('Fe' , np.float64, (n) ),
+                  ('Fe+', np.float64, (n) ),
+                  ('O'  , np.float64, (n) ),
+                  ('O+' , np.float64, (n) ),
+                  ('S'  , np.float64, (n) ),
+                  ('S+' , np.float64, (n) ),
+                  ('Si' , np.float64, (n) ),
+                  ('Si+', np.float64, (n) ),
+               ]
+
+    # tansitions = ['upper1-lower1', 'upper2-lower2'....etc ]
+    #   for example 
+    # tansitions = ['1-0', '2-1'....etc ]#
+    def coolingFmtFsSpecie(self, levels, transitions, n):
+                
+        fmtCool    = []
+        fmtPopDens = []
+        
+        for trans in transitions:
+            fmtCool.append(     (trans, np.float64, (n)),   )
+        for level in levels:
+            fmtPopDens.append(  (level, np.float64, (n)),   )
+            
+        return [           
+                 ('rate'   , np.dtype(fmtCool), 1),
+                 ('popDens', np.dtype(fmtPopDens), 1),
+               ]
+        
+    def coolingFormatFineStructure(self, nSteps):
+        
+        n = np.int32(nSteps)
+        return [ ('C+' , np.dtype(self.coolingFmtFsSpecie(['0','1']    , ['1-0']            , n)), 1),
+                 ('Si+', np.dtype(self.coolingFmtFsSpecie(['0','1']    , ['1-0']            , n)), 1),
+                 ('C'  , np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+                 ('O'  , np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+                 ('S'  , np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+                 ('Fe+', np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+                 ('Si' , np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+                ]
+
+    def selfSheildingFormat(self, nSteps):
+
+        return [ ('H2'  ,  np.float64, (nSteps)),
+                 ('CO'  ,  np.float64, (nSteps)),
+                 ('13CO',  np.float64, (nSteps)),
+               ] 
+            
     def getData(self):
         return self.data
     
