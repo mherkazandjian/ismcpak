@@ -5,59 +5,59 @@ import inspect
 from ismUtils import getSlabThicknessFromAv
 
 class mesh( ):
-    """
-    This class read a PDR mesh and returns an object containing all the data of that mesh
-    
-    the class attributes are the same as the xxxxFormats defined below.
+    """This class read a PDR mesh and returns an object containing all the data of that mesh.
         
-        m = mesh(path)
-        m.hdr     contains the info in the header         ( dtype )
         
-        m.data    contains everything abt the mesh        ( dtype )
-          ( for files in binary format 1) 
-          data['hdr']     = m.hdr
-                     ['version']
-                     ['G0']
-                     [remaining tags in self.headerFormat] 
-          data['state']   = temperatures, abundances....
-                       ['gasT']
-                       ['dustT']
-                       [ remaining tags in self.stateFormat ]
-          data['therm']  = total heating and cooling  
-                       ['heating']
-                       ['cooling']
-          data['cooling'] = detailed info about cooling
-                         ['metaStable']
-                         ['fineStructure']
-                         ['roVib']
-                         [remainig tags in self.coolingFormat]
-          data['heating'] = detailed info about heating
-                         ['photo']
-                         ['cIon']
-                         ['molHydro']
-                         [remainig tags in self.heatingFormat]
-          ( binary file of format 2 have the follwing extra data)
-          data['metaStableCoolingCmponents']
-                                            ['C']
-                                            ['C+']
-                                            ['Fe']
-                                            [remainig species in self.coolingFormatMetaStable]
-          data['fineStructureCoolingComponents']
-                                                ['Si']
-                                                      ['popDens']
-                                                                 ['0']
-                                                                 ['1']
-                                                      ['rate']
-                                                              ['1-0']
-                                                [remainig species in self.coolingFormatFineStructure]
-          data['selfSheilding']
-                               ['H2']
-                               ['CO']
-                               ['13CO']
-          
+        .. code-block:: python
+        
+            m = mesh(path)
+            data['hdr']  # dtype defined in self.headerFormat()
+            data['hdr']['version']
+            data['hdr']['G0']
+            data['hdr']['remaining tags in self.headerFormat()']
+            
+            data['state']  # dtype defined in self.stateFormat()
+            data['state']['gasT']
+            data['state']['dustT']
+            data['state']['remaining tags in self.stateFormat()']
+            
+            data['therm'] # dtype defined in self.thermoFormat()
+            data['therm']['heating'] 
+            data['therm']['cooling']
+            
+            data['cooling'] # dtype defined in self.coolingFormat()
+            data['cooling']['metaStable']
+            data['cooling']['fineStructure']
+            data['cooling']['roVib']
+            data['cooling']['remainig tags in self.coolingFormat()']
+            
+            data['heating'] # dtype defined in self.heatingFormat()
+            data['heating']['photo']
+            data['heating']['cIon']
+            data['heating']['molHydro']
+            data['heating']['remainig tags in self.heatingFormat()']
+            
+            # Only for binary files with version 2 have the follwing extra data
+            data['metaStableCoolingCmponents'] # dtype defined in self.coolingFormaMetaStable()
+            data['metaStableCoolingCmponents']['C']
+            data['metaStableCoolingCmponents']['C+']
+            data['metaStableCoolingCmponents']['Fe']
+            data['metaStableCoolingCmponents']['remainig species in self.coolingFormatMetaStable()']
+            
+            data['fineStructureCoolingComponents'] # dtype defined in self.coolingFormatFineStructure()
+            data['fineStructureCoolingComponents']['Si']['popDens']['0']
+            data['fineStructureCoolingComponents']['Si']['popDens']['1']
+            data['fineStructureCoolingComponents']['Si']['rate']['1-0']
+            data['fineStructureCoolingComponents']['remainig species in self.coolingFormatFineStructure']
+            
+            data['selfSheilding']  # dtype defined in self.selfSheildingFormat()
+            data['selfSheilding']['H2']
+            data['selfSheilding']['CO']
+            data['selfSheilding']['13CO']
+         
     templates to extract 1D arrays along the slab
          Av         = self.data['state']['Av'][0][0,:]
-         abunSpecie = self.data['state']['abun'][0]
+             abunSpecie = self.data['state']['abun'][0]
     """
 
     def __init__(self, fileName=None, chemNet = None, metallicity = None):
@@ -66,33 +66,33 @@ class mesh( ):
             self.fName = fileName
         
             # reading the header, constructing the full mesh dtype
-            dtHdr = np.dtype( self.headerFormat() )
-            hdr   = np.fromfile(self.fName, dtype = dtHdr, count = 1 )
-            self.hdr = hdr[0]
+            dtHdr = np.dtype( self.headerFormat() ) 
+            hdr   = np.fromfile(self.fName, dtype = dtHdr, count = 1 ) 
+            self.hdr = hdr[0]  #: data of the header 
 
             # re-reading the whole file and constructing the full dtype
             # with the header info read above 
             dtMesh    = self.constructMeshDtype( self.hdr['nSpecs'], self.hdr['nSteps'])
             data      = np.fromfile( fileName, dtype = dtMesh, count = 1)
-            self.data = data[0]
+            self.data = data[0] 
         else:
-            self.data = None
-            self.hdr  = None
+            self.data = None  #: (numpy.dtype) holds all the data of the PDR
+            self.hdr  = None  #: (numpy.dtype) holds the header info the PDR. This is the same as :data:`self.data['hdr'] <data>`
             
         if chemNet != None:
             self.set_chemNet(chemNet)
         else:
-            self.chemNet = None
+            self.chemNet = None #:
 
         if metallicity != None:
             self.set_metallicity(metallicity)
         else:
-            self.metallicity = None
+            self.metallicity = None #:
             
-        self.figInit = 0
-        self.fig     = None
-        self.axs     = None
-        self.axsRef  = None
+        self.figInit = 0     #:
+        self.fig     = None  #:
+        self.axs     = None  #:
+        self.axsRef  = None  #:
 
         
     def constructMeshDtype(self, nSpecs, nSteps):

@@ -14,6 +14,12 @@ Contents:
 .. automodule:: radex
     :members: radex 
 
+.. automodule:: mesh
+    :members: mesh
+
+.. automodule:: ismUtils
+    :members: 
+
 Indices and tables
 ==================
 

@@ -1,4 +1,4 @@
-# 2011-02-21 : same as sweep8 but with higher resolution
+# the models of paper1 (table-1)
 #---------------------------------------------------------------------------------------------------
 from numpy import *
 from numpy.random import *
@@ -17,11 +17,11 @@ pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none
 #----------------------------
 
 metallicity = 1.0   # in terms of solar metallicity 
-rho         = 3.0         # log of it
-G0          = 5.0         # log of it
+rho         = 3.0         # log of it  (paper1-M2)
+G0          = 5.0         # log of it  
 Lmech       = 1e-30
 
-outputDir = '/home/mher/ism/runs/oneSided/test/'
+outputDir = '/home/mher/ism/runs/oneSided/tests/'
             
 pdr.set_outputDir                  (outputDir + 'meshes/');
 pdr.set_species_fName              ("/home/mher/ism/speciesInfo/species.inp");
@@ -36,7 +36,7 @@ pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);
 pdr.set_CTol                       (1e-3);
 pdr.set_metalicity                 (metallicity);
-pdr.set_AvMax                      (1.0);
+pdr.set_AvMax                      (20.0);
 pdr.set_slabSizeCrit               (0.5);
 pdr.set_min_deltaAv                (0.01);
 pdr.set_max_deltaAv                (0.5);
