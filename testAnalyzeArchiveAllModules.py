@@ -18,11 +18,12 @@ from enumSpecies import *
 #   uniformSweep2-z-0.5-no-mech
 # 
 #---------------------------Archive parameters-----------------------
-runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
+#runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
+runDirPath    = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid/'
 #runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
-gridsRes      = 10
+gridsRes      = 5
 lgammaMechSec = -30.0
-metallicity   = 2.0
+metallicity   = 1.0
 
 radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  
                   'molDataDirPath'    : '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
@@ -86,6 +87,8 @@ arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 # plotting stuff
 
 arxv.plotGrid(gridsRes, lgammaMechSec, radexParms)
+"""
 #arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
 pyl.show()
+"""
 print 'done'

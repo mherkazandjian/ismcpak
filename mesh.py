@@ -72,7 +72,7 @@ class mesh( ):
 
             # re-reading the whole file and constructing the full dtype
             # with the header info read above 
-            dtMesh    = self.constructMeshDtype( self.hdr['nSpecs'], self.hdr['nSteps'])
+            dtMesh    = self.constructMeshDtype( self.hdr['nSpecs'], self.hdr['nSteps'], self.hdr['version'])
             data      = np.fromfile( fileName, dtype = dtMesh, count = 1)
             self.data = data[0] 
         else:
@@ -95,12 +95,12 @@ class mesh( ):
         self.axsRef  = None  #:
 
         
-    def constructMeshDtype(self, nSpecs, nSteps):
-        meshFormat = self.meshFormat( nSpecs, nSteps )
+    def constructMeshDtype(self, nSpecs, nSteps, version ):
+        meshFormat = self.meshFormat( nSpecs, nSteps, version )
         meshDtype  = np.dtype( meshFormat )
         return  meshDtype
 
-    def meshFormat(self, nSpecs, nSteps):
+    def meshFormat(self, nSpecs, nSteps, version):
         
         dt =  [  ('hdr'    , np.dtype( self.headerFormat ()               ), 1),
                  ('state'  , np.dtype( self.stateFormat  ( nSpecs, nSteps)), 1),
@@ -109,10 +109,9 @@ class mesh( ):
                  ('cooling', np.dtype( self.coolingFormat( nSteps)        ), 1),
               ]
 
-        print self.hdr
         # if the data file version is the second version, append the rest of the 
         # file format to be read, detailed cooling and self sheilding stuff
-        if self.hdr[0] == 2:
+        if version == 2:
             dt.append( ('metaStableCoolingCmponents'    , np.dtype( self.coolingFormaMetaStable(nSteps))    , 1), )
             dt.append( ('fineStructureCoolingComponents', np.dtype( self.coolingFormatFineStructure(nSteps)), 1), )
             dt.append( ('selfSheilding'                 , np.dtype( self.selfSheildingFormat( nSteps))      , 1), )

@@ -109,6 +109,7 @@ from utils import *
 from ndmesh import *
 from ismUtils import *
 from radex import *
+import sys
 
 class meshArxv():
     
@@ -186,6 +187,7 @@ class meshArxv():
             infoAll[i]['info'][2] = dbDataFObj.tell()  # offset from the start of file
             infoAll[i]['info'][3] = mData['hdr']['nSteps']  
             infoAll[i]['info'][4] = mData['hdr']['nSpecs']
+            infoAll[i]['info'][5] = mData['hdr']['version']
      
             infoAll[i]['parms'][0] = mData['hdr']['G0']
             infoAll[i]['parms'][1] = mData['hdr']['nGas']
@@ -231,10 +233,11 @@ class meshArxv():
                 
             mDummy = mesh()
             
-            nSteps = self.infoAll[i]['info'][3]
-            nSpecs = self.infoAll[i]['info'][4]
-        
-            thisMeshDtype = mDummy.constructMeshDtype(nSpecs, nSteps)
+            nSteps  = self.infoAll[i]['info'][3]
+            nSpecs  = self.infoAll[i]['info'][4]
+            meshVer = self.infoAll[i]['info'][5]
+            
+            thisMeshDtype = mDummy.constructMeshDtype(nSpecs, nSteps, meshVer)
             thisMeshData = np.fromfile( dbDataFObj, dtype = thisMeshDtype, count = 1)
 
             self.meshes.append( thisMeshData[0] )                
@@ -249,17 +252,19 @@ class meshArxv():
         print 'read successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
         
     # the format for the archive header from which the dtype will be constructed
-    # specifying the info and paramters for each line in the header        
+    # specifying the info and paramters for each line in the header
+    # in version 1 : the 'info' is defined as : ('info' , np.int64  , 5)
+    # in version 2 : the 'info' is defined as : ('info' , np.int64  , 6)        
     def arxvHdrFormat(self):
         
         # defining the version of the database
         self.ver = np.zeros([3], dtype = np.int32)
         self.ver[0] = 0
         self.ver[1] = 0
-        self.ver[2] = 1
+        self.ver[2] = 2
 
         return [ 
-                  ('info' , np.int64  , 5),
+                  ('info' , np.int64  , 6),
                   ('parms', np.float64, 5)
                ]
         
@@ -307,12 +312,13 @@ class meshArxv():
         nInCells.fill(0.0)
         tGasGrid.fill(0.0)
         nx, ny = tGasGrid.shape
-
+        
         # computing the surface temperature grid
         for i in meshInds:
             xThis = np.log10(self.meshes[i]['hdr']['G0'])
             yThis = np.log10(self.meshes[i]['hdr']['nGas'])
             gasT = self.meshes[i]['state']['gasT']
+            
             zThis = gasT[0]
 
             indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
@@ -343,8 +349,8 @@ class meshArxv():
             yThis = np.log10(self.meshes[i]['hdr']['nGas'])
             
             #proc  = self.meshes[i][whichThermal][whichProcess]
-            proc1  = self.meshes[i]['heating']['totalHeat']  
-            proc2  = self.meshes[i]['heating']['totalCool']  
+            proc1  = self.meshes[i]['therm']['heating']  
+            proc2  = self.meshes[i]['therm']['cooling']
             proc   = proc1 / proc2
             
             print proc

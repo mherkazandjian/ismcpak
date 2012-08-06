@@ -10,7 +10,8 @@ from ismUtils import *
 #------------------mesh data file-------------------------------------
 #meshFname     = '/home/mher/ism/runs/oneSided/tests/meshes/mesh.dat-id-000000-0.1.7'
 #meshFname     = '/home/mher/ism/runs/oneSided/tests/meshes/mesh.dat-id-000000'
-meshFname     = '/home/mher/ism/runs/oneSided/tests/M2-30/mesh.dat'
+#meshFname     = '/home/mher/ism/runs/oneSided/tests/M2-30/mesh.dat'
+meshFname      = '/data1/mher/ism/runs/oneSided/testOneSidedPDRGrid/meshes/mesh.dat-id-000000'
 #meshFname     = '/home/mher/ism/runs/oneSided/tests/M2-30/mesh.dat-adaptive-0.1.10'
 #meshFname     = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/meshes/mesh.dat-id-000119'
 metallicity   = 1.0
