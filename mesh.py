@@ -109,6 +109,7 @@ class mesh( ):
                  ('cooling', np.dtype( self.coolingFormat( nSteps)        ), 1),
               ]
 
+        print self.hdr
         # if the data file version is the second version, append the rest of the 
         # file format to be read, detailed cooling and self sheilding stuff
         if self.hdr[0] == 2:
