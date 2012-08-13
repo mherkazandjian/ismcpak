@@ -5,12 +5,12 @@ def AvToLength(Av, nGas, Z):
         column (not the actual column density) this is the inverse of Eq-4 
         in paper01 where  :math:`N_H = L.n_{gas}` 
         
-    :param Av: The Av (in mag units).
-    :type Av: numpy.float64
-    :param nGas: The gas density in :math:`cm^{-3}`.
-    :type nGas: numpy.float64
-    :param Z: The metllicity in terms of solar metallicity (:math:`Z_{\odot}`).
-    :type Z: numpy.float64
+        :param Av: The Av (in mag units).
+        :type Av: numpy.float64
+        :param nGas: The gas density in :math:`cm^{-3}`.
+        :type nGas: numpy.float64
+        :param Z: The metllicity in terms of solar metallicity (:math:`Z_{\odot}`).
+        :type Z: numpy.float64
     """
     return (Av*1.87e21)/(nGas*Z)
 

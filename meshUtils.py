@@ -1,132 +1,110 @@
-"""
- this class generates and manipulates archives of meshes
-  
- METHODS :
- ---------
-   arxvHdrFormat()
-
- INSTANCE VARIABLES :
- -------------------
-  --infoAll  : a numpy array of dtype arxvHdrDtype (see below) which contains 
-               the info (headers) about all the meshes
-               each entry in this array contains two things, information about the
-               mesh and the parameters of the mesh. For example the elements
-               x in self.infoAll[x] has the following contents : 
-                  self.infoAll[x]['info'][0]   mesh number 
-                  self.infoAll[x]['info'][1]   0 ( for now)
-                  self.infoAll[x]['info'][2]   offset from the start of file
-                  self.infoAll[x]['info'][3]   number of steps in the mesh  
-                  self.infoAll[x]['info'][4]   number of species
-     
-                  self.infoAll[x]['parms'][0]  G0
-                  self.infoAll[x]['parms'][1]  nGas
-                  self.infoAll[x]['parms'][2]  gammaMech
-                  self.infoAll[x]['parms'][3]  0.0, NOT USED
-                  self.infoAll[x]['parms'][4]  0.0  NOT USED
-                      
-  --self.meshes  : a list of all the meshes of 'mesh' dtypes (see mesh.py)
-    
-        for a mesh of at index 'i' in 
-           self.meshes[i]
-        the corresponding info in the header are accessed as follows :
-        
-        self.infoAll[i]['parms'][0]) which should be the same as self.meshes[i]['hdr']['G0'] 
-        self.infoAll[i]['parms'][1]) which should be the same as self.meshes[i]['hdr']['nGas']
-        self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
-
-  --nMeshes : nump.long64 
-        number of meshes in the database
-  --ver : numpy int32 array [3]
-        version number of the database data   
-  --nDbFiles : numpy.int32 
-        number of database files
-  --chemNet : object of class type chemicalNetwork
-        holds info about the chemical network used
-
-           
- FILES AND THEIR FORMATS
- ----------------------- 
- by default, the prefix name of the individual mesh files is assumed to be
- mesh.dat-id-xxxxxx
- 
- the mesh database files are assumed to have the same prefix, for example, if the
- database file provided is foo, then this routine will assume (or write) 
-     foo.info
-     foo.db
- for now the database can be stored into a single file and not split into
- multiple files.  
- 
- the database for the meshes is constructed of two binary files:
-     foo.info : holding all the information about the meshes, locations and parameters
-     foo.db   : holds the data for all the meshes
-   
- the info file has the following structure :
-    
-    - version number    : int32 int32 int32
-    - nMeshes           : int32 
-    - meshes info array : meshInfoArrayFormat (see also the method)
-       ( nMeshes, 1)          .
-                              .
-                              .  
-
-            the entries of the dtype are 
-                - mesh number     ( int64 ) :
-                - data file index ( int64 ) :
-                     i.e in which .db file the mesh is located
-                - offset ( int64 ) :
-                     the offset in bytes from the beginning of the file where the mesh
-                     is located
-                - nSteps ( int64 ):
-                     the number of slabs in the mesh
-                - nSpecs ( int64 ) :
-                    the number of species in the mesh                                   .
-                    
-    the .db files have the following structure:
-    
-     - mesh_1 ( mesh dtype )
-     - checkNum_1 ( int64 )
-     - mesh_2 ( mesh dtype )
-     - checkNum_2 ( int64 )
-              .
-              .
-              .
-    for a mesh number i, the checkNum_i should be the same as the i^th entry 
-    in the info array offset...i.e chechNum = infoAll[i]['info'][2] 
-    
-    see test_writeReadArxv.py for an example
-"""
-
-import os
-import glob
+import os, glob, sys
 import numpy as np
 import pylab as pyl
 from matplotlib.widgets import Button
 from time import *
-#import gc
-
 from mesh import *
 from utils import *
 from ndmesh import *
 from ismUtils import *
 from radex import *
-import sys
 
 class meshArxv():
-    
+    """ this class generates and manipulates archives of meshes.
+               
+     FILES AND THEIR FORMATS:
+     by default, the prefix name of the individual mesh files is assumed to be
+     mesh.dat-id-xxxxxx
+     
+     the mesh database files are assumed to have the same prefix, for example, if the
+     database file provided is foo, then this routine will assume (or write)  
+         foo.info, foo.db
+     for now the database can be stored into a single file and not split into
+     multiple files.  
+     
+     the database for the meshes is constructed of two binary files:
+         foo.info : holding all the information about the meshes, locations and parameters
+         foo.db   : holds the data for all the meshes
+       
+     the info file has the following structure :
+        
+     - version number    : int32 int32 int32
+     - nMeshes           : int32 
+     - meshes info array : meshInfoArrayFormat (see also the method)
+       ( nMeshes, 1)          
+
+          the entries of the dtype are 
+            - mesh number     ( int64 ) :
+            - data file index ( int64 ) :
+               i.e in which .db file the mesh is located
+            - offset ( int64 ) :
+               the offset in bytes from the beginning of the file where the mesh is located
+            - nSteps ( int64 ):
+               the number of slabs in the mesh
+            - nSpecs ( int64 ) :
+               the number of species in the mesh                                   .
+                        
+      the .db files have the following structure:
+         - mesh_1 ( mesh dtype )
+         - checkNum_1 ( int64 )
+         - mesh_2 ( mesh dtype )
+         - checkNum_2 ( int64 )
+
+      for a mesh number i, the checkNum_i should be the same as the i^th entry 
+      in the info array offset...i.e chechNum = infoAll[i]['info'][2] 
+        
+      see test_writeReadArxv.py for an example
+    """
     def __init__(self, *args, **kwrds):
         
         # instance variables
         self.nMeshes    = None
+        """ nump.long64 : number of meshes in the database """
+
         self.ver        = None
-        self.meshes     = None
-        self.infoAll    = None
-        self.nDbFiles   = None
-        self.chemNet    = None
+        """ numpy int32 array [3] version number of the database data"""
         
+        self.meshes     = None
+        """ a list of all the meshes of 'mesh' dtypes (see mesh.py)
+        
+            for a mesh of at index 'i' in 
+               self.meshes[i]
+            the corresponding info in the header are accessed as follows :
+            
+            self.infoAll[i]['parms'][0]) which should be the same as self.meshes[i]['hdr']['G0'] 
+            self.infoAll[i]['parms'][1]) which should be the same as self.meshes[i]['hdr']['nGas']
+            self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
+        """
+            
+        self.infoAll    = None 
+        """ a numpy array of dtype arxvHdrDtype (see below) which contains the info
+         (headers) about all the meshes each entry in this array contains two things,
+          information about the mesh and the parameters of the mesh. For example
+          the elements x in self.infoAll[x] has the following contents : 
+          self.infoAll[x]['info'][0]   mesh number 
+          self.infoAll[x]['info'][1]   0 ( for now)
+          self.infoAll[x]['info'][2]   offset from the start of file
+          self.infoAll[x]['info'][3]   number of steps in the mesh  
+          self.infoAll[x]['info'][4]   number of species
+         
+          self.infoAll[x]['parms'][0]  G0
+          self.infoAll[x]['parms'][1]  nGas
+          self.infoAll[x]['parms'][2]  gammaMech
+          self.infoAll[x]['parms'][3]  0.0, NOT USED
+          self.infoAll[x]['parms'][4]  0.0  NOT USED
+        """
+
+        self.nDbFiles   = None
+        """ numpy.int32 number of database files"""
+        
+        self.chemNet    = None
+        """ object of class type chemicalNetwork holds info about the chemical network used
+        """
+    
         # variables used for plotting
-        self.pltGmSec = None # the value of the section in Gmech selected
+        self.pltGmSec = None #: the value of the section in Gmech selected
         self.pltGrds  = None 
-        self.grds     = None # 2x2 ndmesh array object
+        self.grds     = None #: 2x2 ndmesh array object
         self.grdsCbarAxs = None
         self.pltRadex = None
         self.fig      = None
@@ -251,11 +229,12 @@ class meshArxv():
                     
         print 'read successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
         
-    # the format for the archive header from which the dtype will be constructed
-    # specifying the info and paramters for each line in the header
-    # in version 1 : the 'info' is defined as : ('info' , np.int64  , 5)
-    # in version 2 : the 'info' is defined as : ('info' , np.int64  , 6)        
     def arxvHdrFormat(self):
+        """ the format for the archive header from which the dtype will be constructed
+         specifying the info and paramters for each line in the header
+         in version 1 : the 'info' is defined as : ('info' , np.int64  , 5)
+         in version 2 : the 'info' is defined as : ('info' , np.int64  , 6)
+         """        
         
         # defining the version of the database
         self.ver = np.zeros([3], dtype = np.int32)
@@ -305,9 +284,21 @@ class meshArxv():
             errStr = 'FUV G0 range of the grid not set'
             raise NameError(errStr)            
 
-    def computeSurfaceTemperatureGrid( self, meshInds ):
+    def computeSurfaceTemperatureGrid( self, meshInds = None, res = None, ranges = None ):
+        
+        if not meshInds:
+            meshInds = np.arange(self.nMeshes)
+        
+        if self.grds == None: # for standalone use of this function
+            if res == None:
+                raise ValueError('res = None, i need to have the resolution of the grid first!!')
+            if ranges == None:
+                raise ValueError('ranges = None, i need to have the ranges!!!')
+            tGasGrid = ndmesh( (res, res), dtype = np.float64, ranges = ranges, fill = 0.0) 
+        else:
+            tGasGrid = self.grds[0][0] # should have called self.plot first 
+                    
         spcs = self.chemNet.species
-        tGasGrid = self.grds[0][0]
         nInCells = tGasGrid.copy()
         nInCells.fill(0.0)
         tGasGrid.fill(0.0)
@@ -330,6 +321,8 @@ class meshArxv():
         #print tGasGrid
         #print nInCells
         tGasGrid[:] = np.log10(tGasGrid / nInCells)
+        
+        return tGasGrid
 
     # produce the grid for heating or cooling determined with
     #    whichThermal = 'heating' | 'cooling'
@@ -531,24 +524,28 @@ class meshArxv():
     # sets up a grid, and runs the LVG models over the grid
     # the computed grid of emission stuff is saved in the LVG 
     # method.
-    def saveGridsToFiles( self, resGrids, lgammaMechSec, radexParms ):
+    def saveGridsToFiles( self, resGrids, lgammaMechSec, radexParms, ranges = None ):
         self.pltGmSec   = lgammaMechSec
         self.radexParms = radexParms
 
                                 #xaxis    yaxis 
-        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64 ), 
-                       ndmesh( (resGrids, resGrids), dtype=np.float64 )], 
-                      [ndmesh( (resGrids, resGrids), dtype=np.float64 ),
-                       ndmesh( (resGrids, resGrids), dtype=np.float64 )] ]  
+        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 ), 
+                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 )], 
+                      [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 ),
+                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 )] ]  
 
-        nMin  = 0.0; nMax  = 6.0;
-        G0Min = 0.0; G0Max = 6.0;
+        if ranges == None:
+            nMin  = 0.0; nMax  = 6.0;
+            G0Min = 0.0; G0Max = 6.0;
+        else:
+            nMin  = ranges[0,0]; nMax  = ranges[0,1] 
+            G0Min = ranges[1,0]; G0Max = ranges[1,1]
                         
-        for grdSubList in self.grds:
-            for grd in grdSubList:
-                # setting up the 2D meshes for the grids and initializing them
-                grd.fill(0)
-                grd.setup( [[nMin, nMax], [G0Min, G0Max]] )
+        #for grdSubList in self.grds:
+        #    for grd in grdSubList:
+        #        # setting up the 2D meshes for the grids and initializing them
+        #        grd.fill(0)
+        #        grd.setup( [[nMin, nMax], [G0Min, G0Max]] )
         
         # setting up a dummy mesh object to use its plotting functionalities
         msh = mesh()
@@ -662,21 +659,22 @@ class meshArxv():
         # defining and intialising the ndmesh objects which will be used
         # for computing the grid properties and then displayed
 
+                                
                                 #xaxis    yaxis 
-        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64 ), 
-                       ndmesh( (resGrids, resGrids), dtype=np.float64 )], 
-                      [ndmesh( (resGrids, resGrids), dtype=np.float64 ),
-                       ndmesh( (resGrids, resGrids), dtype=np.float64 )] ]  
+        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0  ), 
+                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 )], 
+                      [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 ),
+                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 )] ]  
                         
         # creating the axes for the colorbars
         self.grdsCbarAxs = [ [pyl.axes([left, bott + sz + sz + vSpace + 0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz + sz + vSpace + 0.017, 0.2, 0.01] ) ],
                              [pyl.axes([left, bott + sz +               0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz +               0.017, 0.2, 0.01] ) ] ]
                 
-        for grdSubList in self.grds:
-            for grd in grdSubList:
-                # setting up the 2D meshes for the grids and initializing them
-                grd.fill(0)
-                grd.setup( [[nMin, nMax], [G0Min, G0Max]] )
+        #for grdSubList in self.grds:
+        #    for grd in grdSubList:
+        #        # setting up the 2D meshes for the grids and initializing them
+        #        grd.fill(0)
+        #        grd.setup(  )
 
         for cbarAxsSubList in self.grdsCbarAxs:
             for cbarAxs in cbarAxsSubList:

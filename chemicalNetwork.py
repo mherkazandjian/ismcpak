@@ -1,60 +1,55 @@
 from string import *
 import numpy as np
-
 from specie import *
 from reaction import *
 
-"""
-   *if a specie 'XXX' is not in :
-       self.speciesRemoved
-    and self.species['XXX'].num = None
-    then the reactions which have 'XXX' as a specie are still in the 
-    network but they are not used in computing the reaction, like for
-    example PHOTON, it does not have an abundance and we do not keep
-    track of the number of photons, so it need not have a number with
-    which its abudnance can be tracked in self.abun[]   
-   
-   * reaction hash codes are set based on the original numbers assigned to
-     species and it doesnt depend on the order the reactnats or the 
-     products appear in the reaction input file. When computing the
-     hash code, the species are picked in the increasing order as 
-     they appeat in the sorted string array (using the sorted function)
-
-   * write a method which merges reactions with the same hashcode into
-     one reaction where in different temperature ranges different temperatures
-     are set.
-
-   * write a method which checks if the reactions are balanced or not
-   
-     self.species   # tuple containing the unique species objects in the network 
-     self.__init__(fileName=None, baseSpecies=None)
-     self.readDatabase(fileName)
-     self.printFile()
-     self.printReactions()
-     self.setRxnAttributes(lineStr)
-     self.parseReactions()
-     self.getUniqueSpecies(baseSpecies)
-     self.mapReactionSpeciesToSpecieObjectList()
-     self.setup(databaseFname, baseSpecies):
-     self.changeSpeciesNums( fileName )
-     
-     TODO:
-         write a method which takes as input the species file used and filters
-         out all the reaction which do not contain these species and re-numbers
-         the species in the number representation of the chemical network
-"""
-
-### write a method which reads the abundances  and sets the abundance of each specie object
-### this can be implemented by appending a new abudance column to species.inp 
-### ;;;; as a check, dump the remainders of the parsed strings to a file...it should
-#        mainly be black other than commas...etc...otherwise, there are stuff not taken
-#        into account, this can be done by erasing stuff from self.fileStr after the whole
-#        original network has been worked out
-
-# class definition for the chemical network
-# ----------------------------------------
 class chemicalNetwork(specie, reaction):
+    """ if a specie 'XXX' is not in self.speciesRemoved
+        and self.species['XXX'].num = None
+        then the reactions which have 'XXX' as a specie are still in the 
+        network but they are not used in computing the reaction, like for
+        example PHOTON, it does not have an abundance and we do not keep
+        track of the number of photons, so it need not have a number with
+        which its abudnance can be tracked in self.abun[]   
+       
+        reaction hash codes are set based on the original numbers assigned to
+         species and it doesnt depend on the order the reactnats or the 
+         products appear in the reaction input file. When computing the
+         hash code, the species are picked in the increasing order as 
+         they appeat in the sorted string array (using the sorted function)
+    
+        write a method which merges reactions with the same hashcode into
+         one reaction where in different temperature ranges different temperatures
+         are set.
+    
+        write a method which checks if the reactions are balanced or not
+       
+         self.species   # tuple containing the unique species objects in the network 
+         self.__init__(fileName=None, baseSpecies=None)
+         self.readDatabase(fileName)
+         self.printFile()
+         self.printReactions()
+         self.setRxnAttributes(lineStr)
+         self.parseReactions()
+         self.getUniqueSpecies(baseSpecies)
+         self.mapReactionSpeciesToSpecieObjectList()
+         self.setup(databaseFname, baseSpecies):
+         self.changeSpeciesNums( fileName )
+         
+         TODO:
+             write a method which takes as input the species file used and filters
+             out all the reaction which do not contain these species and re-numbers
+             the species in the number representation of the chemical network
 
+        write a method which reads the abundances  and sets the abundance of each specie object
+        this can be implemented by appending a new abudance column to species.inp     
+        ;;;; as a check, dump the remainders of the parsed strings to a file...it should
+        mainly be black other than commas...etc...otherwise, there are stuff not taken
+        into account, this can be done by erasing stuff from self.fileStr after the whole
+        original network has been worked out
+
+         class definition for the chemical network             
+    """
     def __init__(self, fileName=None, baseSpecies=None, UMISTVER = None):
         self.nReactions=None           # number of reactions in the network
         self.reactions=[]              # reaction object list in the netowrk

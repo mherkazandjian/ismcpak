@@ -7,7 +7,11 @@ from ismUtils import getSlabThicknessFromAv
 class mesh( ):
     """This class read a PDR mesh and returns an object containing all the data of that mesh.
         
-        
+        :param string fileName: path of the binary file holding the data of the mesh. this is assigned to :data:`self.fileName <fName>`
+        :param chemicalNetwork chemNet: the chemical network object instance. this is assigned to :data:`self.chemNet <chemNet>`
+        :param numpy.float64 metallicity: the metallicity to be used in the computations for this mesh.  this is assigned to :data:`self.metallicity <metallicity>`
+        :returns: mesh object
+
         .. code-block:: python
         
             m = mesh(path)
@@ -54,16 +58,11 @@ class mesh( ):
             data['selfSheilding']['H2']
             data['selfSheilding']['CO']
             data['selfSheilding']['13CO']
-         
-    templates to extract 1D arrays along the slab
-         Av         = self.data['state']['Av'][0][0,:]
-             abunSpecie = self.data['state']['abun'][0]
     """
-
     def __init__(self, fileName=None, chemNet = None, metallicity = None):
-        
+
         if fileName != None:
-            self.fName = fileName
+            self.fName = fileName #: path (py:string) of the binary file holding the data of the mesh.
         
             # reading the header, constructing the full mesh dtype
             dtHdr = np.dtype( self.headerFormat() ) 
@@ -96,12 +95,20 @@ class mesh( ):
 
         
     def constructMeshDtype(self, nSpecs, nSteps, version ):
+        """ constructs the numpy dtype of the mesh which will be used to read the contents of the binary data fiel
+        """
         meshFormat = self.meshFormat( nSpecs, nSteps, version )
         meshDtype  = np.dtype( meshFormat )
         return  meshDtype
 
     def meshFormat(self, nSpecs, nSteps, version):
+        """ define the format of the mesh from which the dtype is contrsucted.
         
+             :param np.int32 nSpecs: number of species in the chemical network in the file
+             :param np.int32 nSteps: number of slabs in the file
+             :param np.int32: the version of the data file. For now can handle up to version = 2.
+             :returns: list
+        """
         dt =  [  ('hdr'    , np.dtype( self.headerFormat ()               ), 1),
                  ('state'  , np.dtype( self.stateFormat  ( nSpecs, nSteps)), 1),
                  ('therm'  , np.dtype( self.thermoFormat( nSteps)         ), 1),
@@ -119,6 +126,8 @@ class mesh( ):
         return dt
     
     def headerFormat(self):
+        """ define and return the format of the mesh header."""
+
         return [ 
                   ('version'  , np.int32   ),
                   ('G0'       , np.float64 ),
@@ -129,6 +138,8 @@ class mesh( ):
                ]
         
     def stateFormat(self, nSpecs, nSteps):
+        """ define the format of the state of the mesh."""
+
         n = int(nSteps)
         m = int(nSpecs)
         fmt = [
@@ -138,8 +149,10 @@ class mesh( ):
                   ('abun'  , np.float64, (m, n) ),
                ]
         return fmt
-
+    
     def thermoFormat(self, nSteps):
+        """ define the format of the total heating and cooling."""
+
         n = int(nSteps)
         return [
                   ('heating', np.float64, (n) ),
@@ -147,6 +160,7 @@ class mesh( ):
                ]
 
     def heatingFormat(self, nSteps):
+        """ define the format of the heating components."""
         n = int(nSteps)
         return [
                   ('photo'    , np.float64, (n) ),
@@ -159,6 +173,7 @@ class mesh( ):
                ]
 
     def coolingFormat(self, nSteps):
+        """ define the format of the cooling components."""
         n = int(nSteps)
         return [
                   ('metaStable'    , np.float64, ( n) ),
@@ -169,7 +184,7 @@ class mesh( ):
                ]
 
     def coolingFormaMetaStable(self, nSteps):
-        
+        """ define the format of the meta stable cooling components."""
         n = np.int32(nSteps)
         return [
                   ('C'  , np.float64, (n) ),
@@ -188,7 +203,36 @@ class mesh( ):
     #   for example 
     # tansitions = ['1-0', '2-1'....etc ]#
     def coolingFmtFsSpecie(self, levels, transitions, n):
-                
+        """ define the format of fine structure cooling transitions of a certain specie.
+        
+             :param list levels: a list of strings for the names of the levels which can be used to access the population densities. For example :
+
+             .. code-block:: python
+             
+                 levels = ['0', '1', '2', '3', '3-p']
+                 
+             would allow for the abundances of each level to be accessed through :
+             
+             .. code-block:: python
+             
+                 ['SPECIE']['popDens']['0'] # np.float64 array of the population density of level '0' 
+                 ['SPECIE']['popDens']['1'] # np.float64 array of the population density of level '1'
+
+             :param list transitions: a list containing the transitions. For each transitions an array is created as a dtype which can be used to access the cooling rate. For example.
+
+             .. code-block:: python
+             
+                 transitions = ['1-0','2-1','2-0']
+
+             would allow for the cooling rates for the transitions to be accessed through :
+             
+             .. code-block:: python
+             
+                 ['SPECIE']['rate']['1-0'] # np.float64 array of the cooling rate for transition '1-0' 
+                 ['SPECIE']['rate']['2-1'] # np.float64 array of the cooling rate for transition '2-1' 
+            
+             :param np.int32 n: the number of steps which will be the size of all the np.float64 arrays mentioned above             
+        """
         fmtCool    = []
         fmtPopDens = []
         
@@ -203,7 +247,11 @@ class mesh( ):
                ]
         
     def coolingFormatFineStructure(self, nSteps):
+        """ defines the format of the contents of each specie's fine structure cooling info
+            
+            :param np.int32 nSteps: the number of steps in the mesh to be set as the size of the arrays holding the fine structure info for the cooling rate and population densitites for each transition and level respectively.
         
+        """
         n = np.int32(nSteps)
         return [ ('C+' , np.dtype(self.coolingFmtFsSpecie(['0','1']    , ['1-0']            , n)), 1),
                  ('Si+', np.dtype(self.coolingFmtFsSpecie(['0','1']    , ['1-0']            , n)), 1),
@@ -215,7 +263,10 @@ class mesh( ):
                 ]
 
     def selfSheildingFormat(self, nSteps):
-
+        """ defines the format of the arrays which will hold the self sheilding data for the slabs in the mesh.
+         
+        :param np.int32 nSteps: the number of steps in the mesh to be set as the size of the arrays holding the fine structure info for the cooling rate and population densitites for each transition and level respectively.
+        """
         return [ ('H2'  ,  np.float64, (nSteps)),
                  ('CO'  ,  np.float64, (nSteps)),
                  ('13CO',  np.float64, (nSteps)),

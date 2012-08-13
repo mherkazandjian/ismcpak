@@ -8,20 +8,11 @@ from mesh import *
 from meshUtils import *
 from enumSpecies import *
 
-# runs
-#   uniformSweep2-z-2/
-#   uniformSweep2-highRes-z-1.0
-#   uniformSweep2-z-0.5
-#   
-#   uniformSweep2-z-1.0-no-mech
-#   uniformSweep2-z-2-no-mech
-#   uniformSweep2-z-0.5-no-mech
-# 
 #---------------------------Archive parameters-----------------------
 #runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
 runDirPath    = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid/'
 #runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
-gridsRes      = 5
+gridsRes      = 10
 lgammaMechSec = -30.0
 metallicity   = 1.0
 
@@ -86,7 +77,9 @@ arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 #-------------------------------------------------------------------
 # plotting stuff
 
+pyl.ioff()
 arxv.plotGrid(gridsRes, lgammaMechSec, radexParms)
+
 """
 #arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
 pyl.show()

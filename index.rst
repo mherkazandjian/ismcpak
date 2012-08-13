@@ -18,7 +18,13 @@ Contents:
     :members: mesh
 
 .. automodule:: ismUtils
-    :members: 
+    :members:
+
+.. automodule:: chemicalNetwork
+    :members: chemicalNetwork
+
+.. automodule:: meshUtils
+    :members: meshArxv
 
 Indices and tables
 ==================
