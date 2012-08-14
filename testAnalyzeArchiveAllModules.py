@@ -15,6 +15,7 @@ runDirPath    = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid/'
 gridsRes      = 10
 lgammaMechSec = -30.0
 metallicity   = 1.0
+plotRangenG0  = [[0,6],[0,6]]
 
 radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  
                   'molDataDirPath'    : '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
@@ -78,8 +79,9 @@ arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 # plotting stuff
 
 pyl.ioff()
-arxv.plotGrid(gridsRes, lgammaMechSec, radexParms)
+arxv.plotGrid(gridsRes, lgammaMechSec, radexParms, ranges = plotRangenG0)
 
+pyl.show()
 """
 #arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
 pyl.show()

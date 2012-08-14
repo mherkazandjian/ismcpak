@@ -285,8 +285,12 @@ class meshArxv():
             raise NameError(errStr)            
 
     def computeSurfaceTemperatureGrid( self, meshInds = None, res = None, ranges = None ):
-        
-        if not meshInds:
+        """generates color map of the surface temperature. if meshInds is not provided,
+            all the meshes in the arxive are used. In that case, res and ranges shoudl
+            be provided.
+        """
+        # checking stuff
+        if meshInds == None:
             meshInds = np.arange(self.nMeshes)
         
         if self.grds == None: # for standalone use of this function
@@ -294,14 +298,16 @@ class meshArxv():
                 raise ValueError('res = None, i need to have the resolution of the grid first!!')
             if ranges == None:
                 raise ValueError('ranges = None, i need to have the ranges!!!')
-            tGasGrid = ndmesh( (res, res), dtype = np.float64, ranges = ranges, fill = 0.0) 
+            grd = ndmesh( (res, res), dtype = np.float64, ranges = ranges, fill = 0.0) 
         else:
-            tGasGrid = self.grds[0][0] # should have called self.plot first 
-                    
+            grd = self.grds[0][0] # should have called self.plot first
+            ranges = grd.ranges 
+            grd.fill(0.0) 
+        
+        # doing the computations to fill the grid 
+        tGasGrid = grd     
         spcs = self.chemNet.species
         nInCells = tGasGrid.copy()
-        nInCells.fill(0.0)
-        tGasGrid.fill(0.0)
         nx, ny = tGasGrid.shape
         
         # computing the surface temperature grid
@@ -311,9 +317,9 @@ class meshArxv():
             gasT = self.meshes[i]['state']['gasT']
             
             zThis = gasT[0]
-
-            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
-            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+            
+            indxInGrid = scale(xThis, 0, nx, ranges[0][0], ranges[0][1], integer = True) 
+            indyInGrid = scale(yThis, 0, ny, ranges[1][0], ranges[1][1], integer = True) 
         
             tGasGrid[indyInGrid][indxInGrid] += zThis
             nInCells[indyInGrid][indxInGrid] += 1
@@ -328,37 +334,53 @@ class meshArxv():
     #    whichThermal = 'heating' | 'cooling'
     # and the specific process is determined by 
     #   whichProcsess = string
-    def computeHeatingCoolingGrid( self, meshInds, slabIndex, whichThermal, whichProcess ):
+    def computeHeatingCoolingGrid( self, slabIndex = None, meshInds = None, whichThermal = None, whichProcess = None, res = None, ranges = None):
+        """generates color map of the various heating and cooling processes for a certain slab.
+        if meshInds is not provided, all the meshes in the arxiv are used. In that case, res and ranges shoudl
+            be provided.
+        """
+        # checking stuff
+        if meshInds == None:
+            meshInds = np.arange(self.nMeshes)
         
-        grid = self.grds[1][1]
-        nInCells = grid.copy()
-        nInCells.fill(0.0)
-        grid.fill(0.0)
-        nx, ny = grid.shape
+        if self.grds == None: # for standalone use of this function
+            if res == None:
+                raise ValueError('res = None, i need to have the resolution of the grid first!!')
+            if ranges == None:
+                raise ValueError('ranges = None, i need to have the ranges!!!')
+            grd = ndmesh( (res, res), dtype = np.float64, ranges = ranges, fill = 0.0) 
+        else:
+            grd = self.grds[1][1] # should have called self.plot first
+            ranges = grd.ranges 
+            grd.fill(0.0) 
+        
+        # doing the computations to fill the grid 
+        nInCells = grd.copy()
+        nx, ny = grd.shape
 
         # computing the surface temperature grid
         for i in meshInds:
             xThis = np.log10(self.meshes[i]['hdr']['G0'])
             yThis = np.log10(self.meshes[i]['hdr']['nGas'])
             
-            #proc  = self.meshes[i][whichThermal][whichProcess]
-            proc1  = self.meshes[i]['therm']['heating']  
-            proc2  = self.meshes[i]['therm']['cooling']
-            proc   = proc1 / proc2
-            
-            print proc
+            proc  = self.meshes[i][whichThermal][whichProcess]
+            #proc1  = self.meshes[i]['therm']['heating']  
+            #proc2  = self.meshes[i]['therm']['cooling']
+            #proc   = proc1 / proc2
             
             zThis = proc[slabIndex]
 
-            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
-            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+            indxInGrid = scale(xThis, 0, nx, ranges[0][0], ranges[0][1], integer = True)
+            indyInGrid = scale(yThis, 0, ny, ranges[1][0], ranges[1][1], integer = True) 
         
-            grid[indyInGrid][indxInGrid] += zThis
+            grd[indyInGrid][indxInGrid] += zThis
             nInCells[indyInGrid][indxInGrid] += 1
         
         #print tGasGrid
         #print nInCells
-        grid[:] = np.log10(grid / nInCells)
+        grd[:] = np.log10(grd / nInCells)
+        
+        return grd
         
     def computeAbundanceAtSurfaceGrid( self, meshInds, specStr ):
         abunGrid = self.grds[0][1] 
@@ -528,25 +550,15 @@ class meshArxv():
         self.pltGmSec   = lgammaMechSec
         self.radexParms = radexParms
 
+        if ranges == None:
+            raise ValueError('missing value of the parameter ranges\n')
+        
                                 #xaxis    yaxis 
         self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 ), 
                        ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 )], 
                       [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 ),
                        ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 )] ]  
 
-        if ranges == None:
-            nMin  = 0.0; nMax  = 6.0;
-            G0Min = 0.0; G0Max = 6.0;
-        else:
-            nMin  = ranges[0,0]; nMax  = ranges[0,1] 
-            G0Min = ranges[1,0]; G0Max = ranges[1,1]
-                        
-        #for grdSubList in self.grds:
-        #    for grd in grdSubList:
-        #        # setting up the 2D meshes for the grids and initializing them
-        #        grd.fill(0)
-        #        grd.setup( [[nMin, nMax], [G0Min, G0Max]] )
-        
         # setting up a dummy mesh object to use its plotting functionalities
         msh = mesh()
         msh.set_chemNet( self.chemNet )
@@ -565,10 +577,16 @@ class meshArxv():
                     
     
     #################################################################################         
-    def plotGrid(self, resGrids, lgammaMechSec, radexParms):
+    def plotGrid(self, resGrids, lgammaMechSec, radexParms, ranges = None):
 
         self.pltGmSec   = lgammaMechSec
         self.radexParms = radexParms
+
+        if ranges == None:
+            raise ValueError('missing value of the parameter ranges\n')
+        else:
+            nMin  = ranges[0][0]; nMax  = ranges[0][1];
+            G0Min = ranges[1][0]; G0Max = ranges[1][1];
 
         # definig plotting windows and setting the locations of subplots
         fig1, axs1, = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(12,12))
@@ -616,8 +634,6 @@ class meshArxv():
         sz    = 0.20
         vSpace = 0.035
         hSpace = 0.02
-        nMin  = 0.0; nMax  = 6.0;
-        G0Min = 0.0; G0Max = 6.0;
         # defining the new axes array
         axsGrds = np.array( [ [axs1[0,1], axs1[0,2] ], [axs1[1,2], axs1[2,2] ] ])
         axsGrds[0,0].set_position((left              , bott + sz + vSpace, sz, sz))
@@ -670,12 +686,6 @@ class meshArxv():
         self.grdsCbarAxs = [ [pyl.axes([left, bott + sz + sz + vSpace + 0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz + sz + vSpace + 0.017, 0.2, 0.01] ) ],
                              [pyl.axes([left, bott + sz +               0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz +               0.017, 0.2, 0.01] ) ] ]
                 
-        #for grdSubList in self.grds:
-        #    for grd in grdSubList:
-        #        # setting up the 2D meshes for the grids and initializing them
-        #        grd.fill(0)
-        #        grd.setup(  )
-
         for cbarAxsSubList in self.grdsCbarAxs:
             for cbarAxs in cbarAxsSubList:
                 
@@ -725,7 +735,7 @@ class meshArxv():
             #--------------------------------------------------------------
             pyl.subplot( axsGrds_n[0, 0] )
             ###
-            self.computeSurfaceTemperatureGrid( indsThisSec )
+            self.computeSurfaceTemperatureGrid( indsThisSec, ranges = ranges )
             ###
             im00 = self.grds[0][0].imshow(interpolation='nearest') 
             cbar00 = pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
@@ -766,13 +776,13 @@ class meshArxv():
             #cbarTickValues =  [-12, -11, -10, -9, -8, -7, -6, -5, -4]
             cbarTickValues =  [-2, -1, 0, 1, 2]
             """
-            ###
-            self.computeHeatingCoolingGrid(indsThisSec, 0, 'heating', 'photo' )
-            ###
+            ###    
+            self.computeHeatingCoolingGrid(slabIndex = 0, meshInds = indsThisSec, whichThermal = 'heating', whichProcess = 'photo', ranges = ranges)
+            cbarTickValues =  [-26, -24, -22, -20, -18, -16, -14]
             im11 = self.grds[1][1].imshow(interpolation='nearest')
             cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')            
             cbar11.set_ticks( cbarTickValues )
-            self.grds[1][1].plotContour( levels = cbarTickValues )
+            self.grds[1][1].plotContour( levels = cbarTickValues, colors = 'black' )
             print 'done'
         
                          

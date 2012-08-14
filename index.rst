@@ -6,25 +6,42 @@
 Welcome to IsmCpak's documentation!
 ===================================
 
+.. see http://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html#numpy.ndarray
+	and its source for an example on autosummary and see how to use it!! 
+	
 Contents:
+--------------------------
 
-.. toctree::
-   :maxdepth: 2
+* :data:`radex`
+* :data:`ismUtils`
+* :data:`mesh`
+* :data:`chemicalNetwork`
+* :data:`meshUtils`
+
+--------------------------
 
 .. automodule:: radex
-    :members: radex 
-
+	:members:
+                     
+--------------------------
+  
 .. automodule:: mesh
-    :members: mesh
+    :members: 
+    
+--------------------------
 
 .. automodule:: ismUtils
     :members:
 
+--------------------------
+
 .. automodule:: chemicalNetwork
-    :members: chemicalNetwork
+    :members: 
+
+--------------------------
 
 .. automodule:: meshUtils
-    :members: meshArxv
+    :members: 
 
 Indices and tables
 ==================
