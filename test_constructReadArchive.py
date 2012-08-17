@@ -3,8 +3,8 @@ from meshUtils import *
 import numpy as np
 from time import *
 
-#runDirPath =  '/home/mher/ism/runs/oneSided/uniformSweep2-z-0.5/'
-runDirPath =  '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid/'
+runDirPath =  '/home/mher/ism/runs/oneSided/uniformSweep2-z-0.5/'
+#runDirPath =  '/home/mher/ism/runs/oneSided/uniformSweep2-foo/'
 
 # constructing the archive
 t0 = time()

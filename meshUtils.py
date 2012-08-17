@@ -8,6 +8,7 @@ from utils import *
 from ndmesh import *
 from ismUtils import *
 from radex import *
+from utils import fetchNestedDtypeValue
 
 class meshArxv():
     """ this class generates and manipulates archives of meshes.
@@ -314,8 +315,8 @@ class meshArxv():
         for i in meshInds:
             xThis = np.log10(self.meshes[i]['hdr']['G0'])
             yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-            gasT = self.meshes[i]['state']['gasT']
-            
+            #gasT = self.meshes[i]['state']['gasT']
+            gasT = fetchNestedDtypeValue(self.meshes[i], ['state', 'gasT'] )
             zThis = gasT[0]
             
             indxInGrid = scale(xThis, 0, nx, ranges[0][0], ranges[0][1], integer = True) 

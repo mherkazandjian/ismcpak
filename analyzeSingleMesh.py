@@ -6,6 +6,7 @@ from chemicalNetwork import *
 from enumSpecies import *
 from mesh import *
 from ismUtils import *
+from utils import fetchNestedDtypeValue
 
 #------------------mesh data file-------------------------------------
 #meshFname     = '/home/mher/ism/runs/oneSided/tests/meshes/mesh.dat-id-000000-0.1.7'
@@ -22,6 +23,7 @@ underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 
 # elements and basic species from which all the other species are made
+from 
 baseSpec = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
               specie('PHOTON', specType = -1, charge=0 , init=1),
               specie('CRP'   , specType = -1, charge=0 , init=1),

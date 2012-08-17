@@ -32,6 +32,7 @@ from specie import *
 # class definition for a single reaction
 # --------------------------------------
 class reaction():
+    """ asdasdadasda"""
     def __init__(self):
         self.str = ''
         self.status = -1

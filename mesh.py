@@ -15,49 +15,49 @@ class mesh( ):
         .. code-block:: python
         
             m = mesh(path)
-            data['hdr']  # dtype defined in self.headerFormat()
-            data['hdr']['version']
-            data['hdr']['G0']
-            data['hdr']['remaining tags in self.headerFormat()']
+            m.data['hdr']  # dtype defined in self.headerFormat()
+            m.data['hdr']['version']
+            m.data['hdr']['G0']
+            m.data['hdr']['remaining tags in self.headerFormat()']
             
-            data['state']  # dtype defined in self.stateFormat()
-            data['state']['gasT']
-            data['state']['dustT']
-            data['state']['remaining tags in self.stateFormat()']
+            m.data['state']  # dtype defined in self.stateFormat()
+            m.data['state']['gasT']
+            m.data['state']['dustT']
+            m.data['state']['remaining tags in self.stateFormat()']
             
-            data['therm'] # dtype defined in self.thermoFormat()
-            data['therm']['heating'] 
-            data['therm']['cooling']
+            m.data['therm'] # dtype defined in self.thermoFormat()
+            m.data['therm']['heating'] 
+            m.data['therm']['cooling']
             
-            data['cooling'] # dtype defined in self.coolingFormat()
-            data['cooling']['metaStable']
-            data['cooling']['fineStructure']
-            data['cooling']['roVib']
-            data['cooling']['remainig tags in self.coolingFormat()']
+            m.data['cooling'] # dtype defined in self.coolingFormat()
+            m.data['cooling']['metaStable']
+            m.data['cooling']['fineStructure']
+            m.data['cooling']['roVib']
+            m.data['cooling']['remainig tags in self.coolingFormat()']
             
-            data['heating'] # dtype defined in self.heatingFormat()
-            data['heating']['photo']
-            data['heating']['cIon']
-            data['heating']['molHydro']
-            data['heating']['remainig tags in self.heatingFormat()']
+            m.data['heating'] # dtype defined in self.heatingFormat()
+            m.data['heating']['photo']
+            m.data['heating']['cIon']
+            m.data['heating']['molHydro']
+            m.data['heating']['remainig tags in self.heatingFormat()']
             
             # Only for binary files with version 2 have the follwing extra data
-            data['metaStableCoolingCmponents'] # dtype defined in self.coolingFormaMetaStable()
-            data['metaStableCoolingCmponents']['C']
-            data['metaStableCoolingCmponents']['C+']
-            data['metaStableCoolingCmponents']['Fe']
-            data['metaStableCoolingCmponents']['remainig species in self.coolingFormatMetaStable()']
+            m.data['metaStableCoolingCmponents'] # dtype defined in self.coolingFormaMetaStable()
+            m.data['metaStableCoolingCmponents']['C']
+            m.data['metaStableCoolingCmponents']['C+']
+            m.data['metaStableCoolingCmponents']['Fe']
+            m.data['metaStableCoolingCmponents']['remainig species in self.coolingFormatMetaStable()']
             
-            data['fineStructureCoolingComponents'] # dtype defined in self.coolingFormatFineStructure()
-            data['fineStructureCoolingComponents']['Si']['popDens']['0']
-            data['fineStructureCoolingComponents']['Si']['popDens']['1']
-            data['fineStructureCoolingComponents']['Si']['rate']['1-0']
-            data['fineStructureCoolingComponents']['remainig species in self.coolingFormatFineStructure']
+            m.data['fineStructureCoolingComponents'] # dtype defined in self.coolingFormatFineStructure()
+            m.data['fineStructureCoolingComponents']['Si']['popDens']['0']
+            m.data['fineStructureCoolingComponents']['Si']['popDens']['1']
+            m.data['fineStructureCoolingComponents']['Si']['rate']['1-0']
+            m.data['fineStructureCoolingComponents']['remainig species in self.coolingFormatFineStructure']
             
-            data['selfSheilding']  # dtype defined in self.selfSheildingFormat()
-            data['selfSheilding']['H2']
-            data['selfSheilding']['CO']
-            data['selfSheilding']['13CO']
+            m.data['selfSheilding']  # dtype defined in self.selfSheildingFormat()
+            m.data['selfSheilding']['H2']
+            m.data['selfSheilding']['CO']
+            m.data['selfSheilding']['13CO']
     """
     def __init__(self, fileName=None, chemNet = None, metallicity = None):
 

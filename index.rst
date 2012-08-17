@@ -12,26 +12,30 @@ Welcome to IsmCpak's documentation!
 Contents:
 --------------------------
 
+Modules
+*******
+
+* :data:`specie`
+* :data:`reaction`
+* :data:`chemicalNetwork`
+* :data:`mesh`
+* :data:`meshUtils`
 * :data:`radex`
 * :data:`ismUtils`
-* :data:`mesh`
-* :data:`chemicalNetwork`
-* :data:`meshUtils`
+
+Data and Definitions
+********************
+* :data:`baseSpecies`
 
 --------------------------
 
-.. automodule:: radex
+.. automodule:: specie
 	:members:
-                     
---------------------------
-  
-.. automodule:: mesh
-    :members: 
-    
+
 --------------------------
 
-.. automodule:: ismUtils
-    :members:
+.. automodule:: reaction
+	:members:
 
 --------------------------
 
@@ -40,8 +44,29 @@ Contents:
 
 --------------------------
 
+.. automodule:: mesh
+    :members: 
+
+--------------------------
+
 .. automodule:: meshUtils
     :members: 
+
+--------------------------
+
+.. automodule:: radex
+	:members:
+
+--------------------------
+
+.. automodule:: ismUtils
+    :members:
+
+--------------------------
+
+.. automodule:: baseSpecies
+    :members: 
+
 
 Indices and tables
 ==================

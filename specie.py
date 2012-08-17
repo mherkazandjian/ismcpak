@@ -2,15 +2,14 @@ from string import *
 from numpy import *
 import re
 
-""" methods :  self.__init__(specStr, specType=None, charge=None, init=None)
-               self.show()
-               self.getComponents(baseSpec)
-               self.get Abun(), setAbun( x ), getNum()
-"""
-
 # class definition for a single specie
 # --------------------------------------
 class specie():
+    """ methods :  self.__init__(specStr, specType=None, charge=None, init=None)
+               self.show()
+               self.getComponents(baseSpec)
+               self.get Abun(), setAbun( x ), getNum()
+    """
     def __init__(self, specStr, specType=None, charge=None, init=None, comp=None):
         self.type = specType   # -2 => ignore specie
                                # -1 => do not conisder it as a specie

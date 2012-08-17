@@ -68,9 +68,53 @@ pyl.title('log10 of process')
 cbar11 = pyl.colorbar(im, cax=cbarAxs, ax=pyl.gca(), orientation = 'horizontal')
 pyl.show()
 
+from scipy import interpolate
+import numpy as np
+import time
 
-"""
-#arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
-pyl.show()
-"""
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+import matplotlib.pyplot as plt
+
+nPts = np.prod(proc.shape)
+x = proc.cntrd[0].reshape(nPts)
+y = proc.cntrd[1].reshape(nPts)
+data = np.array([x,y]).T # the shape should be (nPts, nDim), thats why i take the transpose                                                                                                                                                
+z = proc.reshape(nPts)
+
+ti = time.time()
+f = interpolate.LinearNDInterpolator(data, z) # getting the interpolation function                                                                                                                                                           
+tf = time.time()
+print 'constructed he interpolation function from %d points in %f seconds' % (nPts, tf-ti)
+
+nPts    = 100000 # number of points from the interpolation function will be constructed                                                                                                                                                 
+nInterp = 1000   # number of points to interpolate over                                                                                                                                                                                      
+
+
+# generating new points where interpolation will be done for new values                                                                                                                                                                      
+# (new reigon is half the size inside the old reigon to avoid nan's for this simple example)                                                                                                                                                 
+xNew = (np.random.rand(nInterp)*(5.0 - 1.0) + 1.0)
+yNew = (np.random.rand(nInterp)*(5.0 - 1.0) + 1.0)
+dataNew = np.array([xNew,yNew]).T # the shape should be (nInterp, nDim), thats why i take the transpose                                                                                                                                    
+
+ti = time.time()
+zNew = f(dataNew)
+tf = time.time()
+print 'interpolated %d points in %f seconds at a rate of %e pts/sec' % (nInterp, tf-ti, nInterp / (tf-ti))
+
+
+# defining the points in the uniform 2D grid                                                                                                                                                                                                 
+grid_x, grid_y = np.mgrid[1.0:5.0:100j, 1.0:5.0:100j]
+
+# interpolating with different methods                                                                                                                                                                                                       
+from scipy.interpolate import griddata
+grid_z0 = griddata(dataNew, zNew, (grid_x, grid_y), method='linear')
+
+import matplotlib.pyplot as plt
+plt.subplot(111)
+plt.imshow(grid_z0.T, extent=(0,1,0,1), origin='lower')
+plt.title('Linear')
+plt.show()
+
 print 'done'
