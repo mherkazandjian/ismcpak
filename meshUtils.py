@@ -9,6 +9,7 @@ from ndmesh import *
 from ismUtils import *
 from radex import *
 from utils import fetchNestedDtypeValue
+from scipy import interpolate
 
 class meshArxv():
     """ this class generates and manipulates archives of meshes.
@@ -82,17 +83,17 @@ class meshArxv():
          (headers) about all the meshes each entry in this array contains two things,
           information about the mesh and the parameters of the mesh. For example
           the elements x in self.infoAll[x] has the following contents : 
-          self.infoAll[x]['info'][0]   mesh number 
-          self.infoAll[x]['info'][1]   0 ( for now)
-          self.infoAll[x]['info'][2]   offset from the start of file
-          self.infoAll[x]['info'][3]   number of steps in the mesh  
-          self.infoAll[x]['info'][4]   number of species
+          self.infoAll[x]['info'][0]   mesh number\n 
+          self.infoAll[x]['info'][1]   0 ( for now)\n
+          self.infoAll[x]['info'][2]   offset from the start of file\n
+          self.infoAll[x]['info'][3]   number of steps in the mesh\n
+          self.infoAll[x]['info'][4]   number of species\n
          
-          self.infoAll[x]['parms'][0]  G0
-          self.infoAll[x]['parms'][1]  nGas
-          self.infoAll[x]['parms'][2]  gammaMech
-          self.infoAll[x]['parms'][3]  0.0, NOT USED
-          self.infoAll[x]['parms'][4]  0.0  NOT USED
+          self.infoAll[x]['parms'][0]  G0\n
+          self.infoAll[x]['parms'][1]  nGas\n
+          self.infoAll[x]['parms'][2]  gammaMech\n
+          self.infoAll[x]['parms'][3]  0.0, NOT USED\n
+          self.infoAll[x]['parms'][4]  0.0  NOT USED\n
         """
 
         self.nDbFiles   = None
@@ -124,7 +125,8 @@ class meshArxv():
     # read all the meshes files in the dir and construct the
     # database
     def construct(self, dirName ):
-
+        """ construc the database anad write the .db files"""
+        
         meshNamePrefix = 'mesh.dat-id-'        
 
         # defining the files objects for the database fiels        
@@ -192,6 +194,7 @@ class meshArxv():
         print 'wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
 
     def readDb(self, dirName ):
+        """ reads the database and assigns the appropritate attributes (document)""" 
         
         dbInfoFObj = file(dirName + 'meshes.db.info', 'rb')
         dbDataFObj = file(dirName + 'meshes.db'  , 'rb')
@@ -248,9 +251,10 @@ class meshArxv():
                   ('parms', np.float64, 5)
                ]
         
-    # check archive integrity, this is a basic check where the information about the
-    # meshes in self.infoAll['info] is compared to those in self.data for each mes
     def checkIntegrity(self):
+        """check archive integrity, this is a basic check where the information about the
+             meshes in self.infoAll['info] is compared to those in self.data for each mesh"""
+
         diff = 0.0
         for i in np.arange(self.nMeshes):
             x1 = np.array([np.log10(self.infoAll[i]['parms'][0]),
@@ -285,6 +289,128 @@ class meshArxv():
             errStr = 'FUV G0 range of the grid not set'
             raise NameError(errStr)            
 
+    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None):
+        """ returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
+             can be used to compute values determined by quantity give (nGas, G0, Gmech)
+             (in log_10). The value to be interpolated upon is determined by the parameter
+             quantity and the slab index determined by :data:`slabIdx`. For example, to construct an interpolation table for say surface
+             temperature, this method can be invoked as :
+             
+             .. code-block:: python
+
+                f = arvx.construct3DInterpolationFunction( quantity = ['state', 'gasT'], slabIdx = 0 )
+             
+             See :data:`computeInterpolated2DGrid` for an example on how to use this interpolation 
+             function.
+                
+             :param list quantity: this is a list of strings which point to the data
+                 to be extracted from the dtype :data:`mesh`. (see example above)
+                 
+             :param int32 slabIdx: the index of the slab from which the value will be
+                 extracted
+             
+             :todo: modify this to construct the table over a selected range of the 3D 
+                parameter space instead of using all the meshes. (optional)
+                
+             :warning: this fails if all the entries in one of the dimensions have the exact
+               same value. in that case use :data:`construct2DInterpolationFunction`
+        """
+        
+        x = np.log10(self.infoAll['parms'][:,0])
+        y = np.log10(self.infoAll['parms'][:,1])
+        z = np.log10(self.infoAll['parms'][:,2])
+
+        values = np.zeros(x.shape, dtype = np.float64)
+        for i in np.arange(len(values)):
+            values[i] = fetchNestedDtypeValue(self.meshes[i], ['state', 'gasT'] )[slabIdx] 
+
+        data = np.array([x, y, z]).T  #3D
+        #data = np.array([x, y]).T  #2D
+        
+        ti = time()
+        f = interpolate.LinearNDInterpolator(data, values) # getting the interpolation function     
+        tf = time()
+        print 'constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti)
+
+        return f 
+
+    def construct2DInterpolationFunction(self, quantity = None, slabIdx = None):
+        """ same as :data:`construct3DInterpolationFunction` but does it for n and G0
+        
+            :warning: make sure that the G_mech for all the models is the same. Other
+              things will not make sense, bec the models would have diffrent G_mech
+        """
+        
+        x = np.log10(self.infoAll['parms'][:,0])
+        y = np.log10(self.infoAll['parms'][:,1])
+
+        values = np.zeros(x.shape, dtype = np.float64)
+        for i in np.arange(len(values)):
+            values[i] = fetchNestedDtypeValue(self.meshes[i], ['state', 'gasT'] )[slabIdx] 
+
+        data = np.array([x, y]).T  #2D
+        
+        ti = time()
+        f = interpolate.LinearNDInterpolator(data, values) # getting the interpolation function     
+        tf = time()
+        print 'constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti)
+
+        return f 
+    
+    def computeInterpolated2DGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, fInterp = None):
+        """ returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds
+             the interpolated vlaues of 'quantity' over the domain determined by ranges for a slab whose index is slabIdx for
+             a mechanical heating zSec (in log10). ( x is the horizontal direction of the mesh, and y is the vertical).
+             
+             An example would be (assuming the archive is constructed already):
+             
+             .. code-block:: python
+
+                f   = arxv.construct3DInterpolationFunction(quantity = ['state', 'gasT'], 
+                                                            slabIdx  = 0)
+                grd = arxv.computeInterpolated2DGrid(quantity = ['state', 'gasT'], 
+                                                     slabIdx  = 0, 
+                                                     ranges   = [[0,6],[0,6]],
+                                                     res      = [100,100], 
+                                                     zSec     = -30, 
+                                                     fInterp  = f)
+
+
+                import matplotlib.pyplot as plt
+                plt.imshow(grd, extent=(0,1,0,1), origin='lower')
+                plt.show()
+
+             
+             :param list quantity: (see definition in :data:`construct3DInterpolationFunction`
+                 
+             :param int32 slabIdx: (see definition in :data:`construct3DInterpolationFunction`
+             
+             :param list ranges: a 2d list holding the ranges of the grid [[xmin, xmax],[ymin, ymax]]
+
+             :param list res: the resolution in each dimension. [xResolution, yResolution]
+             
+             :param interpolate.LinearNDInterpolator fInterp: the interpolation function returned by
+                 :data:`construct2DInterpolationFunction` or it 3D counterpart.                 
+        """
+        
+        # defining the points in the uniform 2D grid                                                                                                                                                                                                 
+        grid_x, grid_y = np.mgrid[ranges[0][0]:ranges[0][1]:complex(0,res[0]),
+                                  ranges[1][0]:ranges[1][1]:complex(0,res[1])]
+        nPts = np.product(grid_x.shape)
+        xNew = grid_x.reshape(nPts)
+        yNew = grid_y.reshape(nPts)
+        zNew = xNew.copy()
+        zNew[:] = zSec
+        
+        dataNew = np.array( [xNew, yNew, zNew] ).T
+        ti = time()
+        tNew = fInterp(dataNew)
+        tf = time()
+        print 'interpolated %d points in %f seconds at a rate of %e pts/sec' % (nPts, tf-ti, nPts / (tf-ti))
+        tNew = np.reshape(tNew, grid_x.shape)
+
+        return tNew
+    
     def computeSurfaceTemperatureGrid( self, meshInds = None, res = None, ranges = None ):
         """generates color map of the surface temperature. if meshInds is not provided,
             all the meshes in the arxive are used. In that case, res and ranges shoudl

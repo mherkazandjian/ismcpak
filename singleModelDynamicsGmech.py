@@ -68,6 +68,13 @@ pyl.title('log10 of process')
 cbar11 = pyl.colorbar(im, cax=cbarAxs, ax=pyl.gca(), orientation = 'horizontal')
 pyl.show()
 
+##########################################################################
+##########################################################################
+################TESTIN INTERPOLATION# TESTIN INTERPOLATION################
+################TESTIN INTERPOLATION# TESTIN INTERPOLATION################
+################TESTIN INTERPOLATION# TESTIN INTERPOLATION################
+##########################################################################
+##########################################################################
 from scipy import interpolate
 import numpy as np
 import time
@@ -88,14 +95,18 @@ f = interpolate.LinearNDInterpolator(data, z) # getting the interpolation functi
 tf = time.time()
 print 'constructed he interpolation function from %d points in %f seconds' % (nPts, tf-ti)
 
-nPts    = 100000 # number of points from the interpolation function will be constructed                                                                                                                                                 
-nInterp = 1000   # number of points to interpolate over                                                                                                                                                                                      
+ti = time.time()
+fNear = interpolate.NearestNDInterpolator(data, z) # getting the interpolation function
+tf = time.time()
+print 'constructed he interpolation (nearest neighbour) function from %d points in %f seconds' % (nPts, tf-ti)
 
+nPts    = 100000 # number of points from the interpolation function will be constructed                                                                                                                                                 
+nInterp = 100000   # number of points to interpolate over                                                                                                                                                                                      
 
 # generating new points where interpolation will be done for new values                                                                                                                                                                      
 # (new reigon is half the size inside the old reigon to avoid nan's for this simple example)                                                                                                                                                 
-xNew = (np.random.rand(nInterp)*(5.0 - 1.0) + 1.0)
-yNew = (np.random.rand(nInterp)*(5.0 - 1.0) + 1.0)
+xNew = (np.random.rand(nInterp)*(6.0 - 0.0) + 0.0)
+yNew = (np.random.rand(nInterp)*(6.0 - 0.0) + 0.0)
 dataNew = np.array([xNew,yNew]).T # the shape should be (nInterp, nDim), thats why i take the transpose                                                                                                                                    
 
 ti = time.time()
@@ -103,9 +114,14 @@ zNew = f(dataNew)
 tf = time.time()
 print 'interpolated %d points in %f seconds at a rate of %e pts/sec' % (nInterp, tf-ti, nInterp / (tf-ti))
 
+ti = time.time()
+zNew1 = fNear(dataNew)
+tf = time.time()
+print 'interpolated (nearest neighbour) %d points in %f seconds at a rate of %e pts/sec' % (nInterp, tf-ti, nInterp / (tf-ti))
+
 
 # defining the points in the uniform 2D grid                                                                                                                                                                                                 
-grid_x, grid_y = np.mgrid[1.0:5.0:100j, 1.0:5.0:100j]
+grid_x, grid_y = np.mgrid[0.0:6.0:100j, 0.0:6.0:100j]
 
 # interpolating with different methods                                                                                                                                                                                                       
 from scipy.interpolate import griddata
