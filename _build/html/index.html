@@ -1,0 +1,867 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to IsmCpak’s documentation! &mdash; ismcpak 0.4.7 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.4.7',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="ismcpak 0.4.7 documentation" href="#" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="#">ismcpak 0.4.7 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-ismcpak-s-documentation">
+<h1>Welcome to IsmCpak&#8217;s documentation!<a class="headerlink" href="#welcome-to-ismcpak-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="contents">
+<h2>Contents:<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="modules">
+<h3>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><a class="reference internal" href="#module-specie" title="specie"><tt class="xref py py-data docutils literal"><span class="pre">specie</span></tt></a></li>
+<li><a class="reference internal" href="#module-reaction" title="reaction"><tt class="xref py py-data docutils literal"><span class="pre">reaction</span></tt></a></li>
+<li><a class="reference internal" href="#module-chemicalNetwork" title="chemicalNetwork"><tt class="xref py py-data docutils literal"><span class="pre">chemicalNetwork</span></tt></a></li>
+<li><a class="reference internal" href="#module-mesh" title="mesh"><tt class="xref py py-data docutils literal"><span class="pre">mesh</span></tt></a></li>
+<li><a class="reference internal" href="#module-meshUtils" title="meshUtils"><tt class="xref py py-data docutils literal"><span class="pre">meshUtils</span></tt></a></li>
+<li><a class="reference internal" href="#module-radex" title="radex"><tt class="xref py py-data docutils literal"><span class="pre">radex</span></tt></a></li>
+<li><a class="reference internal" href="#module-ismUtils" title="ismUtils"><tt class="xref py py-data docutils literal"><span class="pre">ismUtils</span></tt></a></li>
+</ul>
+</div>
+<div class="section" id="data-and-definitions">
+<h3>Data and Definitions<a class="headerlink" href="#data-and-definitions" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><a class="reference internal" href="#module-baseSpecies" title="baseSpecies"><tt class="xref py py-data docutils literal"><span class="pre">baseSpecies</span></tt></a></li>
+</ul>
+<hr class="docutils" />
+<span class="target" id="module-specie"></span><dl class="class">
+<dt id="specie.specie">
+<em class="property">class </em><tt class="descclassname">specie.</tt><tt class="descname">specie</tt><big>(</big><em>specStr</em>, <em>specType=None</em>, <em>charge=None</em>, <em>init=None</em>, <em>comp=None</em><big>)</big><a class="reference internal" href="_modules/specie.html#specie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#specie.specie" title="Permalink to this definition">¶</a></dt>
+<dd><p>methods :  self.__init__(specStr, specType=None, charge=None, init=None)
+self.show()
+self.getComponents(baseSpec)
+self.get Abun(), setAbun( x ), getNum()</p>
+</dd></dl>
+
+<hr class="docutils" />
+<span class="target" id="module-reaction"></span><dl class="class">
+<dt id="reaction.reaction">
+<em class="property">class </em><tt class="descclassname">reaction.</tt><tt class="descname">reaction</tt><a class="reference internal" href="_modules/reaction.html#reaction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#reaction.reaction" title="Permalink to this definition">¶</a></dt>
+<dd><p>asdasdadasda</p>
+</dd></dl>
+
+<hr class="docutils" />
+<span class="target" id="module-chemicalNetwork"></span><dl class="class">
+<dt id="chemicalNetwork.chemicalNetwork">
+<em class="property">class </em><tt class="descclassname">chemicalNetwork.</tt><tt class="descname">chemicalNetwork</tt><big>(</big><em>fileName=None</em>, <em>baseSpecies=None</em>, <em>UMISTVER=None</em><big>)</big><a class="reference internal" href="_modules/chemicalNetwork.html#chemicalNetwork"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemicalNetwork.chemicalNetwork" title="Permalink to this definition">¶</a></dt>
+<dd><p>if a specie &#8216;XXX&#8217; is not in self.speciesRemoved
+and self.species[&#8216;XXX&#8217;].num = None
+then the reactions which have &#8216;XXX&#8217; as a specie are still in the 
+network but they are not used in computing the reaction, like for
+example PHOTON, it does not have an abundance and we do not keep
+track of the number of photons, so it need not have a number with
+which its abudnance can be tracked in self.abun[]</p>
+<dl class="docutils">
+<dt>reaction hash codes are set based on the original numbers assigned to</dt>
+<dd>species and it doesnt depend on the order the reactnats or the 
+products appear in the reaction input file. When computing the
+hash code, the species are picked in the increasing order as 
+they appeat in the sorted string array (using the sorted function)</dd>
+<dt>write a method which merges reactions with the same hashcode into</dt>
+<dd>one reaction where in different temperature ranges different temperatures
+are set.</dd>
+</dl>
+<p>write a method which checks if the reactions are balanced or not</p>
+<blockquote>
+<div><p>self.species   # tuple containing the unique species objects in the network 
+self.__init__(fileName=None, baseSpecies=None)
+self.readDatabase(fileName)
+self.printFile()
+self.printReactions()
+self.setRxnAttributes(lineStr)
+self.parseReactions()
+self.getUniqueSpecies(baseSpecies)
+self.mapReactionSpeciesToSpecieObjectList()
+self.setup(databaseFname, baseSpecies):
+self.changeSpeciesNums( fileName )</p>
+<dl class="docutils">
+<dt>TODO:</dt>
+<dd>write a method which takes as input the species file used and filters
+out all the reaction which do not contain these species and re-numbers
+the species in the number representation of the chemical network</dd>
+</dl>
+</div></blockquote>
+<p>write a method which reads the abundances  and sets the abundance of each specie object
+this can be implemented by appending a new abudance column to species.inp     
+;;;; as a check, dump the remainders of the parsed strings to a file...it should
+mainly be black other than commas...etc...otherwise, there are stuff not taken
+into account, this can be done by erasing stuff from self.fileStr after the whole
+original network has been worked out</p>
+<blockquote>
+<div>class definition for the chemical network</div></blockquote>
+<dl class="method">
+<dt id="chemicalNetwork.chemicalNetwork.computeReactionConstants">
+<tt class="descname">computeReactionConstants</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/chemicalNetwork.html#chemicalNetwork.computeReactionConstants"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemicalNetwork.chemicalNetwork.computeReactionConstants" title="Permalink to this definition">¶</a></dt>
+<dd><p>CONTINUE FROM HERE!!!!!!!!
+DO IT THE SAME WAY IT IS DONE IN THE PDR CODE
+THINK OF A MORE ELEGANT WAY AFTERWARDS</p>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<span class="target" id="module-mesh"></span><dl class="class">
+<dt id="mesh.mesh">
+<em class="property">class </em><tt class="descclassname">mesh.</tt><tt class="descname">mesh</tt><big>(</big><em>fileName=None</em>, <em>chemNet=None</em>, <em>metallicity=None</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class read a PDR mesh and returns an object containing all the data of that mesh.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>fileName</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; path of the binary file holding the data of the mesh. this is assigned to <a class="reference internal" href="#mesh.mesh.fName" title="mesh.mesh.fName"><tt class="xref py py-data docutils literal"><span class="pre">self.fileName</span></tt></a></li>
+<li><strong>chemNet</strong> (<a class="reference internal" href="#module-chemicalNetwork" title="chemicalNetwork"><em>chemicalNetwork</em></a>) &#8211; the chemical network object instance. this is assigned to <a class="reference internal" href="#mesh.mesh.chemNet" title="mesh.mesh.chemNet"><tt class="xref py py-data docutils literal"><span class="pre">self.chemNet</span></tt></a></li>
+<li><strong>metallicity</strong> (<em>numpy.float64</em>) &#8211; the metallicity to be used in the computations for this mesh.  this is assigned to <a class="reference internal" href="#mesh.mesh.metallicity" title="mesh.mesh.metallicity"><tt class="xref py py-data docutils literal"><span class="pre">self.metallicity</span></tt></a></li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">mesh object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">m</span> <span class="o">=</span> <span class="n">mesh</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;hdr&#39;</span><span class="p">]</span>  <span class="c"># dtype defined in self.headerFormat()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;hdr&#39;</span><span class="p">][</span><span class="s">&#39;version&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;hdr&#39;</span><span class="p">][</span><span class="s">&#39;G0&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;hdr&#39;</span><span class="p">][</span><span class="s">&#39;remaining tags in self.headerFormat()&#39;</span><span class="p">]</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">]</span>  <span class="c"># dtype defined in self.stateFormat()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">][</span><span class="s">&#39;gasT&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">][</span><span class="s">&#39;dustT&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">][</span><span class="s">&#39;remaining tags in self.stateFormat()&#39;</span><span class="p">]</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;therm&#39;</span><span class="p">]</span> <span class="c"># dtype defined in self.thermoFormat()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;therm&#39;</span><span class="p">][</span><span class="s">&#39;heating&#39;</span><span class="p">]</span> 
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;therm&#39;</span><span class="p">][</span><span class="s">&#39;cooling&#39;</span><span class="p">]</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;cooling&#39;</span><span class="p">]</span> <span class="c"># dtype defined in self.coolingFormat()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;cooling&#39;</span><span class="p">][</span><span class="s">&#39;metaStable&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;cooling&#39;</span><span class="p">][</span><span class="s">&#39;fineStructure&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;cooling&#39;</span><span class="p">][</span><span class="s">&#39;roVib&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;cooling&#39;</span><span class="p">][</span><span class="s">&#39;remainig tags in self.coolingFormat()&#39;</span><span class="p">]</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;heating&#39;</span><span class="p">]</span> <span class="c"># dtype defined in self.heatingFormat()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;heating&#39;</span><span class="p">][</span><span class="s">&#39;photo&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;heating&#39;</span><span class="p">][</span><span class="s">&#39;cIon&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;heating&#39;</span><span class="p">][</span><span class="s">&#39;molHydro&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;heating&#39;</span><span class="p">][</span><span class="s">&#39;remainig tags in self.heatingFormat()&#39;</span><span class="p">]</span>
+
+<span class="c"># Only for binary files with version 2 have the follwing extra data</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;metaStableCoolingCmponents&#39;</span><span class="p">]</span> <span class="c"># dtype defined in self.coolingFormaMetaStable()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;metaStableCoolingCmponents&#39;</span><span class="p">][</span><span class="s">&#39;C&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;metaStableCoolingCmponents&#39;</span><span class="p">][</span><span class="s">&#39;C+&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;metaStableCoolingCmponents&#39;</span><span class="p">][</span><span class="s">&#39;Fe&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;metaStableCoolingCmponents&#39;</span><span class="p">][</span><span class="s">&#39;remainig species in self.coolingFormatMetaStable()&#39;</span><span class="p">]</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fineStructureCoolingComponents&#39;</span><span class="p">]</span> <span class="c"># dtype defined in self.coolingFormatFineStructure()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fineStructureCoolingComponents&#39;</span><span class="p">][</span><span class="s">&#39;Si&#39;</span><span class="p">][</span><span class="s">&#39;popDens&#39;</span><span class="p">][</span><span class="s">&#39;0&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fineStructureCoolingComponents&#39;</span><span class="p">][</span><span class="s">&#39;Si&#39;</span><span class="p">][</span><span class="s">&#39;popDens&#39;</span><span class="p">][</span><span class="s">&#39;1&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fineStructureCoolingComponents&#39;</span><span class="p">][</span><span class="s">&#39;Si&#39;</span><span class="p">][</span><span class="s">&#39;rate&#39;</span><span class="p">][</span><span class="s">&#39;1-0&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;fineStructureCoolingComponents&#39;</span><span class="p">][</span><span class="s">&#39;remainig species in self.coolingFormatFineStructure&#39;</span><span class="p">]</span>
+
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;selfSheilding&#39;</span><span class="p">]</span>  <span class="c"># dtype defined in self.selfSheildingFormat()</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;selfSheilding&#39;</span><span class="p">][</span><span class="s">&#39;H2&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;selfSheilding&#39;</span><span class="p">][</span><span class="s">&#39;CO&#39;</span><span class="p">]</span>
+<span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s">&#39;selfSheilding&#39;</span><span class="p">][</span><span class="s">&#39;13CO&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<dl class="attribute">
+<dt id="mesh.mesh.axs">
+<tt class="descname">axs</tt><em class="property"> = None</em><a class="headerlink" href="#mesh.mesh.axs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mesh.mesh.axsRef">
+<tt class="descname">axsRef</tt><em class="property"> = None</em><a class="headerlink" href="#mesh.mesh.axsRef" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mesh.mesh.chemNet">
+<tt class="descname">chemNet</tt><em class="property"> = None</em><a class="headerlink" href="#mesh.mesh.chemNet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.constructMeshDtype">
+<tt class="descname">constructMeshDtype</tt><big>(</big><em>nSpecs</em>, <em>nSteps</em>, <em>version</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.constructMeshDtype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.constructMeshDtype" title="Permalink to this definition">¶</a></dt>
+<dd><p>constructs the numpy dtype of the mesh which will be used to read the contents of the binary data fiel</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.coolingFmtFsSpecie">
+<tt class="descname">coolingFmtFsSpecie</tt><big>(</big><em>levels</em>, <em>transitions</em>, <em>n</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.coolingFmtFsSpecie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.coolingFmtFsSpecie" title="Permalink to this definition">¶</a></dt>
+<dd><p>define the format of fine structure cooling transitions of a certain specie.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>levels</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; a list of strings for the names of the levels which can be used to access the population densities. For example :</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">levels</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;0&#39;</span><span class="p">,</span> <span class="s">&#39;1&#39;</span><span class="p">,</span> <span class="s">&#39;2&#39;</span><span class="p">,</span> <span class="s">&#39;3&#39;</span><span class="p">,</span> <span class="s">&#39;3-p&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>would allow for the abundances of each level to be accessed through :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;SPECIE&#39;</span><span class="p">][</span><span class="s">&#39;popDens&#39;</span><span class="p">][</span><span class="s">&#39;0&#39;</span><span class="p">]</span> <span class="c"># np.float64 array of the population density of level &#39;0&#39; </span>
+<span class="p">[</span><span class="s">&#39;SPECIE&#39;</span><span class="p">][</span><span class="s">&#39;popDens&#39;</span><span class="p">][</span><span class="s">&#39;1&#39;</span><span class="p">]</span> <span class="c"># np.float64 array of the population density of level &#39;1&#39;</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>transitions</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; a list containing the transitions. For each transitions an array is created as a dtype which can be used to access the cooling rate. For example.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">transitions</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;1-0&#39;</span><span class="p">,</span><span class="s">&#39;2-1&#39;</span><span class="p">,</span><span class="s">&#39;2-0&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>would allow for the cooling rates for the transitions to be accessed through :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">[</span><span class="s">&#39;SPECIE&#39;</span><span class="p">][</span><span class="s">&#39;rate&#39;</span><span class="p">][</span><span class="s">&#39;1-0&#39;</span><span class="p">]</span> <span class="c"># np.float64 array of the cooling rate for transition &#39;1-0&#39; </span>
+<span class="p">[</span><span class="s">&#39;SPECIE&#39;</span><span class="p">][</span><span class="s">&#39;rate&#39;</span><span class="p">][</span><span class="s">&#39;2-1&#39;</span><span class="p">]</span> <span class="c"># np.float64 array of the cooling rate for transition &#39;2-1&#39; </span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>n</strong> (<em>np.int32</em>) &#8211; the number of steps which will be the size of all the np.float64 arrays mentioned above</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.coolingFormaMetaStable">
+<tt class="descname">coolingFormaMetaStable</tt><big>(</big><em>nSteps</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.coolingFormaMetaStable"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.coolingFormaMetaStable" title="Permalink to this definition">¶</a></dt>
+<dd><p>define the format of the meta stable cooling components.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.coolingFormat">
+<tt class="descname">coolingFormat</tt><big>(</big><em>nSteps</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.coolingFormat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.coolingFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>define the format of the cooling components.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.coolingFormatFineStructure">
+<tt class="descname">coolingFormatFineStructure</tt><big>(</big><em>nSteps</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.coolingFormatFineStructure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.coolingFormatFineStructure" title="Permalink to this definition">¶</a></dt>
+<dd><p>defines the format of the contents of each specie&#8217;s fine structure cooling info</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nSteps</strong> (<em>np.int32</em>) &#8211; the number of steps in the mesh to be set as the size of the arrays holding the fine structure info for the cooling rate and population densitites for each transition and level respectively.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mesh.mesh.data">
+<tt class="descname">data</tt><em class="property"> = None</em><a class="headerlink" href="#mesh.mesh.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>(numpy.dtype) holds all the data of the PDR</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mesh.mesh.fName">
+<tt class="descname">fName</tt><em class="property"> = None</em><a class="headerlink" href="#mesh.mesh.fName" title="Permalink to this definition">¶</a></dt>
+<dd><p>path (py:string) of the binary file holding the data of the mesh.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mesh.mesh.fig">
+<tt class="descname">fig</tt><em class="property"> = None</em><a class="headerlink" href="#mesh.mesh.fig" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mesh.mesh.figInit">
+<tt class="descname">figInit</tt><em class="property"> = None</em><a class="headerlink" href="#mesh.mesh.figInit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="mesh.mesh.hdr">
+<tt class="descname">hdr</tt><em class="property"> = None</em><a class="headerlink" href="#mesh.mesh.hdr" title="Permalink to this definition">¶</a></dt>
+<dd><p>(numpy.dtype) holds the header info the PDR. This is the same as <a class="reference internal" href="#mesh.mesh.data" title="mesh.mesh.data"><tt class="xref py py-data docutils literal"><span class="pre">self.data['hdr']</span></tt></a></p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.headerFormat">
+<tt class="descname">headerFormat</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.headerFormat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.headerFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>define and return the format of the mesh header.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.heatingFormat">
+<tt class="descname">heatingFormat</tt><big>(</big><em>nSteps</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.heatingFormat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.heatingFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>define the format of the heating components.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.meshFormat">
+<tt class="descname">meshFormat</tt><big>(</big><em>nSpecs</em>, <em>nSteps</em>, <em>version</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.meshFormat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.meshFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>define the format of the mesh from which the dtype is contrsucted.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>nSpecs</strong> (<em>np.int32</em>) &#8211; number of species in the chemical network in the file</li>
+<li><strong>nSteps</strong> (<em>np.int32</em>) &#8211; number of slabs in the file</li>
+<li><strong>np.int32</strong> &#8211; the version of the data file. For now can handle up to version = 2.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="mesh.mesh.metallicity">
+<tt class="descname">metallicity</tt><em class="property"> = None</em><a class="headerlink" href="#mesh.mesh.metallicity" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.selfSheildingFormat">
+<tt class="descname">selfSheildingFormat</tt><big>(</big><em>nSteps</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.selfSheildingFormat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.selfSheildingFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>defines the format of the arrays which will hold the self sheilding data for the slabs in the mesh.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nSteps</strong> (<em>np.int32</em>) &#8211; the number of steps in the mesh to be set as the size of the arrays holding the fine structure info for the cooling rate and population densitites for each transition and level respectively.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.stateFormat">
+<tt class="descname">stateFormat</tt><big>(</big><em>nSpecs</em>, <em>nSteps</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.stateFormat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.stateFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>define the format of the state of the mesh.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mesh.mesh.thermoFormat">
+<tt class="descname">thermoFormat</tt><big>(</big><em>nSteps</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.thermoFormat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.thermoFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>define the format of the total heating and cooling.</p>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<span class="target" id="module-meshUtils"></span><dl class="class">
+<dt id="meshUtils.meshArxv">
+<em class="property">class </em><tt class="descclassname">meshUtils.</tt><tt class="descname">meshArxv</tt><big>(</big><em>*args</em>, <em>**kwrds</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv" title="Permalink to this definition">¶</a></dt>
+<dd><p>this class generates and manipulates archives of meshes.</p>
+<p>FILES AND THEIR FORMATS:
+by default, the prefix name of the individual mesh files is assumed to be
+mesh.dat-id-xxxxxx</p>
+<p>the mesh database files are assumed to have the same prefix, for example, if the
+database file provided is foo, then this routine will assume (or write)</p>
+<blockquote>
+<div>foo.info, foo.db</div></blockquote>
+<p>for now the database can be stored into a single file and not split into
+multiple files.</p>
+<dl class="docutils">
+<dt>the database for the meshes is constructed of two binary files:</dt>
+<dd>foo.info : holding all the information about the meshes, locations and parameters
+foo.db   : holds the data for all the meshes</dd>
+</dl>
+<p>the info file has the following structure :</p>
+<ul>
+<li><p class="first">version number    : int32 int32 int32</p>
+</li>
+<li><p class="first">nMeshes           : int32</p>
+</li>
+<li><p class="first">meshes info array : meshInfoArrayFormat (see also the method)
+( nMeshes, 1)</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>the entries of the dtype are </dt>
+<dd><ul class="first last">
+<li><p class="first">mesh number     ( int64 ) :</p>
+</li>
+<li><dl class="first docutils">
+<dt>data file index ( int64 ) :</dt>
+<dd><p class="first last">i.e in which .db file the mesh is located</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>offset ( int64 ) :</dt>
+<dd><p class="first last">the offset in bytes from the beginning of the file where the mesh is located</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nSteps ( int64 ):</dt>
+<dd><p class="first last">the number of slabs in the mesh</p>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>nSpecs ( int64 ) :</dt>
+<dd><p class="first last">the number of species in the mesh                                   .</p>
+</dd>
+</dl>
+</li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+</li>
+</ul>
+<blockquote>
+<div><dl class="docutils">
+<dt>the .db files have the following structure:</dt>
+<dd><ul class="first last simple">
+<li>mesh_1 ( mesh dtype )</li>
+<li>checkNum_1 ( int64 )</li>
+<li>mesh_2 ( mesh dtype )</li>
+<li>checkNum_2 ( int64 )</li>
+</ul>
+</dd>
+</dl>
+<p>for a mesh number i, the checkNum_i should be the same as the i^th entry 
+in the info array offset...i.e chechNum = infoAll[i][&#8216;info&#8217;][2]</p>
+<p>see test_writeReadArxv.py for an example</p>
+</div></blockquote>
+<dl class="method">
+<dt id="meshUtils.meshArxv.arxvHdrFormat">
+<tt class="descname">arxvHdrFormat</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.arxvHdrFormat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.arxvHdrFormat" title="Permalink to this definition">¶</a></dt>
+<dd><p>the format for the archive header from which the dtype will be constructed
+specifying the info and paramters for each line in the header
+in version 1 : the &#8216;info&#8217; is defined as : (&#8216;info&#8217; , np.int64  , 5)
+in version 2 : the &#8216;info&#8217; is defined as : (&#8216;info&#8217; , np.int64  , 6)</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="meshUtils.meshArxv.chemNet">
+<tt class="descname">chemNet</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.chemNet" title="Permalink to this definition">¶</a></dt>
+<dd><p>object of class type chemicalNetwork holds info about the chemical network used</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="meshUtils.meshArxv.computeHeatingCoolingGrid">
+<tt class="descname">computeHeatingCoolingGrid</tt><big>(</big><em>slabIndex=None</em>, <em>meshInds=None</em>, <em>whichThermal=None</em>, <em>whichProcess=None</em>, <em>res=None</em>, <em>ranges=None</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.computeHeatingCoolingGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.computeHeatingCoolingGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>generates color map of the various heating and cooling processes for a certain slab.
+if meshInds is not provided, all the meshes in the arxiv are used. In that case, res and ranges shoudl
+be provided.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="meshUtils.meshArxv.computeSurfaceTemperatureGrid">
+<tt class="descname">computeSurfaceTemperatureGrid</tt><big>(</big><em>meshInds=None</em>, <em>res=None</em>, <em>ranges=None</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.computeSurfaceTemperatureGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.computeSurfaceTemperatureGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>generates color map of the surface temperature. if meshInds is not provided,
+all the meshes in the arxive are used. In that case, res and ranges shoudl
+be provided.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="meshUtils.meshArxv.grds">
+<tt class="descname">grds</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.grds" title="Permalink to this definition">¶</a></dt>
+<dd><p>2x2 ndmesh array object</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="meshUtils.meshArxv.infoAll">
+<tt class="descname">infoAll</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.infoAll" title="Permalink to this definition">¶</a></dt>
+<dd><p>a numpy array of dtype arxvHdrDtype (see below) which contains the info
+(headers) about all the meshes each entry in this array contains two things,</p>
+<blockquote>
+<div><p>information about the mesh and the parameters of the mesh. For example
+the elements x in self.infoAll[x] has the following contents :
+self.infoAll[x][&#8216;info&#8217;][0]   mesh number
+self.infoAll[x][&#8216;info&#8217;][1]   0 ( for now)
+self.infoAll[x][&#8216;info&#8217;][2]   offset from the start of file
+self.infoAll[x][&#8216;info&#8217;][3]   number of steps in the mesh
+self.infoAll[x][&#8216;info&#8217;][4]   number of species</p>
+<p>self.infoAll[x][&#8216;parms&#8217;][0]  G0
+self.infoAll[x][&#8216;parms&#8217;][1]  nGas
+self.infoAll[x][&#8216;parms&#8217;][2]  gammaMech
+self.infoAll[x][&#8216;parms&#8217;][3]  0.0, NOT USED
+self.infoAll[x][&#8216;parms&#8217;][4]  0.0  NOT USED</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="meshUtils.meshArxv.meshes">
+<tt class="descname">meshes</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.meshes" title="Permalink to this definition">¶</a></dt>
+<dd><p>a list of all the meshes of &#8216;mesh&#8217; dtypes (see mesh.py)</p>
+<dl class="docutils">
+<dt>for a mesh of at index &#8216;i&#8217; in</dt>
+<dd>self.meshes[i]</dd>
+</dl>
+<p>the corresponding info in the header are accessed as follows :</p>
+<p>self.infoAll[i][&#8216;parms&#8217;][0]) which should be the same as self.meshes[i][&#8216;hdr&#8217;][&#8216;G0&#8217;]
+self.infoAll[i][&#8216;parms&#8217;][1]) which should be the same as self.meshes[i][&#8216;hdr&#8217;][&#8216;nGas&#8217;]
+self.infoAll[i][&#8216;parms&#8217;][2]) which should be the same as self.meshes[i][&#8216;hdr&#8217;][&#8216;gammaMech&#8217;]</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="meshUtils.meshArxv.nDbFiles">
+<tt class="descname">nDbFiles</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.nDbFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>numpy.int32 number of database files</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="meshUtils.meshArxv.nMeshes">
+<tt class="descname">nMeshes</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.nMeshes" title="Permalink to this definition">¶</a></dt>
+<dd><p>nump.long64 : number of meshes in the database</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="meshUtils.meshArxv.pltGmSec">
+<tt class="descname">pltGmSec</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.pltGmSec" title="Permalink to this definition">¶</a></dt>
+<dd><p>the value of the section in Gmech selected</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="meshUtils.meshArxv.ver">
+<tt class="descname">ver</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.ver" title="Permalink to this definition">¶</a></dt>
+<dd><p>numpy int32 array [3] version number of the database data</p>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<span class="target" id="module-radex"></span><dl class="class">
+<dt id="radex.radex">
+<em class="property">class </em><tt class="descclassname">radex.</tt><tt class="descname">radex</tt><big>(</big><em>execPath</em>, <em>molDataDir</em><big>)</big><a class="reference internal" href="_modules/radex.html#radex"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex" title="Permalink to this definition">¶</a></dt>
+<dd><p>radex interface module</p>
+<dl class="attribute">
+<dt id="radex.radex.execPath">
+<tt class="descname">execPath</tt><em class="property"> = None</em><a class="headerlink" href="#radex.radex.execPath" title="Permalink to this definition">¶</a></dt>
+<dd><p>string : The path to the radex executable</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="radex.radex.inFile">
+<tt class="descname">inFile</tt><em class="property"> = None</em><a class="headerlink" href="#radex.radex.inFile" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>dict <span class="classifier-delimiter">:</span> <span class="classifier">dictionary holding all the input parameters. It is used to construct the input</span></dt>
+<dd><p class="first">parameter file that is piped to the radex executable. It should be of the form</p>
+<div class="last highlight-python"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9</pre></div></td><td class="code"><div class="highlight"><pre><span class="n">inFile</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;specStr&#39;</span>                <span class="p">:</span> <span class="s">&#39;CO&#39;</span>        <span class="p">,</span>
+           <span class="s">&#39;freqRange&#39;</span>              <span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50000</span><span class="p">]</span>  <span class="p">,</span>
+           <span class="s">&#39;tKin&#39;</span>                   <span class="p">:</span> <span class="mf">10.0</span>        <span class="p">,</span>
+           <span class="s">&#39;collisionPartners&#39;</span>      <span class="p">:</span> <span class="p">[</span><span class="s">&#39;H2&#39;</span><span class="p">]</span>      <span class="p">,</span>
+           <span class="s">&#39;nDensCollisionPartners&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">1e3</span><span class="p">]</span>       <span class="p">,</span>
+           <span class="s">&#39;tBack&#39;</span>                  <span class="p">:</span> <span class="mf">2.73</span>        <span class="p">,</span>
+           <span class="s">&#39;molnDens&#39;</span>               <span class="p">:</span> <span class="mf">1e14</span>        <span class="p">,</span>
+           <span class="s">&#39;lineWidth&#39;</span>              <span class="p">:</span> <span class="mf">1.0</span>         <span class="p">,</span>
+           <span class="s">&#39;runAnother&#39;</span>             <span class="p">:</span> <span class="mi">1</span>           <span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+</dd>
+</dl>
+<p>All of the items in this dict correspond to the same parameters in radex except:
+&#8216;collisionPartners&#8217; and &#8216;nDensCollisionPartners&#8217;, &#8216;molDataDir&#8217; and &#8216;specStr&#8217;.
+&#8216;collisionPartners&#8217; is a list of strings of species such as &#8216;H2&#8217;, or &#8216;H&#8217; :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="s">&#39;collisionPartners&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="s">&#39;H2&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="s">&#39;collisionPartners&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="s">&#39;H2&#39;</span><span class="p">,</span><span class="s">&#39;H+&#39;</span><span class="p">,</span><span class="s">&#39;e-&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>&#8216;nDensCollisionPartners&#8217; should be a list of the same length holding the
+number density of each collision partner respectively. For example :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="s">&#39;nDensCollisionPartners&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">1e3</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="s">&#39;nDensCollisionPartners&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">1e3</span><span class="p">,</span> <span class="mf">1e1</span><span class="p">,</span> <span class="mf">1e-2</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>the parameter molData in the input parameter file is constructed by appending
+the value of &#8216;specStr&#8217; to self.molDataDir</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="radex.radex.molDataDir">
+<tt class="descname">molDataDir</tt><em class="property"> = None</em><a class="headerlink" href="#radex.radex.molDataDir" title="Permalink to this definition">¶</a></dt>
+<dd><p>string : Path to the directory containing the transition data for the species</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="radex.radex.molDataFiles">
+<tt class="descname">molDataFiles</tt><em class="property"> = None</em><a class="headerlink" href="#radex.radex.molDataFiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>dict : dictonary for the species files, the keys of this dict are as follows
+(see radex.py for an example) :</p>
+<blockquote>
+<div>SPECIE_STRING : FILENAME</div></blockquote>
+<div class="highlight-python"><pre>        self.molDataDir   = molDataDir #: string : Path to the directory containing the transition data for the species
+        self.molDataFiles =  { 'CO'   : 'co.dat'       ,
+                               '13CO' : '13co.dat'     ,
+                               'HCO+' : 'hco+@xpol.dat',
+                               'HCN'  : 'hcn.dat'      ,
+                               'HNC'  : 'hnc.dat'      ,
+                               'CS'   : 'cs@xpol.dat'  ,
+                               'C'    : 'catom.dat'    ,
+                               'C+'   : 'c+.dat'       ,
+                               'O'    : 'oatom.dat'    ,
+</pre>
+</div>
+<div class="admonition-todo admonition " id="index-0">
+<p class="first admonition-title">Todo</p>
+<p class="last">implement a method to generate this dict automatically from all the files
+in the directory molDataFiles</p>
+</div>
+<div class="admonition-todo admonition " id="index-1">
+<p class="first admonition-title">Todo</p>
+<p class="last">also implement a dict for the collision partners like &#8216;e-&#8216; : &#8216;e&#8217;, but it might not
+be necessary since RADEX takes both &#8216;e&#8217; and &#8216;e-&#8216;</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="radex.radex.setInFileParm">
+<tt class="descname">setInFileParm</tt><big>(</big><em>parm</em>, <em>value</em><big>)</big><a class="reference internal" href="_modules/radex.html#radex.setInFileParm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.setInFileParm" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method sets values to the parameters to be passed to radex.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>parm</strong> &#8211; A key to be modified or added in the self.inFile dict.</li>
+<li><strong>value</strong> (arbitrary [depends on the key to be modified, see <a class="reference internal" href="#radex.radex.inFile" title="radex.radex.inFile"><tt class="xref py py-data docutils literal"><span class="pre">inFile</span></tt></a> documentation]) &#8211; The value to be set to the key.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<hr class="docutils" />
+<span class="target" id="module-ismUtils"></span><dl class="function">
+<dt id="ismUtils.AvToLength">
+<tt class="descclassname">ismUtils.</tt><tt class="descname">AvToLength</tt><big>(</big><em>Av</em>, <em>nGas</em>, <em>Z</em><big>)</big><a class="reference internal" href="_modules/ismUtils.html#AvToLength"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ismUtils.AvToLength" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert the input visual extinction value to the length (L) of the the NH 
+column (not the actual column density) this is the inverse of Eq-4 
+in paper01 where  <span class="math">\(N_H = L.n_{gas}\)</span></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>Av</strong> (<em>numpy.float64</em>) &#8211; The Av (in mag units).</li>
+<li><strong>nGas</strong> (<em>numpy.float64</em>) &#8211; The gas density in <span class="math">\(cm^{-3}\)</span>.</li>
+<li><strong>Z</strong> (<em>numpy.float64</em>) &#8211; The metllicity in terms of solar metallicity (<span class="math">\(Z_{\odot}\)</span>).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ismUtils.LengthToAv">
+<tt class="descclassname">ismUtils.</tt><tt class="descname">LengthToAv</tt><big>(</big><em>NH</em>, <em>nGas</em>, <em>Z</em><big>)</big><a class="reference internal" href="_modules/ismUtils.html#LengthToAv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ismUtils.LengthToAv" title="Permalink to this definition">¶</a></dt>
+<dd><p>convert the column density to visual extinction value in Av. This is
+Eq-4 in paper01 implemented in fucntion <a class="reference internal" href="#ismUtils.LengthToAv" title="ismUtils.LengthToAv"><tt class="xref py py-data docutils literal"><span class="pre">LengthToAv</span></tt></a></p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>NH</strong> (<em>numpy.float64</em>) &#8211; The H column density (in <span class="math">\(cm^{-2}\)</span>).</li>
+<li><strong>nGas</strong> (<em>numpy.float64</em>) &#8211; The gas density in <span class="math">\(cm^{-3}\)</span>.</li>
+<li><strong>Z</strong> (<em>numpy.float64</em>) &#8211; The metllicity in terms of solar metallicity (<span class="math">\(Z_{\odot}\)</span>).</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="ismUtils.getSlabThicknessFromAv">
+<tt class="descclassname">ismUtils.</tt><tt class="descname">getSlabThicknessFromAv</tt><big>(</big><em>slabsAv</em>, <em>nGas</em>, <em>Z</em><big>)</big><a class="reference internal" href="_modules/ismUtils.html#getSlabThicknessFromAv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#ismUtils.getSlabThicknessFromAv" title="Permalink to this definition">¶</a></dt>
+<dd><p>given the Av of the sub-slabs of a plane parallel model, 
+it computes the thickness of each sub-slab of the descretized
+model. All the parameters are of the same type as <a class="reference internal" href="#ismUtils.AvToLength" title="ismUtils.AvToLength"><tt class="xref py py-data docutils literal"><span class="pre">AvToLength</span></tt></a>
+except for :</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>slabsAv</strong> (<em>numpy.ndarry([], dtype = numpy.float64)</em>) &#8211; An array holding the Av (in mag units) for the staring positions of the sub-slabs.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The thickness of each slab in cm</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarry([], dtype = numpy.float64)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<hr class="docutils" />
+<span class="target" id="module-baseSpecies"></span><dl class="function">
+<dt id="baseSpecies.baseSpecies">
+<tt class="descclassname">baseSpecies.</tt><tt class="descname">baseSpecies</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/baseSpecies.html#baseSpecies"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#baseSpecies.baseSpecies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the elements and basic species from which all the other
+species are made.  Returns a list of <a class="reference internal" href="#module-specie" title="specie"><tt class="xref py py-data docutils literal"><span class="pre">specie</span></tt></a> objects which
+define each specie. This is just a sample file, similar files
+can be defined and imported into scripts, or the specie definition
+of this file can be modified.</p>
+<div class="highlight-python"><pre>            baseSpecs = baseSpecies.baseSpecies()
+    """
+    specList = [  specie('CRPHOT', specType = -1, charge=0 , init=1),
+                  specie('PHOTON', specType = -1, charge=0 , init=1),
+                  specie('CRP'   , specType = -1, charge=0 , init=1),
+                  specie('PAH'   , specType = 0 , charge=0 , init=1),
+                  specie('H2V'   , specType = 0 , charge=0 , init=1, comp = [ ['H',2] ]),
+                  specie('13C'   , specType = 0 , charge=0 , init=1),
+                  specie('Na'    , specType = 0 , charge=0 , init=1),
+                  specie('Mg'    , specType = 0 , charge=0 , init=1),
+                  specie('Si'    , specType = 0 , charge=0 , init=1),
+                  specie('Cl'    , specType = 0 , charge=0 , init=1),
+                  specie('Fe'    , specType = 0 , charge=0 , init=1),
+                  specie('He'    , specType = 0 , charge=0 , init=1),
+                  specie('H'     , specType = 0 , charge=0 , init=1),
+                  specie('M'     , specType = -1, charge=0 , init=1),
+                  specie('C'     , specType = 0 , charge=0 , init=1),
+                  specie('N'     , specType = 0 , charge=0 , init=1),
+                  specie('O'     , specType = 0 , charge=0 , init=1),
+                  specie('P'     , specType = 0 , charge=0 , init=1),
+</pre>
+</div>
+<p>these can be included in a script as :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">baseSpecies</span>
+<span class="n">baseSpecs</span> <span class="o">=</span> <span class="n">baseSpecies</span><span class="o">.</span><span class="n">baseSpecies</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to IsmCpak&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#contents">Contents:</a><ul>
+<li><a class="reference internal" href="#modules">Modules</a></li>
+<li><a class="reference internal" href="#data-and-definitions">Data and Definitions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="#">ismcpak 0.4.7 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Mher V. Kazandjian.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

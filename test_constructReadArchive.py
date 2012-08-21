@@ -5,13 +5,14 @@ from time import *
 
 #runDirPath =  '/home/mher/ism/runs/oneSided/uniformSweep2-z-0.5/'
 #runDirPath =  '/home/mher/ism/runs/oneSided/uniformSweep2-foo/'
-runDirPath =  '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid2/'
+runDirPath =  '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid4/'
 
 # constructing the archive
 t0 = time()
 arxvW = meshArxv(  )
 arxvW.construct( runDirPath )
 print 'time constructing %f' % (time() - t0)
+
 
 # reading the archive 
 t0 = time()

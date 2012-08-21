@@ -61,10 +61,10 @@ class meshArxv():
         
         # instance variables
         self.nMeshes    = None
-        """ nump.long64 : number of meshes in the database """
+        """ np.long64 : number of meshes in the database (this is now as 1x1 array, convert it just into an np.int32 scalar"""
 
         self.ver        = None
-        """ numpy int32 array [3] version number of the database data"""
+        """ np.int32 array [3] version number of the database data"""
         
         self.meshes     = None
         """ a list of all the meshes of 'mesh' dtypes (see mesh.py)
@@ -142,7 +142,7 @@ class meshArxv():
         
         # setting variable for the 
         self.nMeshes = np.zeros( 1, dtype = np.int32 )
-        self.nMeshes[0] = len(files)
+        self.nMeshes[0] = len(files) 
         print 'found %s meshes' % (self.nMeshes)
 
         # defining the array holding the info about all the meshes
@@ -161,7 +161,7 @@ class meshArxv():
             mData = m.getData()
 
             self.meshes.append(mData)
-            
+        
             # filling the corresponding field in the header array
             infoAll[i]['info'][0] = i # mesh number 
             infoAll[i]['info'][1] = 0 # data file index
@@ -180,6 +180,9 @@ class meshArxv():
             mData.tofile( dbDataFObj )
             np.array( infoAll[i]['info'][2] ).tofile(dbDataFObj)
             del m
+            
+            if (i % np.int32(self.nMeshes / 100)) == 0:
+                print 'proccessed %d meshes...' % i 
             
         self.infoAll = infoAll
         
@@ -289,7 +292,7 @@ class meshArxv():
             errStr = 'FUV G0 range of the grid not set'
             raise NameError(errStr)            
 
-    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None):
+    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, log10 = None, *args, **kwargs):
         """ returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
              can be used to compute values determined by quantity give (nGas, G0, Gmech)
              (in log_10). The value to be interpolated upon is determined by the parameter
@@ -308,7 +311,9 @@ class meshArxv():
                  
              :param int32 slabIdx: the index of the slab from which the value will be
                  extracted
-             
+                 
+             :param bool log10: keyword which when passes as True, will generate the log10 of the quantity
+                 
              :todo: modify this to construct the table over a selected range of the 3D 
                 parameter space instead of using all the meshes. (optional)
                 
@@ -322,8 +327,11 @@ class meshArxv():
 
         values = np.zeros(x.shape, dtype = np.float64)
         for i in np.arange(len(values)):
-            values[i] = fetchNestedDtypeValue(self.meshes[i], ['state', 'gasT'] )[slabIdx] 
+            values[i] = fetchNestedDtypeValue(self.meshes[i], quantity )[slabIdx] 
 
+        if 'log' in kwargs:
+            values[:] = np.log10(values[:])
+        
         data = np.array([x, y, z]).T  #3D
         #data = np.array([x, y]).T  #2D
         
@@ -334,11 +342,12 @@ class meshArxv():
 
         return f 
 
-    def construct2DInterpolationFunction(self, quantity = None, slabIdx = None):
+    def construct2DInterpolationFunction(self, quantity = None, slabIdx = None, *args, **kwargs):
         """ same as :data:`construct3DInterpolationFunction` but does it for n and G0
         
             :warning: make sure that the G_mech for all the models is the same. Other
               things will not make sense, bec the models would have diffrent G_mech
+            :warning: make sure that the interpolated points are at the centroids of the grid points
         """
         
         x = np.log10(self.infoAll['parms'][:,0])
@@ -346,7 +355,7 @@ class meshArxv():
 
         values = np.zeros(x.shape, dtype = np.float64)
         for i in np.arange(len(values)):
-            values[i] = fetchNestedDtypeValue(self.meshes[i], ['state', 'gasT'] )[slabIdx] 
+            values[i] = fetchNestedDtypeValue(self.meshes[i], quantity)[slabIdx] 
 
         data = np.array([x, y]).T  #2D
         
@@ -357,7 +366,7 @@ class meshArxv():
 
         return f 
     
-    def computeInterpolated2DGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, fInterp = None):
+    def computeInterpolated2DGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, fInterp = None, *args, **kwargs):
         """ returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds
              the interpolated vlaues of 'quantity' over the domain determined by ranges for a slab whose index is slabIdx for
              a mechanical heating zSec (in log10). ( x is the horizontal direction of the mesh, and y is the vertical).
@@ -411,6 +420,29 @@ class meshArxv():
 
         return tNew
     
+    def showGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, *args, **kwargs):
+        """This method displays a plot of a grid of the quantity pointed by quantity in a new
+           window. It makes use of :data:`computeInterpolated2DGrid` and :data:`construct3DInterpolationFunction`.
+           For the documentation of the parameters see  :data:`computeInterpolated2DGrid`
+        """
+        
+        # getting the grid
+        f   = self.construct3DInterpolationFunction(quantity = quantity, slabIdx  = slabIdx, *args, **kwargs)
+        grd = self.computeInterpolated2DGrid(quantity = quantity, 
+                                             slabIdx  = slabIdx, 
+                                             ranges   = ranges,
+                                             res      = res, 
+                                             zSec     = zSec, 
+                                             fInterp  = f, *args, **kwargs)
+        
+        # plotting it
+        pyl.figure()
+        pyl.subplot(111)
+        pyl.imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        pyl.show()
+
+        
+        
     def computeSurfaceTemperatureGrid( self, meshInds = None, res = None, ranges = None ):
         """generates color map of the surface temperature. if meshInds is not provided,
             all the meshes in the arxive are used. In that case, res and ranges shoudl

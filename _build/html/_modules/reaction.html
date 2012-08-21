@@ -1,0 +1,417 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>reaction &mdash; ismcpak 0.4.7 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.4.7',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="ismcpak 0.4.7 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">ismcpak 0.4.7 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for reaction</h1><div class="highlight"><pre>
+<span class="kn">from</span> <span class="nn">string</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">StringIO</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">specie</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">     methods : self.__init__()</span>
+<span class="sd">               self.active()</span>
+<span class="sd">               self.passive()</span>
+<span class="sd">               self.setAllFromRxnStrArr(rxnStr)</span>
+<span class="sd">               self.display(full=None)</span>
+<span class="sd">               self.setId(id)</span>
+<span class="sd">               self.setType(type)</span>
+<span class="sd">               self.setSpeciesFromStrings( )</span>
+<span class="sd">               self.updateSpecies( [R1, R2, R3, P1, P2, P3, P4] )</span>
+<span class="sd">               self.setReactantsFromString(R1, R2, R3)</span>
+<span class="sd">               self.setProductsFromString(P1, P2, P3, P4)</span>
+<span class="sd">               self.setAlpha(alpha)</span>
+<span class="sd">               self.setBeta(beta)</span>
+<span class="sd">               self.setGamma(gamma)</span>
+<span class="sd">               self.setSrc(src)</span>
+<span class="sd">               self.setTl(Tl)</span>
+<span class="sd">               self.setTu(Tu)</span>
+<span class="sd">               self.setAccuracy(acc)</span>
+<span class="sd">               self.setRefCode(refCode)</span>
+<span class="sd">               </span>
+<span class="sd">   * write a method which checks if the reaction is balanced or not</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c"># class definition for a single reaction</span>
+<span class="c"># --------------------------------------</span>
+<div class="viewcode-block" id="reaction"><a class="viewcode-back" href="../index.html#reaction.reaction">[docs]</a><span class="k">class</span> <span class="nc">reaction</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot; asdasdadasda&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">str</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span>   <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hash</span> <span class="o">=</span> <span class="n">uint64</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c">#--------------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>  <span class="c"># umist string for the reaction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ntype</span> <span class="o">=</span> <span class="s">&#39;&#39;</span> <span class="c"># numeric type/code of reaction</span>
+        <span class="c">#--------------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reactants</span>  <span class="o">=</span> <span class="p">[]</span>  <span class="c"># a string list of the reactants</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nReactants</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="c">#--------------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">products</span>  <span class="o">=</span> <span class="p">[]</span> <span class="c"># a string list of the products</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nProducts</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">species</span> <span class="o">=</span> <span class="p">{}</span> <span class="c"># a dictionary of the species</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nSpec</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="c">#--------------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span>  <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cst</span>   <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rate</span>  <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src</span>   <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Tl</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Tu</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+        <span class="c">#--------------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accuracy</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>  <span class="c"># umist error code of accuracy of the reaction constatn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">naccuracy</span> <span class="o">=</span> <span class="s">&#39;&#39;</span> <span class="c"># numeric error of the reaction constant</span>
+        <span class="c">#--------------</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refCode</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+    <span class="c"># set all the attributes from the string array of the reaction line</span>
+    <span class="k">def</span> <span class="nf">setAllFromRxnStrArr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rxnStr</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">str</span> <span class="o">=</span> <span class="n">rxnStr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">active</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setId</span>  <span class="p">(</span> <span class="n">int32</span><span class="p">(</span><span class="n">rxnStr</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setType</span><span class="p">(</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>        <span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">setReactantsFromStrings</span><span class="p">(</span> <span class="p">[</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="p">]</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setProductsFromStrings</span><span class="p">(</span>  <span class="p">[</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">6</span><span class="p">],</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">7</span><span class="p">],</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span> <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAlpha</span><span class="p">(</span> <span class="n">float64</span><span class="p">(</span><span class="n">rxnStr</span><span class="p">[</span><span class="mi">9</span><span class="p">])</span>  <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setBeta</span><span class="p">(</span>  <span class="n">float64</span><span class="p">(</span><span class="n">rxnStr</span><span class="p">[</span><span class="mi">10</span><span class="p">])</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setGamma</span><span class="p">(</span> <span class="n">float64</span><span class="p">(</span><span class="n">rxnStr</span><span class="p">[</span><span class="mi">11</span><span class="p">])</span>  <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSrc</span><span class="p">(</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span> <span class="p">)</span>
+        <span class="c"># be more careful in setting the upper and lower temperature warnings</span>
+        <span class="n">Tl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">rxnStr</span><span class="p">[</span><span class="mi">13</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rxnStr</span><span class="p">[</span><span class="mi">13</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">setTl</span><span class="p">(</span> <span class="n">Tl</span> <span class="p">)</span>
+        <span class="n">Tu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">rxnStr</span><span class="p">[</span><span class="mi">14</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rxnStr</span><span class="p">[</span><span class="mi">14</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">setTu</span><span class="p">(</span> <span class="n">Tu</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAccuracy</span><span class="p">(</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">15</span><span class="p">]</span> <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setRefCode</span><span class="p">(</span> <span class="n">rxnStr</span><span class="p">[</span><span class="mi">16</span><span class="p">]</span> <span class="p">)</span>
+
+    <span class="c"># if CUSTOM reactions are added to the reaction file, sometimes the type </span>
+    <span class="c"># of the reaction is missing. Here, the type of the reaction is set based</span>
+    <span class="c"># on what is in the reactants. It is set to CP is it is a CRP reaction,</span>
+    <span class="c"># CR is it is a CRPHOT reaction and to PH if it is a PHOTO reaction.</span>
+    <span class="c"># otherwise, it is set to NB indicating a two or three body reaction  </span>
+    <span class="k">def</span> <span class="nf">updateType</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>        
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            
+            <span class="n">typeDict</span> <span class="o">=</span> <span class="p">{</span> <span class="s">&#39;CRP&#39;</span>    <span class="p">:</span> <span class="s">&#39;CP&#39;</span><span class="p">,</span>
+                         <span class="s">&#39;CRPHOT&#39;</span> <span class="p">:</span> <span class="s">&#39;CR&#39;</span><span class="p">,</span>
+                         <span class="s">&#39;PHOTON&#39;</span> <span class="p">:</span> <span class="s">&#39;PH&#39;</span> <span class="p">}</span>
+            <span class="n">defualtType</span> <span class="o">=</span> <span class="s">&#39;NB&#39;</span>
+            
+            <span class="n">s1</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span> <span class="n">typeDict</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="p">)</span>
+            <span class="n">inter</span> <span class="o">=</span> <span class="n">s1</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="p">))</span>
+            
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inter</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">reactStr</span> <span class="o">=</span> <span class="n">inter</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="n">newType</span> <span class="o">=</span> <span class="n">typeDict</span><span class="p">[</span><span class="n">reactStr</span><span class="p">]</span>
+                <span class="c">#print &#39;setting the type of the reaction to UMIST type %s bec on of the reactants is reactants %s&#39; % (newType, reactStr)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">newType</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inter</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="c">#str = &#39;Error : reaction cannot have two matching entries from typeDict&#39;</span>
+                    <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                        <span class="c">#print &#39;setting reaction type to default&#39;</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">defualtType</span>
+
+    <span class="c"># method that computes the reaction constant  </span>
+    <span class="k">def</span> <span class="nf">setReactionConstantComputingFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">functionDict</span><span class="p">):</span>          
+        <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="c">#SETS THE FUNCTION WHICH COMPUTES THE REACTION CONSTANT FROM A FUNCTION NAME </span>
+        <span class="c">#DICTIONARY</span>
+
+    <span class="c"># method that computes the reaction constant  </span>
+    <span class="k">def</span> <span class="nf">getReactionConstant</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>        
+        <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span> <span class="c">#RETURNS THE REACTION CONSTANT BASED ON THE TEMPERATURE AND THE REST OF THE PARAMETERS</span>
+    
+    <span class="c"># sets status to 1 indication the reaction IS being used</span>
+    <span class="k">def</span> <span class="nf">active</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">=</span><span class="mi">1</span>
+    <span class="c"># sets status to 0 indication the reaction IS NOT being used</span>
+    <span class="k">def</span> <span class="nf">passive</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">=</span><span class="mi">0</span>
+    <span class="c"># sets id and type</span>
+    <span class="k">def</span> <span class="nf">setId</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="o">=</span><span class="nb">id</span>
+    <span class="k">def</span> <span class="nf">setType</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="o">=</span><span class="nb">type</span>
+        
+    <span class="c"># set the reactants</span>
+    <span class="k">def</span> <span class="nf">setReactantsFromStrings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reactantsStrArr</span><span class="p">):</span>
+        
+        <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="n">reactantsStrArr</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">specStr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span> <span class="n">specStr</span><span class="p">]</span> <span class="o">=</span>  <span class="n">specie</span><span class="p">(</span><span class="n">specStr</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">specStr</span> <span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nReactants</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="p">)</span>
+            
+
+    <span class="c"># set the products</span>
+    <span class="k">def</span> <span class="nf">setProductsFromStrings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">productsStrArr</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="n">productsStrArr</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">specStr</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span> <span class="n">specStr</span><span class="p">]</span> <span class="o">=</span>  <span class="n">specie</span><span class="p">(</span><span class="n">specStr</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">specStr</span> <span class="p">)</span> 
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">nProducts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nSpecs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nReactants</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">nProducts</span>
+    
+    <span class="k">def</span> <span class="nf">updateSpecieInReaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">specStr</span><span class="p">,</span> <span class="n">specObj</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span> <span class="o">=</span> <span class="n">specObj</span>
+        
+    <span class="c"># set alpha, beta, gamma</span>
+    <span class="k">def</span> <span class="nf">setAlpha</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span>
+    <span class="k">def</span> <span class="nf">setBeta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="o">=</span><span class="n">beta</span>
+    <span class="k">def</span> <span class="nf">setGamma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gamma</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="o">=</span><span class="n">gamma</span>
+    <span class="c"># set src</span>
+    <span class="k">def</span> <span class="nf">setSrc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">src</span><span class="o">=</span><span class="n">src</span>
+    <span class="c"># set Tl, Tu</span>
+    <span class="k">def</span> <span class="nf">setTl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tl</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Tl</span> <span class="o">=</span> <span class="n">Tl</span>
+    <span class="k">def</span> <span class="nf">setTu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Tu</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Tu</span> <span class="o">=</span> <span class="n">Tu</span>
+    <span class="c"># set the accuracu and the refcode</span>
+    <span class="k">def</span> <span class="nf">setAccuracy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">acc</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">accuracy</span> <span class="o">=</span> <span class="n">acc</span>
+    <span class="k">def</span> <span class="nf">setRefCode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">refCode</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refCode</span> <span class="o">=</span> <span class="n">refCode</span>
+ 
+    <span class="k">def</span> <span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format</span> <span class="o">=</span> <span class="bp">None</span> <span class="p">):</span>
+
+        <span class="c"># methods which print the compoments of a reaction</span>
+        <span class="k">def</span> <span class="nf">printStatus</span> <span class="p">()</span> <span class="p">:</span> <span class="k">print</span> <span class="s">&quot;</span><span class="si">%d</span><span class="s">&quot;</span>   <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">printId</span>     <span class="p">()</span> <span class="p">:</span> <span class="k">print</span> <span class="s">&quot;</span><span class="si">%04d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">printHash</span>   <span class="p">()</span> <span class="p">:</span> <span class="k">print</span> <span class="s">&quot;</span><span class="si">%20d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">hash</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">printType</span>   <span class="p">()</span> <span class="p">:</span> <span class="k">print</span> <span class="s">&quot;</span><span class="si">%2s</span><span class="s">&quot;</span>  <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">printReacts</span> <span class="p">()</span> <span class="p">:</span>
+            <span class="c"># collecting the strings to be printed into a tuple and filling the </span>
+            <span class="c"># reactants which do not exist by empty strings</span>
+            <span class="n">cmpnts</span> <span class="o">=</span> <span class="p">()</span>
+            <span class="n">fmtStr</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">nReactants</span><span class="p">:</span>
+                    <span class="n">cmpnts</span>  <span class="o">+=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="p">[</span><span class="n">i</span><span class="p">],)</span>
+                    <span class="n">fmtStr</span>  <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10s</span><span class="s">  &quot;</span>   
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cmpnts</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,)</span>
+                    <span class="n">fmtStr</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10s</span><span class="s">  &quot;</span> 
+            <span class="k">print</span> <span class="n">fmtStr</span> <span class="o">%</span> <span class="n">cmpnts</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">printProds</span>  <span class="p">()</span> <span class="p">:</span>
+            <span class="c"># collecting the strings to be printed into a tuple and filling the </span>
+            <span class="c"># species which do not exist by empty strings</span>
+            <span class="n">cmpnts</span> <span class="o">=</span> <span class="p">()</span>
+            <span class="n">fmtStr</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">nProducts</span><span class="p">:</span>
+                    <span class="n">cmpnts</span> <span class="o">+=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">[</span><span class="n">i</span><span class="p">],)</span>
+                    <span class="n">fmtStr</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10s</span><span class="s">  &quot;</span>   
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cmpnts</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,)</span> 
+                    <span class="n">fmtStr</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10s</span><span class="s">  &quot;</span>   
+            <span class="k">print</span> <span class="n">fmtStr</span> <span class="o">%</span> <span class="n">cmpnts</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">printRxn</span>    <span class="p">()</span> <span class="p">:</span> 
+            <span class="n">printReacts</span><span class="p">()</span>
+            <span class="k">print</span> <span class="s">&#39; --&gt; &#39;</span><span class="p">,</span>
+            <span class="n">printProds</span><span class="p">(),</span>
+        <span class="k">def</span> <span class="nf">printReactsNumeric</span> <span class="p">()</span> <span class="p">:</span>
+            <span class="c"># collecting the numeric reprentations of the species to be printed into </span>
+            <span class="c"># a tuple and filling the spcies which do not exist by empty strings</span>
+            <span class="n">cmpnts</span> <span class="o">=</span> <span class="p">()</span>
+            <span class="n">fmtStr</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">nReactants</span><span class="p">:</span>
+                    
+                    <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">]</span><span class="o">.</span><span class="n">num</span> 
+                    
+                    <span class="k">if</span> <span class="n">n</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">cmpnts</span> <span class="o">+=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">]</span><span class="o">.</span><span class="n">num</span><span class="p">,)</span>
+                        <span class="n">fmtStr</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10d</span><span class="s">  &quot;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">cmpnts</span> <span class="o">+=</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">,)</span>
+                        <span class="n">fmtStr</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10s</span><span class="s">  &quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cmpnts</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,)</span>
+                    <span class="n">fmtStr</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10s</span><span class="s">  &quot;</span>
+                    
+            <span class="k">print</span> <span class="n">fmtStr</span> <span class="o">%</span> <span class="n">cmpnts</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">printProdsNumeric</span>  <span class="p">()</span> <span class="p">:</span>
+            <span class="c"># collecting the numeric reprentations of the species to be printed into </span>
+            <span class="c"># a tuple and filling the spcies which do not exist by empty strings</span>
+            <span class="n">cmpnts</span> <span class="o">=</span> <span class="p">()</span>
+            <span class="n">fmtStr</span> <span class="o">=</span> <span class="s">&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">nProducts</span><span class="p">:</span>
+                    
+                    <span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">]</span><span class="o">.</span><span class="n">num</span> 
+                    <span class="k">if</span> <span class="n">n</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">cmpnts</span> <span class="o">+=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">]</span><span class="o">.</span><span class="n">num</span><span class="p">,)</span>
+                        <span class="n">fmtStr</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10d</span><span class="s">&quot;</span>    
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">cmpnts</span> <span class="o">+=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="p">,)</span>
+                        <span class="n">fmtStr</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10s</span><span class="s">  &quot;</span>   
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cmpnts</span> <span class="o">+=</span> <span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">,)</span>
+                    <span class="n">fmtStr</span> <span class="o">+=</span> <span class="s">&quot;</span><span class="si">%-10s</span><span class="s">  &quot;</span>   
+            <span class="k">print</span> <span class="n">fmtStr</span> <span class="o">%</span> <span class="n">cmpnts</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">printRxnNumeric</span>    <span class="p">()</span> <span class="p">:</span>
+            <span class="n">printReactsNumeric</span><span class="p">()</span>
+            <span class="k">print</span> <span class="s">&#39; --&gt; &#39;</span><span class="p">,</span>
+            <span class="n">printProdsNumeric</span><span class="p">(),</span>
+
+        <span class="k">def</span> <span class="nf">printABG</span>    <span class="p">()</span> <span class="p">:</span> <span class="k">print</span> <span class="s">&quot;|</span><span class="si">%+-5.2e</span><span class="s"> </span><span class="si">%+-5.2e</span><span class="s"> </span><span class="si">%+-5.2e</span><span class="s">|&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma</span><span class="p">),</span> 
+        <span class="k">def</span> <span class="nf">printTrng</span>   <span class="p">()</span> <span class="p">:</span> <span class="k">print</span> <span class="s">&quot;|</span><span class="si">%-5d</span><span class="s"> </span><span class="si">%-5d</span><span class="s">|&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Tl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Tu</span><span class="p">),</span> 
+        <span class="k">def</span> <span class="nf">printAcc</span>    <span class="p">()</span> <span class="p">:</span> <span class="k">print</span> <span class="s">&quot; </span><span class="si">%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">accuracy</span> <span class="p">),</span>
+        <span class="k">def</span> <span class="nf">printRef</span>    <span class="p">()</span> <span class="p">:</span> <span class="k">print</span> <span class="s">&quot; </span><span class="si">%s</span><span class="s"> &quot;</span> <span class="o">%</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">refCode</span> <span class="p">),</span>
+        <span class="k">def</span> <span class="nf">printCst</span>    <span class="p">()</span> <span class="p">:</span> <span class="k">print</span> <span class="s">&quot; </span><span class="si">%+-15.8e</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">cst</span> <span class="p">),</span>
+        <span class="k">def</span> <span class="nf">printRate</span>   <span class="p">()</span> <span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot; </span><span class="si">%+-15.8e</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="p">),</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&quot;        NA       &quot;</span><span class="p">,</span>
+        <span class="k">def</span> <span class="nf">printAbun</span>   <span class="p">()</span> <span class="p">:</span> 
+
+            <span class="k">print</span> <span class="s">&#39;&#39;</span>
+            <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">abun</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="si">%10s</span><span class="s"> : </span><span class="si">%+-15.8e</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span> <span class="n">spec</span><span class="o">.</span><span class="n">str</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">abun</span> <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;     NA     &quot;</span>
+            <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">abun</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="si">%10s</span><span class="s"> : </span><span class="si">%+-15.8e</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span> <span class="n">spec</span><span class="o">.</span><span class="n">str</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">abun</span> <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;     NA     &quot;</span>
+
+
+        <span class="n">action</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s">&quot;status&quot;</span>     <span class="p">:</span> <span class="n">printStatus</span><span class="p">,</span>
+            <span class="s">&quot;id&quot;</span>         <span class="p">:</span> <span class="n">printId</span><span class="p">,</span>
+            <span class="s">&quot;hash&quot;</span>       <span class="p">:</span> <span class="n">printHash</span><span class="p">,</span>
+            <span class="s">&quot;type&quot;</span>       <span class="p">:</span> <span class="n">printType</span><span class="p">,</span>
+            <span class="s">&quot;reacts&quot;</span>     <span class="p">:</span> <span class="n">printReacts</span><span class="p">,</span>
+            <span class="s">&quot;prods&quot;</span>      <span class="p">:</span> <span class="n">printProds</span><span class="p">,</span>
+            <span class="s">&quot;rxn&quot;</span>        <span class="p">:</span> <span class="n">printRxn</span><span class="p">,</span>
+            <span class="s">&quot;rxnNumeric&quot;</span> <span class="p">:</span> <span class="n">printRxnNumeric</span><span class="p">,</span>
+            <span class="s">&quot;abg&quot;</span>        <span class="p">:</span> <span class="n">printABG</span><span class="p">,</span>
+            <span class="s">&quot;trng&quot;</span>       <span class="p">:</span> <span class="n">printTrng</span><span class="p">,</span>
+            <span class="s">&quot;acc&quot;</span>        <span class="p">:</span> <span class="n">printAcc</span><span class="p">,</span>
+            <span class="s">&quot;ref&quot;</span>        <span class="p">:</span> <span class="n">printRef</span><span class="p">,</span>
+            <span class="s">&quot;cst&quot;</span>        <span class="p">:</span> <span class="n">printCst</span><span class="p">,</span> 
+            <span class="s">&quot;rate&quot;</span>       <span class="p">:</span> <span class="n">printRate</span><span class="p">,</span>
+            <span class="s">&quot;abun&quot;</span>       <span class="p">:</span> <span class="n">printAbun</span><span class="p">}</span>
+
+
+        <span class="k">if</span> <span class="n">format</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">fmtStrSplt</span> <span class="o">=</span> <span class="n">format</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">fmtComp</span> <span class="ow">in</span> <span class="n">fmtStrSplt</span><span class="p">:</span>
+                <span class="n">action</span><span class="o">.</span><span class="n">get</span><span class="p">(</span> <span class="n">strip</span><span class="p">(</span><span class="n">fmtComp</span><span class="p">)</span> <span class="p">)()</span>
+            <span class="k">print</span> 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;NOT IMPLEMENTED YET, IMPLENT PRINTINTG THE WHOLE UMIST LINE&#39;</span>
+        </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">ismcpak 0.4.7 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Mher V. Kazandjian.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
