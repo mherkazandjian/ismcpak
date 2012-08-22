@@ -45,8 +45,8 @@ dy   = 0.5     # log10 G0
 yMin = 0.0  
 yMax = 6.0
 
-zMin = -31.0    # log10 mechanical heating
-zMax = -29.0
+zMin = -30.0    # log10 mechanical heating
+zMax = -16.0
 dz   =  1.0
 
 # generating the parameter space 

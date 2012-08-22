@@ -412,6 +412,7 @@ class meshArxv():
         zNew[:] = zSec
         
         dataNew = np.array( [xNew, yNew, zNew] ).T
+
         ti = time()
         tNew = fInterp(dataNew)
         tf = time()
