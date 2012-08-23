@@ -1,7 +1,7 @@
 # utility function useful for ISM stuff
 
 def AvToLength(Av, nGas, Z):
-    """ convert the input visual extinction value to the length (L) of the the NH 
+    """ convert the input visual extinction value to the length in cm (L) of the the NH 
         column (not the actual column density) this is the inverse of Eq-4 
         in paper01 where  :math:`N_H = L.n_{gas}` 
         

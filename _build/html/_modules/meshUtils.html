@@ -61,11 +61,12 @@
 <span class="kn">from</span> <span class="nn">ismUtils</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">radex</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fetchNestedDtypeValue</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">interpolate</span>
 
 <div class="viewcode-block" id="meshArxv"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv">[docs]</a><span class="k">class</span> <span class="nc">meshArxv</span><span class="p">():</span>
-    <span class="sd">&quot;&quot;&quot; this class generates and manipulates archives of meshes.</span>
+    <span class="sd">&quot;&quot;&quot; this class generates and manipulates archives of PDR meshes.</span>
 <span class="sd">               </span>
-<span class="sd">     FILES AND THEIR FORMATS:</span>
+<span class="sd">     FILES AND THEIR FORMATS:\n</span>
 <span class="sd">     by default, the prefix name of the individual mesh files is assumed to be</span>
 <span class="sd">     mesh.dat-id-xxxxxx</span>
 <span class="sd">     </span>
@@ -88,14 +89,10 @@
 
 <span class="sd">          the entries of the dtype are </span>
 <span class="sd">            - mesh number     ( int64 ) :</span>
-<span class="sd">            - data file index ( int64 ) :</span>
-<span class="sd">               i.e in which .db file the mesh is located</span>
-<span class="sd">            - offset ( int64 ) :</span>
-<span class="sd">               the offset in bytes from the beginning of the file where the mesh is located</span>
-<span class="sd">            - nSteps ( int64 ):</span>
-<span class="sd">               the number of slabs in the mesh</span>
-<span class="sd">            - nSpecs ( int64 ) :</span>
-<span class="sd">               the number of species in the mesh                                   .</span>
+<span class="sd">            - data file index ( int64 ) : i.e in which .db file the mesh is located</span>
+<span class="sd">            - offset ( int64 ) : the offset in bytes from the beginning of the file where the mesh is located</span>
+<span class="sd">            - nSteps ( int64 ) : the number of slabs in the mesh</span>
+<span class="sd">            - nSpecs ( int64 ) : the number of species in the mesh                                   .</span>
 <span class="sd">                        </span>
 <span class="sd">      the .db files have the following structure:</span>
 <span class="sd">         - mesh_1 ( mesh dtype )</span>
@@ -112,10 +109,10 @@
         
         <span class="c"># instance variables</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nMeshes</span>    <span class="o">=</span> <span class="bp">None</span>
-        <span class="sd">&quot;&quot;&quot; nump.long64 : number of meshes in the database &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; np.long64 : number of meshes in the database (this is now as 1x1 array, convert it just into an np.int32 scalar&quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">ver</span>        <span class="o">=</span> <span class="bp">None</span>
-        <span class="sd">&quot;&quot;&quot; numpy int32 array [3] version number of the database data&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; np.int32 array [3] version number of the database data&quot;&quot;&quot;</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">meshes</span>     <span class="o">=</span> <span class="bp">None</span>
         <span class="sd">&quot;&quot;&quot; a list of all the meshes of &#39;mesh&#39; dtypes (see mesh.py)</span>
@@ -130,21 +127,21 @@
 <span class="sd">        &quot;&quot;&quot;</span>
             
         <span class="bp">self</span><span class="o">.</span><span class="n">infoAll</span>    <span class="o">=</span> <span class="bp">None</span> 
-        <span class="sd">&quot;&quot;&quot; a numpy array of dtype arxvHdrDtype (see below) which contains the info</span>
-<span class="sd">         (headers) about all the meshes each entry in this array contains two things,</span>
-<span class="sd">          information about the mesh and the parameters of the mesh. For example</span>
-<span class="sd">          the elements x in self.infoAll[x] has the following contents : </span>
-<span class="sd">          self.infoAll[x][&#39;info&#39;][0]   mesh number </span>
-<span class="sd">          self.infoAll[x][&#39;info&#39;][1]   0 ( for now)</span>
-<span class="sd">          self.infoAll[x][&#39;info&#39;][2]   offset from the start of file</span>
-<span class="sd">          self.infoAll[x][&#39;info&#39;][3]   number of steps in the mesh  </span>
-<span class="sd">          self.infoAll[x][&#39;info&#39;][4]   number of species</span>
+        <span class="sd">&quot;&quot;&quot;A numpy array of dtype arxvHdrDtype (see below) which contains the info</span>
+<span class="sd">           (headers) about all the meshes each entry in this array contains two things,</span>
+<span class="sd">           information about the mesh and the parameters of the mesh. For example</span>
+<span class="sd">           the elements x in self.infoAll[x] has the following contents : </span>
+<span class="sd">           self.infoAll[x][&#39;info&#39;][0]   mesh number\n </span>
+<span class="sd">           self.infoAll[x][&#39;info&#39;][1]   0 ( for now)\n</span>
+<span class="sd">           self.infoAll[x][&#39;info&#39;][2]   offset from the start of file\n</span>
+<span class="sd">           self.infoAll[x][&#39;info&#39;][3]   number of steps in the mesh\n</span>
+<span class="sd">           self.infoAll[x][&#39;info&#39;][4]   number of species\n</span>
 <span class="sd">         </span>
-<span class="sd">          self.infoAll[x][&#39;parms&#39;][0]  G0</span>
-<span class="sd">          self.infoAll[x][&#39;parms&#39;][1]  nGas</span>
-<span class="sd">          self.infoAll[x][&#39;parms&#39;][2]  gammaMech</span>
-<span class="sd">          self.infoAll[x][&#39;parms&#39;][3]  0.0, NOT USED</span>
-<span class="sd">          self.infoAll[x][&#39;parms&#39;][4]  0.0  NOT USED</span>
+<span class="sd">           self.infoAll[x][&#39;parms&#39;][0]  G0\n</span>
+<span class="sd">           self.infoAll[x][&#39;parms&#39;][1]  nGas\n</span>
+<span class="sd">           self.infoAll[x][&#39;parms&#39;][2]  gammaMech\n</span>
+<span class="sd">           self.infoAll[x][&#39;parms&#39;][3]  0.0, NOT USED\n</span>
+<span class="sd">           self.infoAll[x][&#39;parms&#39;][4]  0.0  NOT USED\n</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">nDbFiles</span>   <span class="o">=</span> <span class="bp">None</span>
@@ -175,8 +172,9 @@
         
     <span class="c"># read all the meshes files in the dir and construct the</span>
     <span class="c"># database</span>
-    <span class="k">def</span> <span class="nf">construct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dirName</span> <span class="p">):</span>
-
+<div class="viewcode-block" id="meshArxv.construct"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.construct">[docs]</a>    <span class="k">def</span> <span class="nf">construct</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dirName</span> <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; construc the database anad write the .db files&quot;&quot;&quot;</span>
+        
         <span class="n">meshNamePrefix</span> <span class="o">=</span> <span class="s">&#39;mesh.dat-id-&#39;</span>        
 
         <span class="c"># defining the files objects for the database fiels        </span>
@@ -192,7 +190,7 @@
         
         <span class="c"># setting variable for the </span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nMeshes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span> <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nMeshes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nMeshes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files</span><span class="p">)</span> 
         <span class="k">print</span> <span class="s">&#39;found </span><span class="si">%s</span><span class="s"> meshes&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nMeshes</span><span class="p">)</span>
 
         <span class="c"># defining the array holding the info about all the meshes</span>
@@ -211,7 +209,7 @@
             <span class="n">mData</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">getData</span><span class="p">()</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">meshes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mData</span><span class="p">)</span>
-            
+        
             <span class="c"># filling the corresponding field in the header array</span>
             <span class="n">infoAll</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;info&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span> <span class="c"># mesh number </span>
             <span class="n">infoAll</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;info&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span> <span class="c"># data file index</span>
@@ -231,6 +229,9 @@
             <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="n">infoAll</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;info&#39;</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span><span class="o">.</span><span class="n">tofile</span><span class="p">(</span><span class="n">dbDataFObj</span><span class="p">)</span>
             <span class="k">del</span> <span class="n">m</span>
             
+            <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nMeshes</span> <span class="o">/</span> <span class="mi">100</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;proccessed </span><span class="si">%d</span><span class="s"> meshes...&#39;</span> <span class="o">%</span> <span class="n">i</span> 
+            
         <span class="bp">self</span><span class="o">.</span><span class="n">infoAll</span> <span class="o">=</span> <span class="n">infoAll</span>
         
         <span class="c"># writing basic info to the .info file</span>
@@ -242,8 +243,9 @@
         <span class="n">dbDataFObj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="n">dbInfoFObj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="k">print</span> <span class="s">&#39;wrote successfully database files : </span><span class="se">\n</span><span class="s">  </span><span class="si">%s</span><span class="se">\n</span><span class="s">  </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dbInfoFObj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">dbDataFObj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">readDb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dirName</span> <span class="p">):</span>
+</div>
+<div class="viewcode-block" id="meshArxv.readDb"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.readDb">[docs]</a>    <span class="k">def</span> <span class="nf">readDb</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dirName</span> <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; reads the database and assigns the appropritate attributes (document)&quot;&quot;&quot;</span> 
         
         <span class="n">dbInfoFObj</span> <span class="o">=</span> <span class="nb">file</span><span class="p">(</span><span class="n">dirName</span> <span class="o">+</span> <span class="s">&#39;meshes.db.info&#39;</span><span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span>
         <span class="n">dbDataFObj</span> <span class="o">=</span> <span class="nb">file</span><span class="p">(</span><span class="n">dirName</span> <span class="o">+</span> <span class="s">&#39;meshes.db&#39;</span>  <span class="p">,</span> <span class="s">&#39;rb&#39;</span><span class="p">)</span>
@@ -281,7 +283,7 @@
                 <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="n">strng</span><span class="p">)</span>
                     
         <span class="k">print</span> <span class="s">&#39;read successfully database files : </span><span class="se">\n</span><span class="s">  </span><span class="si">%s</span><span class="se">\n</span><span class="s">  </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">dbInfoFObj</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">dbDataFObj</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-        
+        </div>
 <div class="viewcode-block" id="meshArxv.arxvHdrFormat"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.arxvHdrFormat">[docs]</a>    <span class="k">def</span> <span class="nf">arxvHdrFormat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; the format for the archive header from which the dtype will be constructed</span>
 <span class="sd">         specifying the info and paramters for each line in the header</span>
@@ -299,10 +301,11 @@
                   <span class="p">(</span><span class="s">&#39;info&#39;</span> <span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span>  <span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
                   <span class="p">(</span><span class="s">&#39;parms&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
                <span class="p">]</span>
-        
-    <span class="c"># check archive integrity, this is a basic check where the information about the</span>
-    <span class="c"># meshes in self.infoAll[&#39;info] is compared to those in self.data for each mes</span></div>
-    <span class="k">def</span> <span class="nf">checkIntegrity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        </div>
+<div class="viewcode-block" id="meshArxv.checkIntegrity"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.checkIntegrity">[docs]</a>    <span class="k">def</span> <span class="nf">checkIntegrity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;check archive integrity, this is a basic check where the information about the</span>
+<span class="sd">             meshes in self.infoAll[&#39;info] is compared to those in self.data for each mesh&quot;&quot;&quot;</span>
+
         <span class="n">diff</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nMeshes</span><span class="p">):</span>
             <span class="n">x1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">infoAll</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s">&#39;parms&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
@@ -321,7 +324,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">strng</span> <span class="o">=</span> <span class="s">&#39;archive integrity test failed. database file may be corrupt&#39;</span> 
             <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="n">strng</span><span class="p">)</span>
-        
+        </div>
     <span class="k">def</span> <span class="nf">setChemicalNetwork</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chemNet</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">chemNet</span> <span class="o">=</span> <span class="n">chemNet</span>
         
@@ -337,6 +340,158 @@
             <span class="n">errStr</span> <span class="o">=</span> <span class="s">&#39;FUV G0 range of the grid not set&#39;</span>
             <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="n">errStr</span><span class="p">)</span>            
 
+<div class="viewcode-block" id="meshArxv.construct3DInterpolationFunction"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.construct3DInterpolationFunction">[docs]</a>    <span class="k">def</span> <span class="nf">construct3DInterpolationFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">slabIdx</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">log10</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; returns a 3D interpolation function (interpolate.LinearNDInterpolator) which</span>
+<span class="sd">             can be used to compute values determined by quantity give (nGas, G0, Gmech)</span>
+<span class="sd">             (in log_10). The value to be interpolated upon is determined by the parameter</span>
+<span class="sd">             quantity and the slab index determined by :data:`slabIdx`. For example, to construct an interpolation table for say surface</span>
+<span class="sd">             temperature, this method can be invoked as :</span>
+<span class="sd">             </span>
+<span class="sd">             .. code-block:: python</span>
+
+<span class="sd">                f = arvx.construct3DInterpolationFunction( quantity = [&#39;state&#39;, &#39;gasT&#39;], slabIdx = 0 )</span>
+<span class="sd">             </span>
+<span class="sd">             See :data:`computeInterpolated2DGrid` for an example on how to use this interpolation </span>
+<span class="sd">             function.</span>
+<span class="sd">                </span>
+<span class="sd">             :param list quantity: this is a list of strings which point to the data</span>
+<span class="sd">                 to be extracted from the dtype :data:`mesh`. (see example above)</span>
+<span class="sd">                 </span>
+<span class="sd">             :param int32 slabIdx: the index of the slab from which the value will be</span>
+<span class="sd">                 extracted</span>
+<span class="sd">                 </span>
+<span class="sd">             :param bool log10: keyword which when passes as True, will generate the log10 of the quantity</span>
+<span class="sd">                 </span>
+<span class="sd">             :todo: modify this to construct the table over a selected range of the 3D </span>
+<span class="sd">                parameter space instead of using all the meshes. (optional)</span>
+<span class="sd">                </span>
+<span class="sd">             :warning: this fails if all the entries in one of the dimensions have the exact</span>
+<span class="sd">               same value. in that case use :data:`construct2DInterpolationFunction`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">infoAll</span><span class="p">[</span><span class="s">&#39;parms&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">infoAll</span><span class="p">[</span><span class="s">&#39;parms&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">infoAll</span><span class="p">[</span><span class="s">&#39;parms&#39;</span><span class="p">][:,</span><span class="mi">2</span><span class="p">])</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)):</span>
+            <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">fetchNestedDtypeValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meshes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">quantity</span> <span class="p">)[</span><span class="n">slabIdx</span><span class="p">]</span> 
+
+        <span class="k">if</span> <span class="s">&#39;log&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">values</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">values</span><span class="p">[:])</span>
+        
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>  <span class="c">#3D</span>
+        <span class="c">#data = np.array([x, y]).T  #2D</span>
+        
+        <span class="n">ti</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">LinearNDInterpolator</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span> <span class="c"># getting the interpolation function     </span>
+        <span class="n">tf</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">&#39;constructed the interpolation function from </span><span class="si">%d</span><span class="s"> points in </span><span class="si">%f</span><span class="s"> seconds&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="n">tf</span><span class="o">-</span><span class="n">ti</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">f</span> 
+</div>
+<div class="viewcode-block" id="meshArxv.construct2DInterpolationFunction"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.construct2DInterpolationFunction">[docs]</a>    <span class="k">def</span> <span class="nf">construct2DInterpolationFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">slabIdx</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; same as :data:`construct3DInterpolationFunction` but does it for n and G0</span>
+<span class="sd">        </span>
+<span class="sd">            :warning: make sure that the G_mech for all the models is the same. Other</span>
+<span class="sd">              things will not make sense, bec the models would have diffrent G_mech</span>
+<span class="sd">            :warning: make sure that the interpolated points are at the centroids of the grid points</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">infoAll</span><span class="p">[</span><span class="s">&#39;parms&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">infoAll</span><span class="p">[</span><span class="s">&#39;parms&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)):</span>
+            <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">fetchNestedDtypeValue</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meshes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">quantity</span><span class="p">)[</span><span class="n">slabIdx</span><span class="p">]</span> 
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">])</span><span class="o">.</span><span class="n">T</span>  <span class="c">#2D</span>
+        
+        <span class="n">ti</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">LinearNDInterpolator</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span> <span class="c"># getting the interpolation function     </span>
+        <span class="n">tf</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">&#39;constructed the interpolation function from </span><span class="si">%d</span><span class="s"> points in </span><span class="si">%f</span><span class="s"> seconds&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="n">tf</span><span class="o">-</span><span class="n">ti</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">f</span> 
+    </div>
+<div class="viewcode-block" id="meshArxv.computeInterpolated2DGrid"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.computeInterpolated2DGrid">[docs]</a>    <span class="k">def</span> <span class="nf">computeInterpolated2DGrid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">slabIdx</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">ranges</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">zSec</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">fInterp</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds</span>
+<span class="sd">             the interpolated vlaues of &#39;quantity&#39; over the domain determined by ranges for a slab whose index is slabIdx for</span>
+<span class="sd">             a mechanical heating zSec (in log10). ( x is the horizontal direction of the mesh, and y is the vertical).</span>
+<span class="sd">             </span>
+<span class="sd">             An example would be (assuming the archive is constructed already):</span>
+<span class="sd">             </span>
+<span class="sd">             .. code-block:: python</span>
+
+<span class="sd">                f   = arxv.construct3DInterpolationFunction(quantity = [&#39;state&#39;, &#39;gasT&#39;], </span>
+<span class="sd">                                                            slabIdx  = 0)</span>
+<span class="sd">                grd = arxv.computeInterpolated2DGrid(quantity = [&#39;state&#39;, &#39;gasT&#39;], </span>
+<span class="sd">                                                     slabIdx  = 0, </span>
+<span class="sd">                                                     ranges   = [[0,6],[0,6]],</span>
+<span class="sd">                                                     res      = [100,100], </span>
+<span class="sd">                                                     zSec     = -30, </span>
+<span class="sd">                                                     fInterp  = f)</span>
+
+
+<span class="sd">                import matplotlib.pyplot as plt</span>
+<span class="sd">                plt.imshow(grd, extent=(0,1,0,1), origin=&#39;lower&#39;)</span>
+<span class="sd">                plt.show()</span>
+
+<span class="sd">             </span>
+<span class="sd">             :param list quantity: (see definition in :data:`construct3DInterpolationFunction`</span>
+<span class="sd">                 </span>
+<span class="sd">             :param int32 slabIdx: (see definition in :data:`construct3DInterpolationFunction`</span>
+<span class="sd">             </span>
+<span class="sd">             :param list ranges: a 2d list holding the ranges of the grid [[xmin, xmax],[ymin, ymax]]</span>
+
+<span class="sd">             :param list res: the resolution in each dimension. [xResolution, yResolution]</span>
+<span class="sd">             </span>
+<span class="sd">             :param interpolate.LinearNDInterpolator fInterp: the interpolation function returned by</span>
+<span class="sd">                 :data:`construct2DInterpolationFunction` or it 3D counterpart.                 </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># defining the points in the uniform 2D grid                                                                                                                                                                                                 </span>
+        <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span><span class="nb">complex</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                                  <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span><span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]:</span><span class="nb">complex</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">res</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+        <span class="n">nPts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">grid_x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">xNew</span> <span class="o">=</span> <span class="n">grid_x</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nPts</span><span class="p">)</span>
+        <span class="n">yNew</span> <span class="o">=</span> <span class="n">grid_y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">nPts</span><span class="p">)</span>
+        <span class="n">zNew</span> <span class="o">=</span> <span class="n">xNew</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">zNew</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">zSec</span>
+        
+        <span class="n">dataNew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="p">[</span><span class="n">xNew</span><span class="p">,</span> <span class="n">yNew</span><span class="p">,</span> <span class="n">zNew</span><span class="p">]</span> <span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="n">ti</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+        <span class="n">tNew</span> <span class="o">=</span> <span class="n">fInterp</span><span class="p">(</span><span class="n">dataNew</span><span class="p">)</span>
+        <span class="n">tf</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">&#39;interpolated </span><span class="si">%d</span><span class="s"> points in </span><span class="si">%f</span><span class="s"> seconds at a rate of </span><span class="si">%e</span><span class="s"> pts/sec&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nPts</span><span class="p">,</span> <span class="n">tf</span><span class="o">-</span><span class="n">ti</span><span class="p">,</span> <span class="n">nPts</span> <span class="o">/</span> <span class="p">(</span><span class="n">tf</span><span class="o">-</span><span class="n">ti</span><span class="p">))</span>
+        <span class="n">tNew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tNew</span><span class="p">,</span> <span class="n">grid_x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">tNew</span>
+    </div>
+<div class="viewcode-block" id="meshArxv.showGrid"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.showGrid">[docs]</a>    <span class="k">def</span> <span class="nf">showGrid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">slabIdx</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">ranges</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">zSec</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method displays a plot of a grid of the quantity pointed by quantity in a new</span>
+<span class="sd">           window. It makes use of :data:`computeInterpolated2DGrid` and :data:`construct3DInterpolationFunction`.</span>
+<span class="sd">           For the documentation of the parameters see  :data:`computeInterpolated2DGrid`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># getting the grid</span>
+        <span class="n">f</span>   <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">construct3DInterpolationFunction</span><span class="p">(</span><span class="n">quantity</span> <span class="o">=</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">slabIdx</span>  <span class="o">=</span> <span class="n">slabIdx</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">grd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">computeInterpolated2DGrid</span><span class="p">(</span><span class="n">quantity</span> <span class="o">=</span> <span class="n">quantity</span><span class="p">,</span> 
+                                             <span class="n">slabIdx</span>  <span class="o">=</span> <span class="n">slabIdx</span><span class="p">,</span> 
+                                             <span class="n">ranges</span>   <span class="o">=</span> <span class="n">ranges</span><span class="p">,</span>
+                                             <span class="n">res</span>      <span class="o">=</span> <span class="n">res</span><span class="p">,</span> 
+                                             <span class="n">zSec</span>     <span class="o">=</span> <span class="n">zSec</span><span class="p">,</span> 
+                                             <span class="n">fInterp</span>  <span class="o">=</span> <span class="n">f</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        
+        <span class="c"># plotting it</span>
+        <span class="n">pyl</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+        <span class="n">pyl</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+        <span class="n">pyl</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">grd</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">(</span><span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">ranges</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]),</span> <span class="n">origin</span><span class="o">=</span><span class="s">&#39;lower&#39;</span><span class="p">)</span>
+        <span class="n">pyl</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+        
+        </div>
 <div class="viewcode-block" id="meshArxv.computeSurfaceTemperatureGrid"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.computeSurfaceTemperatureGrid">[docs]</a>    <span class="k">def</span> <span class="nf">computeSurfaceTemperatureGrid</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">meshInds</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">res</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">ranges</span> <span class="o">=</span> <span class="bp">None</span> <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;generates color map of the surface temperature. if meshInds is not provided,</span>
 <span class="sd">            all the meshes in the arxive are used. In that case, res and ranges shoudl</span>

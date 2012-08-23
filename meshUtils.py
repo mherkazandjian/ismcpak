@@ -12,9 +12,9 @@ from utils import fetchNestedDtypeValue
 from scipy import interpolate
 
 class meshArxv():
-    """ this class generates and manipulates archives of meshes.
+    """ this class generates and manipulates archives of PDR meshes.
                
-     FILES AND THEIR FORMATS:
+     FILES AND THEIR FORMATS:\n
      by default, the prefix name of the individual mesh files is assumed to be
      mesh.dat-id-xxxxxx
      
@@ -37,14 +37,10 @@ class meshArxv():
 
           the entries of the dtype are 
             - mesh number     ( int64 ) :
-            - data file index ( int64 ) :
-               i.e in which .db file the mesh is located
-            - offset ( int64 ) :
-               the offset in bytes from the beginning of the file where the mesh is located
-            - nSteps ( int64 ):
-               the number of slabs in the mesh
-            - nSpecs ( int64 ) :
-               the number of species in the mesh                                   .
+            - data file index ( int64 ) : i.e in which .db file the mesh is located
+            - offset ( int64 ) : the offset in bytes from the beginning of the file where the mesh is located
+            - nSteps ( int64 ) : the number of slabs in the mesh
+            - nSpecs ( int64 ) : the number of species in the mesh                                   .
                         
       the .db files have the following structure:
          - mesh_1 ( mesh dtype )
@@ -79,21 +75,21 @@ class meshArxv():
         """
             
         self.infoAll    = None 
-        """ a numpy array of dtype arxvHdrDtype (see below) which contains the info
-         (headers) about all the meshes each entry in this array contains two things,
-          information about the mesh and the parameters of the mesh. For example
-          the elements x in self.infoAll[x] has the following contents : 
-          self.infoAll[x]['info'][0]   mesh number\n 
-          self.infoAll[x]['info'][1]   0 ( for now)\n
-          self.infoAll[x]['info'][2]   offset from the start of file\n
-          self.infoAll[x]['info'][3]   number of steps in the mesh\n
-          self.infoAll[x]['info'][4]   number of species\n
+        """A numpy array of dtype arxvHdrDtype (see below) which contains the info
+           (headers) about all the meshes each entry in this array contains two things,
+           information about the mesh and the parameters of the mesh. For example
+           the elements x in self.infoAll[x] has the following contents : 
+           self.infoAll[x]['info'][0]   mesh number\n 
+           self.infoAll[x]['info'][1]   0 ( for now)\n
+           self.infoAll[x]['info'][2]   offset from the start of file\n
+           self.infoAll[x]['info'][3]   number of steps in the mesh\n
+           self.infoAll[x]['info'][4]   number of species\n
          
-          self.infoAll[x]['parms'][0]  G0\n
-          self.infoAll[x]['parms'][1]  nGas\n
-          self.infoAll[x]['parms'][2]  gammaMech\n
-          self.infoAll[x]['parms'][3]  0.0, NOT USED\n
-          self.infoAll[x]['parms'][4]  0.0  NOT USED\n
+           self.infoAll[x]['parms'][0]  G0\n
+           self.infoAll[x]['parms'][1]  nGas\n
+           self.infoAll[x]['parms'][2]  gammaMech\n
+           self.infoAll[x]['parms'][3]  0.0, NOT USED\n
+           self.infoAll[x]['parms'][4]  0.0  NOT USED\n
         """
 
         self.nDbFiles   = None
@@ -124,10 +120,13 @@ class meshArxv():
         
     # read all the meshes files in the dir and construct the
     # database
-    def construct(self, dirName ):
-        """ construc the database anad write the .db files"""
+    def construct(self, dirName , meshNamePrefix = None ):
+        """ construc the database anad write the .db files. If the meshNamePrefix is
+              not supplied all the files in dirName are assumed to be data files
+              and all of them are put in the database."""
         
-        meshNamePrefix = 'mesh.dat-id-'        
+        if meshNamePrefix == None:
+            meshNamePrefix = ''
 
         # defining the files objects for the database fiels        
         dbInfoFObj = file(dirName + 'meshes.db.info', 'wb')
@@ -1084,3 +1083,41 @@ class meshArxv():
         del self.grdsCbarAxs
         del self.pltRadex
         pyl.close()
+
+    def plotCurvesFromMeshes( self, inds = None, qx = None, qy = None, qz = None, *args, **kwargs ):
+        """Plots curves from the meshes in the database on top of each other in the
+          same window. This method inherits all keword argument from pyl.plot()
+          
+          :param list inds: an optional list of the indicies of the meshes in the database. If
+           this is not passed, all the meshes in the database are considered.
+          :param list qx: a list of strings pointing to the quantinity in the mesh dtype to
+            be used as the absissa of the points. 
+          :param list qy: same as qx but will be used as the ordinates.  
+          :param list qz: a thrid quantity used to identity each curve (used in the legend)
+        """
+        
+        fig = pyl.figure()  # make the figure
+        ax  = fig.add_axes([0.1,0.1, 0.6, 0.6])    # make new axes
+        ax.set_xlabel(qx[-1])
+        ax.set_ylabel(qy[-1])
+        
+        plts  = ()
+        names = ()
+        
+        for m in self.meshes:
+            x = fetchNestedDtypeValue(m, qx)
+            y = fetchNestedDtypeValue(m, qy)
+            plt, = ax.plot(x, y)
+            
+            if qz != None:
+                z = fetchNestedDtypeValue(m, qz)
+                plts  = plts  + (plt,)
+                names = names + (z,)
+        
+        print plts
+        fig.legend(plts, names)
+        pyl.show()
+        
+        
+        
+        

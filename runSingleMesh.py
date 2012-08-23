@@ -16,7 +16,7 @@ pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none
 
 log10_nGas = 5.0
 log10_G0   = 3.0
-lMech      = 1*6.73832347e-21
+lMech      = 100*6.73832347e-21
 
 #---------------------amuse parameters------------------------------------------------
 pdr.set_outputDir                  (outputDir + 'meshes/');

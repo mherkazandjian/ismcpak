@@ -1,68 +1,42 @@
+# the models of paper1 (table-1)
+#---------------------------------------------------------------------------------------------------
 from numpy import *
-from time import *
-import sys
+from numpy.random import *
 import pylab as pyl
 
-from chemicalNetwork import *
+from amuse.community.pdr import interface
 from mesh import *
-from meshUtils import *
+from chemicalNetwork import *
 from enumSpecies import *
+from ismUtils import *
+import time
 
-#---------------------------Archive parameters-----------------------
-runDirPath    = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid4/'
-gridsRes      = 10
-lgammaMechSec = -30.0
-metallicity   = 1.0
-plotRangenG0  = [[0,6],[0,6]]
+dx   = 1.0      # log10 density
+xMin = 5.0
+xMax = 6.1
 
-radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  
-                  'molDataDirPath'    : '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                  'specStr'           : 'CO',
-#                  'xH2_Min'          : 2*0.0000000001
-                  'xH2_Min'           : -1.0,
-                  'collisionPartners' : ['H2','H+','H'],
-#                  'collisionPartners' : ['H2','H','H+','e-']
-#                  'collisionPartners' : ['H2']
-#                  'collisionPartners' : ['H2','H+','e-','H']
-                  'plotTransitionInGrid' : 0
-                }
-#-----------------chemical network parameters------------------------
-rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
-specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
-underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
-removeManual  = ['13CH3']
+dy   = 1.0     # log10 G0
+yMin = 5.0  
+yMax = 6.1
 
+# factor of surface heating to be added as mechanical heating
+z = [0.01, 0.05]
 
-# elements and basic species from which all the other species are made
-import baseSpecies
-baseSpec = baseSpecies.baseSpecies()
+# generating the parameter space 
+xg = arange(xMin, xMax, dx)
+yg = arange(yMin, yMax, dy)
+zg = arange(len(z))
+x, y, z = mgrid[ xMin:(xMax+1e-10):dx, yMin:(yMax+1e-10):dy, 0:len(z):1]
 
-#------------------------------------------------------------------
-# reading the archive
-print 'setting up the archive'
-t0 = time()
-arxv = meshArxv( metallicity = metallicity )
-arxv.readDb( runDirPath )
-arxv.checkIntegrity()
-print 'time reading %f' % (time() - t0)
-#------------------------------------------------------------------
-# read and setting up the chemical network used in the 
-t0 = time()
-# settin up the orignial netowrk
-net = chemicalNetwork(rxnFile, baseSpec, UMISTVER = 'umist99')
-# reading the species to be removed from a file
-net.removeSpecies( underAbunFile = underAbunFile )
-net.removeSpecies( species = removeManual )
-# reading the species number and their corresponding indies and abundances from ascii files
-net.assignNumbersToSpecies(fileName = specNumFile)
-arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
-
-
-arxv.showGrid(quantity = ['therm', 'heating'], 
-              slabIdx  = 0, 
-              ranges   = [[0,6],[0,6]],
-              res      = [100,100], 
-              zSec     = -30,
-              log    = True) 
-
-print 'done'
+print 'x'
+print x
+print 'y'
+print y
+print 'z'
+print z
+print x.flatten()
+print y.flatten()
+print z.flatten()
+print '---------'
+print z[:][:][:]
+#print z.flatten()

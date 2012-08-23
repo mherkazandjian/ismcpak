@@ -13,7 +13,7 @@ from utils import fetchNestedDtypeValue
 #meshFname     = '/home/mher/ism/runs/oneSided/tests/meshes/mesh.dat-id-000000'
 #meshFname     = '/home/mher/ism/runs/oneSided/tests/M2-30/mesh.dat'
 #meshFname      = '/data1/mher/ism/runs/oneSided/testOneSidedPDRGrid/meshes/mesh.dat-id-000000'
-meshFname      = '/data1/mher/ism/runs/oneSided/runSingleMesh/meshes/mesh.dat-100percent'
+meshFname      = '/data1/mher/ism/runs/oneSided/runSingleMesh/meshes/mesh.dat-10000percent'
 #meshFname     = '/home/mher/ism/runs/oneSided/tests/M2-30/mesh.dat-adaptive-0.1.10'
 #meshFname     = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/meshes/mesh.dat-id-000119'
 metallicity   = 1.0

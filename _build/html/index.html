@@ -403,9 +403,9 @@ THINK OF A MORE ELEGANT WAY AFTERWARDS</p>
 <span class="target" id="module-meshUtils"></span><dl class="class">
 <dt id="meshUtils.meshArxv">
 <em class="property">class </em><tt class="descclassname">meshUtils.</tt><tt class="descname">meshArxv</tt><big>(</big><em>*args</em>, <em>**kwrds</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv" title="Permalink to this definition">¶</a></dt>
-<dd><p>this class generates and manipulates archives of meshes.</p>
-<p>FILES AND THEIR FORMATS:
-by default, the prefix name of the individual mesh files is assumed to be
+<dd><p>this class generates and manipulates archives of PDR meshes.</p>
+<p>FILES AND THEIR FORMATS:</p>
+<p>by default, the prefix name of the individual mesh files is assumed to be
 mesh.dat-id-xxxxxx</p>
 <p>the mesh database files are assumed to have the same prefix, for example, if the
 database file provided is foo, then this routine will assume (or write)</p>
@@ -429,33 +429,12 @@ foo.db   : holds the data for all the meshes</dd>
 <blockquote>
 <div><dl class="docutils">
 <dt>the entries of the dtype are </dt>
-<dd><ul class="first last">
-<li><p class="first">mesh number     ( int64 ) :</p>
-</li>
-<li><dl class="first docutils">
-<dt>data file index ( int64 ) :</dt>
-<dd><p class="first last">i.e in which .db file the mesh is located</p>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>offset ( int64 ) :</dt>
-<dd><p class="first last">the offset in bytes from the beginning of the file where the mesh is located</p>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>nSteps ( int64 ):</dt>
-<dd><p class="first last">the number of slabs in the mesh</p>
-</dd>
-</dl>
-</li>
-<li><dl class="first docutils">
-<dt>nSpecs ( int64 ) :</dt>
-<dd><p class="first last">the number of species in the mesh                                   .</p>
-</dd>
-</dl>
-</li>
+<dd><ul class="first last simple">
+<li>mesh number     ( int64 ) :</li>
+<li>data file index ( int64 ) : i.e in which .db file the mesh is located</li>
+<li>offset ( int64 ) : the offset in bytes from the beginning of the file where the mesh is located</li>
+<li>nSteps ( int64 ) : the number of slabs in the mesh</li>
+<li>nSpecs ( int64 ) : the number of species in the mesh                                   .</li>
 </ul>
 </dd>
 </dl>
@@ -486,6 +465,13 @@ in version 1 : the &#8216;info&#8217; is defined as : (&#8216;info&#8217; , np.i
 in version 2 : the &#8216;info&#8217; is defined as : (&#8216;info&#8217; , np.int64  , 6)</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="meshUtils.meshArxv.checkIntegrity">
+<tt class="descname">checkIntegrity</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.checkIntegrity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.checkIntegrity" title="Permalink to this definition">¶</a></dt>
+<dd><p>check archive integrity, this is a basic check where the information about the
+meshes in self.infoAll[&#8216;info] is compared to those in self.data for each mesh</p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="meshUtils.meshArxv.chemNet">
 <tt class="descname">chemNet</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.chemNet" title="Permalink to this definition">¶</a></dt>
@@ -501,11 +487,112 @@ be provided.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="meshUtils.meshArxv.computeInterpolated2DGrid">
+<tt class="descname">computeInterpolated2DGrid</tt><big>(</big><em>quantity=None</em>, <em>slabIdx=None</em>, <em>ranges=None</em>, <em>res=None</em>, <em>zSec=None</em>, <em>fInterp=None</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.computeInterpolated2DGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.computeInterpolated2DGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds
+the interpolated vlaues of &#8216;quantity&#8217; over the domain determined by ranges for a slab whose index is slabIdx for
+a mechanical heating zSec (in log10). ( x is the horizontal direction of the mesh, and y is the vertical).</p>
+<p>An example would be (assuming the archive is constructed already):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">f</span>   <span class="o">=</span> <span class="n">arxv</span><span class="o">.</span><span class="n">construct3DInterpolationFunction</span><span class="p">(</span><span class="n">quantity</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">,</span> <span class="s">&#39;gasT&#39;</span><span class="p">],</span> 
+                                            <span class="n">slabIdx</span>  <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">grd</span> <span class="o">=</span> <span class="n">arxv</span><span class="o">.</span><span class="n">computeInterpolated2DGrid</span><span class="p">(</span><span class="n">quantity</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">,</span> <span class="s">&#39;gasT&#39;</span><span class="p">],</span> 
+                                     <span class="n">slabIdx</span>  <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> 
+                                     <span class="n">ranges</span>   <span class="o">=</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">6</span><span class="p">],[</span><span class="mi">0</span><span class="p">,</span><span class="mi">6</span><span class="p">]],</span>
+                                     <span class="n">res</span>      <span class="o">=</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span><span class="mi">100</span><span class="p">],</span> 
+                                     <span class="n">zSec</span>     <span class="o">=</span> <span class="o">-</span><span class="mi">30</span><span class="p">,</span> 
+                                     <span class="n">fInterp</span>  <span class="o">=</span> <span class="n">f</span><span class="p">)</span>
+
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">grd</span><span class="p">,</span> <span class="n">extent</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">origin</span><span class="o">=</span><span class="s">&#39;lower&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>quantity</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; (see definition in <a class="reference internal" href="#meshUtils.meshArxv.construct3DInterpolationFunction" title="meshUtils.meshArxv.construct3DInterpolationFunction"><tt class="xref py py-data docutils literal"><span class="pre">construct3DInterpolationFunction</span></tt></a></li>
+<li><strong>slabIdx</strong> (<em>int32</em>) &#8211; (see definition in <a class="reference internal" href="#meshUtils.meshArxv.construct3DInterpolationFunction" title="meshUtils.meshArxv.construct3DInterpolationFunction"><tt class="xref py py-data docutils literal"><span class="pre">construct3DInterpolationFunction</span></tt></a></li>
+<li><strong>ranges</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; a 2d list holding the ranges of the grid [[xmin, xmax],[ymin, ymax]]</li>
+<li><strong>res</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; the resolution in each dimension. [xResolution, yResolution]</li>
+<li><strong>fInterp</strong> (<em>interpolate.LinearNDInterpolator</em>) &#8211; the interpolation function returned by
+<a class="reference internal" href="#meshUtils.meshArxv.construct2DInterpolationFunction" title="meshUtils.meshArxv.construct2DInterpolationFunction"><tt class="xref py py-data docutils literal"><span class="pre">construct2DInterpolationFunction</span></tt></a> or it 3D counterpart.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="meshUtils.meshArxv.computeSurfaceTemperatureGrid">
 <tt class="descname">computeSurfaceTemperatureGrid</tt><big>(</big><em>meshInds=None</em>, <em>res=None</em>, <em>ranges=None</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.computeSurfaceTemperatureGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.computeSurfaceTemperatureGrid" title="Permalink to this definition">¶</a></dt>
 <dd><p>generates color map of the surface temperature. if meshInds is not provided,
 all the meshes in the arxive are used. In that case, res and ranges shoudl
 be provided.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="meshUtils.meshArxv.construct">
+<tt class="descname">construct</tt><big>(</big><em>dirName</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.construct"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.construct" title="Permalink to this definition">¶</a></dt>
+<dd><p>construc the database anad write the .db files</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="meshUtils.meshArxv.construct2DInterpolationFunction">
+<tt class="descname">construct2DInterpolationFunction</tt><big>(</big><em>quantity=None</em>, <em>slabIdx=None</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.construct2DInterpolationFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.construct2DInterpolationFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>same as <a class="reference internal" href="#meshUtils.meshArxv.construct3DInterpolationFunction" title="meshUtils.meshArxv.construct3DInterpolationFunction"><tt class="xref py py-data docutils literal"><span class="pre">construct3DInterpolationFunction</span></tt></a> but does it for n and G0</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Warning :</th><td class="field-body">make sure that the G_mech for all the models is the same. Other
+things will not make sense, bec the models would have diffrent G_mech</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Warning :</th><td class="field-body">make sure that the interpolated points are at the centroids of the grid points</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="meshUtils.meshArxv.construct3DInterpolationFunction">
+<tt class="descname">construct3DInterpolationFunction</tt><big>(</big><em>quantity=None</em>, <em>slabIdx=None</em>, <em>log10=None</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.construct3DInterpolationFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.construct3DInterpolationFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
+can be used to compute values determined by quantity give (nGas, G0, Gmech)
+(in log_10). The value to be interpolated upon is determined by the parameter
+quantity and the slab index determined by <tt class="xref py py-data docutils literal"><span class="pre">slabIdx</span></tt>. For example, to construct an interpolation table for say surface
+temperature, this method can be invoked as :</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">f</span> <span class="o">=</span> <span class="n">arvx</span><span class="o">.</span><span class="n">construct3DInterpolationFunction</span><span class="p">(</span> <span class="n">quantity</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;state&#39;</span><span class="p">,</span> <span class="s">&#39;gasT&#39;</span><span class="p">],</span> <span class="n">slabIdx</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">)</span>
+</pre></div>
+</div>
+<p>See <a class="reference internal" href="#meshUtils.meshArxv.computeInterpolated2DGrid" title="meshUtils.meshArxv.computeInterpolated2DGrid"><tt class="xref py py-data docutils literal"><span class="pre">computeInterpolated2DGrid</span></tt></a> for an example on how to use this interpolation 
+function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>quantity</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; this is a list of strings which point to the data
+to be extracted from the dtype <a class="reference internal" href="#module-mesh" title="mesh"><tt class="xref py py-data docutils literal"><span class="pre">mesh</span></tt></a>. (see example above)</li>
+<li><strong>slabIdx</strong> (<em>int32</em>) &#8211; the index of the slab from which the value will be
+extracted</li>
+<li><strong>log10</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; keyword which when passes as True, will generate the log10 of the quantity</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Todo :</th><td class="field-body"><p class="first">modify this to construct the table over a selected range of the 3D 
+parameter space instead of using all the meshes. (optional)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Warning :</th><td class="field-body"><p class="first last">this fails if all the entries in one of the dimensions have the exact
+same value. in that case use <a class="reference internal" href="#meshUtils.meshArxv.construct2DInterpolationFunction" title="meshUtils.meshArxv.construct2DInterpolationFunction"><tt class="xref py py-data docutils literal"><span class="pre">construct2DInterpolationFunction</span></tt></a></p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -517,22 +604,20 @@ be provided.</p>
 <dl class="attribute">
 <dt id="meshUtils.meshArxv.infoAll">
 <tt class="descname">infoAll</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.infoAll" title="Permalink to this definition">¶</a></dt>
-<dd><p>a numpy array of dtype arxvHdrDtype (see below) which contains the info
-(headers) about all the meshes each entry in this array contains two things,</p>
-<blockquote>
-<div><p>information about the mesh and the parameters of the mesh. For example
+<dd><p>A numpy array of dtype arxvHdrDtype (see below) which contains the info
+(headers) about all the meshes each entry in this array contains two things,
+information about the mesh and the parameters of the mesh. For example
 the elements x in self.infoAll[x] has the following contents :
-self.infoAll[x][&#8216;info&#8217;][0]   mesh number
-self.infoAll[x][&#8216;info&#8217;][1]   0 ( for now)
-self.infoAll[x][&#8216;info&#8217;][2]   offset from the start of file
-self.infoAll[x][&#8216;info&#8217;][3]   number of steps in the mesh
-self.infoAll[x][&#8216;info&#8217;][4]   number of species</p>
-<p>self.infoAll[x][&#8216;parms&#8217;][0]  G0
-self.infoAll[x][&#8216;parms&#8217;][1]  nGas
-self.infoAll[x][&#8216;parms&#8217;][2]  gammaMech
-self.infoAll[x][&#8216;parms&#8217;][3]  0.0, NOT USED
-self.infoAll[x][&#8216;parms&#8217;][4]  0.0  NOT USED</p>
-</div></blockquote>
+self.infoAll[x][&#8216;info&#8217;][0]   mesh number</p>
+<p>self.infoAll[x][&#8216;info&#8217;][1]   0 ( for now)</p>
+<p>self.infoAll[x][&#8216;info&#8217;][2]   offset from the start of file</p>
+<p>self.infoAll[x][&#8216;info&#8217;][3]   number of steps in the mesh</p>
+<p>self.infoAll[x][&#8216;info&#8217;][4]   number of species</p>
+<p>self.infoAll[x][&#8216;parms&#8217;][0]  G0</p>
+<p>self.infoAll[x][&#8216;parms&#8217;][1]  nGas</p>
+<p>self.infoAll[x][&#8216;parms&#8217;][2]  gammaMech</p>
+<p>self.infoAll[x][&#8216;parms&#8217;][3]  0.0, NOT USED</p>
+<p>self.infoAll[x][&#8216;parms&#8217;][4]  0.0  NOT USED</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -558,7 +643,29 @@ self.infoAll[i][&#8216;parms&#8217;][2]) which should be the same as self.meshes
 <dl class="attribute">
 <dt id="meshUtils.meshArxv.nMeshes">
 <tt class="descname">nMeshes</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.nMeshes" title="Permalink to this definition">¶</a></dt>
-<dd><p>nump.long64 : number of meshes in the database</p>
+<dd><p>np.long64 : number of meshes in the database (this is now as 1x1 array, convert it just into an np.int32 scalar</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="meshUtils.meshArxv.plotCurvesFromMeshes">
+<tt class="descname">plotCurvesFromMeshes</tt><big>(</big><em>inds=None</em>, <em>qx=None</em>, <em>qy=None</em><big>)</big><a class="headerlink" href="#meshUtils.meshArxv.plotCurvesFromMeshes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots curves from the meshes in the database on top of each other in the
+same window.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>inds</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; an optional list of the indicies of the meshes in the database. If
+this is not passed, all the meshes in the database are considered.</li>
+<li><strong>qx</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; a list of strings pointing to the quantinity in the mesh dtype to
+be used as the absissa of the points.</li>
+<li><strong>qy</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; same as qx but will be used as the ordinates.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -567,10 +674,24 @@ self.infoAll[i][&#8216;parms&#8217;][2]) which should be the same as self.meshes
 <dd><p>the value of the section in Gmech selected</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="meshUtils.meshArxv.readDb">
+<tt class="descname">readDb</tt><big>(</big><em>dirName</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.readDb"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.readDb" title="Permalink to this definition">¶</a></dt>
+<dd><p>reads the database and assigns the appropritate attributes (document)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="meshUtils.meshArxv.showGrid">
+<tt class="descname">showGrid</tt><big>(</big><em>quantity=None</em>, <em>slabIdx=None</em>, <em>ranges=None</em>, <em>res=None</em>, <em>zSec=None</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.showGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.showGrid" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method displays a plot of a grid of the quantity pointed by quantity in a new
+window. It makes use of <a class="reference internal" href="#meshUtils.meshArxv.computeInterpolated2DGrid" title="meshUtils.meshArxv.computeInterpolated2DGrid"><tt class="xref py py-data docutils literal"><span class="pre">computeInterpolated2DGrid</span></tt></a> and <a class="reference internal" href="#meshUtils.meshArxv.construct3DInterpolationFunction" title="meshUtils.meshArxv.construct3DInterpolationFunction"><tt class="xref py py-data docutils literal"><span class="pre">construct3DInterpolationFunction</span></tt></a>.
+For the documentation of the parameters see  <a class="reference internal" href="#meshUtils.meshArxv.computeInterpolated2DGrid" title="meshUtils.meshArxv.computeInterpolated2DGrid"><tt class="xref py py-data docutils literal"><span class="pre">computeInterpolated2DGrid</span></tt></a></p>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="meshUtils.meshArxv.ver">
 <tt class="descname">ver</tt><em class="property"> = None</em><a class="headerlink" href="#meshUtils.meshArxv.ver" title="Permalink to this definition">¶</a></dt>
-<dd><p>numpy int32 array [3] version number of the database data</p>
+<dd><p>np.int32 array [3] version number of the database data</p>
 </dd></dl>
 
 </dd></dl>
@@ -661,12 +782,12 @@ the value of &#8216;specStr&#8217; to self.molDataDir</p>
                                'O'    : 'oatom.dat'    ,
 </pre>
 </div>
-<div class="admonition-todo admonition " id="index-0">
+<div class="admonition-todo admonition" id="index-0">
 <p class="first admonition-title">Todo</p>
 <p class="last">implement a method to generate this dict automatically from all the files
 in the directory molDataFiles</p>
 </div>
-<div class="admonition-todo admonition " id="index-1">
+<div class="admonition-todo admonition" id="index-1">
 <p class="first admonition-title">Todo</p>
 <p class="last">also implement a dict for the collision partners like &#8216;e-&#8216; : &#8216;e&#8217;, but it might not
 be necessary since RADEX takes both &#8216;e&#8217; and &#8216;e-&#8216;</p>
