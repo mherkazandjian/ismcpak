@@ -9,16 +9,17 @@ from meshUtils import *
 from enumSpecies import *
 
 #---------------------------Archive parameters-----------------------
-runDirPath    = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid4/'
+runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweepNew-1/'
 gridsRes      = 10
 metallicity   = 1.0
 
+#quantity       = ['state', 'gasT']
 quantity       = ['therm', 'heating']
 #quantity       = ['fineStructureCoolingComponents', 'C+', 'rate', '1-0']
 plotRange_nG0  = [[0,6],[0,6]]
 slabIdx        = 0
 res            = [100,100]
-lgammaMechSec  = -30.0
+lgammaMechSec  = -25.0
 log            = True
 
 radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  

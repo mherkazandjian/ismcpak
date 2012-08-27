@@ -2,6 +2,8 @@ import os, glob, sys
 import numpy as np
 import pylab as pyl
 from matplotlib.widgets import Button
+import matplotlib.cm as cm
+
 from time import *
 from mesh import *
 from utils import *
@@ -439,6 +441,14 @@ class meshArxv():
         pyl.figure()
         pyl.subplot(111)
         pyl.imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+
+        # adding levels and labels        
+        levels = np.arange( np.nanmin(grd), np.nanmax(grd), 1.0 )
+        CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+        pyl.clabel(CS, fmt = '%.1f' )
+        
+        # 
+        #pyl.imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')        
         pyl.show()
 
         

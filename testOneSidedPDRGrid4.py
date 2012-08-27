@@ -14,7 +14,7 @@ import time
 nWorker = 3  # number of proccesses
 pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none') 
 
-outputDir   = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid4/'
+outputDir   = '/home/mher/ism/runs/oneSided/uniformSweepNew-4/'
 metallicity = 1.0   # in terms of solar metallicity
  
 pdr.set_outputDir                  (outputDir + 'meshes/');
@@ -30,7 +30,7 @@ pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);
 pdr.set_CTol                       (1e-3);
 pdr.set_metalicity                 (metallicity);
-pdr.set_AvMax                      (0.01);
+pdr.set_AvMax                      (30.0);
 pdr.set_slabSizeCrit               (0.5);
 pdr.set_min_deltaAv                (0.01);
 pdr.set_max_deltaAv                (0.5);
@@ -46,7 +46,7 @@ yMin = 0.0
 yMax = 6.0
 
 zMin = -30.0    # log10 mechanical heating
-zMax = -16.0
+zMax = -26.0
 dz   =  1.0
 
 # generating the parameter space 
