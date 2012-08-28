@@ -9,7 +9,7 @@ from meshUtils import *
 from enumSpecies import *
 
 #---------------------------Archive parameters-----------------------
-runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweepNew-1/'
+runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/'
 gridsRes      = 10
 metallicity   = 1.0
 
@@ -19,7 +19,7 @@ quantity       = ['therm', 'heating']
 plotRange_nG0  = [[0,6],[0,6]]
 slabIdx        = 0
 res            = [100,100]
-lgammaMechSec  = -25.0
+lgammaMechSec  = -31.0
 log            = True
 
 radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  

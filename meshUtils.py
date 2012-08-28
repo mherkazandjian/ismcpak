@@ -106,10 +106,10 @@ class meshArxv():
         self.pltGrds  = None 
         self.grds     = None #: 2x2 ndmesh array object
         self.grdsCbarAxs = None
-        self.pltRadex = None
-        self.fig      = None
-        self.grdPltPts1 = None
-        self.grdPltPts2 = None
+        self.pltRadex    = None
+        self.fig         = None
+        self.grdPltPts1  = None
+        self.grdPltPts2  = None
         self.grdPltTitle = None
         
         if 'metallicity' in kwrds:
@@ -122,7 +122,7 @@ class meshArxv():
         
     # read all the meshes files in the dir and construct the
     # database
-    def construct(self, dirName , meshNamePrefix = None ):
+    def construct(self, dirName , meshNamePrefix = None, writeDb = None ):
         """ construc the database anad write the .db files. If the meshNamePrefix is
               not supplied all the files in dirName are assumed to be data files
               and all of them are put in the database."""
@@ -130,16 +130,10 @@ class meshArxv():
         if meshNamePrefix == None:
             meshNamePrefix = ''
 
-        # defining the files objects for the database fiels        
-        dbInfoFObj = file(dirName + 'meshes.db.info', 'wb')
-        dbDataFObj = file(dirName + 'meshes.db'  , 'wb')
-       
         # getting the names of the meshes in that dir
         files = []
-        #for infile in glob.glob( os.path.join(dirName, meshNamePrefix + '*0000*') ):
         for infile in glob.glob( os.path.join(dirName, 'meshes/'+meshNamePrefix + '*') ):
             files.append(infile)
-        #print files
         
         # setting variable for the 
         self.nMeshes = np.zeros( 1, dtype = np.int32 )
@@ -166,7 +160,7 @@ class meshArxv():
             # filling the corresponding field in the header array
             infoAll[i]['info'][0] = i # mesh number 
             infoAll[i]['info'][1] = 0 # data file index
-            infoAll[i]['info'][2] = dbDataFObj.tell()  # offset from the start of file
+            ##infoAll[i]['info'][2] is filled in self.writeDb()
             infoAll[i]['info'][3] = mData['hdr']['nSteps']  
             infoAll[i]['info'][4] = mData['hdr']['nSpecs']
             infoAll[i]['info'][5] = mData['hdr']['version']
@@ -176,10 +170,7 @@ class meshArxv():
             infoAll[i]['parms'][2] = mData['hdr']['gammaMech']
             infoAll[i]['parms'][3] = np.float64(0.0)
             infoAll[i]['parms'][4] = np.float64(0.0)
-             
-            # writing the mesh to the database file
-            mData.tofile( dbDataFObj )
-            np.array( infoAll[i]['info'][2] ).tofile(dbDataFObj)
+            
             del m
             
             if (i % np.int32(self.nMeshes / 100)) == 0:
@@ -187,16 +178,31 @@ class meshArxv():
             
         self.infoAll = infoAll
         
-        # writing basic info to the .info file
+        if writeDb != None:
+            self.writeDb(dirName)
+
+    def writeDb(self, dirName):
+        """ writes the db files into the dir dirName"""
+                
+        # writing the mesh to the database file
+        dbDataFObj = file(dirName + 'meshes.db', 'wb')
+        
+        for i in np.arange( self.nMeshes ):
+            self.meshes[i].tofile( dbDataFObj )
+            self.infoAll[i]['info'][2] = dbDataFObj.tell()  # offset from the start of file
+            np.array( self.infoAll[i]['info'][2] ).tofile(dbDataFObj)
+        dbDataFObj.close()
+        
+        # writing the db info into a file
+        dbInfoFObj = file(dirName + 'meshes.db.info', 'wb')
         self.ver.tofile( dbInfoFObj)
         self.nMeshes.tofile( dbInfoFObj )
         self.infoAll.tofile( dbInfoFObj )
-        
-        # closing the files
-        dbDataFObj.close()
         dbInfoFObj.close()
+        
         print 'wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
 
+        
     def readDb(self, dirName ):
         """ reads the database and assigns the appropritate attributes (document)""" 
         
@@ -236,6 +242,34 @@ class meshArxv():
                 raise NameError(strng)
                     
         print 'read successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
+        
+    def mergeDbs(self, newDbRunDirPath, outDirPath = None):
+        """ merges two databases into one and write the resulting db and its info file
+            :param string newDbRunDirPath: the dir in which the new db to be added to the current db is located.
+        """
+        
+        arxv2 = meshArxv()
+        arxv2.readDb( newDbRunDirPath )
+        arxv2.checkIntegrity()
+
+        if self.ver[0] != arxv2.ver[0] and self.ver[1] != arxv2.ver[1] and self.ver[2] != arxv2.ver[2]:
+            raise ValueError('can not merge databases with different versions.')
+        
+        self.nMeshes[0] = self.nMeshes + arxv2.nMeshes
+        
+        # appending the meshes from the new arxv to the existing one
+        for i in np.arange( arxv2.nMeshes ):
+            self.meshes.append( arxv2.meshes.pop(0) )
+        
+        # merging the info arrays (need to update the numbers though
+        self.infoAll = np.concatenate((self.infoAll, arxv2.infoAll),axis=1)
+ 
+        # merging the info arrays
+        for i in np.arange( self.nMeshes ):
+            self.infoAll[i]['info'][0] = i # mesh number             
+        
+        if outDirPath != None:
+            self.writeDb(outDirPath)
         
     def arxvHdrFormat(self):
         """ the format for the archive header from which the dtype will be constructed
