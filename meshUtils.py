@@ -364,7 +364,7 @@ class meshArxv():
         for i in np.arange(len(values)):
             values[i] = fetchNestedDtypeValue(self.meshes[i], quantity )[slabIdx] 
 
-        if 'log' in kwargs:
+        if log10 != None and log10 == True:
             values[:] = np.log10(values[:])
         
         data = np.array([x, y, z]).T  #3D
@@ -401,7 +401,8 @@ class meshArxv():
 
         return f 
     
-    def computeInterpolated2DGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, fInterp = None, *args, **kwargs):
+    def computeInterpolated2DGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, 
+                                  fInterp = None, adaptive = None, fInterpAdaptive = None, *args, **kwargs):
         """ returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds
              the interpolated vlaues of 'quantity' over the domain determined by ranges for a slab whose index is slabIdx for
              a mechanical heating zSec (in log10). ( x is the horizontal direction of the mesh, and y is the vertical).
@@ -433,6 +434,16 @@ class meshArxv():
 
              :param list res: the resolution in each dimension. [xResolution, yResolution]
              
+             :param float zSec: the section in mechanical heating to be interpolated at.
+             
+             :param bool adaptive: when this is set to true, the grid is constructed by interpolating
+               at values of mechanical heating corresponding to a percentage of the surface heating
+               of the models in the grid. The percentage is set by the paramter zSec.
+             
+             :param interpolate.LinearNDInterpolator fInterpAdaptive: the interpolation function returned by
+                 :data:`construct2DInterpolationFunction` or it 3D counterpart which will be used to get the
+                 values of mechanical heating to interpolate on.                 
+             
              :param interpolate.LinearNDInterpolator fInterp: the interpolation function returned by
                  :data:`construct2DInterpolationFunction` or it 3D counterpart.                 
         """
@@ -444,16 +455,26 @@ class meshArxv():
         xNew = grid_x.reshape(nPts)
         yNew = grid_y.reshape(nPts)
         zNew = xNew.copy()
-        zNew[:] = zSec
         
-        dataNew = np.array( [xNew, yNew, zNew] ).T
+        # setting the values of mechanical heating to interpolate on
+        if adaptive == False or adaptive == None:
+            zNew[:] = zSec      # all the grid points have the same mechanical heating
+        else:
+            zNew2     = xNew.copy()
+            zNew2[:]  = -30.0  # set the interpolation to be done for no mechanical heating
+            dataNew2  = np.array( [xNew, yNew, zNew2] ).T
+            f2        = self.construct3DInterpolationFunction(quantity = ['therm', 'heating'], slabIdx  = 0, log10 = True)
+            zNew[:]   = np.log10(zSec* (10.0**(f2(dataNew2))) )
+            print zNew
 
+        dataNew = np.array( [xNew, yNew, zNew] ).T
+        
         ti = time()
         tNew = fInterp(dataNew)
         tf = time()
         print 'interpolated %d points in %f seconds at a rate of %e pts/sec' % (nPts, tf-ti, nPts / (tf-ti))
         tNew = np.reshape(tNew, grid_x.shape)
-
+        
         return tNew
     
     def showGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, *args, **kwargs):
@@ -471,21 +492,23 @@ class meshArxv():
                                              zSec     = zSec, 
                                              fInterp  = f, *args, **kwargs)
         
+        print grd 
+        
         # plotting it
         pyl.figure()
         pyl.subplot(111)
-        pyl.imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
-
-        # adding levels and labels        
-        levels = np.arange( np.nanmin(grd), np.nanmax(grd), 1.0 )
+        im = pyl.imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        
+        # adding levels and labels
+        nlevels = 10
+        dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
+        levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
         CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         pyl.clabel(CS, fmt = '%.1f' )
         
-        # 
-        #pyl.imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')        
-        pyl.show()
-
+        pyl.colorbar(im, shrink = 0.8, extend = 'both')
         
+        pyl.show()
         
     def computeSurfaceTemperatureGrid( self, meshInds = None, res = None, ranges = None ):
         """generates color map of the surface temperature. if meshInds is not provided,

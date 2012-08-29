@@ -10,7 +10,6 @@ from enumSpecies import *
 
 #---------------------------Archive parameters-----------------------
 runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/'
-gridsRes      = 10
 metallicity   = 1.0
 
 #quantity       = ['state', 'gasT']
@@ -18,9 +17,13 @@ quantity       = ['therm', 'heating']
 #quantity       = ['fineStructureCoolingComponents', 'C+', 'rate', '1-0']
 plotRange_nG0  = [[0,6],[0,6]]
 slabIdx        = 0
-res            = [100,100]
-lgammaMechSec  = -31.0
-log            = True
+res            = [4, 4]
+adaptive       = False   # fixed section in mechanical heating
+lgammaMechSec  = -30.0
+#adaptive       = True    # adaptive grid in percent of surface heating
+#lgammaMechSec  = 0.001
+
+log10            = True
 
 radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  
                   'molDataDirPath'    : '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
@@ -64,11 +67,30 @@ net.removeSpecies( species = removeManual )
 net.assignNumbersToSpecies(fileName = specNumFile)
 arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 
-arxv.showGrid(quantity = quantity, 
-              slabIdx  = slabIdx, 
+arxv.showGrid(quantity = quantity,
+              slabIdx  = slabIdx,
               ranges   = plotRange_nG0,
-              res      = res, 
+              res      = res,
               zSec     = lgammaMechSec,
-              log      = log) 
+              adaptive = adaptive,
+              log10    = log10)
+
+"""
+surfHeatinFac = 1.0
+# defining the points in the uniform 2D grid
+ranges = plotRange_nG0                                                                                                                                                                                                 
+grid_x, grid_y = np.mgrid[ranges[0][0]:ranges[0][1]:complex(0,res[0]),
+                          ranges[1][0]:ranges[1][1]:complex(0,res[1])]
+nPts = np.product(grid_x.shape)
+xNew = grid_x.reshape(nPts)
+yNew = grid_y.reshape(nPts)
+zNew = xNew.copy()
+
+zNew[:]  = -30.0
+dataNew  = np.array( [xNew, yNew, zNew] ).T
+f2       = arxv.construct3DInterpolationFunction(quantity = ['therm', 'heating'], slabIdx  = 0, log10 = True)
+zNew[:]  = np.log10(surfHeatinFac * (10.0**(f2(dataNew))) )
+print zNew
+"""
 
 print 'done'
