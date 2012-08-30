@@ -8,20 +8,27 @@ from mesh import *
 from meshUtils import *
 from enumSpecies import *
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 #---------------------------Archive parameters-----------------------
-runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/'
-metallicity   = 1.0
+# database to analyze
+runDirPath    = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/'
+#runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/'
+#runDirPath    = '/home/mher/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
+
+# reference database
+runDirPath2  = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/' 
+minGmech     = -30.0
+metallicity  = 1.0
 
 #quantity       = ['state', 'gasT']
 quantity       = ['therm', 'heating']
 #quantity       = ['fineStructureCoolingComponents', 'C+', 'rate', '1-0']
 plotRange_nG0  = [[0,6],[0,6]]
-slabIdx        = 0
-res            = [4, 4]
-adaptive       = False   # fixed section in mechanical heating
-lgammaMechSec  = -30.0
-#adaptive       = True    # adaptive grid in percent of surface heating
-#lgammaMechSec  = 0.001
+slabIdx        = -1
+res            = [100, 100]
+lgammaMechSec  = -30.0     ###;;; check with minGmech
 
 log10            = True
 
@@ -55,6 +62,14 @@ arxv = meshArxv( metallicity = metallicity )
 arxv.readDb( runDirPath )
 arxv.checkIntegrity()
 print 'time reading %f' % (time() - t0)
+
+# reading the reference archive
+print 'setting up the reference archive'
+t0 = time()
+arxvRef = meshArxv( metallicity = metallicity )
+arxvRef.readDb( runDirPath2 )
+arxvRef.checkIntegrity()
+print 'time reading %f' % (time() - t0)
 #------------------------------------------------------------------
 # read and setting up the chemical network used in the 
 t0 = time()
@@ -67,30 +82,70 @@ net.removeSpecies( species = removeManual )
 net.assignNumbersToSpecies(fileName = specNumFile)
 arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 
+"""
 arxv.showGrid(quantity = quantity,
               slabIdx  = slabIdx,
               ranges   = plotRange_nG0,
               res      = res,
               zSec     = lgammaMechSec,
-              adaptive = adaptive,
               log10    = log10)
 
-"""
-surfHeatinFac = 1.0
-# defining the points in the uniform 2D grid
-ranges = plotRange_nG0                                                                                                                                                                                                 
-grid_x, grid_y = np.mgrid[ranges[0][0]:ranges[0][1]:complex(0,res[0]),
-                          ranges[1][0]:ranges[1][1]:complex(0,res[1])]
-nPts = np.product(grid_x.shape)
-xNew = grid_x.reshape(nPts)
-yNew = grid_y.reshape(nPts)
-zNew = xNew.copy()
-
-zNew[:]  = -30.0
-dataNew  = np.array( [xNew, yNew, zNew] ).T
-f2       = arxv.construct3DInterpolationFunction(quantity = ['therm', 'heating'], slabIdx  = 0, log10 = True)
-zNew[:]  = np.log10(surfHeatinFac * (10.0**(f2(dataNew))) )
-print zNew
+sys.exit()
 """
 
+x = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'nGas']) )
+y = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'G0']) )
+z = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'gammaMech']) )
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot(x,y,z, 'o')
+ax.set_xlim(-1, 7)
+ax.set_ylim(-1, 7)
+ax.set_zlim(-50, -10)
+ax.set_xlabel('nGas')
+ax.set_ylabel('G0')
+ax.set_zlabel('gMech')
+pyl.show()
+print 'done'
+sys.exit()
+
+# getting the surface heating of the meshes in the database from the reference database
+x = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'nGas']) )
+y = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'G0']) )
+gMechZero = x.copy()
+gMechZero[:] = minGmech # lowest mechanical energy used (in log)
+f         = arxvRef.construct3DInterpolationFunction(quantity = ['therm', 'heating'], slabIdx  = 0, log10 = True)
+dataNew   = np.array( [y, x, gMechZero] ).T #### swap the x with y
+gammaSurf = f(dataNew)
+
+z = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'gammaMech']) )
+
+print 'x      = ', x[0:20]
+print 'y      = ', y[0:20]
+print 'Gmech0 = ', gMechZero[0:20]
+print 'GSurf  = ', gammaSurf[0:20]
+print 'z      = ', z[0:5]
+
+r = 10.0**z / 10.0**gammaSurf
+print 'ratio  = ', r
+
+values = arxv.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx)
+
+if log10 != None and log10 == True:
+    values[:] = np.log10(values[:])
+
+data = np.array([x, y, r]).T  #3D
+
+ti = time()
+f = interpolate.LinearNDInterpolator(data, values) # getting the interpolation function     
+tf = time()
+print 'constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti)
+
+arxv.showGrid(quantity = quantity,
+              slabIdx  = slabIdx,
+              ranges   = plotRange_nG0,
+              res      = res,
+              zSec     = 0.01,
+              log10    = log10,
+              fInterp  = f)
 print 'done'

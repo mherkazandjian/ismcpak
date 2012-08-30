@@ -311,10 +311,7 @@ class meshArxv():
         else:
             strng = 'archive integrity test failed. database file may be corrupt' 
             raise NameError(strng)
-        
-    def setChemicalNetwork(self, chemNet):
-        self.chemNet = chemNet
-        
+                
     def constructTemperatureGrid(self):
         return 1
     
@@ -327,6 +324,22 @@ class meshArxv():
             errStr = 'FUV G0 range of the grid not set'
             raise NameError(errStr)            
 
+    def getQuantityFromAllMeshes(self, quantity, slabIdx = None):
+        """ gets the quantity from all the meshes and returns it as a numpy array. 
+            the quantity is mandatory, but no the slabIdx.
+        """
+        
+        values = np.zeros(self.nMeshes, dtype = np.float64)
+        for i in np.arange(self.nMeshes):
+            q = fetchNestedDtypeValue(self.meshes[i], quantity )
+            if slabIdx != None:
+                values[i] = q[slabIdx]
+            else:
+                values[i] = q  
+                
+        return values
+        
+        
     def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, log10 = None, *args, **kwargs):
         """ returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
              can be used to compute values determined by quantity give (nGas, G0, Gmech)
@@ -356,13 +369,11 @@ class meshArxv():
                same value. in that case use :data:`construct2DInterpolationFunction`
         """
         
-        x = np.log10(self.infoAll['parms'][:,0])
-        y = np.log10(self.infoAll['parms'][:,1])
-        z = np.log10(self.infoAll['parms'][:,2])
+        x = np.log10( self.getQuantityFromAllMeshes( ['hdr', 'nGas'     ] ) )
+        y = np.log10( self.getQuantityFromAllMeshes( ['hdr', 'G0'       ] ) )
+        z = np.log10( self.getQuantityFromAllMeshes( ['hdr', 'gammaMech'] ) )
 
-        values = np.zeros(x.shape, dtype = np.float64)
-        for i in np.arange(len(values)):
-            values[i] = fetchNestedDtypeValue(self.meshes[i], quantity )[slabIdx] 
+        values = self.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx)
 
         if log10 != None and log10 == True:
             values[:] = np.log10(values[:])
@@ -375,7 +386,7 @@ class meshArxv():
         tf = time()
         print 'constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti)
 
-        return f 
+        return f
 
     def construct2DInterpolationFunction(self, quantity = None, slabIdx = None, *args, **kwargs):
         """ same as :data:`construct3DInterpolationFunction` but does it for n and G0
@@ -385,12 +396,10 @@ class meshArxv():
             :warning: make sure that the interpolated points are at the centroids of the grid points
         """
         
-        x = np.log10(self.infoAll['parms'][:,0])
-        y = np.log10(self.infoAll['parms'][:,1])
-
-        values = np.zeros(x.shape, dtype = np.float64)
-        for i in np.arange(len(values)):
-            values[i] = fetchNestedDtypeValue(self.meshes[i], quantity)[slabIdx] 
+        x = np.log10( self.getQuantityFromAllMeshes( ['hdr', 'nGas'] ) )
+        y = np.log10( self.getQuantityFromAllMeshes( ['hdr', 'G0'  ] ) )
+        
+        values = self.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx)
 
         data = np.array([x, y]).T  #2D
         
@@ -400,9 +409,16 @@ class meshArxv():
         print 'constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti)
 
         return f 
+
+    def compute3DInterpolatedData(self, quantity = None, slabIdx = None, x = None, y = None, z = None, 
+                                  fInterp = None, *args, **kwargs):
+        """this method is the same as computeInterpolated2DGrid but it returns interpolated values based on
+           the input values, i.e """
+        pass
+                                 
     
     def computeInterpolated2DGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, 
-                                  fInterp = None, adaptive = None, fInterpAdaptive = None, *args, **kwargs):
+                                  fInterp = None, *args, **kwargs):
         """ returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds
              the interpolated vlaues of 'quantity' over the domain determined by ranges for a slab whose index is slabIdx for
              a mechanical heating zSec (in log10). ( x is the horizontal direction of the mesh, and y is the vertical).
@@ -436,14 +452,6 @@ class meshArxv():
              
              :param float zSec: the section in mechanical heating to be interpolated at.
              
-             :param bool adaptive: when this is set to true, the grid is constructed by interpolating
-               at values of mechanical heating corresponding to a percentage of the surface heating
-               of the models in the grid. The percentage is set by the paramter zSec.
-             
-             :param interpolate.LinearNDInterpolator fInterpAdaptive: the interpolation function returned by
-                 :data:`construct2DInterpolationFunction` or it 3D counterpart which will be used to get the
-                 values of mechanical heating to interpolate on.                 
-             
              :param interpolate.LinearNDInterpolator fInterp: the interpolation function returned by
                  :data:`construct2DInterpolationFunction` or it 3D counterpart.                 
         """
@@ -457,16 +465,8 @@ class meshArxv():
         zNew = xNew.copy()
         
         # setting the values of mechanical heating to interpolate on
-        if adaptive == False or adaptive == None:
-            zNew[:] = zSec      # all the grid points have the same mechanical heating
-        else:
-            zNew2     = xNew.copy()
-            zNew2[:]  = -30.0  # set the interpolation to be done for no mechanical heating
-            dataNew2  = np.array( [xNew, yNew, zNew2] ).T
-            f2        = self.construct3DInterpolationFunction(quantity = ['therm', 'heating'], slabIdx  = 0, log10 = True)
-            zNew[:]   = np.log10(zSec* (10.0**(f2(dataNew2))) )
-            print zNew
-
+        zNew[:] = zSec      # all the grid points have the same mechanical heating
+        
         dataNew = np.array( [xNew, yNew, zNew] ).T
         
         ti = time()
@@ -477,32 +477,37 @@ class meshArxv():
         
         return tNew
     
-    def showGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, *args, **kwargs):
+    def showGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, fInterp = None, *args, **kwargs):
         """This method displays a plot of a grid of the quantity pointed by quantity in a new
            window. It makes use of :data:`computeInterpolated2DGrid` and :data:`construct3DInterpolationFunction`.
            For the documentation of the parameters see  :data:`computeInterpolated2DGrid`
         """
         
         # getting the grid
-        f   = self.construct3DInterpolationFunction(quantity = quantity, slabIdx  = slabIdx, *args, **kwargs)
+        if fInterp == None:
+            f = self.construct3DInterpolationFunction(quantity = quantity, slabIdx  = slabIdx, *args, **kwargs)
+        else:
+            f = fInterp
         grd = self.computeInterpolated2DGrid(quantity = quantity, 
                                              slabIdx  = slabIdx, 
                                              ranges   = ranges,
                                              res      = res, 
                                              zSec     = zSec, 
                                              fInterp  = f, *args, **kwargs)
-        
-        print grd 
-        
+        grd = grd.T
+                
         # plotting it
         pyl.figure()
         pyl.subplot(111)
         im = pyl.imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        #pyl.set_xlable('log_10 nGas')
+        #pyl.set_ylable('log_10 G0')
         
         # adding levels and labels
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
+        #print grd
         CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         pyl.clabel(CS, fmt = '%.1f' )
         
@@ -1185,6 +1190,8 @@ class meshArxv():
         fig.legend(plts, names)
         pyl.show()
         
+    def setChemicalNetwork(self, chemNet):
+        self.chemNet = chemNet
         
         
         

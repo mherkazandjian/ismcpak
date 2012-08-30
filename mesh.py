@@ -73,7 +73,7 @@ class mesh( ):
             # with the header info read above 
             dtMesh    = self.constructMeshDtype( self.hdr['nSpecs'], self.hdr['nSteps'], self.hdr['version'])
             data      = np.fromfile( fileName, dtype = dtMesh, count = 1)
-            print fileName
+            #print fileName
             self.data = data[0] 
         else:
             self.data = None  #: (numpy.dtype) holds all the data of the PDR

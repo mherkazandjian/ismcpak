@@ -19,7 +19,7 @@ pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none
 outputDir     = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/'
 
 # path of the database from which the surface mech heating rates will be extracted
-databasePath  = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/'
+databasePath  = '/home/mher/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
 
 metallicity  =  1.0   # in terms of solar metallicity
 plotRangenG0 = [[0,6],[0,6]]
@@ -65,14 +65,14 @@ print 'time reading %f' % (time() - t0)
 #--------------------------grid point to be modelled-------------------------------
 dx   = 0.5      # log10 density
 xMin = 0.0
-xMax = 6.0
+xMax = 6.01
 
 dy   = 0.5     # log10 G0
 yMin = 0.0  
-yMax = 6.0
+yMax = 6.01
 
 # factor of surface heating to be added as mechanical heating
-z = [0.0001, 0.001, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 1.0, 10.0, 1e2, 1e3, 1e4]
+z = [1e-10, 0.0001, 0.001, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 1.0, 10.0, 1e2, 1e3, 1e4]
 #z = [0.0001, 0.001]
 
 #-----------------------getting the mech heating rates at grid points--------------
@@ -86,10 +86,12 @@ y = y.flatten()
 nPts = x.size
 gMechZero = x.copy()
 
-gMechZero[:] = -30.0 # lowest mechanical energy used (in log)
-dataNew   = np.array( [x, y, gMechZero] ).T
+gMechZero[:] = -50.0 # lowest mechanical energy used (in log)
 f         = arxv.construct3DInterpolationFunction(quantity = ['therm', 'heating'], slabIdx  = 0, log10 = True)
+dataNew   = np.array( [x, y, gMechZero] ).T
 gammaSurf = f(dataNew)
+
+print np.array([x, y, gammaSurf]).T
 
 inds = np.where( np.isnan(gammaSurf) == False  )
 x = x[ inds ]
@@ -110,7 +112,6 @@ for v in z:
 x = np.array(xTmp).flatten()
 y = np.array(yTmp).flatten()
 z = np.array(zTmp).flatten()
-
 
 n = x.size
 
@@ -149,12 +150,7 @@ T,err = pdr.get_temperature(ids)
 if 1:
     f = file(outputDir+'results.out', 'w')
     for i in arange(n):
-        f.write( format(ids[i]    , 's'  ) + ' ' + 
-                 format(rho[i]    , '.3f') + ' ' + 
-                 format(G0[i]     , '.3f') + ' ' + 
-                 format(Lmech[i]  , '.3e') + ' ' + 
-                 format(T[i]      , '.8f') + ' ' + 
-                 format(mshErr[i] , 's'  ) + '\n')
+        f.write( '%d %.3f %.3f %.3e %.d\n' % (ids[i], rho[i], G0[i], Lmech[i], mshErr[i]))
     f.close()
 
 
