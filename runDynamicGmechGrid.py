@@ -12,33 +12,35 @@ from ismUtils import *
 from meshUtils import *
 from time import *
 
+home =  '/home/mher'
+
 nWorker = 3  # number of proccesses
 pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none') 
 
 # path where the model data will be dumped
-outputDir     = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/'
+outputDir     = home + '/ism/runs/oneSided/dynamicMeshTest1/'
 
 # path of the database from which the surface mech heating rates will be extracted
-databasePath  = '/home/mher/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
+databasePath  = home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
 
 metallicity  =  1.0   # in terms of solar metallicity
 plotRangenG0 = [[0,6],[0,6]]
 
 #---------chemical network parameters (not used in the modelling)-------------------
-rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
-specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
-underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
+rxnFile       = home + '/ism/code/ismcpak/data/rate99Fixed.inp'
+specNumFile   = home + '/ism/code/ismcpak/data/species.inp'
+underAbunFile = home + '/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 
 #----------------amuse modeling parameters---------------------------------------- 
 pdr.set_outputDir                  (outputDir + 'meshes/');
-pdr.set_species_fName              ("/home/mher/ism/speciesInfo/species.inp");
-pdr.set_underUbundant_fName        ("/home/mher/ism/speciesInfo/underabundant.inp");
-pdr.set_rate99_fName               ("/home/mher/ism/speciesInfo/rate99.inp");
-pdr.set_selfSheilding_CO_fName     ("/home/mher/ism/speciesInfo/self_shielding_CO.inp");
-pdr.set_rotationalCooling_baseName ("/home/mher/ism/speciesInfo/rotationalcooling/rotcool");
-pdr.set_vibrationalCooling_baseName("/home/mher/ism/speciesInfo/vibrationalcooling/vibcool");
-pdr.set_database_fName             ("/home/mher/ism/database/database2.dat");
+pdr.set_species_fName              (home + '/ism/speciesInfo/species.inp');
+pdr.set_underUbundant_fName        (home + '/ism/speciesInfo/underabundant.inp');
+pdr.set_rate99_fName               (home + '/ism/speciesInfo/rate99.inp');
+pdr.set_selfSheilding_CO_fName     (home + '/ism/speciesInfo/self_shielding_CO.inp');
+pdr.set_rotationalCooling_baseName (home + '/ism/speciesInfo/rotationalcooling/rotcool');
+pdr.set_vibrationalCooling_baseName(home + '/ism/speciesInfo/vibrationalcooling/vibcool');
+pdr.set_database_fName             (home + '/ism/database/database2.dat');
 pdr.set_zeta                       (5.0e-17);
 pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);

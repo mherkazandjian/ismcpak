@@ -11,29 +11,30 @@ from enumSpecies import *
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+home = '/home/mher'
 #---------------------------Archive parameters-----------------------
 # database to analyze
-runDirPath    = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/'
-#runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/'
-#runDirPath    = '/home/mher/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
+runDirPath    = home + '/ism/runs/oneSided/dynamicMeshTest1/'
+#runDirPath    = home + '/ism/runs/oneSided/uniformSweepNew-1and2/'
+#runDirPath    = home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
 
 # reference database
-runDirPath2  = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/' 
-minGmech     = -30.0
+runDirPath2  = home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/' 
+minGmech     = -50.0
 metallicity  = 1.0
 
-#quantity       = ['state', 'gasT']
-quantity       = ['therm', 'heating']
+quantity       = ['state', 'gasT']
+#quantity       = ['therm', 'heating']
 #quantity       = ['fineStructureCoolingComponents', 'C+', 'rate', '1-0']
 plotRange_nG0  = [[0,6],[0,6]]
-slabIdx        = -1
+slabIdx        = 0
 res            = [100, 100]
-lgammaMechSec  = -30.0     ###;;; check with minGmech
+lgammaMechSec  = -50.0     ###;;; check with minGmech
 
 log10            = True
 
-radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  
-                  'molDataDirPath'    : '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
+radexParms    = { 'radexPath'         : home + '/ism/code/radex/Radex/bin/radex',  
+                  'molDataDirPath'    : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                   'specStr'           : 'CO',
 #                  'xH2_Min'          : 2*0.0000000001
                   'xH2_Min'           : -1.0,
@@ -44,9 +45,9 @@ radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/rad
                   'plotTransitionInGrid' : 0
                 }
 #-----------------chemical network parameters------------------------
-rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
-specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
-underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
+rxnFile       = home + '/ism/code/ismcpak/data/rate99Fixed.inp'
+specNumFile   = home + '/ism/code/ismcpak/data/species.inp'
+underAbunFile = home + '/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 
 
@@ -93,6 +94,7 @@ arxv.showGrid(quantity = quantity,
 sys.exit()
 """
 
+"""
 x = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'nGas']) )
 y = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'G0']) )
 z = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'gammaMech']) )
@@ -108,14 +110,15 @@ ax.set_zlabel('gMech')
 pyl.show()
 print 'done'
 sys.exit()
+"""
 
 # getting the surface heating of the meshes in the database from the reference database
 x = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'nGas']) )
 y = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'G0']) )
 gMechZero = x.copy()
-gMechZero[:] = minGmech # lowest mechanical energy used (in log)
+gMechZero[:] = minGmech # lowest mechanical energy used in the reference archive (in log)
 f         = arxvRef.construct3DInterpolationFunction(quantity = ['therm', 'heating'], slabIdx  = 0, log10 = True)
-dataNew   = np.array( [y, x, gMechZero] ).T #### swap the x with y
+dataNew   = np.array( [x, y, gMechZero] ).T
 gammaSurf = f(dataNew)
 
 z = np.log10(arxv.getQuantityFromAllMeshes( ['hdr', 'gammaMech']) )
@@ -145,7 +148,7 @@ arxv.showGrid(quantity = quantity,
               slabIdx  = slabIdx,
               ranges   = plotRange_nG0,
               res      = res,
-              zSec     = 0.01,
+              zSec     = 100.0,
               log10    = log10,
               fInterp  = f)
 print 'done'

@@ -494,8 +494,10 @@ class meshArxv():
                                              res      = res, 
                                              zSec     = zSec, 
                                              fInterp  = f, *args, **kwargs)
+        
+        # taking the transpose for plotting purposes
         grd = grd.T
-                
+        
         # plotting it
         pyl.figure()
         pyl.subplot(111)

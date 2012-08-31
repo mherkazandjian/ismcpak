@@ -3,10 +3,13 @@ from meshUtils import *
 import numpy as np
 from time import *
 
-#runDirPath =  '/home/mher/ism/runs/oneSided/uniformSweep2-z-0.5/'
-#runDirPath =  '/home/mher/ism/runs/oneSided/uniformSweep2-foo/'
-#runDirPath =  '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid4/'
-runDirPath =  '/home/mher/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
+home = '/home/mher'
+
+#runDirPath =  home + '/ism/runs/oneSided/uniformSweep2-z-0.5/'
+#runDirPath =  home + '/ism/runs/oneSided/uniformSweep2-foo/'
+#runDirPath =  home + '/ism/runs/oneSided/testOneSidedPDRGrid4/'
+#runDirPath =  home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
+runDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1/'
 
 # constructing the archive
 t0 = time()

@@ -1,0 +1,1 @@
+rsync -PrlHvztp mher@ruineraa.strw.leidenuniv.nl:/home/mher/ism/code/ismcpak/* . 
