@@ -9,12 +9,13 @@ from mesh import *
 from chemicalNetwork import *
 from enumSpecies import *
 from ismUtils import *
-import time, sys
+import time, sys, os
 
-nWorker = 3  # number of proccesses
-pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none') 
+nWorker = 1  # number of proccesses
+pdr     = interface.pdrInterface( channel_type = 'mpi', number_of_workers = nWorker, redirection='none') 
 
-outputDir   = '/home/mher/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
+#outputDir   = '/home/mher/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
+outputDir   = '/home/mher/ism/runs/oneSided/fo/'
 metallicity = 1.0   # in terms of solar metallicity
  
 pdr.set_outputDir                  (outputDir + 'meshes/');
