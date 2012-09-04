@@ -10,8 +10,22 @@ from enumSpecies import *
 
 #---------------------------Archive parameters-----------------------
 #runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
-runDirPath    = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid/'
+runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/'
 #runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
+
+qx             = ['hdr', 'nGas']
+qy             = ['hdr', 'G0']
+qz             = ['hdr', 'gammaMech']
+plotRanges     = [[0,6],[0,6],[-16,-30]]
+
+relativeGmech  = False  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+                        # False => 3rd dim is gMech 
+zSec           = -24  # section in the 3D dimension to be used for generating 
+                        # grids. usuall this is the log10 of the mechanical heating
+                        # it can be used as the ratio of mechanical heating to the
+                        # surface heating(gMech = 0)
+
+############################
 gridsRes      = 10
 lgammaMechSec = -30.0
 metallicity   = 1.0
@@ -61,8 +75,14 @@ arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 #-------------------------------------------------------------------
 # plotting stuff
 
+if relativeGmech:
+    # interpolation function as a function of n,G0,gMech/gSurface(gmech=0)
+    f = arxv.getInterpFunctionGmechToSurfaceHeating(quantity, referenceDatabasePath = runDirPath2, slabIdx = slabIdx, log10 = log10)
+else:
+    f = None
+
 pyl.ioff()
-arxv.plotGrid(gridsRes, lgammaMechSec, radexParms, ranges = plotRangenG0)
+arxv.plotGrid(gridsRes, lgammaMechSec, radexParms, ranges = plotRanges, qx = qx, qy = qy, qz = qz)
 
 pyl.show()
 """

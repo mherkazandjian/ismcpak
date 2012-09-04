@@ -4,13 +4,9 @@ import sys
 import pylab as pyl
 
 from chemicalNetwork import *
-from mesh import *
-from meshUtils import *
-from enumSpecies import *
-
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
+from mesh            import *
+from meshUtils       import *
+from enumSpecies     import *
 #=====================================================================================
 #=========================================PARAMETERS==================================
 #=====================================================================================
@@ -18,8 +14,8 @@ from mpl_toolkits.mplot3d import Axes3D
 home = '/home/mher'
 #---------------------------Archive parameters-----------------------
 # database to analyze
-#runDirPath    = home + '/ism/runs/oneSided/dynamicMeshTest1/'
-runDirPath    = home + '/ism/runs/oneSided/uniformSweepNew-1and2/'
+runDirPath    = home + '/ism/runs/oneSided/dynamicMeshTest1/'
+#runDirPath    = home + '/ism/runs/oneSided/uniformSweepNew-1and2/'
 #runDirPath    = home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
 
 # reference database
@@ -27,23 +23,25 @@ runDirPath2  = home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
 
 #quantity       = ['state', 'gasT']
 #quantity       = ['therm', 'heating']
-quantity       = ['fineStructureCoolingComponents', 'C+', 'rate', '1-0']
 
-qx             = ['hdr', 'nGas']
-qy             = ['hdr', 'G0']
-
-plotRanges  = [[0,6],[0,6],[-16,-30]]
-slabIdx        = 0
-metallicity    = 1.0
-res            = [100, 100] # resolution of the grid
-relativeGmech  = False  # True  => 3rd dim is the gMech/gSurface(gMech=0)
-                       # False => 3rd dim is gMech 
-zSec           = -24  # section in the 3D dimension to be used for generating 
+qx             = ['hdr', 'nGas']      # default, no need to pass it but i pass it anyway
+qy             = ['hdr', 'G0']        # default, no need to pass it but i pass it anyway
+#qz             = ['hdr', 'gammaMech'] # default, no need to pass it but i pass it anyway
+relativeGmech  = True   # True  => 3rd dim is the gMech/gSurface(gMech=0)
+                        # False => 3rd dim is gMech 
+zSec           = 0.1    # section in the 3D dimension to be used for generating 
                         # grids. usuall this is the log10 of the mechanical heating
                         # it can be used as the ratio of mechanical heating to the
                         # surface heating(gMech = 0)
-log10          = True # use the log of the quantity in interpolating and plotting
+log10zAxs      = True
 
+plotRanges     = [[0,6],[0,6],[-10, 5]]
+metallicity    = 1.0
+res            = [100, 100] # resolution of the grid
+slabIdx        = 0
+
+log10          = True # use the log of the quantity in interpolating and plotting
+quantity       = ['fineStructureCoolingComponents', 'C+', 'rate', '1-0']
 radexParms    = { 'radexPath'         : home + '/ism/code/radex/Radex/bin/radex',  
                   'molDataDirPath'    : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                   'specStr'           : 'CO',
@@ -89,23 +87,19 @@ net.removeSpecies( species = removeManual )
 net.assignNumbersToSpecies(fileName = specNumFile)
 arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 
+# setting the x,y,z quantities to be used for ploting
+arxv.set_grid_axes_quantity_values(relativeGmech = relativeGmech, referenceDatabasePath = runDirPath2)
 
-if relativeGmech:
-    # interpolation function as a function of n,G0,gMech/gSurface(gmech=0)
-    f = arxv.getInterpFunctionGmechToSurfaceHeating(quantity, referenceDatabasePath = runDirPath2, slabIdx = slabIdx, log10 = log10)
-else:
-    f = None
-
-
+# plotting all the mesh points in the archive parameter space
+arxv.plot_3D_grid_point(ranges = plotRanges, log10z = log10zAxs)
+ 
+# displaying the 2D grid for a section of z (a subset of the points in the 3D plot above) 
 arxv.showGrid(quantity = quantity,
               slabIdx  = slabIdx,
               ranges   = plotRanges,
               res      = res,
               zSec     = zSec,
-              log10    = log10,
-              fInterp  = f)
-
-arxv.plot_3D_grid_point(ranges = plotRanges)
+              log10    = log10)
 
 pyl.show()
 print 'done'
