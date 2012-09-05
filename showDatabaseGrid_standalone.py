@@ -14,34 +14,35 @@ from enumSpecies     import *
 home = '/home/mher'
 #---------------------------Archive parameters-----------------------
 # database to analyze
-runDirPath    = home + '/ism/runs/oneSided/dynamicMeshTest1/'
-#runDirPath    = home + '/ism/runs/oneSided/uniformSweepNew-1and2/'
+#runDirPath    = home + '/ism/runs/oneSided/dynamicMeshTest1/'
+runDirPath    = home + '/ism/runs/oneSided/uniformSweepNew-1and2/'
 #runDirPath    = home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
 
 # reference database
 runDirPath2  = home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/' 
 
-#quantity       = ['state', 'gasT']
+quantity       = ['state', 'gasT']
 #quantity       = ['therm', 'heating']
+#quantity       = ['fineStructureCoolingComponents', 'C+', 'rate', '1-0']
 
 qx             = ['hdr', 'nGas']      # default, no need to pass it but i pass it anyway
 qy             = ['hdr', 'G0']        # default, no need to pass it but i pass it anyway
 #qz             = ['hdr', 'gammaMech'] # default, no need to pass it but i pass it anyway
-relativeGmech  = True   # True  => 3rd dim is the gMech/gSurface(gMech=0)
+relativeGmech  = False  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                         # False => 3rd dim is gMech 
-zSec           = 0.1    # section in the 3D dimension to be used for generating 
+zSec           = -30  # section in the 3D dimension to be used for generating 
                         # grids. usuall this is the log10 of the mechanical heating
                         # it can be used as the ratio of mechanical heating to the
                         # surface heating(gMech = 0)
-log10zAxs      = True
+plotLog10zAxs  = False  # set this to true to take the log of arxv.grid_z when plotting
+                        # (usuall use only for relativeGmech)
 
-plotRanges     = [[0,6],[0,6],[-10, 5]]
+plotRanges     = [[0,6],[0,6],[0, 5]]
 metallicity    = 1.0
 res            = [100, 100] # resolution of the grid
 slabIdx        = 0
 
 log10          = True # use the log of the quantity in interpolating and plotting
-quantity       = ['fineStructureCoolingComponents', 'C+', 'rate', '1-0']
 radexParms    = { 'radexPath'         : home + '/ism/code/radex/Radex/bin/radex',  
                   'molDataDirPath'    : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                   'specStr'           : 'CO',
@@ -91,7 +92,7 @@ arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 arxv.set_grid_axes_quantity_values(relativeGmech = relativeGmech, referenceDatabasePath = runDirPath2)
 
 # plotting all the mesh points in the archive parameter space
-arxv.plot_3D_grid_point(ranges = plotRanges, log10z = log10zAxs)
+arxv.plot_3D_grid_point(ranges = plotRanges, log10z = plotLog10zAxs)
  
 # displaying the 2D grid for a section of z (a subset of the points in the 3D plot above) 
 arxv.showGrid(quantity = quantity,

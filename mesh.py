@@ -140,7 +140,7 @@ class mesh( ):
         
     def stateFormat(self, nSpecs, nSteps):
         """ define the format of the state of the mesh."""
-
+        
         n = int(nSteps)
         m = int(nSpecs)
         fmt = [

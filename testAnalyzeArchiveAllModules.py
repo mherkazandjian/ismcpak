@@ -8,31 +8,43 @@ from mesh import *
 from meshUtils import *
 from enumSpecies import *
 
-#---------------------------Archive parameters-----------------------
-#runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
-runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweepNew-1and2/'
-#runDirPath    = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/'
+home = '/home/mher'
 
-qx             = ['hdr', 'nGas']
-qy             = ['hdr', 'G0']
-qz             = ['hdr', 'gammaMech']
-plotRanges     = [[0,6],[0,6],[-16,-30]]
+#---------------------------Archive parameters----------------------------
+#runDirPath    = home + '/ism/runs/oneSided/uniformSweep2-z-2-no-mech/'
+runDirPath    = home + '/ism/runs/oneSided/uniformSweepNew-1and2/'
+#runDirPath    = home + '/ism/runs/oneSided/uniformSweep2-z-2/'
+
+# reference database
+runDirPath2  = home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/' 
 
 relativeGmech  = False  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                         # False => 3rd dim is gMech 
-zSec           = -24  # section in the 3D dimension to be used for generating 
+zSec           = -30  # section in the 3D dimension to be used for generating 
                         # grids. usuall this is the log10 of the mechanical heating
                         # it can be used as the ratio of mechanical heating to the
                         # surface heating(gMech = 0)
+plotLog10zAxs  = False  # set this to true to take the log of arxv.grid_z when plotting
+
+gridsInfo = { '00' : {
+                      'quantity' : ['state', 'gasT'],
+                      'slabIdx'  : -1,
+                     },
+              '01' : {
+                      'quantity' : ['state', 'abun'],
+                      'slabIdx'  : -1,
+                      'specStr'  : 'CO'
+                     },
+             }  
 
 ############################
-gridsRes      = 10
-lgammaMechSec = -30.0
+gridsRes      = 100
 metallicity   = 1.0
-plotRangenG0  = [[0,6],[0,6]]
+plotRanges    = [[0,6],[0,6],[-30, -15]]
 
-radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/radex',  
-                  'molDataDirPath'    : '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
+radexParms    = { 'use'               : False,
+                  'radexPath'         : home + '/ism/code/radex/Radex/bin/radex',  
+                  'molDataDirPath'    : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                   'specStr'           : 'CO',
 #                  'xH2_Min'          : 2*0.0000000001
                   'xH2_Min'           : -1.0,
@@ -43,9 +55,9 @@ radexParms    = { 'radexPath'         : '/home/mher/ism/code/radex/Radex/bin/rad
                   'plotTransitionInGrid' : 0
                 }
 #-----------------chemical network parameters------------------------
-rxnFile       = '/home/mher/ism/code/ismcpak/data/rate99Fixed.inp'
-specNumFile   = '/home/mher/ism/code/ismcpak/data/species.inp'
-underAbunFile = '/home/mher/ism/code/ismcpak/data/underabundant.inp'
+rxnFile       = home + '/ism/code/ismcpak/data/rate99Fixed.inp'
+specNumFile   = home + '/ism/code/ismcpak/data/species.inp'
+underAbunFile = home + '/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 
 
@@ -73,16 +85,13 @@ net.removeSpecies( species = removeManual )
 net.assignNumbersToSpecies(fileName = specNumFile)
 arxv.setChemicalNetwork(net) # assiginig the chemical network to the archive
 #-------------------------------------------------------------------
+
+# setting the x,y,z quantities to be used for ploting
+arxv.set_grid_axes_quantity_values(relativeGmech = relativeGmech, referenceDatabasePath = runDirPath2)
+
 # plotting stuff
-
-if relativeGmech:
-    # interpolation function as a function of n,G0,gMech/gSurface(gmech=0)
-    f = arxv.getInterpFunctionGmechToSurfaceHeating(quantity, referenceDatabasePath = runDirPath2, slabIdx = slabIdx, log10 = log10)
-else:
-    f = None
-
 pyl.ioff()
-arxv.plotGrid(gridsRes, lgammaMechSec, radexParms, ranges = plotRanges, qx = qx, qy = qy, qz = qz)
+arxv.plotGrid(gridsRes, zSec, radex = radexParms, ranges = plotRanges, gridsInfo = gridsInfo)
 
 pyl.show()
 """

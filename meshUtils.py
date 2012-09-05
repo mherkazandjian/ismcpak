@@ -126,6 +126,9 @@ class meshArxv():
         self.grdPltPts1  = None
         self.grdPltPts2  = None
         self.grdPltTitle = None
+        self.resPltGrids = None
+        self.gridsInfo   = None
+        """resolution of the interpolated grids"""
         
         if 'metallicity' in kwrds:
             self.set_metallicity( kwrds['metallicity'] )
@@ -342,24 +345,33 @@ class meshArxv():
             raise NameError(errStr)
         if log_G0 == None:
             errStr = 'FUV G0 range of the grid not set'
-            raise NameError(errStr)            
+            raise NameError(errStr)
 
-    def getQuantityFromAllMeshes(self, quantity, slabIdx = None):
+    def getQuantityFromAllMeshes(self, quantity, slabIdx = None, arrIdx = None):
         """ gets the quantity from all the meshes and returns it as a numpy array. 
             the quantity is mandatory, but no the slabIdx.
+            
+            :param int arrIdx: in case the quantity pointed to is an array, arrIdx would be the 
+              index in the array we would like to retrieve.
         """
         
         values = np.zeros(self.nMeshes, dtype = np.float64)
+        
         for i in np.arange(self.nMeshes):
             q = fetchNestedDtypeValue(self.meshes[i], quantity )
-            if slabIdx != None:
-                values[i] = q[slabIdx]
+        
+            if slabIdx != None and arrIdx != None:
+                v = q[arrIdx][slabIdx]
+            elif slabIdx != None and arrIdx == None:
+                v = q[slabIdx]
             else:
-                values[i] = q  
+                v = q
+
+            values[i] = v  
                 
         return values
         
-    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, log10 = None, *args, **kwargs):
+    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, *args, **kwargs):
         """ returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
              can be used to compute values determined by quantity give (nGas, G0, Gmech)
              (in log_10). The value to be interpolated upon is determined by the parameter
@@ -380,6 +392,10 @@ class meshArxv():
              :param int32 slabIdx: the index of the slab from which the value will be
                  extracted
                  
+             :param int32 arrIdx: The first index in the 2D array (in case the quantity points to
+              a 2D array) to be extracted first (usually for ['state','abun']). And slabIdx is used
+              as the seconds index. 
+                
              :param bool log10: keyword which when passes as True, will generate the log10 of the quantity
                  
              :todo: modify this to construct the table over a selected range of the 3D 
@@ -395,7 +411,7 @@ class meshArxv():
         self.set_attributes(**kwargs)
             
         # the quantitiy we are intiesrested in showing
-        values = self.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx)
+        values = self.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx, arrIdx = arrIdx)
         if log10 != None and log10 == True:
             values[:] = np.log10(values[:])
         
@@ -438,7 +454,7 @@ class meshArxv():
         pass
                                  
     
-    def computeInterpolated2DGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, 
+    def computeInterpolated2DGrid(self, ranges = None, res = None, zSec = None, 
                                   fInterp = None, *args, **kwargs):
         """ returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds
              the interpolated vlaues of 'quantity' over the domain determined by ranges for a slab whose index is slabIdx for
@@ -450,8 +466,7 @@ class meshArxv():
 
                 f   = arxv.construct3DInterpolationFunction(quantity = ['state', 'gasT'], 
                                                             slabIdx  = 0)
-                grd = arxv.computeInterpolated2DGrid(quantity = ['state', 'gasT'], 
-                                                     slabIdx  = 0, 
+                grd = arxv.computeInterpolated2DGrid(slabIdx  = 0, 
                                                      ranges   = [[0,6],[0,6]],
                                                      res      = [100,100], 
                                                      zSec     = -30, 
@@ -462,11 +477,6 @@ class meshArxv():
                 plt.imshow(grd, extent=(0,1,0,1), origin='lower')
                 plt.show()
 
-             
-             :param list quantity: (see definition in :data:`construct3DInterpolationFunction`
-                 
-             :param int32 slabIdx: (see definition in :data:`construct3DInterpolationFunction`
-             
              :param list ranges: a 2d list holding the ranges of the grid [[xmin, xmax],[ymin, ymax]]
 
              :param list res: the resolution in each dimension. [xResolution, yResolution]
@@ -474,7 +484,7 @@ class meshArxv():
              :param float zSec: the section in mechanical heating to be interpolated at.
              
              :param interpolate.LinearNDInterpolator fInterp: the interpolation function returned by
-                 :data:`construct2DInterpolationFunction` or it 3D counterpart.                 
+                 :data:`construct2DInterpolationFunction` or it 3D counterpart.        
         """
         
         # defining the points in the uniform 2D grid                                                                                                                                                                                                 
@@ -502,6 +512,14 @@ class meshArxv():
         """This method displays a plot of a grid of the quantity pointed by quantity in a new
            window. It makes use of :data:`computeInterpolated2DGrid` and :data:`construct3DInterpolationFunction`.
            For the documentation of the parameters see  :data:`computeInterpolated2DGrid`
+           
+           :param string quantity: (see construct3DInterpolationFunction documentation)
+           :param interpolate.LinearNDInterpolator fInterp: an interpolation function function returned by
+             :data:`construct3DInterpolationFunction` or it 2D analogue. If this is set, the quantity 
+             keyword is meaningless.
+           :param list res: (see self.computeInterpolated2DGrid)
+           
+           :return: aaa
         """
 
         self.set_attributes(**kwargs)
@@ -512,9 +530,7 @@ class meshArxv():
             f = self.construct3DInterpolationFunction(quantity = quantity, slabIdx  = slabIdx, *args, **kwargs)
         else:
             f = fInterp
-        grd = self.computeInterpolated2DGrid(quantity = quantity, 
-                                             slabIdx  = slabIdx, 
-                                             ranges   = ranges,
+        grd = self.computeInterpolated2DGrid(ranges   = ranges,
                                              res      = res, 
                                              zSec     = zSec, 
                                              fInterp  = f, *args, **kwargs)
@@ -523,8 +539,10 @@ class meshArxv():
         grd = grd.T
         
         # plotting it
-        pyl.figure()
-        pyl.subplot(111)
+        if 'figure' not in kwargs:
+            pyl.figure()
+            pyl.subplot(111)
+            
         im = pyl.imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         #pyl.set_xlable('log_10 nGas')
         #pyl.set_ylable('log_10 G0')
@@ -538,11 +556,56 @@ class meshArxv():
         pyl.clabel(CS, fmt = '%.1f' )
         
         pyl.colorbar(im, shrink = 0.8, extend = 'both')
-                
-    def computeSurfaceTemperatureGrid( self, meshInds = None, res = None, ranges = None ):
+        
+        return ()
+
+    def showSurfaceTemperatureGrid(self, ranges = None, res = None, *args, **kwargs):
+        """shows the surface temperature grid
+            
+           :todo: plot every other labeled contour as a tick in the colorbar
+        """
+        grd = self.computeInterpolated2DGrid(ranges   = ranges,
+                                             res      = res,  
+                                             zSec     = self.pltGmSec, 
+                                             fInterp  = self.grdInterp_f, *args, **kwargs)
+        
+        grd = grd.T
+        im00 = pyl.imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        nlevels = 10
+        dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
+        levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
+
+        CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+        pyl.clabel(CS,levels, fmt = '%.1f' )
+        
+        pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
+
+    def showAbundancesGrid(self, ranges = None, res = None, *args, **kwargs):
+        """shows the abundances grid"""            
+
+        grd = self.computeInterpolated2DGrid(ranges   = ranges,
+                                             res      = res,  
+                                             zSec     = self.pltGmSec, 
+                                             fInterp  = self.abunGridInterp_f, *args, **kwargs)
+        
+        grd = grd.T
+        im01 = pyl.imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        nlevels = 10
+        dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
+        levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
+
+        CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+        pyl.clabel(CS,levels, fmt = '%.1f' )
+        
+        pyl.colorbar(im01, cax=self.grdsCbarAxs[0][1], ax=pyl.gca(), orientation = 'horizontal')
+
+    
+    def computeSurfaceTemperatureGrid( self, res = None, ranges = None ):
         """generates color map of the surface temperature. if meshInds is not provided,
             all the meshes in the arxive are used. In that case, res and ranges shoudl
             be provided.
+            
+            :deprecated: remove this function...to slow..
         """
         # checking stuff
         if meshInds == None:
@@ -827,20 +890,25 @@ class meshArxv():
         #self.computeSurfaceTemperatureGrid( indsThisSec )
         #self.computeAbundanceAtSurfaceGrid( indsThisSec, self.radexParms['specStr'] )
         #self.computeColumnDensityGrid( indsThisSec, self.radexParms['specStr'] )
-        self.computeLineEmissionLvgGrid(indsThisSec, self.radexParms['specStr'])
+        if self.radexParms['use'] == True:
+            self.computeLineEmissionLvgGrid(indsThisSec, self.radexParms['specStr'])
 
                     
     
     #################################################################################         
-    def plotGrid(self, resGrids, lgammaMechSec, radexParms, ranges = None, *args, **kwargs):
+    def plotGrid(self, resGrids, lgammaMechSec, radex = None, ranges = None, gridsInfo = None, *args, **kwargs):
         """Main method for exploring the meshes in the database.
+        
+        :todo: change resGrids to a [res_x, res_y] insteads of it being just a scalar.
         """
         
+        self.gridsInfo = gridsInfo
+
         self.set_attributes(**kwargs)
         self.set_default_attributes()
 
         self.pltGmSec   = lgammaMechSec
-        self.radexParms = radexParms
+        self.radexParms = radex
 
         if ranges == None:
             raise ValueError('missing value of the parameter ranges\n')
@@ -849,26 +917,27 @@ class meshArxv():
             G0Min = ranges[1][0]; G0Max = ranges[1][1];
 
         # definig plotting windows and setting the locations of subplots
-        fig1, axs1, = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(12,12))
+        fig1, axs1, = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(14,14))
         self.fig = fig1
         
+        #---------------------------------------------------------------------------------------------------
         # the grid plot in n,G0 showing the points where models are present in the
         # database
         # + - -
         # - - - 
         # - - -
         axsGrd = axs1[0,0];  axsGrd_n = 331;
-        axsGrd.set_position((0.1, 0.7, 0.15, 0.15))
+        axsGrd.set_position((0.05, 0.8, 0.12, 0.12))
         pyl.subplot(axsGrd_n)
         pyl.hold(True)
         self.grdPltPts1, = pyl.plot( [0], [0], 'bo' )
         self.grdPltPts2, = pyl.plot( [1], [1], 'ro')
-        self.grdPltTitle  = pyl.title('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (0, 0, 0) )
+        self.grdPltTitle  = pyl.title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (0, 0, 0) )
         pyl.xlim( xmin = -1, xmax = 7.0)
         pyl.ylim( ymin = -1, ymax = 7.0)
         pyl.xlabel('$log_{10} n_{gas}$')
         pyl.ylabel('$log_{10} G_0$')
-
+        #---------------------------------------------------------------------------------------------------
         # the subplots where things are plotted as a function of Av       
         # - - -
         # + + -
@@ -932,10 +1001,26 @@ class meshArxv():
         pyl.xlim( xmin = nMin , xmax = nMax )
         pyl.ylim( ymin = G0Min, ymax = G0Max)
         
+        #--------------------------------------------------------------------------------------------
+        # INTERPOLATION FUNCTIONS
+        #--------------------------------------------------------------------------------------------
+        # computing the surface temperature interpolation function which will be used to make the high res maps
+        self.grdInterp_f = self.construct3DInterpolationFunction(quantity = self.gridsInfo['00']['quantity'], 
+                                                                 slabIdx  = self.gridsInfo['00']['slabIdx'],
+                                                                 log10    = True,
+                                                                 *args, **kwargs)
+        
+        # computing the abundance interpolation function which will be used to make the high res maps
+        self.abunGridInterp_f = self.construct3DInterpolationFunction(quantity = self.gridsInfo['01']['quantity'], 
+                                                                      slabIdx  = self.gridsInfo['01']['slabIdx'],
+                                                                      arrIdx   = self.chemNet.species[self.gridsInfo['01']['specStr']].num,
+                                                                      log10    = True,
+                                                                      *args, **kwargs)
+        #--------------------------------------------------------------------------------------------
+        
+        
         # defining and intialising the ndmesh objects which will be used
-        # for computing the grid properties and then displayed
-
-                                
+        # for computing the grid properties and then displayed                                
                                 #xaxis    yaxis 
         self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0  ), 
                        ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 )], 
@@ -984,22 +1069,13 @@ class meshArxv():
         # the axes to plot in the 3D grid (default axes are n,G0,gmech) 
         # showing the points where models are present in the database
         ax3d = fig1.add_subplot(111, projection='3d')
-        ax3d.set_position((0.3, 0.7, 0.1, 0.1))
-        self.plot_3D_grid_point(figure = fig1, axes = ax3d)
-        """
-        pyl.subplot(axsGrd_n)
-        pyl.hold(True)
-        self.grdPltPts1, = pyl.plot( [0], [0], 'bo' )
-        self.grdPltPts2, = pyl.plot( [1], [1], 'ro')
-        self.grdPltTitle  = pyl.title('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (0, 0, 0) )
-        pyl.xlim( xmin = -1, xmax = 7.0)
-        pyl.ylim( ymin = -1, ymax = 7.0)
-        pyl.xlabel('$log_{10} n_{gas}$')
-        pyl.ylabel('$log_{10} G_0$')
-        """
+        ax3d.set_position((0.2, 0.68, 0.3, 0.3))
+        self.plot_3D_grid_point(figure = fig1, axes = ax3d, ranges = ranges)
 
+        self.resPltGrids = [resGrids, resGrids] 
+         
         def plotThisSec():
-            """
+            """updates the plotes once the z section value is changed
             """
             
             tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)            
@@ -1008,20 +1084,19 @@ class meshArxv():
             self.grdPltPts1.set_ydata( lG0All[indsThisSec]   )
             
             # plotting the grids
-            # ---> temperature grid (top left grid)
-            #--------------------------------------------------------------
+            #-------------------
+            # temperature grid (top left grid)
             pyl.subplot( axsGrds_n[0, 0] )
-            ###
-            self.computeSurfaceTemperatureGrid( indsThisSec, ranges = ranges )
-            ###
-            im00 = self.grds[0][0].imshow(interpolation='nearest') 
-            cbar00 = pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
-            cbar00.set_ticks([0.0, 1.0, 2.0, 3.0, 4.0])
-
-            # some other diagnostic (top left grid)
+            self.showSurfaceTemperatureGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
+            
+            # abundances (top left grid)
+            pyl.subplot( axsGrds_n[0, 1] )
+            self.showAbundancesGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
+            
+            """
+            # some other diagnostic 
             # ---> plotting abundances
             #--------------------------------------------------------------
-            pyl.subplot( axsGrds_n[0, 1] )
             ###
             self.computeAbundanceAtSurfaceGrid( indsThisSec, self.radexParms['specStr'] )
             ###
@@ -1049,9 +1124,11 @@ class meshArxv():
             pyl.subplot( axsGrds_n[1, 1] )
             ###
             """
+            """
             self.computeLineEmissionLvgGrid(indsThisSec, self.radexParms['specStr'])
             #cbarTickValues =  [-12, -11, -10, -9, -8, -7, -6, -5, -4]
             cbarTickValues =  [-2, -1, 0, 1, 2]
+            """
             """
             ###    
             self.computeHeatingCoolingGrid(slabIndex = 0, meshInds = indsThisSec, whichThermal = 'heating', whichProcess = 'photo', ranges = ranges)
@@ -1061,7 +1138,7 @@ class meshArxv():
             cbar11.set_ticks( cbarTickValues )
             self.grds[1][1].plotContour( levels = cbarTickValues, colors = 'black' )
             print 'done'
-        
+            """
                          
         # defining the buttons to control mechanical heating section        
         def nextSec(event):
@@ -1092,7 +1169,7 @@ class meshArxv():
                     indMin = l2Distance.argmin()
                     msh.setData( self.meshes[indMin] )
                                         
-                    self.grdPltTitle.set_text('$\log_{10} n_{gas} = $ %4.2f $\log_{10}  = G_0$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(msh.data['hdr']['nGas']), np.log10(msh.data['hdr']['G0']), np.log10(msh.data['hdr']['gammaMech'])))
+                    self.grdPltTitle.set_text('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(msh.data['hdr']['nGas']), np.log10(msh.data['hdr']['G0']), np.log10(msh.data['hdr']['gammaMech'])))
                     
                     self.grdPltPts2.set_xdata( lnGasAll[indMin] )
                     self.grdPltPts2.set_ydata( lG0All[indMin] )
@@ -1102,6 +1179,7 @@ class meshArxv():
                     
                     
                     #----------------------------------------------------
+                    """
                     if self.radexObj == None:       
                         
                         self.radexObj = radex(self.radexParms['radexPath'], self.radexParms['molDataDirPath'])                 
@@ -1157,7 +1235,7 @@ class meshArxv():
                             for warning in self.radexObj.warnings:
                                 print 'meshUtils.py : ', warning  
                         #----------------------------------------------------
-                    
+                    """
                     pyl.draw()
                     
             tf = time()
@@ -1236,7 +1314,7 @@ class meshArxv():
         fig.legend(plts, names)
         pyl.show()
     
-    def plot_3D_grid_point(self, **kwargs):
+    def plot_3D_grid_point(self, log10z = None, **kwargs):
         """plots in 3D the parameters of the meshes in the database. By default
            the x,y,z coordinates are the log10 of nGas, G0, and gammaMech
            
@@ -1244,9 +1322,10 @@ class meshArxv():
                created and the axes are created in the figure object passed.
            :param  mpl_toolkits.mplot3d.Axes3D axes: if this keyword is passed, things are plotted
                in these axes, otherwise new ones are created in the figure.
+           :param bool log10z: when this is set and it is true, the log10 of the z quantity is plotted.  
            :return: (figure, axes, plt) 
         """
-        
+
         if self.grid_x == None or self.grid_y == None or self.grid_z == None:
             raise TypeError('data of one or more coordinates not set!!.')
          
@@ -1258,14 +1337,18 @@ class meshArxv():
         # setting the x,y,z coordinate variables
         if self.grid_x == None or self.grid_x == None or self.grid_x == None:
             self.set_grid_axes_quantity_values()            
-             
-        ax = fig.add_subplot(111, projection='3d')
         
-        if 'log10z' in kwargs:
+        if 'axes' not in kwargs:
+            ax = fig.add_subplot(111, projection='3d')
+        else:
+            ax = kwargs['axes']
+        
+
+        if log10z != None and log10z == True:
             zPlt = np.log10(self.grid_z)
         else:
             zPlt = self.grid_z
-             
+        
         plt = ax.plot(self.grid_x, self.grid_y, zPlt, 'o')
         ax.set_xlim( kwargs['ranges'][0][0], kwargs['ranges'][0][1] )
         ax.set_ylim( kwargs['ranges'][1][0], kwargs['ranges'][1][1] )
@@ -1301,28 +1384,32 @@ class meshArxv():
     def set_default_attributes(self):
         """sets the default values of the attributes if they are not set
         """
-        
+
         if self.grid_qx == None:
             self.set_grid_qx( ['hdr', 'nGas'] )
         if self.grid_qy == None:
             self.set_grid_qy( ['hdr', 'G0'] )
         if self.grid_qz == None:
             self.set_grid_qz( ['hdr', 'gammaMech'] )
-            
+
     def set_grid_axes_quantity_values(self, *args, **kwargs):
         """assigns the values of self.grid_x,y,z from self.grid_qx,qy,qz. The values
-        are extracted from all the meshes in the database.
+         are extracted from all the meshes in the database.
         
         :param bool relativeGmech: if this is set, the z quantity data is set as the
-         ratio of mechanicalHeating of the mesehs to the surface heating when the
-         mechanical heating is zero. If this is set, the keyword 'referenceDatabase'
-         sould be provided. It is assumed that the reference database has exact same
-         parameters as the current one. It is assumed that the minimum gmech in 
-         reference database is low enough to be assumed to be zero. This keyword
-         cuases self.grid_qz to be set to 'gMech/gSurface(gMech=0)'
+          ratio of mechanicalHeating of the mesehs to the surface heating when the
+          mechanical heating is zero. If this is set, the keyword 'referenceDatabase'
+          sould be provided. It is assumed that the reference database has exact same
+          parameters as the current one. It is assumed that the minimum gmech in 
+          reference database is low enough to be assumed to be zero. This keyword
+          cuases self.grid_qz to be set to 'gMech/gSurface(gMech=0)'
 
-         :param string referenceDatabasePath: a string containing the path of the 
-         reference database.
+        :param string referenceDatabasePath: a string containing the path of the 
+             reference database.
+         
+        :note: by default, the log of the quantities from the meshes are used. Only
+          when the relative keyword is present, the value of the heating ratios is 
+          set, and NOT the log of the heating ratios. 
         """
         
         if 'relativeGmech' in kwargs and 'grid_qz' in kwargs:
@@ -1336,47 +1423,52 @@ class meshArxv():
             self.grid_x = np.log10(self.getQuantityFromAllMeshes(self.grid_qx))
         if self.grid_y == None:
             self.grid_y = np.log10(self.getQuantityFromAllMeshes(self.grid_qy))
-
-        if self.grid_z == None:
-            try: 
-                # if relativeGmech is present AND it is True
-                if kwargs['relativeGmech']:
-                    if 'referenceDatabasePath' not in kwargs:
-                        raise ValueError('missing the keyword argument "referenceDatabasePath"')
-                    else:
-                        #computing (for the mesh points in the current database) the ratio of 
-                        #the mechanical heating to the surface heating when gmech = 0
-                        
-                        self.set_grid_qz(['','gMech/gSurface(gMech=0)'])
-                        
-                        # reading the reference archive
-                        print 'setting up the reference archive'
-                        t0 = time()
-                        arxvRef = meshArxv( metallicity = self.metallicity )
-                        arxvRef.readDb( kwargs['referenceDatabasePath'] )
-                        arxvRef.checkIntegrity()
-                        print 'time reading %f' % (time() - t0)
-                        arxvRef.setChemicalNetwork(self.chemNet) # assiginig the chemical network to the archive
         
-                        gMechZero = self.grid_x.copy()
-                        gMechZero[:] = np.log10(arxvRef.meshes[0]['hdr']['gammaMech']) # assumig all the meshes have this value as well
-                        
-                        arxvRef.set_grid_qx( self.grid_qx )
-                        arxvRef.set_grid_qy( self.grid_qy )
-                        f         = arxvRef.construct3DInterpolationFunction(quantity = ['therm', 'heating'], 
-                                                                             slabIdx  = 0, 
-                                                                             log10 = True,
-                                                                             grid_qz = ['hdr','gammaMech'])
-                        dataNew   = np.array( [self.grid_x, self.grid_y, gMechZero] ).T
-                        
-                        # the surface heating that the models in the current would have if the 
-                        # mechanical heating were zero
-                        gammaSurf = f(dataNew) 
+        if self.grid_z == None:
+            
+            # check whether we need to set the z quantity as the ration of heating rates
+            try: 
+                setRelativeGmech = kwargs['relativeGmech']
+            except:
+                setRelativeGmech = False
                 
-                        z = np.log10(self.getQuantityFromAllMeshes( ['hdr', 'gammaMech']) )
-                        self.grid_z = 10.0**z / 10.0**gammaSurf
-
-            except KeyError:
+            
+            # if relativeGmech is present AND it is True
+            if setRelativeGmech == True:
+                if 'referenceDatabasePath' not in kwargs:
+                    raise ValueError('missing the keyword argument "referenceDatabasePath"')
+                else:
+                    #computing (for the mesh points in the current database) the ratio of 
+                    #the mechanical heating to the surface heating when gmech = 0
+                    
+                    self.set_grid_qz(['','gMech/gSurface(gMech=0)'])
+                    
+                    # reading the reference archive
+                    print 'setting up the reference archive'
+                    t0 = time()
+                    arxvRef = meshArxv( metallicity = self.metallicity )
+                    arxvRef.readDb( kwargs['referenceDatabasePath'] )
+                    arxvRef.checkIntegrity()
+                    print 'time reading %f' % (time() - t0)
+                    arxvRef.setChemicalNetwork(self.chemNet) # assiginig the chemical network to the archive
+    
+                    gMechZero = self.grid_x.copy()
+                    gMechZero[:] = np.log10(arxvRef.meshes[0]['hdr']['gammaMech']) # assumig all the meshes have this value as well
+                    
+                    arxvRef.set_grid_qx( self.grid_qx )
+                    arxvRef.set_grid_qy( self.grid_qy )
+                    f         = arxvRef.construct3DInterpolationFunction(quantity = ['therm', 'heating'], 
+                                                                         slabIdx  = 0, 
+                                                                         log10 = True,
+                                                                         grid_qz = ['hdr','gammaMech'])
+                    dataNew   = np.array( [self.grid_x, self.grid_y, gMechZero] ).T
+                    
+                    # the surface heating that the models in the current would have if the 
+                    # mechanical heating were zero
+                    gammaSurf = f(dataNew) 
+            
+                    z = np.log10(self.getQuantityFromAllMeshes( ['hdr', 'gammaMech']) )
+                    self.grid_z = 10.0**z / 10.0**gammaSurf
+            else:
                 # just use gMech as the 3rd axis
                 self.grid_z = np.log10( self.getQuantityFromAllMeshes(self.grid_qz) )
-
