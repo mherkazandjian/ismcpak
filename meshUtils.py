@@ -14,6 +14,7 @@ from ismUtils import *
 from radex    import *
 from utils    import fetchNestedDtypeValue
 from scipy    import interpolate
+import chemicalNetwork
 
 class meshArxv():
     """ this class generates and manipulates archives of PDR meshes.
@@ -57,9 +58,15 @@ class meshArxv():
         
       see test_writeReadArxv.py for an example
     """
-    def __init__(self, *args, **kwrds):
+    def __init__(self, *args, **kwargs):
         
-        # instance variables
+        # attributes
+        if 'dirPath' in kwargs:
+            self.dirPath = kwargs['dirPath']
+        else:
+            self.dirPath = None
+            """path to the directory which contains all the database info and data"""
+
         self.nMeshes    = None
         """ np.long64 : number of meshes in the database (this is now as 1x1 array, convert it just into an np.int32 scalar"""
 
@@ -127,14 +134,24 @@ class meshArxv():
         self.grdPltPts2  = None
         self.grdPltTitle = None
         self.resPltGrids = None
-        self.gridsInfo   = None
+        
+        #attributes used for storing the interpolation functions from which 
+        #the 2D grids to be displayed
+        self.grdInterp_f           = None
+        self.abunGridInterp_f      = None
+        self.colDensGridInterp_f   = None
+        self.intensityGridInterp_f = None
+        
+        self.parms = kwargs
+        """all the keywords used in setting up the database and running it."""
+        
         """resolution of the interpolated grids"""
         
-        if 'metallicity' in kwrds:
-            self.set_metallicity( kwrds['metallicity'] )
+        if 'metallicity' in kwargs:
+            self.set_metallicity( kwargs['metallicity'] )
         else:
             self.metallicity = None
-            
+
         self.radexObj   = None
         self.radexParms = None
         
@@ -200,7 +217,7 @@ class meshArxv():
             self.writeDb(dirName)
 
     def writeDb(self, dirName):
-        """ writes the db files into the dir dirName"""
+        """ writes the mesh.db and mesh.db.ino into the dir dirName"""
                 
         # writing the mesh to the database file
         dbDataFObj = file(dirName + 'meshes.db', 'wb')
@@ -221,11 +238,14 @@ class meshArxv():
         print 'wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
 
         
-    def readDb(self, dirName ):
-        """ reads the database and assigns the appropritate attributes (document)""" 
+    def readDb(self, check = None):
+        """ reads the database and assigns the appropritate attributes (document)
+            
+            :param check: if this is set (to any value) the self.checkIntegrity() is called.
+        """ 
         
-        dbInfoFObj = file(dirName + 'meshes.db.info', 'rb')
-        dbDataFObj = file(dirName + 'meshes.db'  , 'rb')
+        dbInfoFObj = file(self.dirPath + 'meshes.db.info', 'rb')
+        dbDataFObj = file(self.dirPath + 'meshes.db'     , 'rb')
 
         self.ver = np.fromfile( dbInfoFObj, dtype = (np.int32, 3), count = 1)
         self.ver = self.ver[0]
@@ -260,6 +280,9 @@ class meshArxv():
                 raise NameError(strng)
                     
         print 'read successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
+        
+        if check:
+            self.checkIntegrity()
         
     def mergeDbs(self, newDbRunDirPath, outDirPath = None):
         """ merges two databases into one and write the resulting db and its info file
@@ -334,19 +357,28 @@ class meshArxv():
         else:
             strng = 'archive integrity test failed. database file may be corrupt' 
             raise NameError(strng)
-                
-    def constructTemperatureGrid(self):
-        return 1
     
-    def constructModelsGrid(self, log_nGas=None, log_G0=None):
+    def setupChemistry(self):
+        """sets up the attributes related to the chemistry assuming self.parms['chemistry'] is set.
+           sets the attribute self.chemNet.
+        """
         
-        if log_nGas == None:
-            errStr = 'denisty range of the grid not set'
-            raise NameError(errStr)
-        if log_G0 == None:
-            errStr = 'FUV G0 range of the grid not set'
-            raise NameError(errStr)
-
+        #importing the module which holds the definitions of the base species
+        baseSpecies = __import__(self.parms['chemistry']['baseSpecies'])
+        baseSpecs = baseSpecies.baseSpecies()
+        
+        # settin up the orignial netowrk
+        net = chemicalNetwork.chemicalNetwork(self.parms['chemistry']['rxnFile'], 
+                                              baseSpecs,
+                                              UMISTVER = self.parms['chemistry']['umistVer'])
+        # reading the species to be removed from a file
+        net.removeSpecies( underAbunFile = self.parms['chemistry']['underAbunFile'] )
+        net.removeSpecies( species = self.parms['chemistry']['removeManual'] )
+        # reading the species number and their corresponding indies and abundances from ascii files
+        net.assignNumbersToSpecies(fileName = self.parms['chemistry']['specNumFile'])
+        
+        self.setChemicalNetwork(net) # assiginig the chemical network to the archive
+            
     def getQuantityFromAllMeshes(self, quantity, slabIdx = None, arrIdx = None):
         """ gets the quantity from all the meshes and returns it as a numpy array. 
             the quantity is mandatory, but no the slabIdx.
@@ -371,7 +403,7 @@ class meshArxv():
                 
         return values
         
-    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, *args, **kwargs):
+    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, values = None, *args, **kwargs):
         """ returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
              can be used to compute values determined by quantity give (nGas, G0, Gmech)
              (in log_10). The value to be interpolated upon is determined by the parameter
@@ -397,7 +429,11 @@ class meshArxv():
               as the seconds index. 
                 
              :param bool log10: keyword which when passes as True, will generate the log10 of the quantity
-                 
+
+             :values np.ndarray values: a numpy 1D array whose size if the same as the number of meshes which
+               when passed as an argument, will be used as the value to be interpolated. In this case,
+               quantity, slabIdx, arrIdx are ignored. 
+             
              :todo: modify this to construct the table over a selected range of the 3D 
                 parameter space instead of using all the meshes. (optional)
                 
@@ -410,13 +446,16 @@ class meshArxv():
         self.set_grid_axes_quantity_values(**kwargs)
         self.set_attributes(**kwargs)
             
-        # the quantitiy we are intiesrested in showing
-        values = self.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx, arrIdx = arrIdx)
+        if values == None:
+            # the quantitiy we are intiesrested in showing
+            values = self.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx, arrIdx = arrIdx)
+        else:
+            values = values
+
         if log10 != None and log10 == True:
             values[:] = np.log10(values[:])
-        
-        data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D
-        #data = np.array([self.grid_x, self.grid_y]).T  #2D
+
+        data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
         
         ti = time()
         f = interpolate.LinearNDInterpolator(data, values) # getting the interpolation function     
@@ -509,7 +548,7 @@ class meshArxv():
         return tNew
         
     def showGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, fInterp = None, *args, **kwargs):
-        """This method displays a plot of a grid of the quantity pointed by quantity in a new
+        """This method displays a plot (useful for standalone use) of a grid of the quantity pointed by quantity in a new
            window. It makes use of :data:`computeInterpolated2DGrid` and :data:`construct3DInterpolationFunction`.
            For the documentation of the parameters see  :data:`computeInterpolated2DGrid`
            
@@ -559,10 +598,58 @@ class meshArxv():
         
         return ()
 
+    def computeAndSetInterpolationFunctions(self, *args, **kwargs):
+        """compute the 3D interpolation functions which will be used to compute the 2D grids.
+            sets the attributes : self.grdInterp_f, self.abunGridInterp_f, self.colDensGridInterp_f
+        """
+        
+        # computing the surface temperature interpolation function which will be used to make the high res maps
+        #######################################################################################################
+        self.grdInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['00']['quantity'], 
+                                                                 slabIdx  = self.parms['gridsInfo']['00']['slabIdx'],
+                                                                 log10    = True,
+                                                                 *args, **kwargs)
+        
+        # computing the abundance interpolation function which will be used to make the high res maps
+        #############################################################################################
+        self.abunGridInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['01']['quantity'], 
+                                                                      slabIdx  = self.parms['gridsInfo']['01']['slabIdx'],
+                                                                      arrIdx   = self.chemNet.species[self.parms['gridsInfo']['01']['specStr']].num,
+                                                                      log10    = True,
+                                                                      *args, **kwargs)
+
+        # computing the column density interpolation function which will be used to make the high res maps
+        ##########################################################################################
+        
+        #getting the column densities for all the models
+        m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+        values  = np.ndarray(self.nMeshes, dtype = np.float64)
+         
+        for i in np.arange(self.nMeshes):
+            m.setData( self.meshes[i])
+            specStr = self.parms['gridsInfo']['10']['specStr']
+            colDens = m.getColumnDensity(specsStrs = [specStr], maxAv = self.parms['gridsInfo']['10']['maxAv'] )
+            values[i] = colDens[0]
+     
+        self.colDensGridInterp_f = self.construct3DInterpolationFunction(values = values,
+                                                                         log10  = True,
+                                                                         *args, **kwargs)
+
+        # computing the line intensity interpolation function which will be used to make the high res maps
+        self.intensityGridInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['11']['quantity'], 
+                                                                           slabIdx  = self.parms['gridsInfo']['11']['slabIdx'],
+                                                                           arrIdx   = self.chemNet.species[self.parms['gridsInfo']['11']['specStr']].num,
+                                                                           log10    = True,
+                                                                           *args, **kwargs)
+
     def showSurfaceTemperatureGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the surface temperature grid
             
            :todo: plot every other labeled contour as a tick in the colorbar
+           
+           :warning: there would be a memeory leak if things are plotted over and over
+              the images, labels..etc..must be replaced and not new instance created
+              and overplotted...take care of that later... 
         """
         grd = self.computeInterpolated2DGrid(ranges   = ranges,
                                              res      = res,  
@@ -574,7 +661,7 @@ class meshArxv():
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
-
+        
         CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         pyl.clabel(CS,levels, fmt = '%.1f' )
         
@@ -599,166 +686,46 @@ class meshArxv():
         
         pyl.colorbar(im01, cax=self.grdsCbarAxs[0][1], ax=pyl.gca(), orientation = 'horizontal')
 
-    
-    def computeSurfaceTemperatureGrid( self, res = None, ranges = None ):
-        """generates color map of the surface temperature. if meshInds is not provided,
-            all the meshes in the arxive are used. In that case, res and ranges shoudl
-            be provided.
-            
-            :deprecated: remove this function...to slow..
-        """
-        # checking stuff
-        if meshInds == None:
-            meshInds = np.arange(self.nMeshes)
-        
-        if self.grds == None: # for standalone use of this function
-            if res == None:
-                raise ValueError('res = None, i need to have the resolution of the grid first!!')
-            if ranges == None:
-                raise ValueError('ranges = None, i need to have the ranges!!!')
-            grd = ndmesh( (res, res), dtype = np.float64, ranges = ranges, fill = 0.0) 
-        else:
-            grd = self.grds[0][0] # should have called self.plot first
-            ranges = grd.ranges 
-            grd.fill(0.0) 
-        
-        # doing the computations to fill the grid 
-        tGasGrid = grd     
-        spcs = self.chemNet.species
-        nInCells = tGasGrid.copy()
-        nx, ny = tGasGrid.shape
-        
-        # computing the surface temperature grid
-        for i in meshInds:
-            xThis = np.log10(self.meshes[i]['hdr']['G0'])
-            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-            #gasT = self.meshes[i]['state']['gasT']
-            gasT = fetchNestedDtypeValue(self.meshes[i], ['state', 'gasT'] )
-            zThis = gasT[0]
-            
-            indxInGrid = scale(xThis, 0, nx, ranges[0][0], ranges[0][1], integer = True) 
-            indyInGrid = scale(yThis, 0, ny, ranges[1][0], ranges[1][1], integer = True) 
-        
-            tGasGrid[indyInGrid][indxInGrid] += zThis
-            nInCells[indyInGrid][indxInGrid] += 1
-        
-        #print tGasGrid
-        #print nInCells
-        tGasGrid[:] = np.log10(tGasGrid / nInCells)
-        
-        return tGasGrid
+    def showColumnDensityGrid(self, ranges = None, res = None, *args, **kwargs):
+        """shows the abundances grid"""            
 
-    # produce the grid for heating or cooling determined with
-    #    whichThermal = 'heating' | 'cooling'
-    # and the specific process is determined by 
-    #   whichProcsess = string
-    def computeHeatingCoolingGrid( self, slabIndex = None, meshInds = None, whichThermal = None, whichProcess = None, res = None, ranges = None):
-        """generates color map of the various heating and cooling processes for a certain slab.
-        if meshInds is not provided, all the meshes in the arxiv are used. In that case, res and ranges shoudl
-            be provided.
-        """
-        # checking stuff
-        if meshInds == None:
-            meshInds = np.arange(self.nMeshes)
+        grd = self.computeInterpolated2DGrid(ranges   = ranges,
+                                             res      = res,  
+                                             zSec     = self.pltGmSec, 
+                                             fInterp  = self.colDensGridInterp_f, *args, **kwargs)
         
-        if self.grds == None: # for standalone use of this function
-            if res == None:
-                raise ValueError('res = None, i need to have the resolution of the grid first!!')
-            if ranges == None:
-                raise ValueError('ranges = None, i need to have the ranges!!!')
-            grd = ndmesh( (res, res), dtype = np.float64, ranges = ranges, fill = 0.0) 
-        else:
-            grd = self.grds[1][1] # should have called self.plot first
-            ranges = grd.ranges 
-            grd.fill(0.0) 
+        grd = grd.T
+        im10 = pyl.imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        nlevels = 10
+        dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
+        #levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
+        levels = [4,8,12,16,17,18]
+        CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+        pyl.clabel(CS,levels, fmt = '%.1f' )
         
-        # doing the computations to fill the grid 
-        nInCells = grd.copy()
-        nx, ny = grd.shape
+        pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
 
-        # computing the surface temperature grid
-        for i in meshInds:
-            xThis = np.log10(self.meshes[i]['hdr']['G0'])
-            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-            
-            proc  = self.meshes[i][whichThermal][whichProcess]
-            #proc1  = self.meshes[i]['therm']['heating']  
-            #proc2  = self.meshes[i]['therm']['cooling']
-            #proc   = proc1 / proc2
-            
-            zThis = proc[slabIndex]
 
-            indxInGrid = scale(xThis, 0, nx, ranges[0][0], ranges[0][1], integer = True)
-            indyInGrid = scale(yThis, 0, ny, ranges[1][0], ranges[1][1], integer = True) 
-        
-            grd[indyInGrid][indxInGrid] += zThis
-            nInCells[indyInGrid][indxInGrid] += 1
-        
-        #print tGasGrid
-        #print nInCells
-        grd[:] = np.log10(grd / nInCells)
-        
-        return grd
-        
-    def computeAbundanceAtSurfaceGrid( self, meshInds, specStr ):
-        abunGrid = self.grds[0][1] 
-        nInCells = abunGrid.copy()
-        abunGrid.fill(0.0)
-        nInCells.fill(0.0)
-        nx, ny = abunGrid.shape
-        
-        # computing the abundace of a specie
-        for i in meshInds:
-            xThis = np.log10(self.meshes[i]['hdr']['G0'])
-            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-            
-            abunAllSpcs = self.meshes[i]['state']['abun']
-            specIdx = self.chemNet.species[specStr].num
-            slabIdx = 0
-            zThis = abunAllSpcs[specIdx][slabIdx]  #<----------- 
+    def showLineIntensityGrid(self, ranges = None, res = None, *args, **kwargs):
+        """shows the line intensity grid"""            
 
-            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
-            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
+        grd = self.computeInterpolated2DGrid(ranges   = ranges,
+                                             res      = res,  
+                                             zSec     = self.pltGmSec, 
+                                             fInterp  = self.intensityGridInterp_f, *args, **kwargs)
+                                                        
+        grd = grd.T
+
+        im11 = pyl.imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        nlevels = 10
+        dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
+        levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
+
+        CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+        pyl.clabel(CS,levels, fmt = '%.1f' )
         
-            abunGrid[indyInGrid][indxInGrid] += zThis
-            nInCells[indyInGrid][indxInGrid] += 1
+        pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
         
-        abunGrid[:] = np.log10(abunGrid / nInCells)
-
-    def computeColumnDensityGrid( self, meshInds, specStr ):            
-        colDensGrid = self.grds[1][0] 
-        nInCells = colDensGrid.copy()
-        colDensGrid.fill(0.0)
-        nInCells.fill(0.0)
-        nx, ny = colDensGrid.shape
-
-        # computing the abundace of a specie
-        for i in meshInds:
-            xThis = np.log10(self.meshes[i]['hdr']['G0'])
-            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-            abunAllSpcs = self.meshes[i]['state']['abun']
-            specIdx = self.chemNet.species[specStr].num
-            Av = self.meshes[i]['state']['Av']
-            nDensThisSpec = (10**xThis)*abunAllSpcs[ specIdx ][:]
-            # setting the thickness of the last slab to the one before it
-            dxSlabs          =  getSlabThicknessFromAv(Av, 10**xThis, self.metallicity)
-            dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
-            dxSlabsNew[0:-1] =  dxSlabs
-            dxSlabsNew[-1]   =  dxSlabs[-1]
-            dxSlabs          =  dxSlabsNew
-            
-            colDensThisSpec = np.sum( dxSlabs * nDensThisSpec )     
-            zThis = colDensThisSpec  # <---------------
-            #print zThis 
-
-            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
-            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
-        
-            colDensGrid[indyInGrid][indxInGrid] += zThis
-            nInCells[indyInGrid][indxInGrid] += 1
-
-        colDensGrid[:] = np.log10(colDensGrid / nInCells)
-
     def computeLineEmissionLvgGrid( self, meshInds, specStr):
         lineIntense = self.grds[1][1] 
         nInCells = lineIntense.copy()
@@ -896,14 +863,12 @@ class meshArxv():
                     
     
     #################################################################################         
-    def plotGrid(self, resGrids, lgammaMechSec, radex = None, ranges = None, gridsInfo = None, *args, **kwargs):
+    def plotGrid(self, resGrids, lgammaMechSec, radex = None, ranges = None, *args, **kwargs):
         """Main method for exploring the meshes in the database.
         
         :todo: change resGrids to a [res_x, res_y] insteads of it being just a scalar.
         """
         
-        self.gridsInfo = gridsInfo
-
         self.set_attributes(**kwargs)
         self.set_default_attributes()
 
@@ -1001,23 +966,8 @@ class meshArxv():
         pyl.xlim( xmin = nMin , xmax = nMax )
         pyl.ylim( ymin = G0Min, ymax = G0Max)
         
-        #--------------------------------------------------------------------------------------------
-        # INTERPOLATION FUNCTIONS
-        #--------------------------------------------------------------------------------------------
-        # computing the surface temperature interpolation function which will be used to make the high res maps
-        self.grdInterp_f = self.construct3DInterpolationFunction(quantity = self.gridsInfo['00']['quantity'], 
-                                                                 slabIdx  = self.gridsInfo['00']['slabIdx'],
-                                                                 log10    = True,
-                                                                 *args, **kwargs)
-        
-        # computing the abundance interpolation function which will be used to make the high res maps
-        self.abunGridInterp_f = self.construct3DInterpolationFunction(quantity = self.gridsInfo['01']['quantity'], 
-                                                                      slabIdx  = self.gridsInfo['01']['slabIdx'],
-                                                                      arrIdx   = self.chemNet.species[self.gridsInfo['01']['specStr']].num,
-                                                                      log10    = True,
-                                                                      *args, **kwargs)
-        #--------------------------------------------------------------------------------------------
-        
+        # getting the interpolation function which will be used to display the 2D grids
+        self.computeAndSetInterpolationFunctions(*args, **kwargs)        
         
         # defining and intialising the ndmesh objects which will be used
         # for computing the grid properties and then displayed                                
@@ -1070,7 +1020,7 @@ class meshArxv():
         # showing the points where models are present in the database
         ax3d = fig1.add_subplot(111, projection='3d')
         ax3d.set_position((0.2, 0.68, 0.3, 0.3))
-        self.plot_3D_grid_point(figure = fig1, axes = ax3d, ranges = ranges)
+        self.plot_3D_grid_point(figure = fig1, axes = ax3d, ranges = ranges, log10z = self.parms['plotLog10zAxs'])
 
         self.resPltGrids = [resGrids, resGrids] 
          
@@ -1092,6 +1042,14 @@ class meshArxv():
             # abundances (top left grid)
             pyl.subplot( axsGrds_n[0, 1] )
             self.showAbundancesGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
+
+            # column densities (bottom left grid)
+            pyl.subplot( axsGrds_n[1, 0] )
+            self.showColumnDensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
+
+            # line intensity (bottom right grid)
+            pyl.subplot( axsGrds_n[1, 1] )
+            self.showLineIntensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
             
             """
             # some other diagnostic 
@@ -1446,9 +1404,9 @@ class meshArxv():
                     # reading the reference archive
                     print 'setting up the reference archive'
                     t0 = time()
-                    arxvRef = meshArxv( metallicity = self.metallicity )
-                    arxvRef.readDb( kwargs['referenceDatabasePath'] )
-                    arxvRef.checkIntegrity()
+                    arxvRef = meshArxv( dirPath = kwargs['referenceDatabasePath'], 
+                                        metallicity = self.metallicity )
+                    arxvRef.readDb( check = True )
                     print 'time reading %f' % (time() - t0)
                     arxvRef.setChemicalNetwork(self.chemNet) # assiginig the chemical network to the archive
     
@@ -1472,3 +1430,52 @@ class meshArxv():
             else:
                 # just use gMech as the 3rd axis
                 self.grid_z = np.log10( self.getQuantityFromAllMeshes(self.grid_qz) )
+    
+    """
+    def computeSurfaceTemperatureGrid( self, res = None, ranges = None ):
+        #generates color map of the surface temperature. if meshInds is not provided,
+        #    all the meshes in the arxive are used. In that case, res and ranges shoudl
+        #    be provided.
+        #    
+        #    :deprecated: remove this function...to slow..
+        # checking stuff
+        if meshInds == None:
+            meshInds = np.arange(self.nMeshes)
+        
+        if self.grds == None: # for standalone use of this function
+            if res == None:
+                raise ValueError('res = None, i need to have the resolution of the grid first!!')
+            if ranges == None:
+                raise ValueError('ranges = None, i need to have the ranges!!!')
+            grd = ndmesh( (res, res), dtype = np.float64, ranges = ranges, fill = 0.0) 
+        else:
+            grd = self.grds[0][0] # should have called self.plot first
+            ranges = grd.ranges 
+            grd.fill(0.0) 
+        
+        # doing the computations to fill the grid 
+        tGasGrid = grd     
+        spcs = self.chemNet.species
+        nInCells = tGasGrid.copy()
+        nx, ny = tGasGrid.shape
+        
+        # computing the surface temperature grid
+        for i in meshInds:
+            xThis = np.log10(self.meshes[i]['hdr']['G0'])
+            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
+            #gasT = self.meshes[i]['state']['gasT']
+            gasT = fetchNestedDtypeValue(self.meshes[i], ['state', 'gasT'] )
+            zThis = gasT[0]
+            
+            indxInGrid = scale(xThis, 0, nx, ranges[0][0], ranges[0][1], integer = True) 
+            indyInGrid = scale(yThis, 0, ny, ranges[1][0], ranges[1][1], integer = True) 
+        
+            tGasGrid[indyInGrid][indxInGrid] += zThis
+            nInCells[indyInGrid][indxInGrid] += 1
+        
+        #print tGasGrid
+        #print nInCells
+        tGasGrid[:] = np.log10(tGasGrid / nInCells)
+        
+        return tGasGrid
+    """

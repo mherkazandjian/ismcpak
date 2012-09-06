@@ -59,7 +59,7 @@ class mesh( ):
             m.data['selfSheilding']['CO']
             m.data['selfSheilding']['13CO']
     """
-    def __init__(self, fileName=None, chemNet = None, metallicity = None):
+    def __init__(self, fileName = None, chemNet = None, metallicity = None):
 
         if fileName != None:
             self.fName = fileName #: path (py:string) of the binary file holding the data of the mesh.
@@ -272,7 +272,48 @@ class mesh( ):
                  ('CO'  ,  np.float64, (nSteps)),
                  ('13CO',  np.float64, (nSteps)),
                ] 
+    def getColumnDensity(self, specsStrs = None, maxAv = None):
+        """returns a list of the same lenght as specsStrs containing the column densities
+           of the species in the list specsStrs. It is assumed that self.chemNet, 
+           self.metallicity and self.data are set.
+           
+           :param list specsStrs: a list which holds the string names of the species
+               whose column densities are to be computed
+           :param chemicalNetwork.chemicalNetwork() chemNet: an instance of the object chemicalNetwork
+            that holds the info about all the chemistry of the mesh. If this is not passed, self.chemNet 
+            is used (assuming it is set).
+        """
+        
+        colDensities = []
+        
+        # getting mesh parameters
+        m = self.data
+        nDense_m = m['hdr']['nGas'] 
+        abun_m   = m['state']['abun']
+        Av_m = m['state']['Av']
+
+        # setting the thickness of the last slab to the one before it
+        dxSlabs          =  getSlabThicknessFromAv(Av_m, nDense_m, self.metallicity)
+        dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
+        dxSlabsNew[0:-1] =  dxSlabs
+        dxSlabsNew[-1]   =  dxSlabs[-1]
+        dxSlabs          =  dxSlabsNew
+        
+        if maxAv == None:
+            slabsIdx = np.arange(m['hdr']['nSteps'])
+        else:
+            slabsIdx = np.where( Av_m < maxAv)
+             
+        # computing the column densities for the species in the list
+        for specStr in specsStrs:
+            specIdx = self.chemNet.species[specStr].num
+            nDensSpec = nDense_m * abun_m[ specIdx ][ : ]
+            colDens = np.sum( dxSlabs[slabsIdx] * nDensSpec[slabsIdx] )
             
+            colDensities.append( colDens )
+
+        return colDensities
+
     def getData(self):
         return self.data
     
