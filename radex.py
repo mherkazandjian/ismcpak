@@ -215,9 +215,10 @@ class radex( ):
         self.axs = axs
         self.fig = fig
 
-    ## removes colliders from the dictionary of the self.#inFile if their density 
-    #  is less than the minimum accepted value by RADEX (for now, this ie 1e-3 cm^{-3} )
     def filterColliders(self):
+        """removes colliders from the dictionary of the self.#inFile if their density 
+           is less than the minimum accepted value by RADEX (for now, this ie 1e-3 cm^{-3} )
+        """
         # removing the colliders which have abundances less than the one range 
         # that radex accepts
         for (i, nDense) in enumerate(self.inFile['nDensCollisionPartners']):

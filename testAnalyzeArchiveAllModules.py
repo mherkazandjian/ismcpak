@@ -49,20 +49,19 @@ parms = {
                                      'specStr'  : 'H+',
                                     },
                            },
-         'gridsRes'       : 100,   
-         'radexParms'     : { 'use'                  : False,
-                              'radexPath'            : home + '/ism/code/radex/Radex/bin/radex',  
-                              'molDataDirPath'       :  home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                              'specStr'              : 'CO',
-                              #'xH2_Min'              : 2*0.0000000001
-                              'xH2_Min'              : -1.0,
-                              'collisionPartners'    : ['H2','H+','H'],
-                              #'collisionPartners'    : ['H2','H','H+','e-']
-                              #'collisionPartners'    : ['H2']
-                              #'collisionPartners'    : ['H2','H+','e-','H']
-                              'plotTransitionInGrid' : 0,
+         'gridsRes'      : 100,   
+         'radex'         : { 'use'                  : True,
+                             'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
+                             'molDataDirPath'       :  home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
+                             'specStr'              : 'CO',
+                             #'xH2_Min'              : 2*0.0000000001
+                             'xH2_Min'              : -1.0,
+                             'collisionPartners'    : ['H2','H+','H'],
+                             #'collisionPartners'    : ['H2','H','H+','e-']
+                             #'collisionPartners'    : ['H2']
+                             #'collisionPartners'    : ['H2','H+','e-','H']
+                             'plotTransitionInGrid' : 0,
                             },
-         
          #-----------------chemical network parameters------------------------
          'chemistry'     : {
                             'rxnFile'       : home + '/ism/code/ismcpak/data/rate99Fixed.inp',
@@ -95,7 +94,7 @@ arxv.set_grid_axes_quantity_values(relativeGmech         = parms['relativeGmech'
 pyl.ioff()
 arxv.plotGrid(parms['gridsRes'], 
               parms['zSec'], 
-              radex = parms['radexParms'], 
+              radex = parms['radex'], 
               ranges = parms['plotRanges'], 
               gridsInfo = parms['gridsInfo'], 
               plotLog10zAxs = parms['plotLog10zAxs'],

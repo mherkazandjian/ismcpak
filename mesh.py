@@ -487,9 +487,22 @@ class mesh( ):
     #  slab. Only slabs which have abundances greater than XX_threshold are taken
     #  into account in computing N(XX) and the average collider densities and the 
     #  average temepratures.
-    def getRadexParameters(self, colliderStr=None, speciesStr=None, threshold=None):
+    def getRadexParameters(self, speciesStr=None, threshold=None):
+        """Returns a list (TMean, nDenseColl, N_specLVG which are 
+        the weighted averaged temperature, number density of the collider species and the
+        column density of speciesStr. 
 
-        coll = colliderStr
+        :param string speciesStr: the sting of the species whose column desnity is to be returned.
+          (note use the function self.getColumnDensity()).
+        :param float threshold: only slabs with an abundance bigger than threshold are considered
+          in computing the column density anf the Tmean. Set this to a negative number to make sure
+          all the slabs are considered.
+        :return: (TMean, nDenseColl, N_specLVG)\n  
+          TMean (flaot)\n
+          nDenseColl (dict) : the number density of the colliders e-, H+, H, He, H2 which are the keys
+            of the dict holding the corresponding number densities.\n
+          N_spcLVG (float)
+        """
         spec = speciesStr
         xMin = threshold
         
@@ -506,7 +519,7 @@ class mesh( ):
         nGas = m.data['hdr']['nGas']
         Av   = m.data['state']['Av']
         gasT = m.data['state']['gasT']
-
+        #abundances of species to be used later in getting the input needed by radex
         xSpec   = m.data['state']['abun'][ net.species[spec].num ]
         xColle  = m.data['state']['abun'][ net.species['e-'].num ]
         xCollHP = m.data['state']['abun'][ net.species['H+'].num ]
@@ -514,8 +527,9 @@ class mesh( ):
         xCollHe = m.data['state']['abun'][ net.species['He'].num ]
         xCollH2 = m.data['state']['abun'][ net.species['H2'].num ]
 
-        inds = np.nonzero( xCollH2  > xMin  ) # ;;; remove this later
-        if len(inds[0]) == 0:                 # ;;; remove this later
+        #getting the indicies of the slab which have xH2 greater than xMin
+        inds = np.nonzero( xCollH2  > xMin  )
+        if len(inds[0]) == 0:                
             return (None, None, None)
         
         # assigning the thickness of the last slab to the one before the last one

@@ -153,8 +153,23 @@ class meshArxv():
             self.metallicity = None
 
         self.radexObj   = None
-        self.radexParms = None
-        
+        #--------------------------GEN AND PLOT RADEX CURVES---------------------------------
+        if self.parms['radex']['use']:
+            #making the instance            
+            self.radexObj = radex(self.parms['radex']['path'], self.parms['radex']['molDataDirPath'])
+            #setting some default radex paraemeters
+            inFile = {'specStr'                : None  , 
+                      'outPath'                : 'foo' ,
+                      'freqRange'              : [0, 0],
+                      'tKin'                   : None  ,
+                      'collisionPartners'      : None  ,
+                      'nDensCollisionPartners' : None  ,
+                      'tBack'                  : 2.73  ,  # fixed
+                      'molnDens'               : None  ,
+                      'lineWidth'              : 1.0   ,  # fixed
+                      'runAnother'             : 1     }
+            self.radexObj.setInFile( inFile )
+
     # read all the meshes files in the dir and construct the
     # database
     def construct(self, dirName , meshNamePrefix = None, writeDb = None ):
@@ -430,7 +445,7 @@ class meshArxv():
                 
              :param bool log10: keyword which when passes as True, will generate the log10 of the quantity
 
-             :values np.ndarray values: a numpy 1D array whose size if the same as the number of meshes which
+             :param numpy.ndarray values: a numpy 1D array whose size if the same as the number of meshes which
                when passed as an argument, will be used as the value to be interpolated. In this case,
                quantity, slabIdx, arrIdx are ignored. 
              
@@ -698,8 +713,8 @@ class meshArxv():
         im10 = pyl.imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
-        #levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
-        levels = [4,8,12,16,17,18]
+        levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
+        
         CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         pyl.clabel(CS,levels, fmt = '%.1f' )
         
@@ -1028,6 +1043,8 @@ class meshArxv():
             """updates the plotes once the z section value is changed
             """
             
+            print 'plotThisSec(): updating the grids'
+            
             tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)            
             indsThisSec = np.nonzero( np.fabs(lgmAll - self.pltGmSec) < 1e-6 )[0]            
             self.grdPltPts1.set_xdata( lnGasAll[indsThisSec] )
@@ -1051,52 +1068,6 @@ class meshArxv():
             pyl.subplot( axsGrds_n[1, 1] )
             self.showLineIntensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
             
-            """
-            # some other diagnostic 
-            # ---> plotting abundances
-            #--------------------------------------------------------------
-            ###
-            self.computeAbundanceAtSurfaceGrid( indsThisSec, self.radexParms['specStr'] )
-            ###
-            im01 = self.grds[0][1].imshow(interpolation='nearest')
-            cbar01 = pyl.colorbar(im01, cax=self.grdsCbarAxs[0][1], ax=pyl.gca(), orientation = 'horizontal')
-            cbar01.set_ticks([-4.0, -3.0, -2.0, -1.0, 0.0])
-
-            # some other diagnostic (bottom left grid)
-            # ---> plotting column densities
-            #--------------------------------------------------------------
-            pyl.subplot( axsGrds_n[1, 0] )
-            ###
-            self.computeColumnDensityGrid( indsThisSec, self.radexParms['specStr'] )
-            ###
-            im10 = self.grds[1][0].imshow(interpolation='nearest')
-            cbar10 = pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
-            cbarTickValues =  [15, 16, 17, 18, 19, 20]
-            contourValues  =  [15, 16, 17, 18, 18.5, 18.7, 18.9, 19, 19.05, 20] #CO
-            cbar10.set_ticks( cbarTickValues )
-            self.grds[1][0].plotContour( levels = contourValues )
-                   
-            # some other diagnostic (bottom right grid)
-            # ---> plotting line intensities
-            #--------------------------------------------------------------
-            pyl.subplot( axsGrds_n[1, 1] )
-            ###
-            """
-            """
-            self.computeLineEmissionLvgGrid(indsThisSec, self.radexParms['specStr'])
-            #cbarTickValues =  [-12, -11, -10, -9, -8, -7, -6, -5, -4]
-            cbarTickValues =  [-2, -1, 0, 1, 2]
-            """
-            """
-            ###    
-            self.computeHeatingCoolingGrid(slabIndex = 0, meshInds = indsThisSec, whichThermal = 'heating', whichProcess = 'photo', ranges = ranges)
-            cbarTickValues =  [-26, -24, -22, -20, -18, -16, -14]
-            im11 = self.grds[1][1].imshow(interpolation='nearest')
-            cbar11 = pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')            
-            cbar11.set_ticks( cbarTickValues )
-            self.grds[1][1].plotContour( levels = cbarTickValues, colors = 'black' )
-            print 'done'
-            """
                          
         # defining the buttons to control mechanical heating section        
         def nextSec(event):
@@ -1134,66 +1105,10 @@ class meshArxv():
                     self.grdPltPts2.set_color('r')
                                         
                     msh.plot()
+                                        
+                    if self.parms['radex']['use']:
+                        self.computeAndSetRadexCurves(meshObj = msh)
                     
-                    
-                    #----------------------------------------------------
-                    """
-                    if self.radexObj == None:       
-                        
-                        self.radexObj = radex(self.radexParms['radexPath'], self.radexParms['molDataDirPath'])                 
-                        inFile = {'specStr'                : self.radexParms['specStr'],
-                                  'outPath'                : 'foo'       ,
-                                  'freqRange'              : [0, 0]  ,
-                                  'tKin'                   : None        ,
-                                  'collisionPartners'      : None      ,
-                                  'nDensCollisionPartners' : None      ,
-                                  'tBack'                  : 2.73        ,
-                                  'molnDens'               : None        ,
-                                  'lineWidth'              : 1.0         ,
-                                  'runAnother'             : 1           }
-                        self.radexObj.setInFile( inFile )
-                       
-                        
-                    self.radexObj.setupPlot(nx = 1, fig = self.fig, axs = self.pltRadex)
-                    
-                    (gasTRadex, nColls, colDensThisSpec,) = msh.getRadexParameters('H2',   # ;;; this parameter is redundant 
-                                                                                   self.radexParms['specStr'], 
-                                                                                   self.radexParms['xH2_Min'])  # ;;; this parameter is redundant
-    
-                    # getting the collider densities in the same order of the supplied input spcie string list 
-                    nDensColls = [ nColls[collSpecStr] for collSpecStr in self.radexParms['collisionPartners'] ]
-                    collsStr   = list(self.radexParms['collisionPartners'])
-                    #print 'input coll species', self.radexParms['collisionPartners'] 
-                    #print 'nColls after putting them in the right order = ', nDensColls
-
-                    self.radexObj.setInFileParm('tKin', gasTRadex)
-                    self.radexObj.setInFileParm('collisionPartners', collsStr )
-                    self.radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
-                    self.radexObj.setInFileParm('molnDens', colDensThisSpec)
-                    
-                    self.radexObj.filterColliders()
-                    
-                        
-                    if len(self.radexObj.inFile['collisionPartners']) == 0:
-                        print 'not enough colliders'
-                    else:
-                
-                        print 'Radex input parms computed from the slab: ', gasTRadex, nColls, colDensThisSpec
-                            
-                        self.radexObj.setDefaultStatus()
-                        self.radexObj.run( checkInput = True, verbose = True )
-
-                        if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
-                            
-                            self.radexObj.plotModelInFigureColumn(allTrans = None,
-                                                                  inAxes = self.pltRadex, 
-                                                                  title='')
-                            self.radexObj.setLabels()
-                        else:
-                            for warning in self.radexObj.warnings:
-                                print 'meshUtils.py : ', warning  
-                        #----------------------------------------------------
-                    """
                     pyl.draw()
                     
             tf = time()
@@ -1218,12 +1133,56 @@ class meshArxv():
         pyl.draw()
         print 'browing data....'
 
-    # setters and getters
-    def set_metallicity(self, metallicity):
-        self.metallicity = metallicity
+    def computeAndSetRadexCurves(self, meshObj = None):
+        """This is a utilty method (make it a private method), for populating the radex axes
+          with the plots for the specie passed in the global parameter self.parms['radex']['specStr'].
+          It takes as a paremeter the :data:`mesh` which will be used for doing the radex computations.
+        """
         
-    ## clears all the bufferes allocated in the instance
+        msh = meshObj
+        #assigning the axes in which the radex curves will be plotted
+        self.radexObj.setupPlot(nx = 1, fig = self.fig, axs = self.pltRadex)
+        
+        (gasTRadex, nColls, colDensThisSpec,) = msh.getRadexParameters(speciesStr = self.parms['radex']['specStr'], 
+                                                                       threshold  = self.parms['radex']['xH2_Min'])
+
+        # getting the collider densities in the same order of the supplied input spcie string list 
+        nDensColls = [ nColls[collSpecStr] for collSpecStr in self.parms['radex']['collisionPartners'] ]
+        collsStr   = list(self.parms['radex']['collisionPartners'])
+        #print 'input coll species', self.radexParms['collisionPartners'] 
+        #print 'nColls after putting them in the right order = ', nDensColls
+        
+        self.radexObj.setInFileParm('specStr', self.parms['radex']['specStr'])
+        self.radexObj.setInFileParm('tKin', gasTRadex)
+        self.radexObj.setInFileParm('collisionPartners', collsStr )
+        self.radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
+        self.radexObj.setInFileParm('molnDens', colDensThisSpec)
+        
+        self.radexObj.filterColliders()
+            
+        if len(self.radexObj.inFile['collisionPartners']) == 0:
+            print 'not enough colliders'
+        else:
+    
+            print 'Radex input parms computed from the slab: ', gasTRadex, nColls, colDensThisSpec
+                
+            self.radexObj.setDefaultStatus()
+            self.radexObj.run( checkInput = True, verbose = True )
+
+            if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
+                
+                self.radexObj.plotModelInFigureColumn(allTrans = None,
+                                                      inAxes = self.pltRadex, 
+                                                      title='')
+                self.radexObj.setLabels()
+            else:
+                for warning in self.radexObj.warnings:
+                    print 'meshUtils.py : ', warning  
+
+        
     def clear(self):
+        """clears all the bufferes allocated in the instance"""
+        
         del self.infoAll
         del self.nDbFiles
         del self.chemNet
@@ -1248,6 +1207,7 @@ class meshArxv():
             be used as the absissa of the points. 
           :param list qy: same as qx but will be used as the ordinates.  
           :param list qz: a thrid quantity used to identity each curve (used in the legend)
+          :warning: check and test this methods and document it better.
         """
         
         fig = pyl.figure()  # make the figure
@@ -1319,14 +1279,16 @@ class meshArxv():
         
     ###############################setter and getters##############################
     def setChemicalNetwork(self, chemNet):
-        self.chemNet = chemNet
-        
+        self.chemNet = chemNet 
     def set_grid_qx(self, qx):
         self.grid_qx = qx
     def set_grid_qy(self, qy):
         self.grid_qy = qy
     def set_grid_qz(self, qz):
         self.grid_qz = qz
+    def set_metallicity(self, metallicity):
+        self.metallicity = metallicity
+        
 
     def set_attributes(self, **kwargs):
         """set values of attributes from provided keywords
