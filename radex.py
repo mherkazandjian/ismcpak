@@ -20,12 +20,15 @@ import subprocess
 # A simple example on using this package/class is test_radex.py. A less trivial example
 # is radexView.py
 
-## Radex class. 
-#  A wrapper class which runs radex parses its output into objects. see test_radex.py
-#  and radexView.py for examples on using this class. 
-#  @todo : docment the order in which things must be called
 class radex( ):
-    """radex interface module
+    """A wrapper class which runs radex parses its output into objects. see test_radex.py
+    and radexView.py for examples on using this class. Upon a successull executation, all the
+    transitions are stored in self.transitions.
+     
+    :todo: docment the order in which things must be called.
+    
+    :warning: make sure that the lower and upper string names for the transitions are not longer than
+    10 character, or change the length accordinglt in self.generateTransitionDtype()
     """
 
     def __init__(self, execPath, molDataDir):
@@ -120,22 +123,37 @@ class radex( ):
         ## string : the header of the raw output. This is useful for inspecting wheather the 
         #  input parameters were constructed properly.
         self.outputHdr    = None  
-        ## dict list : A list containing all the information of the computed lines.
-        #  each item in the list is a dictionary with the following keys 
-        #  (they are extracted from self.rawOutput) : 
-        #    \verbatim
-        #    'upper'    : string (the upper level of the transition) 
-        #    'lower'    : string (the lower level of the transition) 
-        #    'E_up'     : numpy.float64 ( Enery of the upper level ) 
-        #    'Tex'      : numpy.float64 ( computed excitation temperatur )
-        #    'tau'      : numpy.float64 ( computed optical depth )
-        #    'T_R'      : numpy.float64 ( computed rotational temperature )
-        #    'pop_up'   : numpy.float64 ( computed population density in the upper level )
-        #    'pop_down' : numpy.float64 ( computed population density in the lower level )
-        #    'fluxKkms' : numpy.float64 ( computed flux in \f$K.km^{-1}.s^{-1}\f$ )
-        #    'fluxcgs'  : numpy.float64 ( computed flux in cgs )
-        #    \endverbatim 
+         
         self.transitions = None
+        """dict list : A list containing all the information of the computed lines.
+        each item in the list is a dictionary with the following keys.
+        
+        .. code-block:: python
+            
+           t = { 'upper'    : string          # the upper level of the transition     
+                 'lower'    : string          # the lower level of the transition 
+                 'E_up'     : numpy.float64   # Enery of the upper level 
+                 'Tex'      : numpy.float64   # computed excitation temperatur
+                 'tau'      : numpy.float64   # computed optical depth
+                 'T_R'      : numpy.float64   # computed rotational temperature
+                 'pop_up'   : numpy.float64   # computed population density in the upper level
+                 'pop_down' : numpy.float64   # computed population density in the lower level
+                 'fluxKkms' : numpy.float64   # computed flux in $K.km^{-1}.s^{-1}$
+                 'fluxcgs'  : numpy.float64   # computed flux in cgs
+               }
+        """
+        
+        self.nTansitions = None
+        """the number of transitions"""
+        
+        self.transitionsNdarray = None
+        """an ndarray of dtype self.transitionFormat holding all the info of the transitions"""
+        
+        
+        self.transitionDtype = self.generateTransitionDtype()
+        """holds the numpy.dtype of the transitions. See self.generateTransitionDtype().
+        """
+        
         ## dict : Flags set when running radex which can be used to examing the output. The flags are :
         # \verbatim
         #  'DEFAULT'  : Default status, should be called before each run 
@@ -194,15 +212,19 @@ class radex( ):
         return self.rawOutput
     def setStatus(self, status):
         self.status = status
-    ## sets the default status
+    
     def setDefaultStatus(self):
+        """sets the default status"""
         self.status = self.FLAGS['DEFAULT']
-    ## This method can be used to extract individual transition information from the self.#transitions 
-    #  list. For example, for CO, getTransition(0) would return the transition info for the 1-0 
-    #  transition
-    #  @param idx The index of the transition in the transition list. must be between 0 and len(self.#transitions) 
-    #  @return (dict:self.#transitions item)
     def getTransition(self, idx):
+        """This method can be used to extract individual transition information from the self.#transitions 
+        list. For example, for CO, getTransition(0) would return the transition info for the 1-0 
+        transition
+        
+        :param idx: The index of the transition in the transition list. must be between 0 and len(self.#transitions) 
+        :return dict:self.#transitions item
+        """
+        print idx
         return self.transitions[idx]
     
     def getWarnings(self):
@@ -210,8 +232,9 @@ class radex( ):
     def getNIter(self):
         return self.nIter
 
-    ## set the axes and figure objects
     def setAxes(self, fig, axs):
+        """set the axes and figure objects"""
+
         self.axs = axs
         self.fig = fig
 
@@ -227,11 +250,12 @@ class radex( ):
                 self.inFile['nDensCollisionPartners'].pop(i)
                 self.inFile['collisionPartners'].pop(i)
                  
-                
-    ## generates the parameter file contents from self.inFile, which can be passed to the 
-    #   radex executable, as a string. 
-    #   @return: (str)
     def genInputFileContentAsStr(self):
+        """generates the parameter file contents from self.inFile, which can be passed to the radex executable, as a string. 
+        
+        :return: (str)
+        """
+        
         self.nCollPart = len(self.inFile['collisionPartners'])
         
         strng = ''
@@ -253,12 +277,13 @@ class radex( ):
         print '------------\n%s\n-----------------\n' % strng
         return strng
 
-    ## chech whether the contents of self.inFile are within the ranges where
-    #  RADEX can work.  
-    #  @raise exception: NameException
-    #  @attention This method sets the value of self.status. The flag 'PARMSOK' is set
-    #  if the paramteres are ok, 'ERROR' is set otherwise
     def checkParameters(self):
+        """chech whether the contents of self.inFile are within the ranges where RADEX can work.
+        
+        :raise exception: NameException
+        :attention: This method sets the value of self.status. The flag 'PARMSOK' is set if the 
+        paramteres are ok, 'ERROR' is set otherwise.
+        """
         inFile = self.inFile
         
         for item in inFile:
@@ -336,10 +361,30 @@ class radex( ):
                 
         return self.status
         
-    ## Once radex exectues and dumps transition information, this method is used
-    #  to extract the line data.
-    #  @return None\n The instance variable self.#transitions is set
+    def generateTransitionDtype(self):
+        """generates the trasition dtype which will be used in assigning the transition info in self.transitionsNdArry.
+        """
+        fmt = [
+               ('upper'   , np.str_, 10),   
+               ('lower'   , np.str_, 10),   
+               ('E_up'    , np.float64),
+               ('Tex'     , np.float64), 
+               ('tau'     , np.float64), 
+               ('T_R'     , np.float64), 
+               ('pop_up'  , np.float64), 
+               ('pop_down', np.float64), 
+               ('fluxKkms', np.float64), 
+               ('fluxcgs' , np.float64), 
+              ] # 2 * 10b + 8 * 8b = 84b per transition 
+       
+        return np.dtype(fmt)
+       
     def parseOutput(self):
+        """Once radex exectues and dumps transition information, this method is used
+         to extract the line data.
+         
+        :return: None. The instance variable self.transitions is set.
+        """
         
         try:
             #print self.rawOutput
@@ -382,8 +427,8 @@ class radex( ):
                 #print self.rawOutput
                 lineSplt = line.split()
                 #print lineSplt
-                info['upper'   ] = lineSplt[0] 
-                info['lower'   ] = lineSplt[1] 
+                info['upper'   ] = lineSplt[0].strip()
+                info['lower'   ] = lineSplt[1].strip()
                 info['E_up'    ] = np.float64(lineSplt[2]) 
                 info['Tex'     ] = np.float64(lineSplt[5]) 
                 info['tau'     ] = np.float64(lineSplt[6]) 
@@ -402,6 +447,19 @@ class radex( ):
                 transitions.append(transition)
                 
             self.transitions = transitions
+            
+            #copying the content of self.transitions into self.transitionsNdarrya
+            ##:note: do this at one go without storing things first in self.transitiosn
+            #******************************************************
+            self.nTansitions = len(self.transitions)
+            transitionsNdarray = np.ndarray((self.nTansitions), dtype = self.transitionDtype)
+            for i, trans in enumerate(self.transitions):
+                for key in trans.keys():
+                    transitionsNdarray[i][key] = trans[key]
+            self.transitionsNdarray = transitionsNdarray
+            #******************************************************
+            
+            
         except (ValueError, IndexError):
             print self.rawOutput
             errStr = 'parsing the output failed'
@@ -465,7 +523,7 @@ class radex( ):
     
             thisTrans = allTrans[i]
             xPlot[i] = thisTrans
-    
+
             transition = self.getTransition( thisTrans )
             yThis = transition['fluxcgs'] 
             

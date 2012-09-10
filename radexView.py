@@ -16,7 +16,7 @@ radexPath = '/home/mher/ism/code/radex/Radex/bin/radex'
 molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 
 # parameters that will be passed to radex
-inFile = { 'specStr'                : 'O'          ,
+inFile = { 'specStr'                : 'CO'          ,
            'freqRange'              : [0, 500000]   ,
            'tKin'                   : None          ,
            'collisionPartners'      : ['H2']        ,
@@ -25,8 +25,13 @@ inFile = { 'specStr'                : 'O'          ,
            'molnDens'               : 1e18          ,
            'lineWidth'              : 1.0           ,
            'runAnother'             : 1             }
+"""
+# single run (fails to plot stuf!!!!!!!!!!!why!!!!!!!)
+parms = ( ('tKin', 40), )
+"""
 
 """
+# vary the gas density
 inFile['molnDens'] = 1e23
 parms = ( ('tKin', 10), 
           ('tKin', 20),
@@ -39,7 +44,7 @@ parms = ( ('tKin', 10),
           ('tKin', 90), )
 """
 
-
+#vary the kinetic temeperature
 inFile['tKin'] = 1000.0
 parms = ( ('molnDens', 1e16), 
           ('molnDens', 1e17),
@@ -49,8 +54,10 @@ parms = ( ('molnDens', 1e16),
           ('molnDens', 1e21),
           ('molnDens', 1e22),
           ('molnDens', 1e23))
-
-
+#-------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
 # creating the radex process instance
 radexObj = radex(radexPath, molDataDirPath)
 radexObj.setInFile( inFile )

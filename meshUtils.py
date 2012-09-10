@@ -85,6 +85,10 @@ class meshArxv():
             self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
         """
             
+        self.meshesRadex = None
+        """A list holding all the info dumped by radex for each model.
+        """
+        
         self.infoAll    = None 
         """A numpy array of dtype arxvHdrDtype (see below) which contains the info
            (headers) about all the meshes each entry in this array contains two things,
