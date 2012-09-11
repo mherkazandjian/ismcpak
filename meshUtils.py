@@ -84,13 +84,25 @@ class meshArxv():
             self.infoAll[i]['parms'][1]) which should be the same as self.meshes[i]['hdr']['nGas']
             self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
         """
-            
+
+        self.infoAllRadex = None
+        """A numpy ndarray of length self.nMeshes of type numpy.int32 which holds 
+        the number of transitions computed for the mesh it corresponds to in self.meshes and
+        self.infoAll. A value of zero means that there were was valid output from radex.
+        
+        :note: the transitions are stored even if there are warnings when running radex. So 
+        take good care when analyzing the data. The info of this attribute is stored into 
+        infoAllRadex.db.info.(specStr). Each specie will have its own .db.info.... file
+        and a corresponding .db.(specStr) file which will hold all the data in self.meshesRadex.
+        """
+                    
         self.meshesRadex = None
-        """A list holding all the info dumped by radex for each model.
+        """A list holding all the info dumped by radex for each model. Each entry in the list is an ndarray
+        of dtype radex.transitionDtype. 
         """
         
         self.infoAll    = None 
-        """A numpy array of dtype arxvHdrDtype (see below) which contains the info
+        """A numpy ndarray of dtype arxvHdrDtype (see below) which contains the info
            (headers) about all the meshes each entry in this array contains two things,
            information about the mesh and the parameters of the mesh. For example
            the elements x in self.infoAll[x] has the following contents : 
@@ -302,6 +314,17 @@ class meshArxv():
         
         if check:
             self.checkIntegrity()
+    
+    def readDbRadex(self, specStr):
+        """look for and reads the files infoAllRadex.db.info.(specStr) and meshesRadex.db.(specStr). Once
+        read, the contents are set to self.infoAllRadex and self.meshesRadex. 
+        """ 
+        pass
+
+    def writeDbRadex(self, specStr):
+        """writes the files infoAllRadex.db.info.(specStr) and meshesRadex.db.(specStr).
+        """ 
+        pass        
         
     def mergeDbs(self, newDbRunDirPath, outDirPath = None):
         """ merges two databases into one and write the resulting db and its info file
@@ -624,42 +647,45 @@ class meshArxv():
         
         # computing the surface temperature interpolation function which will be used to make the high res maps
         #######################################################################################################
-        self.grdInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['00']['quantity'], 
-                                                                 slabIdx  = self.parms['gridsInfo']['00']['slabIdx'],
-                                                                 log10    = True,
-                                                                 *args, **kwargs)
+        if self.parms['gridsInfo']['00']['show']:
+            self.grdInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['00']['quantity'], 
+                                                                     slabIdx  = self.parms['gridsInfo']['00']['slabIdx'],
+                                                                     log10    = True,
+                                                                     *args, **kwargs)
         
         # computing the abundance interpolation function which will be used to make the high res maps
         #############################################################################################
-        self.abunGridInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['01']['quantity'], 
-                                                                      slabIdx  = self.parms['gridsInfo']['01']['slabIdx'],
-                                                                      arrIdx   = self.chemNet.species[self.parms['gridsInfo']['01']['specStr']].num,
-                                                                      log10    = True,
-                                                                      *args, **kwargs)
+        if self.parms['gridsInfo']['01']['show']:
+            self.abunGridInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['01']['quantity'], 
+                                                                          slabIdx  = self.parms['gridsInfo']['01']['slabIdx'],
+                                                                          arrIdx   = self.chemNet.species[self.parms['gridsInfo']['01']['specStr']].num,
+                                                                          log10    = True,
+                                                                          *args, **kwargs)
 
         # computing the column density interpolation function which will be used to make the high res maps
-        ##########################################################################################
-        
-        #getting the column densities for all the models
-        m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
-        values  = np.ndarray(self.nMeshes, dtype = np.float64)
+        ##################################################################################################
+        if self.parms['gridsInfo']['10']['show']:
+            #getting the column densities for all the models
+            m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+            values  = np.ndarray(self.nMeshes, dtype = np.float64)
+             
+            for i in np.arange(self.nMeshes):
+                m.setData( self.meshes[i])
+                specStr = self.parms['gridsInfo']['10']['specStr']
+                colDens = m.getColumnDensity(specsStrs = [specStr], maxAv = self.parms['gridsInfo']['10']['maxAv'] )
+                values[i] = colDens[0]
          
-        for i in np.arange(self.nMeshes):
-            m.setData( self.meshes[i])
-            specStr = self.parms['gridsInfo']['10']['specStr']
-            colDens = m.getColumnDensity(specsStrs = [specStr], maxAv = self.parms['gridsInfo']['10']['maxAv'] )
-            values[i] = colDens[0]
-     
-        self.colDensGridInterp_f = self.construct3DInterpolationFunction(values = values,
-                                                                         log10  = True,
-                                                                         *args, **kwargs)
+            self.colDensGridInterp_f = self.construct3DInterpolationFunction(values = values,
+                                                                             log10  = True,
+                                                                             *args, **kwargs)
 
         # computing the line intensity interpolation function which will be used to make the high res maps
-        self.intensityGridInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['11']['quantity'], 
-                                                                           slabIdx  = self.parms['gridsInfo']['11']['slabIdx'],
-                                                                           arrIdx   = self.chemNet.species[self.parms['gridsInfo']['11']['specStr']].num,
-                                                                           log10    = True,
-                                                                           *args, **kwargs)
+        if self.parms['gridsInfo']['11']['show']:
+            self.intensityGridInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['11']['quantity'], 
+                                                                               slabIdx  = self.parms['gridsInfo']['11']['slabIdx'],
+                                                                               arrIdx   = self.chemNet.species[self.parms['gridsInfo']['11']['specStr']].num,
+                                                                               log10    = True,
+                                                                               *args, **kwargs)
 
     def showSurfaceTemperatureGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the surface temperature grid
@@ -745,7 +771,16 @@ class meshArxv():
         
         pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
         
+    
+    def computeEmissionsRadex(self):
+        """Computes the emissions from all the meshes using Radex.
+        """
+        
+        radexObj = self.radexObj
+        transitionNum = self.radexParms['plotTransitionInGrid']
+
     def computeLineEmissionLvgGrid( self, meshInds, specStr):
+        """decomission this method, replaced by self.computeEmissionsRadex"""
         lineIntense = self.grds[1][1] 
         nInCells = lineIntense.copy()
         lineIntense.fill(0.0)
@@ -1057,20 +1092,24 @@ class meshArxv():
             # plotting the grids
             #-------------------
             # temperature grid (top left grid)
-            pyl.subplot( axsGrds_n[0, 0] )
-            self.showSurfaceTemperatureGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
+            if self.parms['gridsInfo']['00']['show']:
+                pyl.subplot( axsGrds_n[0, 0] )
+                self.showSurfaceTemperatureGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
             
             # abundances (top left grid)
-            pyl.subplot( axsGrds_n[0, 1] )
-            self.showAbundancesGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
+            if self.parms['gridsInfo']['01']['show']:
+                pyl.subplot( axsGrds_n[0, 1] )
+                self.showAbundancesGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
 
             # column densities (bottom left grid)
-            pyl.subplot( axsGrds_n[1, 0] )
-            self.showColumnDensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
+            if self.parms['gridsInfo']['10']['show']:
+                pyl.subplot( axsGrds_n[1, 0] )
+                self.showColumnDensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
 
             # line intensity (bottom right grid)
-            pyl.subplot( axsGrds_n[1, 1] )
-            self.showLineIntensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
+            if self.parms['gridsInfo']['11']['show']:
+                pyl.subplot( axsGrds_n[1, 1] )
+                self.showLineIntensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
             
                          
         # defining the buttons to control mechanical heating section        

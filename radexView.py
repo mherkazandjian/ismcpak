@@ -9,7 +9,7 @@ import numpy as np
 
 from radex import *
 
-Jall = np.arange(20) + 1
+Jall = np.arange(20) 
 
 # path of the radex excutable
 radexPath = '/home/mher/ism/code/radex/Radex/bin/radex' 
@@ -25,10 +25,11 @@ inFile = { 'specStr'                : 'CO'          ,
            'molnDens'               : 1e18          ,
            'lineWidth'              : 1.0           ,
            'runAnother'             : 1             }
-"""
-# single run (fails to plot stuf!!!!!!!!!!!why!!!!!!!)
-parms = ( ('tKin', 40), )
-"""
+
+# single run
+parms = ( 
+         ('tKin', 40), 
+        )
 
 """
 # vary the gas density
@@ -44,6 +45,7 @@ parms = ( ('tKin', 10),
           ('tKin', 90), )
 """
 
+"""
 #vary the kinetic temeperature
 inFile['tKin'] = 1000.0
 parms = ( ('molnDens', 1e16), 
@@ -54,6 +56,8 @@ parms = ( ('molnDens', 1e16),
           ('molnDens', 1e21),
           ('molnDens', 1e22),
           ('molnDens', 1e23))
+"""
+
 #-------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------
@@ -76,9 +80,13 @@ for i, p in enumerate( parms ):
 
     if radexObj.getStatus() &  radexObj.FLAGS['SUCCESS']:    
 
-        #print radexObj.getRawOutput()
+        if len(parms) > 1:
+            ax = axs[:,i]
+        else:
+            ax = axs
+        
         print 'number of iterations = %d' % radexObj.getNIter() 
-        radexObj.plotModelInFigureColumn(Jall, axs[:,i], '%.1f' % p[1],   )
+        radexObj.plotModelInFigureColumn(Jall, ax, '%.1f' % p[1],   )
 
     else:
         print 'warnings'

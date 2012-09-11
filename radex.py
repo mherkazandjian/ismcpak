@@ -28,7 +28,9 @@ class radex( ):
     :todo: docment the order in which things must be called.
     
     :warning: make sure that the lower and upper string names for the transitions are not longer than
-    10 character, or change the length accordinglt in self.generateTransitionDtype()
+    10 character, or change the length accordinglt in self.generateTransitionDtype().
+    
+    :test: test_radex.py, radexView.py
     """
 
     def __init__(self, execPath, molDataDir):
@@ -124,13 +126,16 @@ class radex( ):
         #  input parameters were constructed properly.
         self.outputHdr    = None  
          
+        self.nTansitions = None
+        """the number of transitions"""
+        
         self.transitions = None
-        """dict list : A list containing all the information of the computed lines.
-        each item in the list is a dictionary with the following keys.
+        """an ndarray of dtype self.transitionFormat holding all the info of the transitions. The dtype
+        has the following keys :
         
         .. code-block:: python
             
-           t = { 'upper'    : string          # the upper level of the transition     
+                 'upper'    : string          # the upper level of the transition     
                  'lower'    : string          # the lower level of the transition 
                  'E_up'     : numpy.float64   # Enery of the upper level 
                  'Tex'      : numpy.float64   # computed excitation temperatur
@@ -140,15 +145,7 @@ class radex( ):
                  'pop_down' : numpy.float64   # computed population density in the lower level
                  'fluxKkms' : numpy.float64   # computed flux in $K.km^{-1}.s^{-1}$
                  'fluxcgs'  : numpy.float64   # computed flux in cgs
-               }
         """
-        
-        self.nTansitions = None
-        """the number of transitions"""
-        
-        self.transitionsNdarray = None
-        """an ndarray of dtype self.transitionFormat holding all the info of the transitions"""
-        
         
         self.transitionDtype = self.generateTransitionDtype()
         """holds the numpy.dtype of the transitions. See self.generateTransitionDtype().
@@ -198,9 +195,10 @@ class radex( ):
         :type value: arbitrary [depends on the key to be modified, see :data:`inFile` documentation]
         """
         self.inFile[parm] = value
-    ## returns a parameter from self.inFile given the key in the dict
-    #  @param parm (str) : the string used to extract the vlaue from the dict
     def getInFileParm(self, parm):
+        """returns a parameter from self.inFile given the key in the dict as the argument 'parm'
+           which is a string used to extract the vlaue from the dict.
+        """
         return self.inFile[parm]
     def setInFile(self, inFile):
         self.inFile = inFile
@@ -221,10 +219,9 @@ class radex( ):
         list. For example, for CO, getTransition(0) would return the transition info for the 1-0 
         transition
         
-        :param idx: The index of the transition in the transition list. must be between 0 and len(self.#transitions) 
+        :param int32 idx: The index of the transition in the transition list. must be between 0 and len(self.#transitions) 
         :return dict:self.#transitions item
         """
-        print idx
         return self.transitions[idx]
     
     def getWarnings(self):
@@ -384,6 +381,14 @@ class radex( ):
          to extract the line data.
          
         :return: None. The instance variable self.transitions is set.
+        
+        :note: in parsing the output, the transitions info is between the lines containing
+        the units 
+              "(K)    (GHz) ..."
+        and
+              "Another calculation"
+        thisway, we can get the number of transitions (the number of new lines, the work on parsing the data
+        without the need to append anythign to a list..just preallocate the dtype and fill in the values.
         """
         
         try:
@@ -446,17 +451,15 @@ class radex( ):
                 transition = parseLineData(line)
                 transitions.append(transition)
                 
-            self.transitions = transitions
-            
             #copying the content of self.transitions into self.transitionsNdarrya
             ##:note: do this at one go without storing things first in self.transitiosn
             #******************************************************
-            self.nTansitions = len(self.transitions)
+            self.nTansitions = len(transitions)
             transitionsNdarray = np.ndarray((self.nTansitions), dtype = self.transitionDtype)
-            for i, trans in enumerate(self.transitions):
+            for i, trans in enumerate(transitions):
                 for key in trans.keys():
                     transitionsNdarray[i][key] = trans[key]
-            self.transitionsNdarray = transitionsNdarray
+            self.transitions = transitionsNdarray
             #******************************************************
             
             
@@ -510,7 +513,7 @@ class radex( ):
         
         if allTrans == None:
             allTrans =  np.arange( len(self.transitions) )
-            
+
         nTrans = len(allTrans)
         #----------------flux-------------------------
         axes = inAxes[0]
@@ -525,8 +528,8 @@ class radex( ):
             xPlot[i] = thisTrans
 
             transition = self.getTransition( thisTrans )
-            yThis = transition['fluxcgs'] 
-            
+            yThis = transition['fluxcgs']
+             
             yPlot[i] = yThis
             
             # construncting the latex string of the transitions
@@ -540,7 +543,6 @@ class radex( ):
                 lowerStr = '%s_{%s}'% (lowerStr[0], lowerStr[1])
             else:
                 lowerStr = lowerStr[0]
-
             
             thisTickStr = '$%s-%s$' %( upperStr, lowerStr )
             xticksStrs = xticksStrs + (thisTickStr ,)
@@ -640,16 +642,20 @@ class radex( ):
             axsLeft = axs[:,0].tolist()
             axsBotm = axs[3,:].tolist()
 
-            # removing all y labels
+            # removing all x and y labels from axes to the left
+            # of th zeroth column and above the bottom row
             for axRow in axs[0:-1]:
                 for ax in axRow[1:]:
                     removeAll_xLabels(ax)
                     removeAll_yLabels(ax)
         
-        # removing the xlabeles of from the left axes            
+        #removing the x labeles of from axes on the zeroth column
+        #excluding the one in the bottom one (lower-left corner)            
         for ax in axsLeft[0:-1]:
             removeAll_xLabels(ax)
-        # removing the xlabeles of from the left axes            
+        
+        #removing the y labeles of from axes on the bottom row, to the right of the 
+        #one on the lower-left corner
         for ax in axsBotm[1:]:
             removeAll_yLabels(ax)
                     
@@ -663,12 +669,13 @@ class radex( ):
             ax.set_xlabel('Trans') #;;; use the up-down string (rotated 90 deg) to plot the trans labele
 
         # removing the firt and last labels from the bottom and left axes
-        for ax in axsBotm + axsLeft:
-            xticks = ax.axes.xaxis.get_major_ticks()
-            yticks = ax.axes.yaxis.get_major_ticks()
-            for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
-                tick.label1On = False
-
+        if self.nx > 1:
+            for ax in axsBotm + axsLeft:
+                xticks = ax.axes.xaxis.get_major_ticks()
+                yticks = ax.axes.yaxis.get_major_ticks()
+                for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
+                    tick.label1On = False
+        
         #removing all labels from axes with no lines (only for multiple models)
         if self.nx > 1:
             for ax in axsBotm:

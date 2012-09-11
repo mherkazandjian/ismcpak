@@ -31,22 +31,30 @@ parms = {
          'metallicity'    : 1.0,
 
          'gridsInfo'     : { '00' : {#some quantity
+                                    'show'     : True,
                                     'quantity' : ['state', 'gasT'],
                                     'slabIdx'  : 0,
                                     },
                              '01' : {# abundance 
+                                    'show'     : True, 
                                     'quantity' : ['state', 'abun'],
                                     'slabIdx'  : 0,
                                     'specStr'  : 'H+',
                                     },
                              '10' : { # column density
+                                    'show'     : True,
                                     'maxAv'    : 10,
                                     'specStr'  : 'H2O',
                                     },
                              '11' : { # line intensitities
-                                     'quantity' : ['state', 'abun'],
-                                     'slabIdx'  : 0,
-                                     'specStr'  : 'H+',
+                                     'show'     : True,
+                                     #'type'     : 'pdr',  # or 'radex'
+                                     #'quantity' : ['fineStructureCoolingComponents','Si','rate','1-0'], # for use with 'pdr'
+                                     #'slabIdx'  : 0,  # not valid in 'radex' mode
+                                     
+                                     'type'     : 'radex',
+                                     'specStr'  : 'CO',     # database to be restored/computed 
+                                     'quantity' : ['SPECIE', 'TRANSITION','VALUE_FROM_TRANSIOTION'],
                                     },
                            },
          'gridsRes'      : 100,   
