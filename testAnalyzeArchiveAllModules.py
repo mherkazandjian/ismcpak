@@ -17,7 +17,7 @@ parms = {
 
          # reference database
          'runDirPath2'   : home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/',
-
+         
          'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
          'zSec'          : -30,  # section in the 3D dimension to be used for generating 
@@ -57,18 +57,21 @@ parms = {
                                      'quantity' : ['SPECIE', 'TRANSITION','VALUE_FROM_TRANSIOTION'],
                                     },
                            },
-         'gridsRes'      : 100,   
+         'gridsRes'      : 100,
+         
          'radex'         : { 'use'                  : True,
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
-                             'molDataDirPath'       :  home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
+                             'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : 'CO',
+                             'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
                              'collisionPartners'    : ['H2','H+','H'],
                              #'collisionPartners'    : ['H2','H','H+','e-']
                              #'collisionPartners'    : ['H2']
                              #'collisionPartners'    : ['H2','H+','e-','H']
-                             'plotTransitionInGrid' : 0,
+                             'tBack'                : 2.73,
+                             'lineWidth'            : 1.0,
                             },
          #-----------------chemical network parameters------------------------
          'chemistry'     : {
@@ -100,6 +103,7 @@ arxv.set_grid_axes_quantity_values(relativeGmech         = parms['relativeGmech'
 
 # plotting stuff
 pyl.ioff()
+"""
 arxv.plotGrid(parms['gridsRes'], 
               parms['zSec'], 
               radex = parms['radex'], 
@@ -109,6 +113,11 @@ arxv.plotGrid(parms['gridsRes'],
               parms = parms)
 
 pyl.show()
+"""
+
+arxv.constructRadexDatabase(writeDb = True)
+arxv.writeDbRadex()
+
 """
 #arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
 pyl.show()

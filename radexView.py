@@ -26,12 +26,13 @@ inFile = { 'specStr'                : 'CO'          ,
            'lineWidth'              : 1.0           ,
            'runAnother'             : 1             }
 
+"""
 # single run
 parms = ( 
          ('tKin', 40), 
         )
-
 """
+
 # vary the gas density
 inFile['molnDens'] = 1e23
 parms = ( ('tKin', 10), 
@@ -43,7 +44,6 @@ parms = ( ('tKin', 10),
           ('tKin', 70),
           ('tKin', 80),
           ('tKin', 90), )
-"""
 
 """
 #vary the kinetic temeperature
@@ -89,6 +89,8 @@ for i, p in enumerate( parms ):
         radexObj.plotModelInFigureColumn(Jall, ax, '%.1f' % p[1],   )
 
     else:
+        print 'radex status = ', radexObj.getStatus()
+        #print 'transitions = ', radexObj.transitions
         print 'warnings'
         print '--------'
         print radexObj.warnings

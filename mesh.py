@@ -487,7 +487,7 @@ class mesh( ):
     #  slab. Only slabs which have abundances greater than XX_threshold are taken
     #  into account in computing N(XX) and the average collider densities and the 
     #  average temepratures.
-    def getRadexParameters(self, speciesStr=None, threshold=None):
+    def getRadexParameters(self, speciesStr = None, threshold = None):
         """Returns a list (TMean, nDenseColl, N_specLVG which are 
         the weighted averaged temperature, number density of the collider species and the
         column density of speciesStr. 

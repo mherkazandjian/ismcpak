@@ -9,19 +9,20 @@ home = '/home/mher'
 #runDirPath =  home + '/ism/runs/oneSided/uniformSweep2-foo/'
 #runDirPath =  home + '/ism/runs/oneSided/testOneSidedPDRGrid4/'
 #runDirPath =  home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
-runDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1/'
+#runDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1/'
+runDirPath =  home + '/ism/runs/oneSided/foo/'
 
 # constructing the archive
 t0 = time()
-arxvW = meshArxv(  )
-arxvW.construct( runDirPath, writeDb = True )
+arxvW = meshArxv( dirPath = runDirPath )
+arxvW.construct( writeDb = True )
 print 'time constructing %f' % (time() - t0)
 
 
 # reading the archive 
 t0 = time()
-arxvR = meshArxv(  )
-arxvR.readDb( runDirPath )
+arxvR = meshArxv( dirPath = runDirPath )
+arxvR.readDb( )
 print 'time reading %f' % (time() - t0)
 
 # checking the accuracy

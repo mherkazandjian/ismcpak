@@ -70,13 +70,13 @@ class radex( ):
           .. code-block:: python
              :linenos:
 
-             inFile = { 'specStr'                : 'CO'        ,
+             inFile = { 'specStr'                : 'CO'        ,  
                         'freqRange'              : [0, 50000]  ,
                         'tKin'                   : 10.0        ,
                         'collisionPartners'      : ['H2']      ,
                         'nDensCollisionPartners' : [1e3]       ,
                         'tBack'                  : 2.73        ,
-                        'molnDens'               : 1e14        ,
+                        'molnDens'               : 1e14        , # column density of the species 'specStr'
                         'lineWidth'              : 1.0         ,
                         'runAnother'             : 1           }
              

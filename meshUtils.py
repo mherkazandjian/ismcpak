@@ -85,22 +85,6 @@ class meshArxv():
             self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
         """
 
-        self.infoAllRadex = None
-        """A numpy ndarray of length self.nMeshes of type numpy.int32 which holds 
-        the number of transitions computed for the mesh it corresponds to in self.meshes and
-        self.infoAll. A value of zero means that there were was valid output from radex.
-        
-        :note: the transitions are stored even if there are warnings when running radex. So 
-        take good care when analyzing the data. The info of this attribute is stored into 
-        infoAllRadex.db.info.(specStr). Each specie will have its own .db.info.... file
-        and a corresponding .db.(specStr) file which will hold all the data in self.meshesRadex.
-        """
-                    
-        self.meshesRadex = None
-        """A list holding all the info dumped by radex for each model. Each entry in the list is an ndarray
-        of dtype radex.transitionDtype. 
-        """
-        
         self.infoAll    = None 
         """A numpy ndarray of dtype arxvHdrDtype (see below) which contains the info
            (headers) about all the meshes each entry in this array contains two things,
@@ -119,6 +103,43 @@ class meshArxv():
            self.infoAll[x]['parms'][4]  0.0  NOT USED\n
         """
 
+        #---------------------------radex data storage attributes0000-----------------------------------
+        self.verRadex = None
+        """a 3 element np.int32 array holding the version of the radex database currently in use."""
+        
+        self.infoAllRadex = None
+        """A numpy ndarray of length self.nMeshes of dtype returned by self.arxvRadexHdrFormat which
+        holds the number of transitions computed for the mesh it corresponds to in self.meshes and
+        self.infoAll. A value of zero means that there were was valid output from radex. The contents
+        of each elements in the array are (describing the dtype entries):
+        
+        .. code-block:: python
+            
+            self.infoAll[x]['info'][0]   mesh number 
+            self.infoAll[x]['info'][1]   number of transitions (0 => no radex data for this mesh)
+            self.infoAll[x]['info'][2]   offset from the start of file (computed and set only when the databse will be written, 0 otherwise)
+            self.infoAll[x]['info'][3]   warning code # holds radex.status after radex runs for the model
+            self.infoAll[x]['info'][4]   error code
+         
+            self.infoAll[x]['parms'][0]  G0  (same as the entries in self.infoAll)
+            self.infoAll[x]['parms'][1]  nGas
+            self.infoAll[x]['parms'][2]  gammaMech
+            self.infoAll[x]['parms'][3]  0.0, NOT USED
+            self.infoAll[x]['parms'][4]  0.0  NOT USED
+
+
+        :note: the transitions are stored even if there are warnings when running radex. So 
+        take good care when analyzing the data. The info of this attribute is stored into 
+        infoAllRadex.db.info.(specStr). Each specie will have its own .db.info.... file
+        and a corresponding .db.(specStr) file which will hold all the data in self.meshesRadex.
+        """
+                    
+        self.meshesRadex = None
+        """A list holding all the info dumped by radex for each model. Each entry in the list is an ndarray
+        of dtype radex.transitionDtype. 
+        """
+        #-------------------------------------------------------------------------------------
+        
         self.grid_qx = None
         """A list pointing to the quantity in the mesh.data dtype to be used for the x-axsi"""
         self.grid_x = None
@@ -170,35 +191,36 @@ class meshArxv():
 
         self.radexObj   = None
         #--------------------------GEN AND PLOT RADEX CURVES---------------------------------
-        if self.parms['radex']['use']:
-            #making the instance            
-            self.radexObj = radex(self.parms['radex']['path'], self.parms['radex']['molDataDirPath'])
-            #setting some default radex paraemeters
-            inFile = {'specStr'                : None  , 
-                      'outPath'                : 'foo' ,
-                      'freqRange'              : [0, 0],
-                      'tKin'                   : None  ,
-                      'collisionPartners'      : None  ,
-                      'nDensCollisionPartners' : None  ,
-                      'tBack'                  : 2.73  ,  # fixed
-                      'molnDens'               : None  ,
-                      'lineWidth'              : 1.0   ,  # fixed
-                      'runAnother'             : 1     }
-            self.radexObj.setInFile( inFile )
+        if 'radex' in self.parms:
+            if self.parms['radex']['use']:
+                #making the instance            
+                self.radexObj = radex(self.parms['radex']['path'], self.parms['radex']['molDataDirPath'])
+                #setting some default radex paraemeters
+                inFile = {'specStr'                : self.parms['radex']['specStr'],
+                          'outPath'                : 'foo' ,
+                          'freqRange'              : self.parms['radex']['freqRange'],
+                          'tKin'                   : None  ,  # depending on the model
+                          'collisionPartners'      : self.parms['radex']['collisionPartners'],
+                          'nDensCollisionPartners' : None  ,  # depending on the model
+                          'tBack'                  : self.parms['radex']['tBack'],  # fixed
+                          'molnDens'               : None  ,  # depending on the model
+                          'lineWidth'              : self.parms['radex']['lineWidth'],  # fixed
+                          'runAnother'             : 1     }
+                self.radexObj.setInFile( inFile )
 
     # read all the meshes files in the dir and construct the
     # database
-    def construct(self, dirName , meshNamePrefix = None, writeDb = None ):
+    def construct(self, meshNamePrefix = None, writeDb = None ):
         """ construc the database anad write the .db files. If the meshNamePrefix is
-              not supplied all the files in dirName are assumed to be data files
+              not supplied all the files in self.dirPath are assumed to be data files
               and all of them are put in the database."""
         
         if meshNamePrefix == None:
             meshNamePrefix = ''
-
+        
         # getting the names of the meshes in that dir
         files = []
-        for infile in glob.glob( os.path.join(dirName, 'meshes/'+meshNamePrefix + '*') ):
+        for infile in glob.glob( os.path.join(self.dirPath, 'meshes/'+meshNamePrefix + '*') ):
             files.append(infile)
         
         # setting variable for the 
@@ -245,11 +267,12 @@ class meshArxv():
         self.infoAll = infoAll
         
         if writeDb != None:
-            self.writeDb(dirName)
+            self.writeDb()
 
-    def writeDb(self, dirName):
+    def writeDb(self):
         """ writes the mesh.db and mesh.db.ino into the dir dirName"""
-                
+        
+        dirName = self.dirPath
         # writing the mesh to the database file
         dbDataFObj = file(dirName + 'meshes.db', 'wb')
         
@@ -268,6 +291,37 @@ class meshArxv():
         
         print 'wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
 
+    def writeDbRadex(self):
+        """ writes the radex meshesRadex.db and meshesRadex.db.info into the self.parms['dirPath']"""
+
+        # writing the mesh to the database file
+        dbDataFObj = file(self.parms['dirPath'] + 'meshesRadex.db', 'wb')
+        
+        #for i in np.arange( self.nMeshes ):  
+        for i in np.arange( 10 ):    ################### remove this, use all meshes afterwards   
+                                     ################### only 10 were used in construcRadexDatabnase         
+            #writing the transition info to the transiotions db file
+            if self.meshesRadex[i] != None:
+                self.meshesRadex[i].tofile( dbDataFObj )
+            #filling the necessary values in infoAllRadex
+            self.infoAllRadex[i]['info'][2] = dbDataFObj.tell()  # offset from the start of file
+            np.array( self.infoAllRadex[i]['info'][2] ).tofile(dbDataFObj)
+        dbDataFObj.close()
+        
+        
+        #copying the mesh parameters self.infoAll[:]['parms] to self.infoAllRadex[:]['parms']
+        #for i in np.arange(self.nMeshes):
+        for i in np.arange( 10 ):  ##############remove this, use all meshes afterwards
+            self.infoAllRadex[i]['parms'][:] = self.infoAll[i]['parms']
+            
+        # writing the db info into a file
+        dbInfoFObj = file(self.parms['dirPath'] + 'meshesRadex.db.info', 'wb')
+        self.verRadex.tofile( dbInfoFObj)
+        self.nMeshes.tofile( dbInfoFObj )
+        self.infoAllRadex.tofile( dbInfoFObj )
+        dbInfoFObj.close()
+        print 'wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
+        
         
     def readDb(self, check = None):
         """ reads the database and assigns the appropritate attributes (document)
@@ -291,7 +345,7 @@ class meshArxv():
         self.meshes = []
         
         for i in np.arange(self.nMeshes):
-                
+            
             mDummy = mesh()
             
             nSteps  = self.infoAll[i]['info'][3]
@@ -321,11 +375,7 @@ class meshArxv():
         """ 
         pass
 
-    def writeDbRadex(self, specStr):
-        """writes the files infoAllRadex.db.info.(specStr) and meshesRadex.db.(specStr).
-        """ 
-        pass        
-        
+    
     def mergeDbs(self, newDbRunDirPath, outDirPath = None):
         """ merges two databases into one and write the resulting db and its info file
             :param string newDbRunDirPath: the dir in which the new db to be added to the current db is located.
@@ -366,6 +416,23 @@ class meshArxv():
         self.ver[0] = 0
         self.ver[1] = 0
         self.ver[2] = 2
+
+        return [ 
+                  ('info' , np.int64  , 6),
+                  ('parms', np.float64, 5)
+               ]
+
+    def arxvRadexHdrFormat(self):
+        """ the format for the radex archive header from which the dtype will be constructed
+         specifying the info and paramters for each line in the header
+         in version 1 : the 'info' is defined as : ('info' , np.int64  , 5)
+         """        
+        
+        # defining the version of the database
+        self.verRadex = np.zeros([3], dtype = np.int32)
+        self.verRadex[0] = 0
+        self.verRadex[1] = 0
+        self.verRadex[2] = 1
 
         return [ 
                   ('info' , np.int64  , 6),
@@ -681,11 +748,13 @@ class meshArxv():
 
         # computing the line intensity interpolation function which will be used to make the high res maps
         if self.parms['gridsInfo']['11']['show']:
+            """
             self.intensityGridInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['11']['quantity'], 
                                                                                slabIdx  = self.parms['gridsInfo']['11']['slabIdx'],
                                                                                arrIdx   = self.chemNet.species[self.parms['gridsInfo']['11']['specStr']].num,
                                                                                log10    = True,
                                                                                *args, **kwargs)
+            """
 
     def showSurfaceTemperatureGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the surface temperature grid
@@ -772,13 +841,88 @@ class meshArxv():
         pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
         
     
-    def computeEmissionsRadex(self):
-        """Computes the emissions from all the meshes using Radex.
+    def constructRadexDatabase(self, writeDb = None):
+        """runs radex on all the models in self.meshes, and computes the line info according
+        to the parameters in self.parms['radex']. Once done computing, it stores
+        all the generated info into self.infoAllRadex and self.meshesRadex.
+        
+        :param bool writeDb: if this is set to true, self.infoAllRadex is writtent to a 
+        file self.dirPath/infoAllRadex.db.info.'specStr' and self.meshesRadex is written
+        to self.dirPath/meshesRadex.db.'specStr'
         """
         
-        radexObj = self.radexObj
-        transitionNum = self.radexParms['plotTransitionInGrid']
+        # defining the array holding the info about all the computed radex transitions
+        # for each model in self.meshes and their location in the radex database ..etc..
+        arxvRadexHdrDtype = np.dtype( self.arxvRadexHdrFormat() )
+        infoAllRadex = np.ndarray( self.nMeshes, dtype = arxvRadexHdrDtype )
+        #initiliizing to zero
+        infoAllRadex[:] = 0
+        meshesRadex = []
 
+        
+        radexObj = self.radexObj
+        # mesh object which will be used as a utility to compute the stuff needed 
+        # by radex to run, as in m.getRadexParameters() to get tKin, nDensCollisionPartners, molnDens
+        m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+        
+        specStr  = self.parms['radex']['specStr']
+        xH2_Min  = self.parms['radex']['xH2_Min']
+        
+        #for i in np.arange(self.nMeshes):
+        for i in np.arange(10): ################### remove this, use all meshes afterwards
+            
+            print 'pdr mesh index =  %d : ' % i
+            
+            m.setData( self.meshes[i] )
+            (gasTRadex, nColls, colDensThisSpec,) = m.getRadexParameters(speciesStr = specStr,
+                                                                         threshold  = xH2_Min)
+            print gasTRadex, nColls, colDensThisSpec
+            
+            # getting the collider densities in the same order of the supplied input spcie string list 
+            nDensColls = [ nColls[collSpecStr] for collSpecStr in self.parms['radex']['collisionPartners'] ]
+            collsStr   = list(self.parms['radex']['collisionPartners'])
+            print 'input coll species', self.parms['radex']['collisionPartners'] 
+            print 'nColls after putting them in the right order = ', nDensColls
+
+            print 'radexGrid : radex parms : ', gasTRadex, nDensColls, colDensThisSpec
+            radexObj.setInFileParm('tKin', gasTRadex)
+            radexObj.setInFileParm('collisionPartners', collsStr )
+            radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
+            radexObj.setInFileParm('molnDens', colDensThisSpec)
+
+            #remove colliders which are underabundant (below radex limits)
+            radexObj.filterColliders()
+
+            if len(radexObj.inFile['collisionPartners']) == 0:
+                print 'all colliders have densities outsie the range accepted by radex'
+                continue
+            
+            #setting radex to the defaul status before running it
+            radexObj.setDefaultStatus()
+            #run radex for this model
+            status = radexObj.run( checkInput = True )
+
+            #saving the status into the attribute
+            infoAllRadex[i]['info'][3] = status
+            #appending the transition data of this mesh to the attribute 
+            
+            meshesRadex.append(radexObj.transitions)
+            
+            if status & radexObj.FLAGS['SUCCESS']:
+                print 'radexGrid : converged with no warnings'
+            else:
+                print 'radexGrid : converged with warnings'
+                print '------------------------------------'
+                print radexObj.getWarnings()
+                print '------------------------------------'
+                continue
+
+            print '---------------------------------------------------------'
+            
+
+        self.infoAllRadex = infoAllRadex
+        self.meshesRadex = meshesRadex
+        
     def computeLineEmissionLvgGrid( self, meshInds, specStr):
         """decomission this method, replaced by self.computeEmissionsRadex"""
         lineIntense = self.grds[1][1] 
@@ -823,7 +967,7 @@ class meshArxv():
             collsStr   = list(self.radexParms['collisionPartners'])
             #print 'input coll species', self.radexParms['collisionPartners'] 
             #print 'nColls after putting them in the right order = ', nDensColls
-
+            
             print 'radexGrid : radex parms : ', gasTRadex, nDensColls, colDensThisSpec
             radexObj.setInFileParm('tKin', gasTRadex)
             radexObj.setInFileParm('collisionPartners', collsStr )
