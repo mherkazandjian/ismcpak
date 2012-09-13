@@ -115,17 +115,17 @@ class meshArxv():
         
         .. code-block:: python
             
-            self.infoAll[x]['info'][0]   mesh number 
-            self.infoAll[x]['info'][1]   number of transitions (0 => no radex data for this mesh)
-            self.infoAll[x]['info'][2]   offset from the start of file (computed and set only when the databse will be written, 0 otherwise)
-            self.infoAll[x]['info'][3]   warning code # holds radex.status after radex runs for the model
-            self.infoAll[x]['info'][4]   error code
+            self.infoAllRadex[x]['info'][0]   mesh number 
+            self.infoAllRadex[x]['info'][1]   number of transitions (0 => no radex data for this mesh)
+            self.infoAllRadex[x]['info'][2]   offset from the start of file (computed and set only when the databse will be written, 0 otherwise)
+            self.infoAllRadex[x]['info'][3]   warning code # holds radex.status after radex runs for the model
+            self.infoAllRadex[x]['info'][4]   error code
          
-            self.infoAll[x]['parms'][0]  G0  (same as the entries in self.infoAll)
-            self.infoAll[x]['parms'][1]  nGas
-            self.infoAll[x]['parms'][2]  gammaMech
-            self.infoAll[x]['parms'][3]  0.0, NOT USED
-            self.infoAll[x]['parms'][4]  0.0  NOT USED
+            self.infoAllRadex[x]['parms'][0]  G0  (same as the entries in self.infoAll)
+            self.infoAllRadex[x]['parms'][1]  nGas
+            self.infoAllRadex[x]['parms'][2]  gammaMech
+            self.infoAllRadex[x]['parms'][3]  0.0, NOT USED
+            self.infoAllRadex[x]['parms'][4]  0.0  NOT USED
 
 
         :note: the transitions are stored even if there are warnings when running radex. So 
@@ -269,10 +269,17 @@ class meshArxv():
         if writeDb != None:
             self.writeDb()
 
-    def writeDb(self):
-        """ writes the mesh.db and mesh.db.ino into the dir dirName"""
+    def writeDb(self, dirName = None):
+        """ writes the mesh.db and mesh.db.ino into the dir dirName. By default the files are
+        written to the directorey self.dirName, unless a diffrent path is specified via
+        the keyword dirName.
         
-        dirName = self.dirPath
+        :param string dirName: The directory where to write the database files.
+        """
+        
+        if dirName == None:
+            dirName = self.dirPath
+        
         # writing the mesh to the database file
         dbDataFObj = file(dirName + 'meshes.db', 'wb')
         
@@ -289,39 +296,7 @@ class meshArxv():
         self.infoAll.tofile( dbInfoFObj )
         dbInfoFObj.close()
         
-        print 'wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
-
-    def writeDbRadex(self):
-        """ writes the radex meshesRadex.db and meshesRadex.db.info into the self.parms['dirPath']"""
-
-        # writing the mesh to the database file
-        dbDataFObj = file(self.parms['dirPath'] + 'meshesRadex.db', 'wb')
-        
-        #for i in np.arange( self.nMeshes ):  
-        for i in np.arange( 10 ):    ################### remove this, use all meshes afterwards   
-                                     ################### only 10 were used in construcRadexDatabnase         
-            #writing the transition info to the transiotions db file
-            if self.meshesRadex[i] != None:
-                self.meshesRadex[i].tofile( dbDataFObj )
-            #filling the necessary values in infoAllRadex
-            self.infoAllRadex[i]['info'][2] = dbDataFObj.tell()  # offset from the start of file
-            np.array( self.infoAllRadex[i]['info'][2] ).tofile(dbDataFObj)
-        dbDataFObj.close()
-        
-        
-        #copying the mesh parameters self.infoAll[:]['parms] to self.infoAllRadex[:]['parms']
-        #for i in np.arange(self.nMeshes):
-        for i in np.arange( 10 ):  ##############remove this, use all meshes afterwards
-            self.infoAllRadex[i]['parms'][:] = self.infoAll[i]['parms']
-            
-        # writing the db info into a file
-        dbInfoFObj = file(self.parms['dirPath'] + 'meshesRadex.db.info', 'wb')
-        self.verRadex.tofile( dbInfoFObj)
-        self.nMeshes.tofile( dbInfoFObj )
-        self.infoAllRadex.tofile( dbInfoFObj )
-        dbInfoFObj.close()
-        print 'wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
-        
+        print 'wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)        
         
     def readDb(self, check = None):
         """ reads the database and assigns the appropritate attributes (document)
@@ -369,12 +344,119 @@ class meshArxv():
         if check:
             self.checkIntegrity()
     
-    def readDbRadex(self, specStr):
-        """look for and reads the files infoAllRadex.db.info.(specStr) and meshesRadex.db.(specStr). Once
-        read, the contents are set to self.infoAllRadex and self.meshesRadex. 
-        """ 
-        pass
+    def writeDbRadex(self, dirName = None):
+        """ writes the radex meshesRadex.db and meshesRadex.db.info files.  By default the files are
+        written to the directorey self.dirName. , unless a diffrent path is specified via
+        the keyword dirName. For each mesh, a block consists of : [log10_G0, log10_nGas, log10_gammaMech,],
+        transitionData, filePosition....etc...
+        if transitionData is none, then transitionData is not written in the block, but the rest of the
+        block is written.
+        
+        
+        :param string dirName: The directory where to write the database files.
+        """
+    
+        if dirName == None:
+            dirName = self.dirPath
+        
+        # writing the mesh to the database file
+        dbDataFObj = file(dirName + 'meshesRadex.db', 'wb')
+        
+        for i in np.arange( self.nMeshes ):
+            
+            #writing the mesh parameters before writing the transition data (extra data integrirty check)
+            thisMeshParms = np.array([self.meshes[i]['hdr']['G0'],
+                                      self.meshes[i]['hdr']['nGas'],
+                                      self.meshes[i]['hdr']['gammaMech']], dtype = np.float64)
+            thisMeshParms.tofile( dbDataFObj )
 
+            #writing the transition info to the transiotions db file
+            if self.meshesRadex[i] != None:
+                #writing the transition data
+                self.meshesRadex[i].tofile( dbDataFObj )
+                #filling the necessary values in infoAllRadex
+                self.infoAllRadex[i]['info'][2] = dbDataFObj.tell()  # offset from the start of file
+            else:
+                self.infoAllRadex[i]['info'][2] = -1
+
+            np.array( self.infoAllRadex[i]['info'][2] ).tofile(dbDataFObj)
+
+        dbDataFObj.close()
+        
+        # writing the db info into a file
+        dbInfoFObj = file(self.parms['dirPath'] + 'meshesRadex.db.info', 'wb')
+        self.verRadex.tofile( dbInfoFObj)
+        self.nMeshes.tofile( dbInfoFObj )
+        self.infoAllRadex.tofile( dbInfoFObj )
+        dbInfoFObj.close()
+        print 'wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
+
+    def readDbRadex(self, specStr, check = None):
+        """ reads the database sufficed by specStr (i.e meshesRadex.db.(specStr)and assigns the appropritate attributes (document)
+            
+            :param bool check: if this is set (to any value) the self.checkIntegrity() is called.
+            :param string specStr: the string of the specie whose database is to be read.
+            :warning: the keyword specStr is not functional yet.
+            :note: before calling this mehtod, an instance of the radex class should be     
+              assigned to self.radexObj. 
+        """ 
+        
+        dbInfoFObj = file(self.dirPath + 'meshesRadex.db.info', 'rb')
+        dbDataFObj = file(self.dirPath + 'meshesRadex.db'     , 'rb')
+
+        self.verRadex = np.fromfile( dbInfoFObj, dtype = (np.int32, 3), count = 1)
+        self.verRadex = self.verRadex[0]
+
+        nMeshes = np.fromfile( dbInfoFObj, dtype = np.int32, count = 1)
+        if self.nMeshes != nMeshes:
+            raise ValueError('number of meshes in radex database is different from that of the meshes database')
+        
+        arxvRadexHdrDtype = np.dtype( self.arxvRadexHdrFormat() )
+        infoAllRadex = np.fromfile( dbInfoFObj, dtype = arxvRadexHdrDtype, count = self.nMeshes)
+        dbInfoFObj.close()
+        
+        # reading the meshes in database into a list 
+        meshesRadex = []
+        radexTransitionsDtype = self.radexObj.generateTransitionDtype()
+
+        for i in np.arange(self.nMeshes):
+
+            meshParms = np.fromfile( dbDataFObj, dtype = np.float64, count = 3)
+
+            #overwriting the read parms into the infoAllRadex['parms']
+            infoAllRadex[i]['parms'][0] = meshParms[0] #G0
+            infoAllRadex[i]['parms'][1] = meshParms[1] #nGas
+            infoAllRadex[i]['parms'][2] = meshParms[2] #gammaMech
+                         
+            # the number of transitions save in the database for this mesh
+            nTransitions = infoAllRadex[i]['info'][1]
+            
+            if nTransitions > 0:
+                #reading the transition data for this mesh 
+                thisMeshRadexData = np.fromfile( dbDataFObj, dtype = radexTransitionsDtype, count = nTransitions)
+            else:
+                thisMeshRadexData = None
+                
+            #reading the check flag, which is the position in bytes in the database
+            checkNum = np.fromfile( dbDataFObj, dtype = np.int64, count = 1)
+
+            if checkNum != infoAllRadex[i]['info'][2]:
+                strng  = 'Error : checkpoint numbers do not match : database may be corrupt.\n'
+                strng += 'read = %d, expected = %d' % (checkNum, infoAllRadex[i]['info'][2])
+                strng += ' when reading mesh %d' % i                
+                raise NameError(strng)
+
+            #self.meshes.append( thisMeshRadexData[0] )                
+            meshesRadex.append( thisMeshRadexData )                
+        print 'read successfully radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
+
+        self.infoAllRadex = infoAllRadex
+        self.meshesRadex = meshesRadex
+        
+        if check:
+            self.checkIntegrityRadex()
+            
+            
     
     def mergeDbs(self, newDbRunDirPath, outDirPath = None):
         """ merges two databases into one and write the resulting db and its info file
@@ -458,6 +540,34 @@ class meshArxv():
                            np.log10(self.meshes[i]['hdr']['nGas']),
                            np.log10(self.meshes[i]['hdr']['gammaMech'])])
 
+            xdv = x2 - x1
+            diff +=  np.sqrt( np.dot(xdv,xdv) )
+            
+        if diff == 0.0:
+            print 'archive integrity test passed'
+        else:
+            strng = 'archive integrity test failed. database file may be corrupt' 
+            raise NameError(strng)
+
+    def checkIntegrityRadex(self):
+        """checks the radex db archive integrity by comparing the read parameters for each mesh
+        (3 float 64's before the transiotion data) which are stored into self.infoAllRadex['parms']
+        once they are read from the meshesRadex.db.specStr and compares them to the mesh 
+        parameters in self.infoAll['parms'].
+             
+        :TODO: see how to implement a checksum to check for the integrity of the data.
+        """
+
+        diff = 0.0
+        for i in np.arange(self.nMeshes):
+            x1 = np.array([np.log10(self.infoAllRadex[i]['parms'][0]),
+                           np.log10(self.infoAllRadex[i]['parms'][1]),
+                           np.log10(self.infoAllRadex[i]['parms'][2])])
+            
+            x2 = np.array([np.log10(self.infoAll[i]['parms'][0]),
+                           np.log10(self.infoAll[i]['parms'][1]),
+                           np.log10(self.infoAll[i]['parms'][2])])
+            print x1, x2
             xdv = x2 - x1
             diff +=  np.sqrt( np.dot(xdv,xdv) )
             
@@ -859,6 +969,7 @@ class meshArxv():
         infoAllRadex[:] = 0
         meshesRadex = []
 
+        self.nMeshes = np.int32(1000)###############################REMOVE
         
         radexObj = self.radexObj
         # mesh object which will be used as a utility to compute the stuff needed 
@@ -868,8 +979,7 @@ class meshArxv():
         specStr  = self.parms['radex']['specStr']
         xH2_Min  = self.parms['radex']['xH2_Min']
         
-        #for i in np.arange(self.nMeshes):
-        for i in np.arange(10): ################### remove this, use all meshes afterwards
+        for i in np.arange(self.nMeshes):
             
             print 'pdr mesh index =  %d : ' % i
             
@@ -899,16 +1009,31 @@ class meshArxv():
             
             #setting radex to the defaul status before running it
             radexObj.setDefaultStatus()
+            
             #run radex for this model
             status = radexObj.run( checkInput = True )
 
-            #saving the status into the attribute
+            #setting the basic radex run info into the attribute
+            #-----------------------------------------------------------
+            #saving the number of transitions into radex info attribute
+            infoAllRadex[i]['info'][0] = i
+            if not radexObj.flagSet('ERROR'):
+                infoAllRadex[i]['info'][1] = radexObj.nTransitions
+                meshesRadex.append(radexObj.transitions)
+            else:
+                infoAllRadex[i]['info'][1] = 0 #no trainsitions
+                meshesRadex.append(None)
+                radexObj.printSetFlags()
+
+            #infoAllRadex[i]['info'][2] = NOT SET HERE, IT IS SET WHEN WRITING THE DB TO A FILE
+            
+            #setting the status into the attribute
             infoAllRadex[i]['info'][3] = status
             #appending the transition data of this mesh to the attribute 
+            #-----------------finished saving the info------------------
             
-            meshesRadex.append(radexObj.transitions)
             
-            if status & radexObj.FLAGS['SUCCESS']:
+            if radexObj.flagSet('SUCCESS'):
                 print 'radexGrid : converged with no warnings'
             else:
                 print 'radexGrid : converged with warnings'
@@ -920,8 +1045,15 @@ class meshArxv():
             print '---------------------------------------------------------'
             
 
+        #copying the mesh parameters self.infoAll[:]['parms] to self.infoAllRadex[:]['parms']
+        for i in np.arange( self.nMeshes ):
+            infoAllRadex[i]['parms'][:] = self.infoAll[i]['parms']
+
         self.infoAllRadex = infoAllRadex
         self.meshesRadex = meshesRadex
+        
+        if writeDb == True:
+            self.writeDbRadex()
         
     def computeLineEmissionLvgGrid( self, meshInds, specStr):
         """decomission this method, replaced by self.computeEmissionsRadex"""

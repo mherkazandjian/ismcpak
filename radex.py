@@ -111,22 +111,29 @@ class radex( ):
         the parameter molData in the input parameter file is constructed by appending
         the value of 'specStr' to self.molDataDir 
         """
-        ## integer : number of collision partners. This is the length of the list self.inFile['collisionPartners']
-        self.nCollPart    = None     
-        ## subproccess.popen object : Object used to communicate with the executable
+        self.nCollPart    = None
+        """integer : number of collision partners. This is the length of the list self.inFile['collisionPartners']"""
+     
         self.proccess     = None     
-        ## string : the output of the run which would be dumped by RADEX when ran standalone 
-        self.rawOutput    = None 
-        ## list of strings : A list of strings containing the dumped by radex, if any. If there are
-        #  any warnings, the appropriate flag is set in self.#FLAGS
-        self.warnings     = None
-        ## integer : number of iterations used when the run finishes.
-        self.nIter        = None
-        ## string : the header of the raw output. This is useful for inspecting wheather the 
-        #  input parameters were constructed properly.
-        self.outputHdr    = None  
+        """subproccess.popen object : Object used to communicate with the executable"""
          
-        self.nTansitions = None
+        self.rawOutput    = None
+        """string : the output of the run which would be dumped by RADEX when ran standalone"""
+         
+        self.warnings     = None
+        """list of strings : A list of strings containing the dumped by radex, if any. If there are
+        any warnings, the appropriate flag is set in self.#FLAGS
+        """
+
+        self.nIter        = None
+        """integer : number of iterations used when the run finishes."""
+
+        self.outputHdr    = None  
+        """string : the header of the raw output. This is useful for inspecting wheather the 
+        input parameters were constructed properly.
+        """
+         
+        self.nTransitions = None
         """the number of transitions"""
         
         self.transitions = None
@@ -151,41 +158,49 @@ class radex( ):
         """holds the numpy.dtype of the transitions. See self.generateTransitionDtype().
         """
         
-        ## dict : Flags set when running radex which can be used to examing the output. The flags are :
-        # \verbatim
-        #  'DEFAULT'  : Default status, should be called before each run 
-        #  'ERROR'    : failed 
-        #  'PARMSOK'  : parameters are ok 
-        #  'RUNOK'    : radex did all the iterations (but not neccesarly converged)
-        #  'SUCCESS'  : succeeded with no major warning (output should make sense)
-        #  'WARNING'  : success with warnings, warning are assigned to self.warnings 
-        #  'ITERWARN' : number of iterations warning
-        # \endverbatim See the source for the value of each flag
         self.FLAGS       = {'DEFAULT': 0x000, 'ERROR'  : 0x001, 'PARMSOK' : 0x002, 'RUNOK': 0x004,   
                             'SUCCESS': 0x008, 'WARNING': 0x010, 'ITERWARN': 0x020}   
+        """dict : Flags set when running radex which can be used to examing the output. The flags are :
+         
+           .. code-block:: python
+           
+             'DEFAULT'  : Default status, should be called before each run 
+             'ERROR'    : failed 
+             'PARMSOK'  : parameters are ok 
+             'RUNOK'    : radex did all the iterations (but not NECCESARILY converged)
+             'SUCCESS'  : succeeded with no major warning (output should make sense)
+             'WARNING'  : success with warnings, warning are assigned to self.warnings.  
+             'ITERWARN' : number of iterations warning
+             
+        See the source for the value of each flag
+        """ 
                             
-        ## intger : the default stauts set from self.FLAGS. The flags are set in a bitwise fashion.
-        #  To check if a flag is set, it can be done in the following way :
-        #  \code self.getStatus() & self.FLAGS['FLAG'] \endcode
-        #  if the flag is set, it returns a number greater than 0, if not 
-        #  it returns a zero. (for more details on the values of the flags, see radex.py)
-        self.status      = self.FLAGS['DEFAULT']
-        # plotting attributes
-        ## matplotlib.figure object : when set, the output is plotted in this figure
-        self.fig = None
-        ## nump.ndarry matplotlib.axes object : run output are plotted in these axes objects
-        # for a single model self.axs has the shape (4,). When nx is larger than 1, the shape
-        # of self.#axs is  (4,nx). In other words, self.#axs is the object returned by
-        # self.fig, self.axs = pylab.subplots(4, nx )
-        self.axs = None
-        ## integer : number of models to run and plot
-        self.nx  = None
-        ## integer : number of horizontal division in the figure (default)
-        self.ny  = 4
+        self.status = self.FLAGS['DEFAULT']
+        """intger : the default stauts set from self.FLAGS. The flags are set in a bitwise fashion.
+        To check if a flag is set, it can be done in the following way :
         
-    ## sets keys in the self.inFile dict
-    #  @param parm  (String) 
-    #  @param value (abitrary) 
+        .. code-block:: python
+        
+           stt = self.getStatus() & self.FLAGS['FLAG']
+           
+        if the flag is set stt would be a number greater than 0, zero otherwise
+        (for more details on the values of the flags, see radex.py)
+        """
+        
+        # plotting attributes
+        self.fig = None
+        """matplotlib.figure object : when set, the output is plotted in this figure"""
+        self.axs = None
+        """nump.ndarry matplotlib.axes object : run output are plotted in these axes objects
+        for a single model self.axs has the shape (4,). When nx is larger than 1, the shape
+        of self.#axs is  (4,nx). In other words, self.#axs is the object returned by
+        self.fig, self.axs = pylab.subplots(4, nx )
+        """
+        self.nx  = None
+        """integer : number of models to run and plot"""
+        self.ny  = 4
+        """integer : number of horizontal division in the figure (default)"""
+
     def setInFileParm(self, parm, value):
         """This method sets values to the parameters to be passed to radex.
 
@@ -212,8 +227,12 @@ class radex( ):
         self.status = status
     
     def setDefaultStatus(self):
-        """sets the default status"""
+        """sets the default status and self.transitions, self.rawOutput and self.nTransitions to None"""
         self.status = self.FLAGS['DEFAULT']
+        self.transitions = None
+        self.nTransitions = None
+        self.rawOutput = None
+        
     def getTransition(self, idx):
         """This method can be used to extract individual transition information from the self.#transitions 
         list. For example, for CO, getTransition(0) would return the transition info for the 1-0 
@@ -228,7 +247,14 @@ class radex( ):
         return self.warnings
     def getNIter(self):
         return self.nIter
-
+    def printSetFlags(self):
+        """prints in a pretty way all the flags (whether they are set or not) in self.status"""
+        print 'FLAG_NAME     SET'
+        print '------------------'
+        for i, key in enumerate(self.FLAGS):
+            print '%-9s  %r' % (key, (self.getStatus() & self.FLAGS[key]) >= 1)
+        
+        
     def setAxes(self, fig, axs):
         """set the axes and figure objects"""
 
@@ -301,26 +327,27 @@ class radex( ):
         # checking for correct range for the species column density
         if inFile['molnDens'] < 1e5 or inFile['molnDens'] > 1e25:
             self.status |= self.FLAGS['ERROR']
-              
+        
         if self.status & self.FLAGS['ERROR']:
             return self.FLAGS['ERROR']
         else:
             self.status |= self.FLAGS['PARMSOK']
             return self.FLAGS['PARMSOK']
 
-    ## run the radex executable.
-    #  @param checkInput (bool): By default this is False. In this case, the input
-    #  parameters are not checked and the flag 'PARMSOK' (see #FLAGS) is set to self.#status. 
-    #  Otherwise, set this to True to force a paremter input check. 
-    #  @param verbose (bool)   : By default this is False. Set it to True to
-    #  to write the raw output to stdout 
-    #  @return (int) #status \n upon a successful run, 'RUNOK' and 'SUCCESS' flags are set. If the number of iterations
-    #  excceeds 10,000 'RUNOK','WARNING' and 'ITERWARN' flags are set. if the 'PARMSOK' is true
-    #  self.#rawOutput and self.#transitions are set, otherwise they remaine None
-    #  @todo: extract other warnings also, not just the one due to the max iterations
-    #  @warning: when running the same radex instance multiple times, make sure to set the 
-    #  status to the default before calling self.#run using self.#setDefaultStatus()
     def run(self, checkInput = None, verbose = None ):
+        """run the radex executable.
+        
+        :param bool checkInput: By default this is False. In this case, the input
+         parameters are not checked and the flag 'PARMSOK' (see #FLAGS) is set to self.#status. 
+         Otherwise, set this to True to force a paremter input check. 
+        :param bool verbose: By default this is False. Set it to True to to write the raw output to stdout. 
+        :return int: returns self.status.  Upon a successful run, 'RUNOK' and 'SUCCESS' flags are set. If 
+        the number of iterations excceeds 10,000 'RUNOK','WARNING' and 'ITERWARN' flags are set. if the 
+        'PARMSOK' is true self.#rawOutput and self.#transitions are set, otherwise they remaine None
+        :todo: extract other warnings also, not just the one due to the max iterations
+        :warning: when running the same radex instance multiple times, make sure to set the 
+        status to the default before calling self.#run using self.#setDefaultStatus()
+        """
         
         if checkInput == True:
             self.checkParameters()
@@ -375,7 +402,11 @@ class radex( ):
               ] # 2 * 10b + 8 * 8b = 84b per transition 
        
         return np.dtype(fmt)
-       
+    
+    def flagSet(self, flag):
+        """returns True 'flag' is set, false otherwise"""
+        return self.status & self.FLAGS[flag]
+        
     def parseOutput(self):
         """Once radex exectues and dumps transition information, this method is used
          to extract the line data.
@@ -454,8 +485,8 @@ class radex( ):
             #copying the content of self.transitions into self.transitionsNdarrya
             ##:note: do this at one go without storing things first in self.transitiosn
             #******************************************************
-            self.nTansitions = len(transitions)
-            transitionsNdarray = np.ndarray((self.nTansitions), dtype = self.transitionDtype)
+            self.nTransitions = len(transitions)
+            transitionsNdarray = np.ndarray((self.nTransitions), dtype = self.transitionDtype)
             for i, trans in enumerate(transitions):
                 for key in trans.keys():
                     transitionsNdarray[i][key] = trans[key]

@@ -116,7 +116,7 @@ pyl.show()
 """
 
 arxv.constructRadexDatabase(writeDb = True)
-arxv.writeDbRadex()
+arxv.readDbRadex('', check = True)
 
 """
 #arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
