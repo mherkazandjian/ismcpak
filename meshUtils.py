@@ -360,7 +360,7 @@ class meshArxv():
             dirName = self.dirPath
         
         # writing the mesh to the database file
-        dbDataFObj = file(dirName + 'meshesRadex.db', 'wb')
+        dbDataFObj = file(dirName + 'meshesRadex.db.' + self.parms['radex']['specStr'], 'wb')
         
         for i in np.arange( self.nMeshes ):
             
@@ -384,7 +384,7 @@ class meshArxv():
         dbDataFObj.close()
         
         # writing the db info into a file
-        dbInfoFObj = file(self.parms['dirPath'] + 'meshesRadex.db.info', 'wb')
+        dbInfoFObj = file(self.parms['dirPath'] + 'meshesRadex.db.info.' + self.parms['radex']['specStr'], 'wb')
         self.verRadex.tofile( dbInfoFObj)
         self.nMeshes.tofile( dbInfoFObj )
         self.infoAllRadex.tofile( dbInfoFObj )
@@ -401,8 +401,8 @@ class meshArxv():
               assigned to self.radexObj. 
         """ 
         
-        dbInfoFObj = file(self.dirPath + 'meshesRadex.db.info', 'rb')
-        dbDataFObj = file(self.dirPath + 'meshesRadex.db'     , 'rb')
+        dbInfoFObj = file(self.dirPath + 'meshesRadex.db.info.' + self.parms['radex']['specStr'], 'rb')
+        dbDataFObj = file(self.dirPath + 'meshesRadex.db.' + self.parms['radex']['specStr'], 'rb')
 
         self.verRadex = np.fromfile( dbInfoFObj, dtype = (np.int32, 3), count = 1)
         self.verRadex = self.verRadex[0]
@@ -567,7 +567,6 @@ class meshArxv():
             x2 = np.array([np.log10(self.infoAll[i]['parms'][0]),
                            np.log10(self.infoAll[i]['parms'][1]),
                            np.log10(self.infoAll[i]['parms'][2])])
-            print x1, x2
             xdv = x2 - x1
             diff +=  np.sqrt( np.dot(xdv,xdv) )
             
@@ -622,7 +621,7 @@ class meshArxv():
                 
         return values
         
-    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, values = None, *args, **kwargs):
+    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, values = None, data = None, *args, **kwargs):
         """ returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
              can be used to compute values determined by quantity give (nGas, G0, Gmech)
              (in log_10). The value to be interpolated upon is determined by the parameter
@@ -653,6 +652,8 @@ class meshArxv():
                when passed as an argument, will be used as the value to be interpolated. In this case,
                quantity, slabIdx, arrIdx are ignored. 
              
+             :param numpy.ndarray data: 
+             
              :todo: modify this to construct the table over a selected range of the 3D 
                 parameter space instead of using all the meshes. (optional)
                 
@@ -674,7 +675,10 @@ class meshArxv():
         if log10 != None and log10 == True:
             values[:] = np.log10(values[:])
 
-        data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
+        if data == None:
+            data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
+        else:
+            data = data
         
         ti = time()
         f = interpolate.LinearNDInterpolator(data, values) # getting the interpolation function     
@@ -857,14 +861,36 @@ class meshArxv():
                                                                              *args, **kwargs)
 
         # computing the line intensity interpolation function which will be used to make the high res maps
+        ##################################################################################################
         if self.parms['gridsInfo']['11']['show']:
-            """
-            self.intensityGridInterp_f = self.construct3DInterpolationFunction(quantity = self.parms['gridsInfo']['11']['quantity'], 
-                                                                               slabIdx  = self.parms['gridsInfo']['11']['slabIdx'],
-                                                                               arrIdx   = self.chemNet.species[self.parms['gridsInfo']['11']['specStr']].num,
-                                                                               log10    = True,
-                                                                               *args, **kwargs)
-            """
+            #getting the column densities for all the models
+            m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+            values  = np.ndarray(self.nMeshes, dtype = np.float64)
+            grid_x = []
+            grid_y = []
+            grid_z = []
+             
+            for i in np.arange(self.nMeshes):
+                if self.meshesRadex[i] != None:
+                    transitionIdx = self.parms['gridsInfo']['11']['transitionIndx']
+                    quantity = self.parms['gridsInfo']['11']['quantity']
+                    print self.meshesRadex[i][transitionIdx][quantity]
+                    values[i] = self.meshesRadex[i][transitionIdx][quantity]
+                    asdadad
+                    ####get the self.grid_x, grid_y, grid_z corresonding to the 
+                    ####meshes which have radex data and pass them to construct3DInterpolationFunction
+                    grid_x.append(self.grid_x[i])
+                    grid_y.append(self.grid_y[i])
+                    grid_z.append(self.grid_z[i])
+                    data = np.array([grid_x, grid_y, grid_z]).T # getting the data in the shape that is 
+                                                                # accepted by the interpolation construction
+                else:
+                    values[i] = np.nan
+                    
+            self.intensityGridInterp_f = self.construct3DInterpolationFunction(data = data,
+                                                                               values = values,
+                                                                             log10  = True,
+                                                                             *args, **kwargs)
 
     def showSurfaceTemperatureGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the surface temperature grid
@@ -968,8 +994,6 @@ class meshArxv():
         #initiliizing to zero
         infoAllRadex[:] = 0
         meshesRadex = []
-
-        self.nMeshes = np.int32(1000)###############################REMOVE
         
         radexObj = self.radexObj
         # mesh object which will be used as a utility to compute the stuff needed 
@@ -1055,108 +1079,6 @@ class meshArxv():
         if writeDb == True:
             self.writeDbRadex()
         
-    def computeLineEmissionLvgGrid( self, meshInds, specStr):
-        """decomission this method, replaced by self.computeEmissionsRadex"""
-        lineIntense = self.grds[1][1] 
-        nInCells = lineIntense.copy()
-        lineIntense.fill(0.0)
-        nInCells.fill(0.0)
-        nx, ny = lineIntense.shape
-        
-        radexObj = radex(self.radexParms['radexPath'], self.radexParms['molDataDirPath'])
-        inFile = { 'specStr'                : self.radexParms['specStr'],
-                   'freqRange'              : [0, 50000]      ,
-                   'tKin'                   : None            ,
-                   'collisionPartners'      : None            ,
-                   'nDensCollisionPartners' : None            ,
-                   'tBack'                  : 2.73            ,
-                   'molnDens'               : None            ,
-                   'lineWidth'              : 1.0             ,
-                   'runAnother'             : 1               }
-        radexObj.setInFile( inFile )
-
-        transitionNum = self.radexParms['plotTransitionInGrid']
-        every = 100
-        nDone = 0
-        upper = None
-        lower = None
-        # computing the abundace of a specie
-        for i in meshInds[0::every]:
-            xThis = np.log10(self.meshes[i]['hdr']['G0'])
-            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-            
-            thisMeshObj = mesh( None, self.chemNet, self.metallicity)
-            thisMeshObj.setData( self.meshes[i] )
-            
-            print 'pdr mesh index =  %d : ' % i
-
-            (gasTRadex, nColls, colDensThisSpec,) = thisMeshObj.getRadexParameters('H2',  # ;;; this parameter is redundant
-                                                                                   self.radexParms['specStr'],  
-                                                                                   self.radexParms['xH2_Min'])  # ;;; this parameter is redundant
-
-            # getting the collider densities in the same order of the supplied input spcie string list 
-            nDensColls = [ nColls[collSpecStr] for collSpecStr in self.radexParms['collisionPartners'] ]
-            collsStr   = list(self.radexParms['collisionPartners'])
-            #print 'input coll species', self.radexParms['collisionPartners'] 
-            #print 'nColls after putting them in the right order = ', nDensColls
-            
-            print 'radexGrid : radex parms : ', gasTRadex, nDensColls, colDensThisSpec
-            radexObj.setInFileParm('tKin', gasTRadex)
-            radexObj.setInFileParm('collisionPartners', collsStr )
-            radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
-            radexObj.setInFileParm('molnDens', colDensThisSpec)
-
-            radexObj.filterColliders()
-            
-            if len(radexObj.inFile['collisionPartners']) == 0:
-                print 'not enough colliders'
-                continue
-            
-            radexObj.setDefaultStatus()
-            status = radexObj.run( checkInput = True )
-
-            if status & radexObj.FLAGS['SUCCESS']:
-                print 'radexGrid : converged with no warnings'
-            else:
-                print 'radexGrid : converged with warnings'
-                print '------------------------------------'
-                print radexObj.getWarnings()
-                print '------------------------------------'
-                continue
-                           
-            transition = radexObj.getTransition( transitionNum )
-            upperStr = transition['upper']
-            lowerStr = transition['lower']
-            zThis = transition['fluxcgs']
-                            
-            indxInGrid = scale(xThis, 0, nx, 0, 6.0, integer = True) 
-            indyInGrid = scale(yThis, 0, ny, 0, 6.0, integer = True) 
-        
-            lineIntense[indyInGrid][indxInGrid] += zThis
-            nInCells[indyInGrid][indxInGrid] += 1
-            #print 'press a key to continue...'
-            #print input()
-            nDone += 1
-            print 100.0*np.float64(nDone)/np.float64(len(meshInds)), '%'
-            print '----------------------------------------------------' 
-        
-        lineIntense[:] = lineIntense / nInCells
-
-        if nDone > 0:
-            #-----writing the grid to a file -------------------------
-            # ;;;; dump all the transitions
-            fName = ('%s/%s-%s-%s-%.1f%d.npy') % ('/home/mher/ism/docs/paper02/lineData',
-                                                  self.radexParms['specStr'],
-                                                  upperStr,
-                                                  lowerStr,
-                                                  self.metallicity,
-                                                  self.pltGmSec)
-            print fName 
-            np.save(fName, lineIntense )
-            #------ done writing the data to a file -------------------
-        
-        lineIntense[:] = np.log10(lineIntense)
-        #print lineIntense
 
     # sets up a grid, and runs the LVG models over the grid
     # the computed grid of emission stuff is saved in the LVG 

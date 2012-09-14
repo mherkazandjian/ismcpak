@@ -30,6 +30,7 @@ parms = {
          'plotRanges'     : [[0,6],[0,6],[-30, -15]],
          'metallicity'    : 1.0,
 
+         'plotGrids'     : True,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
                                     'quantity' : ['state', 'gasT'],
@@ -47,19 +48,23 @@ parms = {
                                     'specStr'  : 'H2O',
                                     },
                              '11' : { # line intensitities
-                                     'show'     : True,
-                                     #'type'     : 'pdr',  # or 'radex'
-                                     #'quantity' : ['fineStructureCoolingComponents','Si','rate','1-0'], # for use with 'pdr'
-                                     #'slabIdx'  : 0,  # not valid in 'radex' mode
+                                     'show'           : True,
+                                     #'type'          : 'pdr',  # or 'radex'
+                                     #'quantity'      : ['fineStructureCoolingComponents','Si','rate','1-0'], # for use with 'pdr'
+                                     #'slabIdx'       : 0,  # not valid in 'radex' mode
                                      
-                                     'type'     : 'radex',
-                                     'specStr'  : 'CO',     # database to be restored/computed 
-                                     'quantity' : ['SPECIE', 'TRANSITION','VALUE_FROM_TRANSIOTION'],
+                                     'type'           : 'radex',
+                                     'specStr'        : 'CO',     # database to be restored/computed 
+                                     #                 transition index, 'dict in dtype'    
+                                     'transitionIndx' : 0,
+                                     'quantity'       : 'fluxcgs',
                                     },
                            },
          'gridsRes'      : 100,
          
          'radex'         : { 'use'                  : True,
+                             'compute'              : False, #if true, runns radex on all meshes
+                             'writeDb'              : False, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : 'CO',
@@ -101,22 +106,27 @@ print 'time setting up the chemistry %f' % (time() - t0)
 arxv.set_grid_axes_quantity_values(relativeGmech         = parms['relativeGmech'], 
                                    referenceDatabasePath = parms['runDirPath2'] )
 
+if parms['radex']['use']:
+    if parms['radex']['compute']:
+        arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
+    else:
+        arxv.readDbRadex(parms['radex']['specStr'], check = True)
+
+
 # plotting stuff
 pyl.ioff()
-"""
-arxv.plotGrid(parms['gridsRes'], 
-              parms['zSec'], 
-              radex = parms['radex'], 
-              ranges = parms['plotRanges'], 
-              gridsInfo = parms['gridsInfo'], 
-              plotLog10zAxs = parms['plotLog10zAxs'],
-              parms = parms)
+
+if parms['plotGrids']:
+    arxv.plotGrid(parms['gridsRes'], 
+                  parms['zSec'],    
+                  radex = parms['radex'], 
+                  ranges = parms['plotRanges'], 
+                  gridsInfo = parms['gridsInfo'], 
+                  plotLog10zAxs = parms['plotLog10zAxs'],
+                  parms = parms)
 
 pyl.show()
-"""
 
-arxv.constructRadexDatabase(writeDb = True)
-arxv.readDbRadex('', check = True)
 
 """
 #arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
