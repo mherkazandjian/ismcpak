@@ -1,10 +1,12 @@
 import os, glob, sys
 import numpy as np
 import pylab as pyl
-from matplotlib.widgets import Button
+import logging
+from matplotlib.widgets import Slider, Button, RadioButtons
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from   mpl_toolkits.mplot3d import Axes3D
+
 
 from time     import *
 from mesh     import *
@@ -161,15 +163,17 @@ class meshArxv():
         """
     
         # variables used for plotting
-        self.pltGmSec = None #: the value of the section in Gmech selected
-        self.pltGrds  = None 
-        self.grds     = None #: 2x2 ndmesh array object
+        self.fig         = None
+        self.ax1         = None
+        self.pltGmSec    = None #: the value of the section in Gmech selected
+        self.pltGrds     = None 
+        self.grds        = None #: 2x2 ndmesh array object
         self.grdsCbarAxs = None
         self.pltRadex    = None
-        self.fig         = None
-        self.grdPltPts1  = None
-        self.grdPltPts2  = None
-        self.grdPltTitle = None
+        self.grdPltPts1  = None #all the self.meshes points
+        self.grdPltPts2  = None 
+        self.grdPltPts3  = None #all the self.meshesRadex points
+        self.grdPltPts4  = None #all the self.meshesRadex points with warnings
         self.resPltGrids = None
         
         #attributes used for storing the interpolation functions from which 
@@ -208,6 +212,12 @@ class meshArxv():
                           'runAnother'             : 1     }
                 self.radexObj.setInFile( inFile )
 
+        self.mshTmp = None
+        """a mesh object which is used to store single mesh data just for plotting purposes"""
+        
+        self.logger = self.setupLogger()
+        """The logging object which will be used to output stuff to stdout"""
+        
     # read all the meshes files in the dir and construct the
     # database
     def construct(self, meshNamePrefix = None, writeDb = None ):
@@ -865,33 +875,42 @@ class meshArxv():
         if self.parms['gridsInfo']['11']['show']:
             #getting the column densities for all the models
             m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
-            values  = np.ndarray(self.nMeshes, dtype = np.float64)
+            values = []
             grid_x = []
             grid_y = []
             grid_z = []
              
+            transitionIdx = self.parms['gridsInfo']['11']['transitionIndx']
+            quantity      = self.parms['gridsInfo']['11']['quantity']
+            
+            #looping over all the radex info of all the mesehes and getting the
+            #transition data to be displayed
             for i in np.arange(self.nMeshes):
+                
                 if self.meshesRadex[i] != None:
-                    transitionIdx = self.parms['gridsInfo']['11']['transitionIndx']
-                    quantity = self.parms['gridsInfo']['11']['quantity']
-                    print self.meshesRadex[i][transitionIdx][quantity]
-                    values[i] = self.meshesRadex[i][transitionIdx][quantity]
-                    asdadad
-                    ####get the self.grid_x, grid_y, grid_z corresonding to the 
-                    ####meshes which have radex data and pass them to construct3DInterpolationFunction
-                    grid_x.append(self.grid_x[i])
-                    grid_y.append(self.grid_y[i])
-                    grid_z.append(self.grid_z[i])
-                    data = np.array([grid_x, grid_y, grid_z]).T # getting the data in the shape that is 
-                                                                # accepted by the interpolation construction
-                else:
-                    values[i] = np.nan
                     
-            self.intensityGridInterp_f = self.construct3DInterpolationFunction(data = data,
+                    x = self.grid_x[i]
+                    y = self.grid_y[i]
+                    z = self.grid_z[i]
+                    v = self.meshesRadex[i][transitionIdx][quantity]
+                    
+                    # appending the data and the value to a list to be used
+                    # in making the interpolation function
+                    
+                    values.append( v )
+                    grid_x.append( x )
+                    grid_y.append( y )
+                    grid_z.append( z )
+            
+            # getting the data in the shape that is accepted by the interpolation construction        
+            data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
+            values = np.array( values, dtype = np.float64)
+            
+            self.intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
                                                                                values = values,
-                                                                             log10  = True,
-                                                                             *args, **kwargs)
-
+                                                                               log10  = True,
+                                                                               *args, **kwargs)
+    
     def showSurfaceTemperatureGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the surface temperature grid
             
@@ -1134,26 +1153,28 @@ class meshArxv():
             G0Min = ranges[1][0]; G0Max = ranges[1][1];
 
         # definig plotting windows and setting the locations of subplots
-        fig1, axs1, = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(14,14))
-        self.fig = fig1
+        self.fig, axs1, = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(14,14))
         
+        ax1 = axs1[0,0]; #;;; delete this axis later
+        ax1.set_position((0.05, 0.65, 0.01, 0.01))
+
         #---------------------------------------------------------------------------------------------------
         # the grid plot in n,G0 showing the points where models are present in the
         # database
         # + - -
         # - - - 
         # - - -
-        axsGrd = axs1[0,0];  axsGrd_n = 331;
-        axsGrd.set_position((0.05, 0.8, 0.12, 0.12))
-        pyl.subplot(axsGrd_n)
-        pyl.hold(True)
-        self.grdPltPts1, = pyl.plot( [0], [0], 'bo' )
-        self.grdPltPts2, = pyl.plot( [1], [1], 'ro')
-        self.grdPltTitle  = pyl.title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (0, 0, 0) )
-        pyl.xlim( xmin = -1, xmax = 7.0)
-        pyl.ylim( ymin = -1, ymax = 7.0)
-        pyl.xlabel('$log_{10} n_{gas}$')
-        pyl.ylabel('$log_{10} G_0$')
+        self.ax1 = self.fig.add_axes( [0.05, 0.8, 0.12, 0.12] )        
+        self.ax1.hold(True)
+        self.grdPltPts1, = self.ax1.plot( [0], [0], color = 'b', marker = 'o', linestyle = '')
+        self.grdPltPts2, = self.ax1.plot( [1], [1], color = 'r', marker = 'o', linestyle = '')
+        self.grdPltPts3, = self.ax1.plot( [1], [1], color = 'w', marker = 'o', linestyle = '')
+        self.grdPltPts4, = self.ax1.plot( [1], [1], color = 'k', marker = 'x', linestyle = '')
+        self.ax1.set_title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (0, 0, 0) )
+        self.ax1.set_xlim( [-1, 7.0] )
+        self.ax1.set_ylim( [-1, 7.0] )
+        self.ax1.set_xlabel('$log_{10} n_{gas}$')
+        self.ax1.set_ylabel('$log_{10} G_0$')
         #---------------------------------------------------------------------------------------------------
         # the subplots where things are plotted as a function of Av       
         # - - -
@@ -1255,24 +1276,24 @@ class meshArxv():
         self.pltRadex = np.array(self.pltRadex)                           
         
         # setting up a dummy mesh object to use its plotting functionalities
-        msh = mesh()
-        msh.setFigureObjects(fig1, axs1, axsAvPlts_n)
-        msh.setupFigures()
-        msh.set_chemNet( self.chemNet )
-        msh.set_metallicity( self.metallicity )
+        self.mshTmp = mesh()
+        self.mshTmp.setFigureObjects(self.fig, axs1, axsAvPlts_n)
+        self.mshTmp.setupFigures()
+        self.mshTmp.set_chemNet( self.chemNet )
+        self.mshTmp.set_metallicity( self.metallicity )
         
-        lG0All   = np.log10(self.infoAll['parms'][:,0])
-        lnGasAll = np.log10(self.infoAll['parms'][:,1])
-        lgmAll   = np.log10(self.infoAll['parms'][:,2])
+        lG0All   = self.grid_x
+        lnGasAll = self.grid_y
+        lgmAll   = self.grid_z
         
         #text object which will show the section in gamma mech
-        tt = fig1.text(0.55, 0.02, '$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec )
+        tt = self.fig.text(0.55, 0.02, '$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec )
         
         # the axes to plot in the 3D grid (default axes are n,G0,gmech) 
         # showing the points where models are present in the database
-        ax3d = fig1.add_subplot(111, projection='3d')
+        ax3d = self.fig.add_subplot(111, projection='3d')
         ax3d.set_position((0.2, 0.68, 0.3, 0.3))
-        self.plot_3D_grid_point(figure = fig1, axes = ax3d, ranges = ranges, log10z = self.parms['plotLog10zAxs'])
+        self.plot_3D_grid_point(figure = self.fig, axes = ax3d, ranges = ranges, log10z = self.parms['plotLog10zAxs'])
 
         self.resPltGrids = [resGrids, resGrids] 
          
@@ -1280,12 +1301,23 @@ class meshArxv():
             """updates the plotes once the z section value is changed
             """
             
-            print 'plotThisSec(): updating the grids'
+            self.logger.debug('updating the grids')
             
-            tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)            
-            indsThisSec = np.nonzero( np.fabs(lgmAll - self.pltGmSec) < 1e-6 )[0]            
-            self.grdPltPts1.set_xdata( lnGasAll[indsThisSec] )
-            self.grdPltPts1.set_ydata( lG0All[indsThisSec]   )
+            #plotting the meshes n and G0 whose data is available for
+            #this section
+            tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)
+            indsThisSec = np.nonzero( np.fabs(self.grid_z - self.pltGmSec) < 1e-6 )[0]            
+            self.grdPltPts1.set_xdata( self.grid_x[indsThisSec] )
+            self.grdPltPts1.set_ydata( self.grid_y[indsThisSec] )
+            #overplotting the radex points available for this section
+            cond1 = np.fabs(self.grid_z - self.pltGmSec) < 1e-10
+            for i in np.arange(cond1.size): 
+                c0 = (self.infoAllRadex[i]['info'][2] == -1)
+                cond1[i] *= c0
+            indsThisSec = np.nonzero( cond1 )[0]
+            self.grdPltPts3.set_xdata( self.grid_x[indsThisSec] )
+            self.grdPltPts3.set_ydata( self.grid_y[indsThisSec] )
+            
             
             # plotting the grids
             #-------------------
@@ -1309,71 +1341,57 @@ class meshArxv():
                 pyl.subplot( axsGrds_n[1, 1] )
                 self.showLineIntensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
             
-                         
-        # defining the buttons to control mechanical heating section        
-        def nextSec(event):
-            self.pltGmSec += 1.0
-            plotThisSec()
-            pyl.draw()
-    
-        def prevSec(event):
-            self.pltGmSec -= 1.0
-            plotThisSec()
-            pyl.draw()        
-        
-        # defining the event when a point in a section is clicked
-        def onB1Down(event):
-            
-            ti = time()
-
-            # get the x and y coords, flip y from top to bottom
-            b      = event.button 
-            x, y   = event.x, event.y
-            xd, yd = event.xdata, event.ydata
-        
-            if event.button==1:
-                if event.inaxes is not None:
-            
-                    l2Distance  = np.sqrt( (yd - lG0All )**2 + (xd - lnGasAll)**2 + (self.pltGmSec - lgmAll)**2 )
-                    rMin = min(l2Distance)
-                    indMin = l2Distance.argmin()
-                    msh.setData( self.meshes[indMin] )
-                                        
-                    self.grdPltTitle.set_text('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(msh.data['hdr']['nGas']), np.log10(msh.data['hdr']['G0']), np.log10(msh.data['hdr']['gammaMech'])))
-                    
-                    self.grdPltPts2.set_xdata( lnGasAll[indMin] )
-                    self.grdPltPts2.set_ydata( lG0All[indMin] )
-                    self.grdPltPts2.set_color('r')
-                                        
-                    msh.plot()
-                                        
-                    if self.parms['radex']['use']:
-                        self.computeAndSetRadexCurves(meshObj = msh)
-                    
-                    pyl.draw()
-                    
-            tf = time()
-            print tf - ti
-        #----------------------------end method onB1Down---------------------------------
-        
         # attaching mouse click event to fig 1
-        cid = fig1.canvas.mpl_connect('button_press_event', onB1Down)
+        cid = self.fig.canvas.mpl_connect('button_press_event', self.onB1Down)
         
         plotThisSec()
-
-        # attaching the gamma mech button events
-        axPrev = pyl.axes([0.70, 0.02, 0.02, 0.02])
-        bPrev = Button(axPrev, '-')
-        bPrev.on_clicked(prevSec)
-
-        axNext = pyl.axes([0.73, 0.02, 0.02, 0.02])
-        bNext  = Button(axNext, '+')
-        bNext.on_clicked(nextSec)
         
+        self.pltGmSec = -30
+            
         # displaying
         pyl.draw()
         print 'browing data....'
 
+    def onB1Down(self, event):
+        """method called on the event of a mouse button down in self.fig"""
+       
+        ti = time()
+
+        # get the x and y coords, flip y from top to bottom
+        b      = event.button 
+        x, y   = event.x, event.y
+        xd, yd = event.xdata, event.ydata
+        
+        print '------>', x, y
+        print '------>', xd, yd
+        print '------>', id(event.inaxes), id(self.ax1)
+        print '--------------'
+        
+        
+        if event.button == 1:
+            if event.inaxes is not None:
+        
+                l2Distance  = np.sqrt( (yd - self.grid_y)**2 + (xd - self.grid_x)**2 + (self.pltGmSec - self.grid_z)**2 )
+                rMin = min(l2Distance)
+                indMin = l2Distance.argmin()
+                self.mshTmp.setData( self.meshes[indMin] )
+                                    
+                self.ax1.set_title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0']), np.log10(self.mshTmp.data['hdr']['gammaMech'])))
+                
+                self.grdPltPts2.set_xdata( self.grid_x[indMin] )
+                self.grdPltPts2.set_ydata( self.grid_y[indMin] )
+                self.grdPltPts2.set_color('r')
+                                    
+                self.mshTmp.plot()
+                                    
+                if self.parms['radex']['use']:
+                    self.computeAndSetRadexCurves(meshObj = self.mshTmp)
+                
+                pyl.draw()
+                
+        tf = time()
+        print tf - ti
+        
     def computeAndSetRadexCurves(self, meshObj = None):
         """This is a utilty method (make it a private method), for populating the radex axes
           with the plots for the specie passed in the global parameter self.parms['radex']['specStr'].
@@ -1408,7 +1426,7 @@ class meshArxv():
             print 'Radex input parms computed from the slab: ', gasTRadex, nColls, colDensThisSpec
                 
             self.radexObj.setDefaultStatus()
-            self.radexObj.run( checkInput = True, verbose = True )
+            self.radexObj.run( checkInput = True, verbose = self.parms['radex']['verbose'] )
 
             if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
                 
@@ -1432,7 +1450,8 @@ class meshArxv():
         del self.fig
         del self.grdPltPts1
         del self.grdPltPts2
-        del self.grdPltTitle
+        del self.grdPltPts3
+        del self.grdPltPts4
         del self.grds  
         del self.grdsCbarAxs
         del self.pltRadex
@@ -1634,6 +1653,27 @@ class meshArxv():
                 # just use gMech as the 3rd axis
                 self.grid_z = np.log10( self.getQuantityFromAllMeshes(self.grid_qz) )
     
+    def setupLogger(self):
+        """sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger."""
+        # setting up the logger                                                                                                                                                                                                              
+        # create logger                                                                                                                                                                                                                      
+        self.logger = logging.getLogger('simple_example')
+        self.logger.setLevel(logging.DEBUG)
+
+        # create console handler and set level to debug                                                                                                                                                                                      
+        ch = logging.StreamHandler( sys.stdout )  # setting the stream to stdout                                                                                                                                                             
+        ch.setLevel(logging.DEBUG)
+
+        # create formatter                                                                                                                                                                                                                   
+        formatter = logging.Formatter('[%(asctime)s %(funcName)s() %(filename)s:%(lineno)s] %(message)s') # this was the original in the example                                                                              
+
+        # add formatter to ch                                                                                                                                                                                                                
+        ch.setFormatter(formatter)
+
+        # add ch to logger                                                                                                                                                                                                                   
+        self.logger.addHandler(ch)
+
+        return self.logger
     """
     def computeSurfaceTemperatureGrid( self, res = None, ranges = None ):
         #generates color map of the surface temperature. if meshInds is not provided,

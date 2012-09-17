@@ -49,7 +49,8 @@ parms = {
                                     },
                              '11' : { # line intensitities
                                      'show'           : True,
-                                     #'type'          : 'pdr',  # or 'radex'
+                                     'type'          : 'radex',  # 'pdr' or 'radex'
+                                     #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','Si','rate','1-0'], # for use with 'pdr'
                                      #'slabIdx'       : 0,  # not valid in 'radex' mode
                                      
@@ -77,6 +78,8 @@ parms = {
                              #'collisionPartners'    : ['H2','H+','e-','H']
                              'tBack'                : 2.73,
                              'lineWidth'            : 1.0,
+                             'verbose'              : False, 
+                             
                             },
          #-----------------chemical network parameters------------------------
          'chemistry'     : {
