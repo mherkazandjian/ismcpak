@@ -123,10 +123,7 @@ if parms['plotGrids']:
     arxv.plotGrid(parms['gridsRes'], 
                   parms['zSec'],    
                   radex = parms['radex'], 
-                  ranges = parms['plotRanges'], 
-                  gridsInfo = parms['gridsInfo'], 
-                  plotLog10zAxs = parms['plotLog10zAxs'],
-                  parms = parms)
+                  ranges = parms['plotRanges'])
 
 pyl.show()
 

@@ -218,6 +218,8 @@ class meshArxv():
         self.logger = self.setupLogger()
         """The logging object which will be used to output stuff to stdout"""
         
+        self.gui = None
+        
     # read all the meshes files in the dir and construct the
     # database
     def construct(self, meshNamePrefix = None, writeDb = None ):
@@ -1133,7 +1135,34 @@ class meshArxv():
 
                     
     
-    #################################################################################         
+    #################################################################################
+    def setupGui(self):
+        """the method which setup the layout of the gui by defining a dict holding
+        all the object and variables related to it. Returns the dict object and make
+        use of self.parms"""
+        
+        gui = {}
+        gui['figure']  = self.fig
+        gui['widgets'] = {}
+        
+        # defining the axes which will be used to select the section in Z to show
+        zSecSelector = {}
+        #----------------------------------------------------------------------
+        zSecSelector['axes'] = gui['figure'].add_axes( [0.2, 0.6, 0.2, 0.02] )
+        zSecSelector['axes'].set_title('z section selector')
+        zSecSelector['axes'].set_xlim( [-40, -10.0] )
+        zSecSelector['axes'].set_ylim( [0, 1] )
+        zSecSelector['point'], = zSecSelector['axes'].plot([],[], 'r.')
+        zSecSelector['point'].set_xdata( self.pltGmSec )
+        zSecSelector['point'].set_ydata( 0.5 )
+        #----------------------------------------------------------------------
+        gui['widgets']['zSecSelector'] = zSecSelector
+        
+        # defining bla bla
+             
+        return gui
+    
+             
     def plotGrid(self, resGrids, lgammaMechSec, radex = None, ranges = None, *args, **kwargs):
         """Main method for exploring the meshes in the database.
         
@@ -1154,6 +1183,9 @@ class meshArxv():
 
         # definig plotting windows and setting the locations of subplots
         self.fig, axs1, = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(14,14))
+        
+        #setting up the gui attribute
+        self.gui = self.setupGui()
         
         ax1 = axs1[0,0]; #;;; delete this axis later
         ax1.set_position((0.05, 0.65, 0.01, 0.01))
@@ -1208,6 +1240,7 @@ class meshArxv():
         axsGrds[1,0].set_position((left              , bott              , sz, sz))
         axsGrds[1,1].set_position((left + sz + hSpace, bott              , sz, sz))
         axsGrds_n = np.array( [[332,333], [336,339]])
+        self.axsGrds_n = axsGrds_n #;;;;;;;; remove this later...
         # setting up the labels of the axes and the major ticks
         pyl.subplot( axsGrds_n[0,0] )
         pyl.ylabel( '$log_{10} G_0$' )
@@ -1282,12 +1315,12 @@ class meshArxv():
         self.mshTmp.set_chemNet( self.chemNet )
         self.mshTmp.set_metallicity( self.metallicity )
         
-        lG0All   = self.grid_x
-        lnGasAll = self.grid_y
-        lgmAll   = self.grid_z
+        #lG0All   = self.grid_x
+        #lnGasAll = self.grid_y
+        #lgmAll   = self.grid_z
         
         #text object which will show the section in gamma mech
-        tt = self.fig.text(0.55, 0.02, '$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec )
+        self.tt = self.fig.text(0.55, 0.02, '$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec )
         
         # the axes to plot in the 3D grid (default axes are n,G0,gmech) 
         # showing the points where models are present in the database
@@ -1297,60 +1330,59 @@ class meshArxv():
 
         self.resPltGrids = [resGrids, resGrids] 
          
-        def plotThisSec():
-            """updates the plotes once the z section value is changed
-            """
-            
-            self.logger.debug('updating the grids')
-            
-            #plotting the meshes n and G0 whose data is available for
-            #this section
-            tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)
-            indsThisSec = np.nonzero( np.fabs(self.grid_z - self.pltGmSec) < 1e-6 )[0]            
-            self.grdPltPts1.set_xdata( self.grid_x[indsThisSec] )
-            self.grdPltPts1.set_ydata( self.grid_y[indsThisSec] )
-            #overplotting the radex points available for this section
-            cond1 = np.fabs(self.grid_z - self.pltGmSec) < 1e-10
-            for i in np.arange(cond1.size): 
-                c0 = (self.infoAllRadex[i]['info'][2] == -1)
-                cond1[i] *= c0
-            indsThisSec = np.nonzero( cond1 )[0]
-            self.grdPltPts3.set_xdata( self.grid_x[indsThisSec] )
-            self.grdPltPts3.set_ydata( self.grid_y[indsThisSec] )
-            
-            
-            # plotting the grids
-            #-------------------
-            # temperature grid (top left grid)
-            if self.parms['gridsInfo']['00']['show']:
-                pyl.subplot( axsGrds_n[0, 0] )
-                self.showSurfaceTemperatureGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
-            
-            # abundances (top left grid)
-            if self.parms['gridsInfo']['01']['show']:
-                pyl.subplot( axsGrds_n[0, 1] )
-                self.showAbundancesGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
 
-            # column densities (bottom left grid)
-            if self.parms['gridsInfo']['10']['show']:
-                pyl.subplot( axsGrds_n[1, 0] )
-                self.showColumnDensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
-
-            # line intensity (bottom right grid)
-            if self.parms['gridsInfo']['11']['show']:
-                pyl.subplot( axsGrds_n[1, 1] )
-                self.showLineIntensityGrid(ranges = ranges, res = self.resPltGrids, *args, **kwargs)
-            
         # attaching mouse click event to fig 1
         cid = self.fig.canvas.mpl_connect('button_press_event', self.onB1Down)
         
-        plotThisSec()
+        self.plotThisSec()
         
-        self.pltGmSec = -30
+        #self.pltGmSec = -30 #;;;;; with this it works
             
         # displaying
         pyl.draw()
         print 'browing data....'
+
+    def plotThisSec(self, *args, **kwargs):
+        """updates the plotes once the z section value is changed
+        """
+        self.logger.debug('updating the grids for zSec = %f' % self.pltGmSec)
+
+        #plotting the meshes n and G0 whose data is available for
+        #this section
+        self.tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)
+        indsThisSec = np.nonzero( np.fabs(self.grid_z - self.pltGmSec) < 1e-6 )[0]            
+        self.grdPltPts1.set_xdata( self.grid_x[indsThisSec] )
+        self.grdPltPts1.set_ydata( self.grid_y[indsThisSec] )
+        #overplotting the radex points available for this section
+        cond1 = np.fabs(self.grid_z - self.pltGmSec) < 1e-10
+        for i in np.arange(cond1.size): 
+            c0 = (self.infoAllRadex[i]['info'][2] == -1)
+            cond1[i] *= c0
+        indsThisSec = np.nonzero( cond1 )[0]
+        self.grdPltPts3.set_xdata( self.grid_x[indsThisSec] )
+        self.grdPltPts3.set_ydata( self.grid_y[indsThisSec] )
+        
+        # plotting the grids
+        #-------------------
+        # temperature grid (top left grid)
+        if self.parms['gridsInfo']['00']['show']:
+            pyl.subplot( self.axsGrds_n[0, 0] )
+            self.showSurfaceTemperatureGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
+        
+        # abundances (top left grid)
+        if self.parms['gridsInfo']['01']['show']:
+            pyl.subplot( self.axsGrds_n[0, 1] )
+            self.showAbundancesGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
+
+        # column densities (bottom left grid)
+        if self.parms['gridsInfo']['10']['show']:
+            pyl.subplot( self.axsGrds_n[1, 0] )
+            self.showColumnDensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
+
+        # line intensity (bottom right grid)
+        if self.parms['gridsInfo']['11']['show']:
+            pyl.subplot( self.axsGrds_n[1, 1] )
+            self.showLineIntensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
 
     def onB1Down(self, event):
         """method called on the event of a mouse button down in self.fig"""
@@ -1362,14 +1394,21 @@ class meshArxv():
         x, y   = event.x, event.y
         xd, yd = event.xdata, event.ydata
         
-        print '------>', x, y
-        print '------>', xd, yd
-        print '------>', id(event.inaxes), id(self.ax1)
-        print '--------------'
-        
-        
         if event.button == 1:
-            if event.inaxes is not None:
+
+            # getting the value of the section in z to display
+            if event.inaxes is self.gui['widgets']['zSecSelector']['axes']:
+                
+                inds = np.argmin(np.fabs( self.grid_z - xd ) )
+                self.pltGmSec = self.grid_z[inds]
+                self.gui['widgets']['zSecSelector']['point'].set_xdata( self.pltGmSec )
+                self.plotThisSec() #;;; rename this to update 2D grids
+                pyl.draw()
+
+
+            # getting the coordinates inthe grid to display as a single mesh as a function of Av
+            # and maybe display the radex calculations                
+            if event.inaxes is self.ax1:
         
                 l2Distance  = np.sqrt( (yd - self.grid_y)**2 + (xd - self.grid_x)**2 + (self.pltGmSec - self.grid_z)**2 )
                 rMin = min(l2Distance)
