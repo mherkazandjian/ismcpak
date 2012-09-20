@@ -922,24 +922,29 @@ class meshArxv():
               the images, labels..etc..must be replaced and not new instance created
               and overplotted...take care of that later... 
         """
+        panel = self.gui['maps2d']['00']
+        
         grd = self.computeInterpolated2DGrid(ranges   = ranges,
                                              res      = res,  
                                              zSec     = self.pltGmSec, 
                                              fInterp  = self.grdInterp_f, *args, **kwargs)
         
         grd = grd.T
-        im00 = pyl.imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        im00 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
+    
+        panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+        panel['axes'].clabel(panel['contour'], levels, fmt = '%.1f' )
         
-        CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
-        pyl.clabel(CS,levels, fmt = '%.1f' )
         
         pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
 
     def showAbundancesGrid(self, ranges = None, res = None, *args, **kwargs):
-        """shows the abundances grid"""            
+        """shows the abundances grid"""
+        panel = self.gui['maps2d']['01']
+            
 
         grd = self.computeInterpolated2DGrid(ranges   = ranges,
                                              res      = res,  
@@ -947,18 +952,19 @@ class meshArxv():
                                              fInterp  = self.abunGridInterp_f, *args, **kwargs)
         
         grd = grd.T
-        im01 = pyl.imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        im01 = self.gui['maps2d']['01']['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
 
-        CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
-        pyl.clabel(CS,levels, fmt = '%.1f' )
+        panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+        panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im01, cax=self.grdsCbarAxs[0][1], ax=pyl.gca(), orientation = 'horizontal')
 
     def showColumnDensityGrid(self, ranges = None, res = None, *args, **kwargs):
-        """shows the abundances grid"""            
+        """shows the abundances grid"""
+        panel = self.gui['maps2d']['10']
 
         grd = self.computeInterpolated2DGrid(ranges   = ranges,
                                              res      = res,  
@@ -966,19 +972,20 @@ class meshArxv():
                                              fInterp  = self.colDensGridInterp_f, *args, **kwargs)
         
         grd = grd.T
-        im10 = pyl.imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        im10 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
         
-        CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
-        pyl.clabel(CS,levels, fmt = '%.1f' )
+        panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+        panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
 
 
     def showLineIntensityGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the line intensity grid"""            
+        panel = self.gui['maps2d']['11']
 
         grd = self.computeInterpolated2DGrid(ranges   = ranges,
                                              res      = res,  
@@ -987,13 +994,13 @@ class meshArxv():
                                                         
         grd = grd.T
 
-        im11 = pyl.imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        im11 = self.gui['maps2d']['11']['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
 
-        CS = pyl.contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
-        pyl.clabel(CS,levels, fmt = '%.1f' )
+        panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+        panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
         
@@ -1144,6 +1151,7 @@ class meshArxv():
         gui = {}
         gui['figure']  = self.fig
         gui['widgets'] = {}
+        gui['maps2d']  = {}
         
         # defining the axes which will be used to select the section in Z to show
         zSecSelector = {}
@@ -1158,8 +1166,33 @@ class meshArxv():
         #----------------------------------------------------------------------
         gui['widgets']['zSecSelector'] = zSecSelector
         
-        # defining bla bla
-             
+        # defining the grid where the maps will be plotted
+        #-------------------------------------------------
+        # 0,0
+        maps2d_00 = {}
+        pyl.subplot( self.axsGrds_n[0,0] )
+        maps2d_00['axes'] = pyl.gca()
+        maps2d_00['contour'] = None
+        gui['maps2d']['00'] = maps2d_00 
+        # 0,1
+        maps2d_01 = {}
+        pyl.subplot( self.axsGrds_n[0,1] )
+        maps2d_01['axes'] = pyl.gca()
+        maps2d_01['contour'] = None
+        gui['maps2d']['01'] = maps2d_01 
+        # 1,0
+        maps2d_10 = {}
+        pyl.subplot( self.axsGrds_n[1,0] )
+        maps2d_10['axes'] = pyl.gca()
+        maps2d_10['contour'] = None        
+        gui['maps2d']['10'] = maps2d_10 
+        # 1,1
+        maps2d_11 = {}
+        pyl.subplot( self.axsGrds_n[1,1] )
+        maps2d_11['axes'] = pyl.gca()
+        maps2d_11['contour'] = None        
+        gui['maps2d']['11'] = maps2d_11 
+         
         return gui
     
              
@@ -1183,10 +1216,7 @@ class meshArxv():
 
         # definig plotting windows and setting the locations of subplots
         self.fig, axs1, = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(14,14))
-        
-        #setting up the gui attribute
-        self.gui = self.setupGui()
-        
+                
         ax1 = axs1[0,0]; #;;; delete this axis later
         ax1.set_position((0.05, 0.65, 0.01, 0.01))
 
@@ -1330,6 +1360,8 @@ class meshArxv():
 
         self.resPltGrids = [resGrids, resGrids] 
          
+        #setting up the gui attribute
+        self.gui = self.setupGui()
 
         # attaching mouse click event to fig 1
         cid = self.fig.canvas.mpl_connect('button_press_event', self.onB1Down)
@@ -1366,22 +1398,22 @@ class meshArxv():
         #-------------------
         # temperature grid (top left grid)
         if self.parms['gridsInfo']['00']['show']:
-            pyl.subplot( self.axsGrds_n[0, 0] )
+            pyl.subplot( self.gui['maps2d']['00']['axes'] )
             self.showSurfaceTemperatureGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
         
         # abundances (top left grid)
         if self.parms['gridsInfo']['01']['show']:
-            pyl.subplot( self.axsGrds_n[0, 1] )
+            pyl.subplot( self.gui['maps2d']['01']['axes'] )
             self.showAbundancesGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
 
         # column densities (bottom left grid)
         if self.parms['gridsInfo']['10']['show']:
-            pyl.subplot( self.axsGrds_n[1, 0] )
+            pyl.subplot( self.gui['maps2d']['10']['axes'] )
             self.showColumnDensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
 
         # line intensity (bottom right grid)
         if self.parms['gridsInfo']['11']['show']:
-            pyl.subplot( self.axsGrds_n[1, 1] )
+            pyl.subplot( self.gui['maps2d']['11']['axes'] )
             self.showLineIntensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
 
     def onB1Down(self, event):
@@ -1402,6 +1434,15 @@ class meshArxv():
                 inds = np.argmin(np.fabs( self.grid_z - xd ) )
                 self.pltGmSec = self.grid_z[inds]
                 self.gui['widgets']['zSecSelector']['point'].set_xdata( self.pltGmSec )
+                
+                #deleting the countour lines and the labels from all the 2d maps
+                for panel in self.gui['maps2d'].values():
+                    for c in panel['contour'].collections:
+                        paths = c.get_paths()
+                        del paths[:]
+                    for txt in panel['contour'].labelTexts:
+                        txt.set_text('')
+
                 self.plotThisSec() #;;; rename this to update 2D grids
                 pyl.draw()
 
