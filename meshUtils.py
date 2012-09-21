@@ -159,21 +159,18 @@ class meshArxv():
         """ numpy.int32 number of database files"""
         
         self.chemNet    = None
-        """ object of class type chemicalNetwork holds info about the chemical network used
-        """
+        """ object of class type chemicalNetwork holds info about the chemical network used"""
     
+        if 'plotRanges' in kwargs:
+            self.ranges = kwargs['plotRanges']
+        else:
+            self.ranges = None
+        """The ranges which will be used for displaying the x,y,z dimesntions for grid_x,yz"""
+        
         # variables used for plotting
-        self.fig         = None
-        self.ax1         = None
         self.pltGmSec    = None #: the value of the section in Gmech selected
-        self.pltGrds     = None 
         self.grds        = None #: 2x2 ndmesh array object
-        self.grdsCbarAxs = None
         self.pltRadex    = None
-        self.grdPltPts1  = None #all the self.meshes points
-        self.grdPltPts2  = None 
-        self.grdPltPts3  = None #all the self.meshesRadex points
-        self.grdPltPts4  = None #all the self.meshesRadex points with warnings
         self.resPltGrids = None
         
         #attributes used for storing the interpolation functions from which 
@@ -930,7 +927,7 @@ class meshArxv():
                                              fInterp  = self.grdInterp_f, *args, **kwargs)
         
         grd = grd.T
-        im00 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        im00 = panel['axes'].imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
@@ -938,8 +935,7 @@ class meshArxv():
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         panel['axes'].clabel(panel['contour'], levels, fmt = '%.1f' )
         
-        
-        pyl.colorbar(im00, cax=self.grdsCbarAxs[0][0], ax=pyl.gca(), orientation = 'horizontal')
+        pyl.colorbar(im00, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal')
 
     def showAbundancesGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the abundances grid"""
@@ -952,7 +948,7 @@ class meshArxv():
                                              fInterp  = self.abunGridInterp_f, *args, **kwargs)
         
         grd = grd.T
-        im01 = self.gui['maps2d']['01']['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        im01 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
@@ -960,7 +956,7 @@ class meshArxv():
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
-        pyl.colorbar(im01, cax=self.grdsCbarAxs[0][1], ax=pyl.gca(), orientation = 'horizontal')
+        pyl.colorbar(im01, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal')
 
     def showColumnDensityGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the abundances grid"""
@@ -980,7 +976,7 @@ class meshArxv():
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
-        pyl.colorbar(im10, cax=self.grdsCbarAxs[1][0], ax=pyl.gca(), orientation = 'horizontal')
+        pyl.colorbar(im10, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal')
 
 
     def showLineIntensityGrid(self, ranges = None, res = None, *args, **kwargs):
@@ -994,7 +990,7 @@ class meshArxv():
                                                         
         grd = grd.T
 
-        im11 = self.gui['maps2d']['11']['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+        im11 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
@@ -1002,7 +998,7 @@ class meshArxv():
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
-        pyl.colorbar(im11, cax=self.grdsCbarAxs[1][1], ax=pyl.gca(), orientation = 'horizontal')
+        pyl.colorbar(im11, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal')
         
     
     def constructRadexDatabase(self, writeDb = None):
@@ -1149,9 +1145,38 @@ class meshArxv():
         use of self.parms"""
         
         gui = {}
-        gui['figure']  = self.fig
-        gui['widgets'] = {}
-        gui['maps2d']  = {}
+        gui['figure']  = pyl.figure( figsize = (14,14) )
+        gui['widgets'] = {} 
+        gui['maps2d']  = {} # the grids for a certain section
+        gui['ax2d']    = {} # the mesh points in a certain section
+        gui['ax3d']    = {} # all the mehs points in 3D
+        gui['AV']      = {} # plots as a function of Av for a certail slab
+        
+        # the grid plot in n,G0 showing the points where models are present in the section
+        ax2d = {}
+        #-----------------------------------------------------------------------------------
+        ax2d['axes']  = gui['figure'].add_axes( [0.05, 0.8, 0.12, 0.12] )
+        ax2d['pts1'], = ax2d['axes'].plot( [0], [0], color = 'b', marker = 'o', linestyle = '')
+        ax2d['pts2'], = ax2d['axes'].plot( [1], [1], color = 'r', marker = 'o', linestyle = '')
+        ax2d['pts3'], = ax2d['axes'].plot( [1], [1], color = 'w', marker = 'o', linestyle = '')
+        ax2d['axes'].set_title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (0, 0, 0) )
+        ax2d['axes'].set_xlim( [-1, 7.0] )
+        ax2d['axes'].set_ylim( [-1, 7.0] )
+        ax2d['axes'].set_xlabel('$log_{10} n_{gas}$')
+        ax2d['axes'].set_ylabel('$log_{10} G_0$')
+        #-----------------------------------------------------------------------------------        
+        gui['ax2d'] = ax2d
+
+        # the axes to plot in the 3D grid (default axes are n,G0,gmech) showing the points
+        # where models are present in the database
+        ax3d = {}
+        #-----------------------------------------------------------------------------------
+        ax3d['axes'] = gui['figure'].add_subplot(111, projection='3d')
+        ax3d['axes'].set_position((0.2, 0.68, 0.3, 0.3))
+        #-----------------------------------------------------------------------------------        
+        gui['ax3d'] = ax3d
+        
+        
         
         # defining the axes which will be used to select the section in Z to show
         zSecSelector = {}
@@ -1168,35 +1193,112 @@ class meshArxv():
         
         # defining the grid where the maps will be plotted
         #-------------------------------------------------
+        left  = 0.55
+        bott  = 0.45
+        sz    = 0.20
+        vSpace = 0.035
+        hSpace = 0.02
+        
         # 0,0
         maps2d_00 = {}
-        pyl.subplot( self.axsGrds_n[0,0] )
-        maps2d_00['axes'] = pyl.gca()
+        maps2d_00['axes'] = gui['figure'].add_axes([left, bott + sz + vSpace, sz, sz])
+        maps2d_00['axesCbar'] = gui['figure'].add_axes([left, bott + sz + sz + vSpace + 0.017, 0.2, 0.01 ])
         maps2d_00['contour'] = None
+        maps2d_00['axes'].set_ylabel( '$log_{10} G_0$' )
+        for tick in maps2d_00['axes'].xaxis.get_major_ticks():
+            tick.label1On = False
+        maps2d_00['axes'].set_xlim(self.ranges[0][0], self.ranges[0][1])
+        maps2d_00['axes'].set_ylim(self.ranges[1][0], self.ranges[1][1])
         gui['maps2d']['00'] = maps2d_00 
+        
         # 0,1
         maps2d_01 = {}
-        pyl.subplot( self.axsGrds_n[0,1] )
-        maps2d_01['axes'] = pyl.gca()
+        maps2d_01['axes'] = gui['figure'].add_axes([left + sz + hSpace, bott + sz + vSpace, sz, sz])
+        maps2d_01['axesCbar'] = gui['figure'].add_axes( [left + sz + hSpace, bott + sz + sz + vSpace + 0.017, 0.2, 0.01] )
         maps2d_01['contour'] = None
+        for tick in maps2d_01['axes'].xaxis.get_major_ticks():
+            tick.label1On = False
+        for tick in maps2d_01['axes'].yaxis.get_major_ticks():
+            tick.label1On = False
+        maps2d_00['axes'].set_xlim(self.ranges[0][0], self.ranges[0][1])
+        maps2d_00['axes'].set_ylim(self.ranges[1][0], self.ranges[1][1])
         gui['maps2d']['01'] = maps2d_01 
+        
         # 1,0
         maps2d_10 = {}
-        pyl.subplot( self.axsGrds_n[1,0] )
-        maps2d_10['axes'] = pyl.gca()
-        maps2d_10['contour'] = None        
+        maps2d_10['axes'] = gui['figure'].add_axes([left, bott, sz, sz])
+        maps2d_10['axesCbar'] = gui['figure'].add_axes([left, bott + sz + 0.017, 0.2, 0.01 ])
+        maps2d_10['contour'] = None
+        maps2d_10['axes'].set_xlabel( '$log_{10} n_{gas}$' )
+        maps2d_10['axes'].set_ylabel( '$log_{10} G_0$' )
+        maps2d_10['axes'].set_xlim(self.ranges[0][0], self.ranges[0][1])
+        maps2d_10['axes'].set_ylim(self.ranges[1][0], self.ranges[1][1])
+        (maps2d_10['axes'].yaxis.get_major_ticks())[-1].label1On = False
+        (maps2d_10['axes'].xaxis.get_major_ticks())[-1].label1On = False
         gui['maps2d']['10'] = maps2d_10 
+        
         # 1,1
         maps2d_11 = {}
-        pyl.subplot( self.axsGrds_n[1,1] )
-        maps2d_11['axes'] = pyl.gca()
-        maps2d_11['contour'] = None        
+        maps2d_11['axes'] = gui['figure'].add_axes([left + sz + hSpace, bott, sz, sz])
+        maps2d_11['axesCbar'] = gui['figure'].add_axes( [left + sz + hSpace, bott + sz + 0.017, 0.2, 0.01] )
+        maps2d_11['contour'] = None
+        maps2d_11['axes'].set_xlabel( '$log_{10} n_{gas}$' )
+        for tick in maps2d_11['axes'].yaxis.get_major_ticks():
+            tick.label1On = False
+        maps2d_11['axes'].set_xlim(self.ranges[0][0], self.ranges[0][1])
+        maps2d_11['axes'].set_ylim(self.ranges[1][0], self.ranges[1][1])
+
         gui['maps2d']['11'] = maps2d_11 
-         
+        
+        
+        # modifying ticks on the colorbars   
+        for cbarAxs in [gui['maps2d']['00']['axesCbar'],
+                        gui['maps2d']['01']['axesCbar'],
+                        gui['maps2d']['10']['axesCbar'],
+                        gui['maps2d']['11']['axesCbar']]:
+            for tick in cbarAxs.xaxis.get_major_ticks():
+                tick.label1On = True
+                tick.label2On = False
+            for tick in cbarAxs.yaxis.get_major_ticks():
+                tick.label1On = False
+                tick.label2On = False
+
+        # the axes to plot in the 3D grid (default axes are n,G0,gmech) showing the points
+        # where models are present in the database
+        AV = {}
+        #-----------------------------------------------------------------------------------
+        left  = 0.07
+        bott  = 0.05
+        sz    = 0.20
+        vSpace = 0.01
+        hSpace = 0.01
+        AV['00'] = {'axes' : gui['figure'].add_axes([left              , bott + sz + vSpace, sz, sz])}
+        AV['01'] = {'axes' : gui['figure'].add_axes([left + sz + hSpace, bott + sz + vSpace, sz, sz])}
+        AV['10'] = {'axes' : gui['figure'].add_axes([left              , bott              , sz, sz])}
+        AV['11'] = {'axes' : gui['figure'].add_axes([left + sz + hSpace, bott              , sz, sz])}
+        #-----------------------------------------------------------------------------------        
+        gui['AV'] = AV
+
+
+        # the axes stuff where the radex output wil be plotted
+        radex = {}
+        #-----------------------------------------------------------------------------------
+        left  = 0.65
+        bott  = 0.07
+        sz    = 0.08
+        vSpace = 0.0
+        radex['0'] = {'axes' : gui['figure'].add_axes([left, bott + 3*sz + vSpace , 3*sz, sz])}
+        radex['1'] = {'axes' : gui['figure'].add_axes([left, bott + 2*sz + vSpace , 3*sz, sz])}
+        radex['2'] = {'axes' : gui['figure'].add_axes([left, bott + 1*sz + vSpace , 3*sz, sz])}
+        radex['3'] = {'axes' : gui['figure'].add_axes([left, bott + 0*sz          , 3*sz, sz])}
+        #-----------------------------------------------------------------------------------        
+        gui['radex'] = radex
+        
+        #-------------------------------------------------
         return gui
     
              
-    def plotGrid(self, resGrids, lgammaMechSec, radex = None, ranges = None, *args, **kwargs):
+    def plotGrid(self, *args, **kwargs):
         """Main method for exploring the meshes in the database.
         
         :todo: change resGrids to a [res_x, res_y] insteads of it being just a scalar.
@@ -1204,104 +1306,17 @@ class meshArxv():
         
         self.set_attributes(**kwargs)
         self.set_default_attributes()
-
-        self.pltGmSec   = lgammaMechSec
-        self.radexParms = radex
-
-        if ranges == None:
-            raise ValueError('missing value of the parameter ranges\n')
-        else:
-            nMin  = ranges[0][0]; nMax  = ranges[0][1];
-            G0Min = ranges[1][0]; G0Max = ranges[1][1];
-
-        # definig plotting windows and setting the locations of subplots
-        self.fig, axs1, = pyl.subplots(3, 3, sharex=False, sharey=False, figsize=(14,14))
-                
-        ax1 = axs1[0,0]; #;;; delete this axis later
-        ax1.set_position((0.05, 0.65, 0.01, 0.01))
-
-        #---------------------------------------------------------------------------------------------------
-        # the grid plot in n,G0 showing the points where models are present in the
-        # database
-        # + - -
-        # - - - 
-        # - - -
-        self.ax1 = self.fig.add_axes( [0.05, 0.8, 0.12, 0.12] )        
-        self.ax1.hold(True)
-        self.grdPltPts1, = self.ax1.plot( [0], [0], color = 'b', marker = 'o', linestyle = '')
-        self.grdPltPts2, = self.ax1.plot( [1], [1], color = 'r', marker = 'o', linestyle = '')
-        self.grdPltPts3, = self.ax1.plot( [1], [1], color = 'w', marker = 'o', linestyle = '')
-        self.grdPltPts4, = self.ax1.plot( [1], [1], color = 'k', marker = 'x', linestyle = '')
-        self.ax1.set_title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (0, 0, 0) )
-        self.ax1.set_xlim( [-1, 7.0] )
-        self.ax1.set_ylim( [-1, 7.0] )
-        self.ax1.set_xlabel('$log_{10} n_{gas}$')
-        self.ax1.set_ylabel('$log_{10} G_0$')
-        #---------------------------------------------------------------------------------------------------
-        # the subplots where things are plotted as a function of Av       
-        # - - -
-        # + + -
-        # + + - 
-        left  = 0.07
-        bott  = 0.05
-        sz    = 0.20
-        vSpace = 0.01
-        hSpace = 0.01
-        axsAvPlts = np.array([ [axs1[1,0],axs1[1,1]], [axs1[2,0],axs1[2,1]] ])        
-        axsAvPlts[0,0].set_position((left              , bott + sz + vSpace, sz, sz))
-        axsAvPlts[0,1].set_position((left + sz + hSpace, bott + sz + vSpace, sz, sz))
-        axsAvPlts[1,0].set_position((left              , bott              , sz, sz))
-        axsAvPlts[1,1].set_position((left + sz + hSpace, bott              , sz, sz))
-        axsAvPlts_n = np.array( [[334,335], [337,338]])
-
-        # the subplots where things are plotted in n,G0 plane (grid properties)               
-        # - + +
-        # - - +
-        # - - +
-        left  = 0.55
-        bott  = 0.45
-        sz    = 0.20
-        vSpace = 0.035
-        hSpace = 0.02
-        # defining the new axes array
-        axsGrds = np.array( [ [axs1[0,1], axs1[0,2] ], [axs1[1,2], axs1[2,2] ] ])
-        axsGrds[0,0].set_position((left              , bott + sz + vSpace, sz, sz))
-        axsGrds[0,1].set_position((left + sz + hSpace, bott + sz + vSpace, sz, sz))
-        axsGrds[1,0].set_position((left              , bott              , sz, sz))
-        axsGrds[1,1].set_position((left + sz + hSpace, bott              , sz, sz))
-        axsGrds_n = np.array( [[332,333], [336,339]])
-        self.axsGrds_n = axsGrds_n #;;;;;;;; remove this later...
-        # setting up the labels of the axes and the major ticks
-        pyl.subplot( axsGrds_n[0,0] )
-        pyl.ylabel( '$log_{10} G_0$' )
-        for tick in pyl.gca().xaxis.get_major_ticks():
-            tick.label1On = False
-        pyl.xlim( xmin = nMin , xmax = nMax )
-        pyl.ylim( ymin = G0Min, ymax = G0Max)
         
-        pyl.subplot( axsGrds_n[0,1] )
-        for tick in pyl.gca().xaxis.get_major_ticks():
-            tick.label1On = False
-        for tick in pyl.gca().yaxis.get_major_ticks():
-            tick.label1On = False
-        pyl.xlim( xmin = nMin , xmax = nMax )
-        pyl.ylim( ymin = G0Min, ymax = G0Max)
+        resGrids = self.parms['gridsRes']
+        self.pltGmSec   = self.parms['zSec']
+        self.radexParms = self.parms['radex']
+        
+        nMin  = self.ranges[0][0]; nMax  = self.ranges[0][1];
+        G0Min = self.ranges[1][0]; G0Max = self.ranges[1][1];
+        
+        #setting up the gui attribute
+        self.gui = self.setupGui()
 
-        pyl.subplot( axsGrds_n[1,0] )
-        pyl.xlabel( '$log_{10} n_{gas}$' )
-        pyl.ylabel( '$log_{10} G_0$' )
-        pyl.xlim( xmin = nMin , xmax = nMax )
-        pyl.ylim( ymin = G0Min, ymax = G0Max)
-        (pyl.gca().yaxis.get_major_ticks())[-1].label1On = False
-        (pyl.gca().xaxis.get_major_ticks())[-1].label1On = False
-        
-        pyl.subplot( axsGrds_n[1,1] )
-        pyl.xlabel( '$log_{10} n_{gas}$' )
-        for tick in pyl.gca().yaxis.get_major_ticks():
-            tick.label1On = False
-        pyl.xlim( xmin = nMin , xmax = nMax )
-        pyl.ylim( ymin = G0Min, ymax = G0Max)
-        
         # getting the interpolation function which will be used to display the 2D grids
         self.computeAndSetInterpolationFunctions(*args, **kwargs)        
         
@@ -1312,64 +1327,41 @@ class meshArxv():
                        ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 )], 
                       [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 ),
                        ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 )] ]  
-                        
-        # creating the axes for the colorbars
-        self.grdsCbarAxs = [ [pyl.axes([left, bott + sz + sz + vSpace + 0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz + sz + vSpace + 0.017, 0.2, 0.01] ) ],
-                             [pyl.axes([left, bott + sz +               0.017, 0.2, 0.01 ]), pyl.axes( [left + sz + hSpace, bott + sz +               0.017, 0.2, 0.01] ) ] ]
-                
-        for cbarAxsSubList in self.grdsCbarAxs:
-            for cbarAxs in cbarAxsSubList:
-                
-                for tick in cbarAxs.xaxis.get_major_ticks():
-                    tick.label1On = True
-                    tick.label2On = False
-                for tick in cbarAxs.yaxis.get_major_ticks():
-                    tick.label1On = False
-                    tick.label2On = False
-        
-        # setting up the axes to plot the radex output for each selected model
-        left  = 0.65
-        bott  = 0.07
-        sz    = 0.08
-        vSpace = 0.0
-        self.pltRadex = [pyl.axes([left, bott + 3*sz + vSpace , 3*sz, sz ]),
-                         pyl.axes([left, bott + 2*sz + vSpace , 3*sz, sz ]),
-                         pyl.axes([left, bott + 1*sz + vSpace , 3*sz, sz ]), 
-                         pyl.axes([left, bott + 0*sz          , 3*sz, sz ])]
-        self.pltRadex = np.array(self.pltRadex)                           
-        
-        # setting up a dummy mesh object to use its plotting functionalities
-        self.mshTmp = mesh()
-        self.mshTmp.setFigureObjects(self.fig, axs1, axsAvPlts_n)
-        self.mshTmp.setupFigures()
-        self.mshTmp.set_chemNet( self.chemNet )
-        self.mshTmp.set_metallicity( self.metallicity )
-        
-        #lG0All   = self.grid_x
-        #lnGasAll = self.grid_y
-        #lgmAll   = self.grid_z
-        
-        #text object which will show the section in gamma mech
-        self.tt = self.fig.text(0.55, 0.02, '$Log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec )
-        
-        # the axes to plot in the 3D grid (default axes are n,G0,gmech) 
-        # showing the points where models are present in the database
-        ax3d = self.fig.add_subplot(111, projection='3d')
-        ax3d.set_position((0.2, 0.68, 0.3, 0.3))
-        self.plot_3D_grid_point(figure = self.fig, axes = ax3d, ranges = ranges, log10z = self.parms['plotLog10zAxs'])
 
         self.resPltGrids = [resGrids, resGrids] 
          
-        #setting up the gui attribute
-        self.gui = self.setupGui()
+        # setting up a dummy mesh object to use its plotting functionalities
+        self.mshTmp = mesh()
+        self.mshTmp.setFigureObjects(figObj = self.gui['figure'], 
+                                     axObj  = np.array([
+                                                        [self.gui['AV']['00']['axes'],self.gui['AV']['01']['axes']],
+                                                        [self.gui['AV']['10']['axes'],self.gui['AV']['11']['axes']]
+                                                        ])
+                                     )
+        self.mshTmp.setupFigures()
+        self.mshTmp.set_chemNet( self.chemNet )
+        self.mshTmp.set_metallicity( self.metallicity )
 
+        # plotting all the points in the archive in 3D
+        self.plot_3D_grid_points(figure = self.gui['figure'], 
+                                 axes   = self.gui['ax3d']['axes'], 
+                                 ranges = self.ranges, 
+                                 log10z = self.parms['plotLog10zAxs'])
+        
+        # setting up the axes to plot the radex output for each selected model
+        self.pltRadex = np.array([
+                                  self.gui['radex']['0']['axes'],
+                                  self.gui['radex']['1']['axes'],
+                                  self.gui['radex']['2']['axes'],
+                                  self.gui['radex']['3']['axes']
+                                  ]
+                                 )
+        
         # attaching mouse click event to fig 1
-        cid = self.fig.canvas.mpl_connect('button_press_event', self.onB1Down)
+        cid = self.gui['figure'].canvas.mpl_connect('button_press_event', self.onB1Down)
         
         self.plotThisSec()
         
-        #self.pltGmSec = -30 #;;;;; with this it works
-            
         # displaying
         pyl.draw()
         print 'browing data....'
@@ -1381,41 +1373,37 @@ class meshArxv():
 
         #plotting the meshes n and G0 whose data is available for
         #this section
-        self.tt.set_text('$log_{10}\Gamma_{mech}$ = %5.2f' % self.pltGmSec)
         indsThisSec = np.nonzero( np.fabs(self.grid_z - self.pltGmSec) < 1e-6 )[0]            
-        self.grdPltPts1.set_xdata( self.grid_x[indsThisSec] )
-        self.grdPltPts1.set_ydata( self.grid_y[indsThisSec] )
+        self.gui['ax2d']['pts1'].set_xdata( self.grid_x[indsThisSec] )
+        self.gui['ax2d']['pts1'].set_ydata( self.grid_y[indsThisSec] )
+        
         #overplotting the radex points available for this section
         cond1 = np.fabs(self.grid_z - self.pltGmSec) < 1e-10
         for i in np.arange(cond1.size): 
             c0 = (self.infoAllRadex[i]['info'][2] == -1)
             cond1[i] *= c0
         indsThisSec = np.nonzero( cond1 )[0]
-        self.grdPltPts3.set_xdata( self.grid_x[indsThisSec] )
-        self.grdPltPts3.set_ydata( self.grid_y[indsThisSec] )
+        self.gui['ax2d']['pts3'].set_xdata( self.grid_x[indsThisSec] )
+        self.gui['ax2d']['pts3'].set_ydata( self.grid_y[indsThisSec] )
         
         # plotting the grids
         #-------------------
         # temperature grid (top left grid)
         if self.parms['gridsInfo']['00']['show']:
-            pyl.subplot( self.gui['maps2d']['00']['axes'] )
             self.showSurfaceTemperatureGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
-        
+
         # abundances (top left grid)
         if self.parms['gridsInfo']['01']['show']:
-            pyl.subplot( self.gui['maps2d']['01']['axes'] )
             self.showAbundancesGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
 
         # column densities (bottom left grid)
         if self.parms['gridsInfo']['10']['show']:
-            pyl.subplot( self.gui['maps2d']['10']['axes'] )
             self.showColumnDensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
 
         # line intensity (bottom right grid)
         if self.parms['gridsInfo']['11']['show']:
-            pyl.subplot( self.gui['maps2d']['11']['axes'] )
             self.showLineIntensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
-
+        
     def onB1Down(self, event):
         """method called on the event of a mouse button down in self.fig"""
        
@@ -1431,36 +1419,44 @@ class meshArxv():
             # getting the value of the section in z to display
             if event.inaxes is self.gui['widgets']['zSecSelector']['axes']:
                 
+                # setting the section closest to the data available
                 inds = np.argmin(np.fabs( self.grid_z - xd ) )
                 self.pltGmSec = self.grid_z[inds]
                 self.gui['widgets']['zSecSelector']['point'].set_xdata( self.pltGmSec )
-                
-                #deleting the countour lines and the labels from all the 2d maps
+                # updating the title
+                newTitle = 'z section selector : %f' % self.pltGmSec
+                self.gui['widgets']['zSecSelector']['axes'].set_title(newTitle)
+
+                #for all the axes of the 2d maps
                 for panel in self.gui['maps2d'].values():
+                    #deleting the countour lines
                     for c in panel['contour'].collections:
                         paths = c.get_paths()
                         del paths[:]
+                    #deleting the labels
                     for txt in panel['contour'].labelTexts:
                         txt.set_text('')
-
+                    #deleting the images
+                    del panel['axes'].images[:]
+                    
                 self.plotThisSec() #;;; rename this to update 2D grids
                 pyl.draw()
 
 
             # getting the coordinates inthe grid to display as a single mesh as a function of Av
             # and maybe display the radex calculations                
-            if event.inaxes is self.ax1:
+            if event.inaxes is self.gui['ax2d']['axes']:
         
                 l2Distance  = np.sqrt( (yd - self.grid_y)**2 + (xd - self.grid_x)**2 + (self.pltGmSec - self.grid_z)**2 )
                 rMin = min(l2Distance)
                 indMin = l2Distance.argmin()
                 self.mshTmp.setData( self.meshes[indMin] )
                                     
-                self.ax1.set_title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0']), np.log10(self.mshTmp.data['hdr']['gammaMech'])))
+                self.gui['ax2d']['axes'].set_title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0']), np.log10(self.mshTmp.data['hdr']['gammaMech'])))
                 
-                self.grdPltPts2.set_xdata( self.grid_x[indMin] )
-                self.grdPltPts2.set_ydata( self.grid_y[indMin] )
-                self.grdPltPts2.set_color('r')
+                self.gui['ax2d']['pts2'].set_xdata( self.grid_x[indMin] )
+                self.gui['ax2d']['pts2'].set_ydata( self.grid_y[indMin] )
+                self.gui['ax2d']['pts2'].set_color('r')
                                     
                 self.mshTmp.plot()
                                     
@@ -1480,7 +1476,7 @@ class meshArxv():
         
         msh = meshObj
         #assigning the axes in which the radex curves will be plotted
-        self.radexObj.setupPlot(nx = 1, fig = self.fig, axs = self.pltRadex)
+        self.radexObj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
         
         (gasTRadex, nColls, colDensThisSpec,) = msh.getRadexParameters(speciesStr = self.parms['radex']['specStr'], 
                                                                        threshold  = self.parms['radex']['xH2_Min'])
@@ -1527,13 +1523,7 @@ class meshArxv():
         del self.chemNet
         del self.pltGmSec
         del self.radexParms
-        del self.fig
-        del self.grdPltPts1
-        del self.grdPltPts2
-        del self.grdPltPts3
-        del self.grdPltPts4
         del self.grds  
-        del self.grdsCbarAxs
         del self.pltRadex
         pyl.close()
 
@@ -1572,7 +1562,7 @@ class meshArxv():
         fig.legend(plts, names)
         pyl.show()
     
-    def plot_3D_grid_point(self, log10z = None, **kwargs):
+    def plot_3D_grid_points(self, log10z = None, **kwargs):
         """plots in 3D the parameters of the meshes in the database. By default
            the x,y,z coordinates are the log10 of nGas, G0, and gammaMech
            

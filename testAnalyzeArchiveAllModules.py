@@ -120,10 +120,7 @@ if parms['radex']['use']:
 pyl.ioff()
 
 if parms['plotGrids']:
-    arxv.plotGrid(parms['gridsRes'], 
-                  parms['zSec'],    
-                  radex = parms['radex'], 
-                  ranges = parms['plotRanges'])
+    arxv.plotGrid()
 
 pyl.show()
 

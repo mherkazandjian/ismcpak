@@ -326,17 +326,15 @@ class mesh( ):
     def setData(self, data):
         self.data = data
     
-    def setFigureObjects(self, figObj=None, axObj=None, axRef=None):
+    def setFigureObjects(self, figObj=None, axObj=None):
         
-        if figObj != None and axObj != None and axRef != None:
+        if figObj != None and axObj != None:
             pass
         else:
             figObj, axObj = pyl.subplots(2, 2, sharex=False, sharey=False, figsize=(12,12))
-            axRef = np.array( [[221,222], [223,224]])   
 
         self.fig     = figObj
         self.axs     = axObj
-        self.axsRef  = axRef        
         self.figInit = 1
         
     def setupFigures(self):
@@ -345,40 +343,35 @@ class mesh( ):
             self.setFigureObjects()
             
         # subplot 0,0        
-        pyl.subplot(self.axsRef[0,0])
-        pyl.hold(False)
-        self.plt00tgasPlt,  = pyl.semilogy([1],  [1], 'r' )
-        pyl.hold()
-        self.plt00tdustPlt, = pyl.semilogy([1],  [1], 'b' )
-        pyl.axis([0, 20, 1, 100000])
-        pyl.ylabel('$T(K)$')
-        pyl.text(0.4, 1e3, '$T_{gas}$' , color='r')
-        pyl.text(0.4, 1e4, '$T_{dust}$', color='b')
-        self.plt00Ttl = pyl.text(0.8, 5e5,'$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (0, 0, 0 ) )
+        self.plt00tgasPlt,  = self.axs[0,0].semilogy([1],  [1], 'r' )
+        self.plt00tdustPlt, = self.axs[0,0].semilogy([1],  [1], 'b' )
+        self.axs[0,0].set_xlim(0, 20)
+        self.axs[0,0].set_ylim(1, 100000)
+        self.axs[0,0].set_ylabel('$T(K)$')
+        self.axs[0,0].text(0.4, 1e3, '$T_{gas}$' , color='r')
+        self.axs[0,0].text(0.4, 1e4, '$T_{dust}$', color='b')
+        self.plt00Ttl = self.axs[0,0].text(0.8, 5e5,'$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (0, 0, 0 ) )
         # enabling y ticks on the second axis
-        for tick in pyl.gca().xaxis.get_major_ticks():
+        for tick in self.axs[0,0].xaxis.get_major_ticks():
             tick.label1On = False
-        
         
         # subplot 0,1
-        pyl.subplot(self.axsRef[0,1])        
-        pyl.hold(False)
-        self.plt01Spec1Plt,  = pyl.semilogy([1],  [1], 'r' )
-        pyl.hold()
-        self.plt01Spec2Plt, = pyl.semilogy([1],  [1], 'g' )
-        self.plt01Spec3Plt, = pyl.semilogy([1],  [1], 'b' )
-        self.plt01Spec4Plt, = pyl.semilogy([1],  [1], 'c' )
-        self.plt01Spec5Plt, = pyl.semilogy([1],  [1], 'y' )
-        pyl.axis([0, 20.0, 1e-12, 2])
-        pyl.text(0.4, 1e-10, '$H^+$' , color='r')
-        pyl.text(0.4, 1e-9 , '$H$'   , color='g')
-        pyl.text(0.4, 1e-8 , '$H_2$' , color='b')
-        pyl.text(0.4, 1e-11 ,'$e^-$' , color='c')
-        pyl.text(0.4, 1e-12 ,'$He$'  , color='y')
-        self.plt01ax1 = pyl.gca()
+        self.plt01Spec1Plt, = self.axs[0,1].semilogy([1],  [1], 'r' )
+        self.plt01Spec2Plt, = self.axs[0,1].semilogy([1],  [1], 'g' )
+        self.plt01Spec3Plt, = self.axs[0,1].semilogy([1],  [1], 'b' )
+        self.plt01Spec4Plt, = self.axs[0,1].semilogy([1],  [1], 'c' )
+        self.plt01Spec5Plt, = self.axs[0,1].semilogy([1],  [1], 'y' )
+        self.axs[0,1].set_xlim(0, 20.0)
+        self.axs[0,1].set_ylim(1e-12, 2)
+        self.axs[0,1].text(0.4, 1e-10, '$H^+$' , color='r')
+        self.axs[0,1].text(0.4, 1e-9 , '$H$'   , color='g')
+        self.axs[0,1].text(0.4, 1e-8 , '$H_2$' , color='b')
+        self.axs[0,1].text(0.4, 1e-11 ,'$e^-$' , color='c')
+        self.axs[0,1].text(0.4, 1e-12 ,'$He$'  , color='y')
+        self.plt01ax1 = self.axs[0,1]
         for tick in self.plt01ax1.xaxis.get_major_ticks():
             tick.label1On = False
-        self.plt01ax2 = pyl.gca().twinx()
+        self.plt01ax2 = self.axs[0,1].twinx()
         pyl.setp(self.plt01ax2, 'ylim',(1e-12, 2) )
         pyl.setp(self.plt01ax2, 'xlim',(0, 20) )
         # redundant, but we do it just to get the right ticks on the y axis
@@ -396,34 +389,30 @@ class mesh( ):
         self.plt01ax2.set_ylabel('abun')
 
         # subplot 1,0
-        pyl.subplot(self.axsRef[1,0])
-        pyl.hold(False)
-        self.plt10Spec1Plt,  = pyl.semilogy([1],  [1], 'r' )
-        pyl.hold()
-        self.plt10Spec2Plt, = pyl.semilogy([1],  [1], 'g' )
-        self.plt10Spec3Plt, = pyl.semilogy([1],  [1], 'b' )
-        self.plt10Spec4Plt, = pyl.semilogy([1],  [1], 'c' )
-        pyl.axis([0, 20, 1e-12, 2])
-        pyl.text(0.4, 1e-11 , '$O$'   , color='c')
-        pyl.text(0.4, 1e-10, '$C^+$' , color='r')
-        pyl.text(0.4, 1e-9 , '$C$'   , color='g')
-        pyl.text(0.4, 1e-8 , '$CO$'  , color='b')
-        pyl.xlabel('$A_V$')
-        pyl.ylabel('abun')
+        self.plt10Spec1Plt, = self.axs[1,0].semilogy([1],  [1], 'r' )
+        self.plt10Spec2Plt, = self.axs[1,0].semilogy([1],  [1], 'g' )
+        self.plt10Spec3Plt, = self.axs[1,0].semilogy([1],  [1], 'b' )
+        self.plt10Spec4Plt, = self.axs[1,0].semilogy([1],  [1], 'c' )
+        self.axs[1,0].set_xlim(0, 20)
+        self.axs[1,0].set_ylim(1e-12, 2)
+        self.axs[1,0].text(0.4, 1e-11, '$O$'   , color='c')
+        self.axs[1,0].text(0.4, 1e-10, '$C^+$' , color='r')
+        self.axs[1,0].text(0.4, 1e-9 , '$C$'   , color='g')
+        self.axs[1,0].text(0.4, 1e-8 , '$CO$'  , color='b')
+        self.axs[1,0].set_xlabel('$A_V$')
+        self.axs[1,0].set_ylabel('abun')
         
         #subplot 1,1
-        pyl.subplot(self.axsRef[1,1])
-        pyl.hold(False)
-        self.plt11Spec1Plt,  = pyl.semilogy([1],  [1], 'r' )
-        pyl.hold()
-        self.plt11Spec2Plt, = pyl.semilogy([1],  [1], 'g' )
-        self.plt11Spec3Plt, = pyl.semilogy([1],  [1], 'b' )
-        pyl.axis([0, 20, 1e-12, 2])
-        pyl.text(0.4, 1e-10, '$HCN$'  , color='r')
-        pyl.text(0.4, 1e-9 , '$HNC$'  , color='g')
-        pyl.text(0.4, 1e-8 , '$HCO^+$', color='b')
-        pyl.xlabel('$A_V$')
-        for tick in pyl.gca().yaxis.get_major_ticks():
+        self.plt11Spec1Plt, = self.axs[1,1].semilogy([1],  [1], 'r' )
+        self.plt11Spec2Plt, = self.axs[1,1].semilogy([1],  [1], 'g' )
+        self.plt11Spec3Plt, = self.axs[1,1].semilogy([1],  [1], 'b' )
+        self.axs[1,1].set_xlim(0, 20)
+        self.axs[1,1].set_ylim(1e-12, 2)   
+        self.axs[1,1].text(0.4, 1e-10, '$HCN$'  , color='r')
+        self.axs[1,1].text(0.4, 1e-9 , '$HNC$'  , color='g')
+        self.axs[1,1].text(0.4, 1e-8 , '$HCO^+$', color='b')
+        self.axs[1,1].set_xlabel('$A_V$')
+        for tick in self.axs[1,1].yaxis.get_major_ticks():
             tick.label1On = False
         #pyl.setp(pyl.gca(), yticks=[])
         
