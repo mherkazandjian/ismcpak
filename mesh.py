@@ -278,11 +278,15 @@ class mesh( ):
            self.metallicity and self.data are set.
            
            :param list specsStrs: a list which holds the string names of the species
-               whose column densities are to be computed
+               whose column densities are to be computed. This MUST be a list, even if it
+               is one species.
            :param chemicalNetwork.chemicalNetwork() chemNet: an instance of the object chemicalNetwork
             that holds the info about all the chemistry of the mesh. If this is not passed, self.chemNet 
             is used (assuming it is set).
         """
+        
+        if specsStrs.__class__ is not [].__class__:
+            raise TypeError('the parameter specsStrs is not a list.')
         
         colDensities = []
         
@@ -298,18 +302,18 @@ class mesh( ):
         dxSlabsNew[0:-1] =  dxSlabs
         dxSlabsNew[-1]   =  dxSlabs[-1]
         dxSlabs          =  dxSlabsNew
-        
+                
         if maxAv == None:
             slabsIdx = np.arange(m['hdr']['nSteps'])
         else:
             slabsIdx = np.where( Av_m < maxAv)
-             
+
         # computing the column densities for the species in the list
         for specStr in specsStrs:
             specIdx = self.chemNet.species[specStr].num
             nDensSpec = nDense_m * abun_m[ specIdx ][ : ]
-            colDens = np.sum( dxSlabs[slabsIdx] * nDensSpec[slabsIdx] )
-            
+            NSpec = dxSlabs[slabsIdx] * nDensSpec[slabsIdx]
+            colDens = np.sum( NSpec )
             colDensities.append( colDens )
 
         return colDensities
@@ -527,7 +531,7 @@ class mesh( ):
         dxNew[0:-1] = dx
         dxNew[-1]   = dx[-1]
         dx = dxNew
-
+        
         # selecting the slabs which are usefull
         Av    = Av[inds]
         dx    = dx[inds]
@@ -539,7 +543,6 @@ class mesh( ):
         xCollHe = xCollHe[inds]
         xCollH2 = xCollH2[inds]
 
-        #print xCollH2
         # calculating the means
         nSpec    = xSpec * nGas
         nColle   = xColle * nGas
@@ -548,7 +551,7 @@ class mesh( ):
         nCollHe  = xCollHe * nGas
         nCollH2  = xCollH2 * nGas
         
-        NSpec     = nSpec * dx 
+        NSpec     = nSpec * dx
         N_specLVG = np.sum(NSpec)
 
         TMean = np.sum( NSpec*gasT    ) / N_specLVG
@@ -563,8 +566,7 @@ class mesh( ):
                       'H' : nCollHMean ,
                       'He': nCollHeMean,
                       'H2': nCollH2Mean}
-            
-        #print 'mesh.py:gas T at the end of the slab = ', gasT[-1] 
+        
         return (
                 TMean, 
                 nDenseColl,

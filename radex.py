@@ -297,7 +297,7 @@ class radex( ):
         strng += '%e\n' % self.inFile['molnDens']
         strng += '%f\n' % self.inFile['lineWidth']
         strng += '%d'   % self.inFile['runAnother']
-        print '------------\n%s\n-----------------\n' % strng
+        #print '------------\n%s\n-----------------\n' % strng
         return strng
 
     def checkParameters(self):

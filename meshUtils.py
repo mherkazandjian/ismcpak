@@ -235,7 +235,7 @@ class meshArxv():
         # setting variable for the 
         self.nMeshes = np.zeros( 1, dtype = np.int32 )
         self.nMeshes[0] = len(files) 
-        print 'found %s meshes' % (self.nMeshes)
+        self.logger.debug('found %s meshes' % (self.nMeshes))
 
         # defining the array holding the info about all the meshes
         # and their location in the database ..etc..
@@ -271,7 +271,7 @@ class meshArxv():
             del m
             
             if (i % np.int32(self.nMeshes / 100)) == 0:
-                print 'proccessed %d meshes...' % i 
+                self.logger.debug('proccessed %d meshes...' % i) 
             
         self.infoAll = infoAll
         
@@ -305,7 +305,7 @@ class meshArxv():
         self.infoAll.tofile( dbInfoFObj )
         dbInfoFObj.close()
         
-        print 'wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)        
+        self.logger.debug('wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))        
         
     def readDb(self, check = None):
         """ reads the database and assigns the appropritate attributes (document)
@@ -348,7 +348,7 @@ class meshArxv():
                 strng += ' when reading mesh %d' % i                
                 raise NameError(strng)
                     
-        print 'read successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
+        self.logger.debug('read successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
         
         if check:
             self.checkIntegrity()
@@ -398,7 +398,7 @@ class meshArxv():
         self.nMeshes.tofile( dbInfoFObj )
         self.infoAllRadex.tofile( dbInfoFObj )
         dbInfoFObj.close()
-        print 'wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
+        self.logger.debug('wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
 
     def readDbRadex(self, specStr, check = None):
         """ reads the database sufficed by specStr (i.e meshesRadex.db.(specStr)and assigns the appropritate attributes (document)
@@ -457,15 +457,13 @@ class meshArxv():
 
             #self.meshes.append( thisMeshRadexData[0] )                
             meshesRadex.append( thisMeshRadexData )                
-        print 'read successfully radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name)
+        self.logger.debug('read successfully radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
 
         self.infoAllRadex = infoAllRadex
         self.meshesRadex = meshesRadex
         
         if check:
-            self.checkIntegrityRadex()
-            
-            
+            self.checkIntegrityRadex()            
     
     def mergeDbs(self, newDbRunDirPath, outDirPath = None):
         """ merges two databases into one and write the resulting db and its info file
@@ -553,7 +551,7 @@ class meshArxv():
             diff +=  np.sqrt( np.dot(xdv,xdv) )
             
         if diff == 0.0:
-            print 'archive integrity test passed'
+            self.logger.debug('archive integrity test passed')
         else:
             strng = 'archive integrity test failed. database file may be corrupt' 
             raise NameError(strng)
@@ -580,7 +578,7 @@ class meshArxv():
             diff +=  np.sqrt( np.dot(xdv,xdv) )
             
         if diff == 0.0:
-            print 'archive integrity test passed'
+            self.logger.debug('archive integrity test passed')
         else:
             strng = 'archive integrity test failed. database file may be corrupt' 
             raise NameError(strng)
@@ -692,7 +690,7 @@ class meshArxv():
         ti = time()
         f = interpolate.LinearNDInterpolator(data, values) # getting the interpolation function     
         tf = time()
-        print 'constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti)
+        self.logger.debug('constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti))
 
         return f
 
@@ -714,17 +712,10 @@ class meshArxv():
         ti = time()
         f = interpolate.LinearNDInterpolator(data, values) # getting the interpolation function     
         tf = time()
-        print 'constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti)
+        self.logger.debug('constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti))
 
         return f 
 
-    def compute3DInterpolatedData(self, quantity = None, slabIdx = None, x = None, y = None, z = None, 
-                                  fInterp = None, *args, **kwargs):
-        """this method is the same as computeInterpolated2DGrid but it returns interpolated values based on
-           the input values, i.e """
-        pass
-                                 
-    
     def computeInterpolated2DGrid(self, ranges = None, res = None, zSec = None, 
                                   fInterp = None, *args, **kwargs):
         """ returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds
@@ -774,7 +765,7 @@ class meshArxv():
         ti = time()
         tNew = fInterp(dataNew)
         tf = time()
-        print 'interpolated %d points in %f seconds at a rate of %e pts/sec' % (nPts, tf-ti, nPts / (tf-ti))
+        self.logger.debug('interpolated %d points in %f seconds at a rate of %e pts/sec' % (nPts, tf-ti, nPts / (tf-ti)))
         tNew = np.reshape(tNew, grid_x.shape)
         
         return tNew
@@ -904,7 +895,6 @@ class meshArxv():
             # getting the data in the shape that is accepted by the interpolation construction        
             data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
             values = np.array( values, dtype = np.float64)
-            
             self.intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
                                                                                values = values,
                                                                                log10  = True,
@@ -991,13 +981,20 @@ class meshArxv():
         grd = grd.T
 
         im11 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
-        nlevels = 10
-        dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
-        levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
-
-        panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
-        panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
+        # computing and displaying the contour levels to be plotted
+        if self.parms['gridsInfo']['11']['showContours'] == True:
+            nlevels = 10
+            mn, mx = (np.nanmin(grd), np.nanmax(grd))
+            if mn == -np.Inf:
+                mn = -15
+                self.logger.warn('log10 of quantity was -inf set it to -15 manually')
+            dl = (mx - mn)/nlevels            
+            levels = np.arange( mn, mx, dl )
+            
+            panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
+            panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
+            
         pyl.colorbar(im11, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal')
         
     
@@ -1029,20 +1026,15 @@ class meshArxv():
         
         for i in np.arange(self.nMeshes):
             
-            print 'pdr mesh index =  %d : ' % i
+            self.logger.debug('pdr mesh index =  %d : ' % i)
             
             m.setData( self.meshes[i] )
             (gasTRadex, nColls, colDensThisSpec,) = m.getRadexParameters(speciesStr = specStr,
                                                                          threshold  = xH2_Min)
-            print gasTRadex, nColls, colDensThisSpec
-            
             # getting the collider densities in the same order of the supplied input spcie string list 
             nDensColls = [ nColls[collSpecStr] for collSpecStr in self.parms['radex']['collisionPartners'] ]
             collsStr   = list(self.parms['radex']['collisionPartners'])
-            print 'input coll species', self.parms['radex']['collisionPartners'] 
-            print 'nColls after putting them in the right order = ', nDensColls
 
-            print 'radexGrid : radex parms : ', gasTRadex, nDensColls, colDensThisSpec
             radexObj.setInFileParm('tKin', gasTRadex)
             radexObj.setInFileParm('collisionPartners', collsStr )
             radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
@@ -1051,8 +1043,8 @@ class meshArxv():
             #remove colliders which are underabundant (below radex limits)
             radexObj.filterColliders()
 
+            #all colliders have densities outsie the range accepted by radex'
             if len(radexObj.inFile['collisionPartners']) == 0:
-                print 'all colliders have densities outsie the range accepted by radex'
                 continue
             
             #setting radex to the defaul status before running it
@@ -1082,15 +1074,15 @@ class meshArxv():
             
             
             if radexObj.flagSet('SUCCESS'):
-                print 'radexGrid : converged with no warnings'
+                self.logger.debug('radexGrid : converged with no warnings')
             else:
-                print 'radexGrid : converged with warnings'
-                print '------------------------------------'
+                self.logger.debug('radexGrid : converged with warnings')
+                self.logger.debug('------------------------------------')
                 print radexObj.getWarnings()
-                print '------------------------------------'
+                self.logger.debug('------------------------------------')
                 continue
 
-            print '---------------------------------------------------------'
+            self.logger.debug('---------------------------------------------------------')
             
 
         #copying the mesh parameters self.infoAll[:]['parms] to self.infoAllRadex[:]['parms']
@@ -1191,8 +1183,8 @@ class meshArxv():
         #----------------------------------------------------------------------
         gui['widgets']['zSecSelector'] = zSecSelector
         
-        # defining the grid where the maps will be plotted
-        #-------------------------------------------------
+        # defining the grid where the maps will be plotted (maps2d)
+        #----------------------------------------------------------
         left  = 0.55
         bott  = 0.45
         sz    = 0.20
@@ -1291,6 +1283,8 @@ class meshArxv():
         radex['1'] = {'axes' : gui['figure'].add_axes([left, bott + 2*sz + vSpace , 3*sz, sz])}
         radex['2'] = {'axes' : gui['figure'].add_axes([left, bott + 1*sz + vSpace , 3*sz, sz])}
         radex['3'] = {'axes' : gui['figure'].add_axes([left, bott + 0*sz          , 3*sz, sz])}
+        radex['title1'] = pyl.figtext(0.65, 0.4, '')
+        radex['title2'] = pyl.figtext(0.9, 0.2 , '')
         #-----------------------------------------------------------------------------------        
         gui['radex'] = radex
         
@@ -1298,7 +1292,7 @@ class meshArxv():
         return gui
     
              
-    def plotGrid(self, *args, **kwargs):
+    def plotGrids(self, *args, **kwargs):
         """Main method for exploring the meshes in the database.
         
         :todo: change resGrids to a [res_x, res_y] insteads of it being just a scalar.
@@ -1364,7 +1358,7 @@ class meshArxv():
         
         # displaying
         pyl.draw()
-        print 'browing data....'
+        self.logger.debug('browing data....')
 
     def plotThisSec(self, *args, **kwargs):
         """updates the plotes once the z section value is changed
@@ -1429,13 +1423,14 @@ class meshArxv():
 
                 #for all the axes of the 2d maps
                 for panel in self.gui['maps2d'].values():
-                    #deleting the countour lines
-                    for c in panel['contour'].collections:
-                        paths = c.get_paths()
-                        del paths[:]
-                    #deleting the labels
-                    for txt in panel['contour'].labelTexts:
-                        txt.set_text('')
+                    #deleting the countour lines (if they are found)
+                    if 'collections' in dir(panel['contour']):
+                        for c in panel['contour'].collections:
+                            paths = c.get_paths()
+                            del paths[:]
+                        #deleting the labels
+                        for txt in panel['contour'].labelTexts:
+                            txt.set_text('')
                     #deleting the images
                     del panel['axes'].images[:]
                     
@@ -1451,8 +1446,10 @@ class meshArxv():
                 rMin = min(l2Distance)
                 indMin = l2Distance.argmin()
                 self.mshTmp.setData( self.meshes[indMin] )
-                                    
-                self.gui['ax2d']['axes'].set_title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0']), np.log10(self.mshTmp.data['hdr']['gammaMech'])))
+                
+                #updating the title of ['ax2d']['axes']
+                strng = '$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' %  (np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0']), np.log10(self.mshTmp.data['hdr']['gammaMech']))                     
+                self.gui['ax2d']['axes'].set_title(strng)
                 
                 self.gui['ax2d']['pts2'].set_xdata( self.grid_x[indMin] )
                 self.gui['ax2d']['pts2'].set_ydata( self.grid_y[indMin] )
@@ -1466,7 +1463,7 @@ class meshArxv():
                 pyl.draw()
                 
         tf = time()
-        print tf - ti
+        self.logger.debug('time elapased after click : %f\n' % (tf - ti))
         
     def computeAndSetRadexCurves(self, meshObj = None):
         """This is a utilty method (make it a private method), for populating the radex axes
@@ -1496,11 +1493,20 @@ class meshArxv():
         self.radexObj.filterColliders()
             
         if len(self.radexObj.inFile['collisionPartners']) == 0:
-            print 'not enough colliders'
+            self.logger.debug('not enough colliders')
         else:
     
-            print 'Radex input parms computed from the slab: ', gasTRadex, nColls, colDensThisSpec
-                
+            #updating the ['radex']['title1'] and ['radex']['title2']
+            #title1
+            strng = 'radex LVG data'
+            self.gui['radex']['title1'].set_text(strng)
+            #title2
+            strng = 'gasT\n%f\nN(specie)\n%e\n' % (gasTRadex, colDensThisSpec)
+            for i, specStr in enumerate(self.radexObj.inFile['collisionPartners']):
+                strng += '%s\n%e\n' % (specStr, self.radexObj.inFile['nDensCollisionPartners'][i])                
+            self.gui['radex']['title2'].set_text(strng)
+
+            
             self.radexObj.setDefaultStatus()
             self.radexObj.run( checkInput = True, verbose = self.parms['radex']['verbose'] )
 
@@ -1510,9 +1516,11 @@ class meshArxv():
                                                       inAxes = self.pltRadex, 
                                                       title='')
                 self.radexObj.setLabels()
+                
             else:
                 for warning in self.radexObj.warnings:
-                    print 'meshUtils.py : ', warning  
+                    self.logger.debug('warnings')
+                    print warning  
 
         
     def clear(self):
@@ -1558,7 +1566,7 @@ class meshArxv():
                 plts  = plts  + (plt,)
                 names = names + (z,)
         
-        print plts
+        #print plts
         fig.legend(plts, names)
         pyl.show()
     
@@ -1618,7 +1626,6 @@ class meshArxv():
         self.grid_qz = qz
     def set_metallicity(self, metallicity):
         self.metallicity = metallicity
-        
 
     def set_attributes(self, **kwargs):
         """set values of attributes from provided keywords
@@ -1694,12 +1701,12 @@ class meshArxv():
                     self.set_grid_qz(['','gMech/gSurface(gMech=0)'])
                     
                     # reading the reference archive
-                    print 'setting up the reference archive'
+                    self.logger.debug('setting up the reference archive')
                     t0 = time()
                     arxvRef = meshArxv( dirPath = kwargs['referenceDatabasePath'], 
                                         metallicity = self.metallicity )
                     arxvRef.readDb( check = True )
-                    print 'time reading %f' % (time() - t0)
+                    self.logger.debug('time reading %f' % (time() - t0))
                     arxvRef.setChemicalNetwork(self.chemNet) # assiginig the chemical network to the archive
     
                     gMechZero = self.grid_x.copy()
@@ -1744,6 +1751,36 @@ class meshArxv():
         self.logger.addHandler(ch)
 
         return self.logger
+    
+    def writeRadexDbAscii(self):
+        """a utlity method which can be used to output stuff to an ascii file. 
+        """
+        
+        fileName = '/home/mher/ism/marissa-0.csv'
+        
+        fObj = open(fileName, 'wb')
+        for i in np.arange(self.nMeshes):
+                
+            if self.meshesRadex[i] != None:
+                    
+                x = self.grid_x[i]
+                y = self.grid_y[i]
+                z = self.grid_z[i]
+                
+                strng = '%f,%f,%f' % (x,y,z)
+                for trans in self.meshesRadex[i]:
+                    strng += ',%s-%s,%e' % (trans['upper'],trans['lower'],trans['fluxcgs'])
+                strng += '\n'
+                if z < -29.5:
+                    print strng
+                    fObj.write(strng)
+                #v = self.meshesRadex[i][transitionIdx][quantity]
+                
+
+        fObj.close()
+        #writing some of the output of the DB in to an ascii file
+        
+
     """
     def computeSurfaceTemperatureGrid( self, res = None, ranges = None ):
         #generates color map of the surface temperature. if meshInds is not provided,

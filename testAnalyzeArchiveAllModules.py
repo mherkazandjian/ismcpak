@@ -44,8 +44,8 @@ parms = {
                                     },
                              '10' : { # column density
                                     'show'     : True,
-                                    'maxAv'    : 10,
-                                    'specStr'  : 'H2O',
+                                    'maxAv'    : 30,
+                                    'specStr'  : 'CO',
                                     },
                              '11' : { # line intensitities
                                      'show'           : True,
@@ -59,6 +59,7 @@ parms = {
                                      #                 transition index, 'dict in dtype'    
                                      'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
+                                     'showContours'   : False,
                                     },
                            },
          'gridsRes'      : 100,
@@ -72,10 +73,10 @@ parms = {
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
-                             'collisionPartners'    : ['H2','H+','H'],
-                             #'collisionPartners'    : ['H2','H','H+','e-']
-                             #'collisionPartners'    : ['H2']
-                             #'collisionPartners'    : ['H2','H+','e-','H']
+                             #'collisionPartners'    : ['H2','H+','H','e-','He'],
+                             #'collisionPartners'    : ['H2','H','H+','e-'],
+                             'collisionPartners'    : ['H2'],
+                             #'collisionPartners'    : ['H2','H+','e-','H'],
                              'tBack'                : 2.73,
                              'lineWidth'            : 1.0,
                              'verbose'              : False, 
@@ -120,7 +121,7 @@ if parms['radex']['use']:
 pyl.ioff()
 
 if parms['plotGrids']:
-    arxv.plotGrid()
+    arxv.plotGrids()
 
 pyl.show()
 
