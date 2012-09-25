@@ -745,7 +745,7 @@ class meshArxv():
              
              :param float zSec: the section in mechanical heating to be interpolated at.
              
-             :param interpolate.LinearNDInterpolator fInterp: the interpolation function returned by
+             :param scipy.interpolate.LinearNDInterpolator fInterp: the interpolation function returned by
                  :data:`construct2DInterpolationFunction` or it 3D counterpart.        
         """
         
@@ -806,8 +806,6 @@ class meshArxv():
             pyl.subplot(111)
             
         im = pyl.imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
-        #pyl.set_xlable('log_10 nGas')
-        #pyl.set_ylable('log_10 G0')
         
         # adding levels and labels
         nlevels = 10
@@ -925,8 +923,10 @@ class meshArxv():
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         panel['axes'].clabel(panel['contour'], levels, fmt = '%.1f' )
         
-        pyl.colorbar(im00, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal')
-
+        cbar = pyl.colorbar(im00, cax = panel['axesCbar'], ax = panel['axes'], 
+                            orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
+        
+        
     def showAbundancesGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the abundances grid"""
         panel = self.gui['maps2d']['01']
@@ -946,7 +946,8 @@ class meshArxv():
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
-        pyl.colorbar(im01, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal')
+        pyl.colorbar(im01, cax = panel['axesCbar'], ax = panel['axes'],
+                     orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
 
     def showColumnDensityGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the abundances grid"""
@@ -966,7 +967,8 @@ class meshArxv():
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
-        pyl.colorbar(im10, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal')
+        pyl.colorbar(im10, cax = panel['axesCbar'], ax = panel['axes'],
+                     orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
 
 
     def showLineIntensityGrid(self, ranges = None, res = None, *args, **kwargs):
@@ -981,23 +983,20 @@ class meshArxv():
         grd = grd.T
 
         im11 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+
+        mn = np.nanmin( grd[ np.where( np.fabs(grd) != np.inf ) ] )
+        mx = np.nanmax( grd[ np.where( np.fabs(grd) != np.inf ) ] )
+        nlevels = 10
+        dl = (mx - mn)/nlevels            
+        levels = np.arange( mn, mx, dl )
         
         # computing and displaying the contour levels to be plotted
         if self.parms['gridsInfo']['11']['showContours'] == True:
-            nlevels = 10
-            mn, mx = (np.nanmin(grd), np.nanmax(grd))
-            if mn == -np.Inf:
-                mn = -15
-                self.logger.warn('log10 of quantity was -inf set it to -15 manually')
-            dl = (mx - mn)/nlevels            
-            levels = np.arange( mn, mx, dl )
-            
             panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
             panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
-            
-        pyl.colorbar(im11, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal')
         
-    
+        pyl.colorbar(im11, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
+        
     def constructRadexDatabase(self, writeDb = None):
         """runs radex on all the models in self.meshes, and computes the line info according
         to the parameters in self.parms['radex']. Once done computing, it stores
@@ -1177,7 +1176,8 @@ class meshArxv():
         zSecSelector['axes'].set_title('z section selector')
         zSecSelector['axes'].set_xlim( [-40, -10.0] )
         zSecSelector['axes'].set_ylim( [0, 1] )
-        zSecSelector['point'], = zSecSelector['axes'].plot([],[], 'r.')
+        zSecSelector['axes'].get_yaxis().set_ticks([])
+        zSecSelector['point'], = zSecSelector['axes'].plot([],[], 'r+', markersize = 20)
         zSecSelector['point'].set_xdata( self.pltGmSec )
         zSecSelector['point'].set_ydata( 0.5 )
         #----------------------------------------------------------------------
@@ -1188,13 +1188,14 @@ class meshArxv():
         left  = 0.55
         bott  = 0.45
         sz    = 0.20
-        vSpace = 0.035
+        vSpace = 0.06
         hSpace = 0.02
         
         # 0,0
         maps2d_00 = {}
         maps2d_00['axes'] = gui['figure'].add_axes([left, bott + sz + vSpace, sz, sz])
         maps2d_00['axesCbar'] = gui['figure'].add_axes([left, bott + sz + sz + vSpace + 0.017, 0.2, 0.01 ])
+        maps2d_00['axesCbar'].set_title('$T_{gas}$')
         maps2d_00['contour'] = None
         maps2d_00['axes'].set_ylabel( '$log_{10} G_0$' )
         for tick in maps2d_00['axes'].xaxis.get_major_ticks():
@@ -1207,6 +1208,7 @@ class meshArxv():
         maps2d_01 = {}
         maps2d_01['axes'] = gui['figure'].add_axes([left + sz + hSpace, bott + sz + vSpace, sz, sz])
         maps2d_01['axesCbar'] = gui['figure'].add_axes( [left + sz + hSpace, bott + sz + sz + vSpace + 0.017, 0.2, 0.01] )
+        maps2d_01['axesCbar'].set_title('$n_X/(n_H + 2 n_{H_2}$')
         maps2d_01['contour'] = None
         for tick in maps2d_01['axes'].xaxis.get_major_ticks():
             tick.label1On = False
@@ -1220,6 +1222,7 @@ class meshArxv():
         maps2d_10 = {}
         maps2d_10['axes'] = gui['figure'].add_axes([left, bott, sz, sz])
         maps2d_10['axesCbar'] = gui['figure'].add_axes([left, bott + sz + 0.017, 0.2, 0.01 ])
+        maps2d_10['axesCbar'].set_title('N(X)')
         maps2d_10['contour'] = None
         maps2d_10['axes'].set_xlabel( '$log_{10} n_{gas}$' )
         maps2d_10['axes'].set_ylabel( '$log_{10} G_0$' )
@@ -1233,6 +1236,7 @@ class meshArxv():
         maps2d_11 = {}
         maps2d_11['axes'] = gui['figure'].add_axes([left + sz + hSpace, bott, sz, sz])
         maps2d_11['axesCbar'] = gui['figure'].add_axes( [left + sz + hSpace, bott + sz + 0.017, 0.2, 0.01] )
+        maps2d_11['axesCbar'].set_title('Intensity)')
         maps2d_11['contour'] = None
         maps2d_11['axes'].set_xlabel( '$log_{10} n_{gas}$' )
         for tick in maps2d_11['axes'].yaxis.get_major_ticks():
@@ -1302,25 +1306,24 @@ class meshArxv():
         self.set_default_attributes()
         
         resGrids = self.parms['gridsRes']
-        self.pltGmSec   = self.parms['zSec']
+        #setting the default zSec
+        self.pltGmSec   = np.min(self.grid_z)
+        self.logger.debug('set the current plotting section to %f, the minimum of the self.grid_z' % self.pltGmSec)
         self.radexParms = self.parms['radex']
-        
-        nMin  = self.ranges[0][0]; nMax  = self.ranges[0][1];
-        G0Min = self.ranges[1][0]; G0Max = self.ranges[1][1];
         
         #setting up the gui attribute
         self.gui = self.setupGui()
 
         # getting the interpolation function which will be used to display the 2D grids
         self.computeAndSetInterpolationFunctions(*args, **kwargs)        
-        
+
         # defining and intialising the ndmesh objects which will be used
         # for computing the grid properties and then displayed                                
                                 #xaxis    yaxis 
-        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0  ), 
-                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 )], 
-                      [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 ),
-                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [[nMin, nMax], [G0Min, G0Max]], fill = 0.0 )] ]  
+        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 ), 
+                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 )], 
+                      [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 ),
+                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 )] ]  
 
         self.resPltGrids = [resGrids, resGrids] 
          
@@ -1372,7 +1375,7 @@ class meshArxv():
         self.gui['ax2d']['pts1'].set_ydata( self.grid_y[indsThisSec] )
         
         #overplotting the radex points available for this section
-        cond1 = np.fabs(self.grid_z - self.pltGmSec) < 1e-10
+        cond1 = np.fabs(self.grid_z - self.pltGmSec) < 1e-13
         for i in np.arange(cond1.size): 
             c0 = (self.infoAllRadex[i]['info'][2] == -1)
             cond1[i] *= c0
@@ -1404,8 +1407,6 @@ class meshArxv():
         ti = time()
 
         # get the x and y coords, flip y from top to bottom
-        b      = event.button 
-        x, y   = event.x, event.y
         xd, yd = event.xdata, event.ydata
         
         if event.button == 1:
@@ -1418,7 +1419,7 @@ class meshArxv():
                 self.pltGmSec = self.grid_z[inds]
                 self.gui['widgets']['zSecSelector']['point'].set_xdata( self.pltGmSec )
                 # updating the title
-                newTitle = 'z section selector : %f' % self.pltGmSec
+                newTitle = 'z section selector : %f (%e)' % (self.pltGmSec, 10**self.pltGmSec)
                 self.gui['widgets']['zSecSelector']['axes'].set_title(newTitle)
 
                 #for all the axes of the 2d maps
@@ -1712,6 +1713,8 @@ class meshArxv():
                     gMechZero = self.grid_x.copy()
                     gMechZero[:] = np.log10(arxvRef.meshes[0]['hdr']['gammaMech']) # assumig all the meshes have this value as well
                     
+                    #getting the surface heating that the models in the current would have
+                    #from the reference database which has gmech = 0
                     arxvRef.set_grid_qx( self.grid_qx )
                     arxvRef.set_grid_qy( self.grid_qy )
                     f         = arxvRef.construct3DInterpolationFunction(quantity = ['therm', 'heating'], 

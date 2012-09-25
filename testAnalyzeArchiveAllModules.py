@@ -20,10 +20,6 @@ parms = {
          
          'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
-         'zSec'          : -30,  # section in the 3D dimension to be used for generating 
-                                  # grids. usuall this is the log10 of the mechanical heating
-                                  # it can be used as the ratio of mechanical heating to the
-                                  # surface heating(gMech = 0)
          'plotLog10zAxs' : False, # set this to true to take the log of arxv.grid_z when plotting
          
          #plotRanges    : [[0,6],[0,6],[-30, -15]],
@@ -59,7 +55,7 @@ parms = {
                                      #                 transition index, 'dict in dtype'    
                                      'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
-                                     'showContours'   : False,
+                                     'showContours'   : True,
                                     },
                            },
          'gridsRes'      : 100,
