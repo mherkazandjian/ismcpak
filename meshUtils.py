@@ -1042,8 +1042,12 @@ class meshArxv():
             #remove colliders which are underabundant (below radex limits)
             radexObj.filterColliders()
 
-            #all colliders have densities outsie the range accepted by radex'
+            #all colliders have densities outsie the range accepted by radex
+            #filling the data as empty and skipping this radex computation
             if len(radexObj.inFile['collisionPartners']) == 0:
+                infoAllRadex[i]['info'][1] = 0 #no trainsitions
+                meshesRadex.append(None)
+                radexObj.printSetFlags()
                 continue
             
             #setting radex to the defaul status before running it
@@ -1120,7 +1124,9 @@ class meshArxv():
         lnGasAll = np.log10(self.infoAll['parms'][:,1])
         lgmAll   = np.log10(self.infoAll['parms'][:,2])
         
-        indsThisSec = np.nonzero( np.fabs(lgmAll - self.pltGmSec) < 1e-6 )[0]
+        indsThisSec = np.nonzero( np.fabs(lgmAll - self.pltGmSec) < 1e-13 )[0]
+        # see of 1e-6 is good enough!!!!!!
+        asdasdadasd 
         #self.computeSurfaceTemperatureGrid( indsThisSec )
         #self.computeAbundanceAtSurfaceGrid( indsThisSec, self.radexParms['specStr'] )
         #self.computeColumnDensityGrid( indsThisSec, self.radexParms['specStr'] )
@@ -1146,7 +1152,7 @@ class meshArxv():
         # the grid plot in n,G0 showing the points where models are present in the section
         ax2d = {}
         #-----------------------------------------------------------------------------------
-        ax2d['axes']  = gui['figure'].add_axes( [0.05, 0.8, 0.12, 0.12] )
+        ax2d['axes']  = gui['figure'].add_axes( [0.05, 0.7, 0.12, 0.12] )
         ax2d['pts1'], = ax2d['axes'].plot( [0], [0], color = 'b', marker = 'o', linestyle = '')
         ax2d['pts2'], = ax2d['axes'].plot( [1], [1], color = 'r', marker = 'o', linestyle = '')
         ax2d['pts3'], = ax2d['axes'].plot( [1], [1], color = 'w', marker = 'o', linestyle = '')
@@ -1174,7 +1180,7 @@ class meshArxv():
         #----------------------------------------------------------------------
         zSecSelector['axes'] = gui['figure'].add_axes( [0.2, 0.6, 0.2, 0.02] )
         zSecSelector['axes'].set_title('z section selector')
-        zSecSelector['axes'].set_xlim( [-40, -10.0] )
+        zSecSelector['axes'].set_xlim( [self.ranges[2][0], self.ranges[2][1] ] )
         zSecSelector['axes'].set_ylim( [0, 1] )
         zSecSelector['axes'].get_yaxis().set_ticks([])
         zSecSelector['point'], = zSecSelector['axes'].plot([],[], 'r+', markersize = 20)
@@ -1370,18 +1376,19 @@ class meshArxv():
 
         #plotting the meshes n and G0 whose data is available for
         #this section
-        indsThisSec = np.nonzero( np.fabs(self.grid_z - self.pltGmSec) < 1e-6 )[0]            
+        indsThisSec = np.nonzero( np.fabs(self.grid_z - self.pltGmSec) < 1e-13 )[0]            
         self.gui['ax2d']['pts1'].set_xdata( self.grid_x[indsThisSec] )
         self.gui['ax2d']['pts1'].set_ydata( self.grid_y[indsThisSec] )
         
         #overplotting the radex points available for this section
-        cond1 = np.fabs(self.grid_z - self.pltGmSec) < 1e-13
-        for i in np.arange(cond1.size): 
-            c0 = (self.infoAllRadex[i]['info'][2] == -1)
-            cond1[i] *= c0
-        indsThisSec = np.nonzero( cond1 )[0]
-        self.gui['ax2d']['pts3'].set_xdata( self.grid_x[indsThisSec] )
-        self.gui['ax2d']['pts3'].set_ydata( self.grid_y[indsThisSec] )
+        if self.parms['gridsInfo']['11']['show']:
+            cond1 = np.fabs(self.grid_z - self.pltGmSec) < 1e-13
+            for i in np.arange(cond1.size): 
+                c0 = (self.infoAllRadex[i]['info'][2] == -1)
+                cond1[i] *= c0
+            indsThisSec = np.nonzero( cond1 )[0]
+            self.gui['ax2d']['pts3'].set_xdata( self.grid_x[indsThisSec] )
+            self.gui['ax2d']['pts3'].set_ydata( self.grid_y[indsThisSec] )
         
         # plotting the grids
         #-------------------
@@ -1449,7 +1456,8 @@ class meshArxv():
                 self.mshTmp.setData( self.meshes[indMin] )
                 
                 #updating the title of ['ax2d']['axes']
-                strng = '$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' %  (np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0']), np.log10(self.mshTmp.data['hdr']['gammaMech']))                     
+                strng = '$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' %  (np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0']), np.log10(self.mshTmp.data['hdr']['gammaMech']))
+                strng += '$\Gamma_{mech}$ = %.2e\n' % self.mshTmp.data['hdr']['gammaMech']   
                 self.gui['ax2d']['axes'].set_title(strng)
                 
                 self.gui['ax2d']['pts2'].set_xdata( self.grid_x[indMin] )
@@ -1728,7 +1736,7 @@ class meshArxv():
                     gammaSurf = f(dataNew) 
             
                     z = np.log10(self.getQuantityFromAllMeshes( ['hdr', 'gammaMech']) )
-                    self.grid_z = 10.0**z / 10.0**gammaSurf
+                    self.grid_z = np.log10(10.0**z / 10.0**gammaSurf)
             else:
                 # just use gMech as the 3rd axis
                 self.grid_z = np.log10( self.getQuantityFromAllMeshes(self.grid_qz) )
