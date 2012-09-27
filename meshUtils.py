@@ -154,6 +154,8 @@ class meshArxv():
         """same as qx but for the z axis"""
         self.grid_z = None
         """same as qx but for the z axis"""
+        self.grid_z_unique = None
+        """holds the unique values of grid_z"""
 
         self.nDbFiles   = None
         """ numpy.int32 number of database files"""
@@ -861,8 +863,6 @@ class meshArxv():
         # computing the line intensity interpolation function which will be used to make the high res maps
         ##################################################################################################
         if self.parms['gridsInfo']['11']['show']:
-            #getting the column densities for all the models
-            m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
             values = []
             grid_x = []
             grid_y = []
@@ -1098,42 +1098,70 @@ class meshArxv():
         if writeDb == True:
             self.writeDbRadex()
         
-
-    # sets up a grid, and runs the LVG models over the grid
-    # the computed grid of emission stuff is saved in the LVG 
-    # method.
-    def saveGridsToFiles( self, resGrids, lgammaMechSec, radexParms, ranges = None ):
-        self.pltGmSec   = lgammaMechSec
-        self.radexParms = radexParms
-
-        if ranges == None:
-            raise ValueError('missing value of the parameter ranges\n')
+    
+    def saveRadexGrids(self, *args, **kwargs):
+        """method that saves the radex grids (emission grids) for now into files"""
         
-                                #xaxis    yaxis 
-        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 ), 
-                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 )], 
-                      [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 ),
-                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = ranges, fill = 0.0 )] ]  
-
-        # setting up a dummy mesh object to use its plotting functionalities
-        msh = mesh()
-        msh.set_chemNet( self.chemNet )
-        msh.set_metallicity( self.metallicity )
         
-        lG0All   = np.log10(self.infoAll['parms'][:,0])
-        lnGasAll = np.log10(self.infoAll['parms'][:,1])
-        lgmAll   = np.log10(self.infoAll['parms'][:,2])
-        
-        indsThisSec = np.nonzero( np.fabs(lgmAll - self.pltGmSec) < 1e-13 )[0]
-        # see of 1e-6 is good enough!!!!!!
-        asdasdadasd 
-        #self.computeSurfaceTemperatureGrid( indsThisSec )
-        #self.computeAbundanceAtSurfaceGrid( indsThisSec, self.radexParms['specStr'] )
-        #self.computeColumnDensityGrid( indsThisSec, self.radexParms['specStr'] )
-        if self.radexParms['use'] == True:
-            self.computeLineEmissionLvgGrid(indsThisSec, self.radexParms['specStr'])
+        relativeDirPath = 'analysis/C0/'
+        transitionInds  = [0,1,2,3,4]
+        quantity        = 'fluxcgs'
+        ranges          = self.parms['plotRanges'] 
+        res             = self.resPltGrids 
 
+        for zSec in self.grid_z_unique:
+            
+            for transitionIdx in transitionInds:
+                
+                ####################################################################################################################
+                #getting the inerpolation function for this section in z
+                ####################################################################################################################
+                values = []
+                grid_x = []
+                grid_y = []
+                grid_z = []
+                 
+                #looping over all the radex info of all the mesehes and getting the
+                #transition data to be displayed
+                for i in np.arange(self.nMeshes):
                     
+                    if self.meshesRadex[i] != None:
+                        
+                        x = self.grid_x[i]
+                        y = self.grid_y[i]
+                        z = self.grid_z[i]
+                        v = self.meshesRadex[i][transitionIdx][quantity]
+                        
+                        # appending the data and the value to a list to be used
+                        # in making the interpolation function
+                        
+                        values.append( v )
+                        grid_x.append( x )
+                        grid_y.append( y )
+                        grid_z.append( z )
+                
+                # getting the data in the shape that is accepted by the interpolation construction        
+                data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
+                values = np.array( values, dtype = np.float64)
+                intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
+                                                                              values = values,
+                                                                              log10  = True,
+                                                                              *args, **kwargs)
+    
+                ####################################################################################################################
+                #interpolating the grids
+                ####################################################################################################################
+                
+    
+                grd = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                     res      = res,  
+                                                     zSec     = zSec, 
+                                                     fInterp  = intensityGridInterp_f, *args, **kwargs)
+                                                            
+                grd = grd.T
+
+                print '------------------->', zSec, transitionIdx
+        
     
     #################################################################################
     def setupGui(self):
@@ -1186,6 +1214,7 @@ class meshArxv():
         zSecSelector['point'], = zSecSelector['axes'].plot([],[], 'r+', markersize = 20)
         zSecSelector['point'].set_xdata( self.pltGmSec )
         zSecSelector['point'].set_ydata( 0.5 )
+        zSecSelector['pointsUnique'], = zSecSelector['axes'].plot([],[], 'yo')
         #----------------------------------------------------------------------
         gui['widgets']['zSecSelector'] = zSecSelector
         
@@ -1301,7 +1330,7 @@ class meshArxv():
         #-------------------------------------------------
         return gui
     
-             
+        
     def plotGrids(self, *args, **kwargs):
         """Main method for exploring the meshes in the database.
         
@@ -1348,8 +1377,7 @@ class meshArxv():
         # plotting all the points in the archive in 3D
         self.plot_3D_grid_points(figure = self.gui['figure'], 
                                  axes   = self.gui['ax3d']['axes'], 
-                                 ranges = self.ranges, 
-                                 log10z = self.parms['plotLog10zAxs'])
+                                 ranges = self.ranges)
         
         # setting up the axes to plot the radex output for each selected model
         self.pltRadex = np.array([
@@ -1360,6 +1388,11 @@ class meshArxv():
                                   ]
                                  )
         
+        # getting and plotting the unique sections in z
+        self.grid_z_unique = self.getUnique_grid_z_sections(1e-13)
+        self.gui['widgets']['zSecSelector']['pointsUnique'].set_xdata(self.grid_z_unique)
+        self.gui['widgets']['zSecSelector']['pointsUnique'].set_ydata(self.grid_z_unique*0.0 + 0.5)
+
         # attaching mouse click event to fig 1
         cid = self.gui['figure'].canvas.mpl_connect('button_press_event', self.onB1Down)
         
@@ -1428,7 +1461,7 @@ class meshArxv():
                 # updating the title
                 newTitle = 'z section selector : %f (%e)' % (self.pltGmSec, 10**self.pltGmSec)
                 self.gui['widgets']['zSecSelector']['axes'].set_title(newTitle)
-
+                                
                 #for all the axes of the 2d maps
                 for panel in self.gui['maps2d'].values():
                     #deleting the countour lines (if they are found)
@@ -1517,11 +1550,11 @@ class meshArxv():
 
             
             self.radexObj.setDefaultStatus()
-            self.radexObj.run( checkInput = True, verbose = self.parms['radex']['verbose'] )
+            self.radexObj.run( checkInput = True, verbose = True )
 
             if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
                 
-                self.radexObj.plotModelInFigureColumn(allTrans = None,
+                self.radexObj.plotModelInFigureColumn(allTrans = np.arange(self.parms['radex']['maxDisplayTranistion']),
                                                       inAxes = self.pltRadex, 
                                                       title='')
                 self.radexObj.setLabels()
@@ -1579,7 +1612,7 @@ class meshArxv():
         fig.legend(plts, names)
         pyl.show()
     
-    def plot_3D_grid_points(self, log10z = None, **kwargs):
+    def plot_3D_grid_points(self, **kwargs):
         """plots in 3D the parameters of the meshes in the database. By default
            the x,y,z coordinates are the log10 of nGas, G0, and gammaMech
            
@@ -1587,7 +1620,6 @@ class meshArxv():
                created and the axes are created in the figure object passed.
            :param  mpl_toolkits.mplot3d.Axes3D axes: if this keyword is passed, things are plotted
                in these axes, otherwise new ones are created in the figure.
-           :param bool log10z: when this is set and it is true, the log10 of the z quantity is plotted.  
            :return: (figure, axes, plt) 
         """
 
@@ -1608,11 +1640,7 @@ class meshArxv():
         else:
             ax = kwargs['axes']
         
-
-        if log10z != None and log10z == True:
-            zPlt = np.log10(self.grid_z)
-        else:
-            zPlt = self.grid_z
+        zPlt = self.grid_z
         
         plt = ax.plot(self.grid_x, self.grid_y, zPlt, 'o')
         ax.set_xlim( kwargs['ranges'][0][0], kwargs['ranges'][0][1] )
@@ -1791,7 +1819,26 @@ class meshArxv():
         fObj.close()
         #writing some of the output of the DB in to an ascii file
         
+    def getUnique_grid_z_sections(self, relDiff):
+        """returns the unique section in z up to a relative difference of relDiff"""
+        
+        z = self.grid_z
+        
+        sections = []
 
+        while z.size != 0:
+            mn = np.min(z)
+            #print 'min = ', mn, 10.0**mn
+            if mn == 0.0:
+                inds = np.where( z != mn)
+            else:
+                inds = np.where( abs(1.0 - z/mn) > relDiff)
+            z = z[inds]
+            sections.append(mn)
+    
+        return np.array(sections, dtype=np.float64)
+
+        
     """
     def computeSurfaceTemperatureGrid( self, res = None, ranges = None ):
         #generates color map of the surface temperature. if meshInds is not provided,

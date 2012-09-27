@@ -20,8 +20,6 @@ parms = {
          
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
-         'plotLog10zAxs' : False, # set this to true to take the log of arxv.grid_z when plotting
-         
          'plotRanges'    : [[0,6],[0,6],[-12, 6]],     # adaptive gMech 
          #'plotRanges'     : [[0,6],[0,6],[-40, -15]],  # uniform gmech
          'metallicity'    : 1.0,
@@ -53,7 +51,7 @@ parms = {
                                      'type'           : 'radex',
                                      'specStr'        : 'CO',     # database to be restored/computed 
                                      #                 transition index, 'dict in dtype'    
-                                     'transitionIndx' : 0,
+                                     'transitionIndx' : 5,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
                                     },
@@ -76,6 +74,7 @@ parms = {
                              'tBack'                : 2.73,
                              'lineWidth'            : 1.0,
                              'verbose'              : False, 
+                             'maxDisplayTranistion' : 20,
                              
                             },
          #-----------------chemical network parameters------------------------
@@ -121,9 +120,7 @@ if parms['plotGrids']:
 
 pyl.show()
 
-
-"""
-#arxv.saveGridsToFiles(gridsRes, lgammaMechSec, radexParms)
-pyl.show()
-"""
+if True:
+    arxv.saveRadexGrids()
+    
 print 'done'

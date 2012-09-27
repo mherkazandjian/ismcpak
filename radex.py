@@ -579,7 +579,7 @@ class radex( ):
             xticksStrs = xticksStrs + (thisTickStr ,)
             
         axes.semilogy(xPlot, yPlot, 'b')
-        axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1e-3])
+        axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1e-1])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
         
