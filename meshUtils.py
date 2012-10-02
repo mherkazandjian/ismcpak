@@ -1,4 +1,4 @@
-import os, glob, sys
+import os, glob, sys, pickle
 import numpy as np
 import pylab as pyl
 import logging
@@ -1099,20 +1099,28 @@ class meshArxv():
             self.writeDbRadex()
         
     
-    def saveRadexGrids(self, *args, **kwargs):
+    def saveRadexGrids(self, relativeDirPath = None, basename = None, transitionInds = None, quantity = None, *args, **kwargs):
         """method that saves the radex grids (emission grids) for now into files"""
         
-        
-        relativeDirPath = 'analysis/C0/'
-        transitionInds  = [0,1,2,3,4]
-        quantity        = 'fluxcgs'
         ranges          = self.parms['plotRanges'] 
         res             = self.resPltGrids 
 
+
+        #dumping the parameters of meshutils used in generating the data
+        timeStr = ctime().replace(' ','-')
+        parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out-' + timeStr 
+        parmsOut = open(parmsOutputFile, 'wb')
+        pickle.dump(self.parms, parmsOut)
+        parmsOut.close()
+        
+        filesInfo = ()
+        
         for zSec in self.grid_z_unique:
-            
+                        
             for transitionIdx in transitionInds:
-                
+            
+                nValidRadexInSec = 0 # number of meshes wiht radex data in this section
+    
                 ####################################################################################################################
                 #getting the inerpolation function for this section in z
                 ####################################################################################################################
@@ -1139,30 +1147,58 @@ class meshArxv():
                         grid_x.append( x )
                         grid_y.append( y )
                         grid_z.append( z )
+                        
+                        # getting the transition string
+                        transStrng = '%s-%s' % (self.meshesRadex[i][transitionIdx]['upper'],self.meshesRadex[i][transitionIdx]['lower'])
+                        nValidRadexInSec += 1
                 
-                # getting the data in the shape that is accepted by the interpolation construction        
-                data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
-                values = np.array( values, dtype = np.float64)
-                intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
-                                                                              values = values,
-                                                                              log10  = True,
-                                                                              *args, **kwargs)
-    
-                ####################################################################################################################
-                #interpolating the grids
-                ####################################################################################################################
-                
-    
-                grd = self.computeInterpolated2DGrid(ranges   = ranges,
-                                                     res      = res,  
-                                                     zSec     = zSec, 
-                                                     fInterp  = intensityGridInterp_f, *args, **kwargs)
-                                                            
-                grd = grd.T
-
-                print '------------------->', zSec, transitionIdx
+                if nValidRadexInSec > 0:
+                    # getting the data in the shape that is accepted by the interpolation construction        
+                    data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
+                    values = np.array( values, dtype = np.float64)
+                    intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
+                                                                                  values = values,
+                                                                                  log10  = True,
+                                                                                  *args, **kwargs)
         
+                    ####################################################################################################################
+                    #interpolating the grids
+                    ####################################################################################################################
+                    
+        
+                    grd = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                         res      = res,  
+                                                         zSec     = zSec, 
+                                                         fInterp  = intensityGridInterp_f, *args, **kwargs)
+                                                                
+                    grd = grd.T
     
+                    filename  = self.dirPath + relativeDirPath + basename
+                    filename += '-' + quantity + '-' + transStrng
+                    filename += '-log10zSec=%f' % zSec
+                    filename += '.txt'
+                    
+                    np.savetxt(filename, grd, fmt = '%1.4e')
+                    self.logger.debug('wrote the file %s' % filename)
+                    
+                    thisFileInfo = {'zSec'       : zSec,
+                                    'transition' : transStrng,
+                                    'filename'   : filename,
+                                    }
+                    filesInfo += (thisFileInfo,)
+                    print filesInfo
+                    pyl.imshow(grd, extent = (ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
+                    pyl.show()
+                else:
+                    self.logger.warn('no valid radex data found in this section')
+                    
+        #dumping information about the files into a pickle file
+        fileInfoPath = self.dirPath + relativeDirPath + 'filesInfo.out-' + timeStr
+        fileInfoFobj = open(fileInfoPath, 'wb')
+        pickle.dump(filesInfo, fileInfoFobj)
+        fileInfoFobj.close()
+
+                    
     #################################################################################
     def setupGui(self):
         """the method which setup the layout of the gui by defining a dict holding

@@ -1,3 +1,5 @@
 *.git
 *.metadata
 *.*project*
+*lock*.odt*
+*.settings*
