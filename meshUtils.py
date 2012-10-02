@@ -8,15 +8,15 @@ import matplotlib.pyplot as plt
 from   mpl_toolkits.mplot3d import Axes3D
 
 
-from time     import *
-from mesh     import *
-from utils    import *
-from ndmesh   import *
-from ismUtils import *
-from radex    import *
-from utils    import fetchNestedDtypeValue
-from scipy    import interpolate
+from time         import *
+from mesh         import *
+from utils.ndmesh import ndmesh
+from utils.misc import fetchNestedDtypeValue
+from ismUtils   import *
+from radex      import *
+from scipy      import interpolate
 import chemicalNetwork
+
 
 class meshArxv():
     """ this class generates and manipulates archives of PDR meshes.

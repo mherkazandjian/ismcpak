@@ -1,8 +1,10 @@
 from numpy import *
 from time import *
-import sys
+import sys, os
+if 'particle3' in os.uname():
+    import matplotlib
+    matplotlib.use('Qt4Agg')
 import pylab as pyl
-
 from meshUtils import *
 
 #########################################parameters##########################################################
@@ -20,7 +22,7 @@ parms = {
          
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
-         'plotRanges'    : [[0,6],[0,6],[-12, 6]],     # adaptive gMech 
+         'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
          #'plotRanges'     : [[0,6],[0,6],[-40, -15]],  # uniform gmech
          'metallicity'    : 1.0,
 
