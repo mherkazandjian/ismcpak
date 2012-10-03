@@ -981,7 +981,6 @@ class meshArxv():
                                              fInterp  = self.intensityGridInterp_f, *args, **kwargs)
                                                         
         grd = grd.T
-
         im11 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
 
         mn = np.nanmin( grd[ np.where( np.fabs(grd) != np.inf ) ] )
@@ -1105,7 +1104,6 @@ class meshArxv():
         ranges          = self.parms['plotRanges'] 
         res             = self.resPltGrids 
 
-
         #dumping the parameters of meshutils used in generating the data
         timeStr = ctime().replace(' ','-')
         parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out-' + timeStr 
@@ -1116,7 +1114,7 @@ class meshArxv():
         filesInfo = ()
         
         for zSec in self.grid_z_unique:
-                        
+            
             for transitionIdx in transitionInds:
             
                 nValidRadexInSec = 0 # number of meshes wiht radex data in this section
@@ -1154,7 +1152,7 @@ class meshArxv():
                 
                 if nValidRadexInSec > 0:
                     # getting the data in the shape that is accepted by the interpolation construction        
-                    data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
+                    data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T
                     values = np.array( values, dtype = np.float64)
                     intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
                                                                                   values = values,
@@ -1169,7 +1167,8 @@ class meshArxv():
                     grd = self.computeInterpolated2DGrid(ranges   = ranges,
                                                          res      = res,  
                                                          zSec     = zSec, 
-                                                         fInterp  = intensityGridInterp_f, *args, **kwargs)
+                                                         fInterp  = intensityGridInterp_f,
+                                                         *args, **kwargs)
                                                                 
                     grd = grd.T
     
@@ -1186,9 +1185,6 @@ class meshArxv():
                                     'filename'   : filename,
                                     }
                     filesInfo += (thisFileInfo,)
-                    print filesInfo
-                    pyl.imshow(grd, extent = (ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
-                    pyl.show()
                 else:
                     self.logger.warn('no valid radex data found in this section')
                     
@@ -1307,7 +1303,7 @@ class meshArxv():
         maps2d_11 = {}
         maps2d_11['axes'] = gui['figure'].add_axes([left + sz + hSpace, bott, sz, sz])
         maps2d_11['axesCbar'] = gui['figure'].add_axes( [left + sz + hSpace, bott + sz + 0.017, 0.2, 0.01] )
-        maps2d_11['axesCbar'].set_title('Intensity)')
+        maps2d_11['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['specStr'],self.parms['gridsInfo']['11']['transitionIndx'])  )
         maps2d_11['contour'] = None
         maps2d_11['axes'].set_xlabel( '$log_{10} n_{gas}$' )
         for tick in maps2d_11['axes'].yaxis.get_major_ticks():
