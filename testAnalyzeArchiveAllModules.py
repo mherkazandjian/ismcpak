@@ -53,7 +53,7 @@ parms = {
                                      'type'           : 'radex',
                                      'specStr'        : 'CO',     # database to be restored/computed 
                                      #                 transition index, 'dict in dtype'    
-                                     'transitionIndx' : 0,
+                                     'transitionIndx' : 15,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
                                     },
@@ -122,7 +122,7 @@ if parms['plotGrids']:
 
 pyl.show()
 
-if True:
+if False:
     arxv.saveRadexGrids(relativeDirPath = 'analysis/CO/',
                         basename        = 'radexGrid',
                         transitionInds  = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17],
