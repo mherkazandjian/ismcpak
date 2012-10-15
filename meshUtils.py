@@ -1668,7 +1668,9 @@ class meshArxv():
                         else:
                             converged = True
                             print '====>', 'pop dense make sense, trial %d' % nTried
-                    
+                    else: # radex did not succeed
+                        break
+
                     nTried += 1
                 else:
                     break
