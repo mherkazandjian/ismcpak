@@ -25,13 +25,13 @@ inFile = { 'specStr'                : 'CO'                              ,
 """
 
 # parameters that will be passed to radex multiple partners
-inFile = { 'specStr'                : 'HCO+'                                ,
+inFile = { 'specStr'                : 'CO'                                ,
            'freqRange'              : [0, 0]                              ,
-           'tKin'                   : 300.0                                    ,
+           'tKin'                   : 30.0                                    ,
            'collisionPartners'      : ['H2','H' , 'e-', 'H+', 'He']            ,
            'nDensCollisionPartners' : [1e1 , 1e2, 1e2, 1e1 , 1e3 ]            ,
            'tBack'                  : 2.73                                    ,
-           'molnDens'               : 1e18                                    ,
+           'molnDens'               : 1e16                                    ,
            'lineWidth'              : 1.0                                     ,
            'runAnother'             : 1                                       }
 

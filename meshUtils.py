@@ -1049,11 +1049,56 @@ class meshArxv():
                 radexObj.printSetFlags()
                 continue
             
+            # running radex
+            #--------------
+            converged = False
+            
+            #parameters used for attempting to get radex to converge and vlaues make sense
+            inFileOrig = radexObj.inFile # original parameters
+            popDensTol = 1e-3   # ideally sum pop dens lower should be 1, for values less than tol
+                                # the parameters are changed by 'changeFac' and another attempt is done
+                                # until the sum of pop dens is close to 1 up to tol. 
+            changeFac  = 0.001
+            nMaxTrial  = 10
+            
+            nTried     = 0
+            while not converged:
+                self.logger.debug('radex trial %d' % nTried)
+                radexObj.setDefaultStatus()
+                status = radexObj.run( checkInput = True, verbose = True )
+
+                if self.parms['radex']['checkOutputIntegrity']:
+                    # checking the integrity of the solution in case it converged
+                    if radexObj.getStatus() & radexObj.FLAGS['SUCCESS']:
+                        
+                        totalPopDensLower = np.sum(radexObj.transitions[:]['pop_down'])
+                        if np.fabs(1.0 - totalPopDensLower) > popDensTol:
+                            
+                            print '====>', 'pop dense does NOT make sense, trial %d' % nTried
+    
+                            #change in input parameters by a tiny amount 0.1% and run again
+                            #(this is a numerical bug in radex which fails sometimes)
+                            radexObj.inFile['tKin']     = inFileOrig['tKin']*(1.0 + np.random.rand()*changeFac)
+                            radexObj.inFile['molnDens'] = inFileOrig['molnDens']*(1.0 + np.random.rand()*changeFac)
+                            for i, dens in enumerate(radexObj.inFile['nDensCollisionPartners']):
+                                radexObj.inFile['nDensCollisionPartners'][i] = inFileOrig['nDensCollisionPartners'][i]*(1.0 + np.random.rand()*changeFac)
+                        else:
+                            converged = True
+                            print '====>', 'pop dense make sense, trial %d' % nTried
+                    else: # radex did not succeed
+                        break
+                    
+                    nTried += 1
+                else: #no need to check for validity of the radex pop densities
+                    break
+                
+            """
             #setting radex to the defaul status before running it
             radexObj.setDefaultStatus()
             
             #run radex for this model
             status = radexObj.run( checkInput = True )
+            """
 
             #setting the basic radex run info into the attribute
             #-----------------------------------------------------------
@@ -1570,6 +1615,7 @@ class meshArxv():
             self.logger.debug('not enough colliders')
         else:
     
+            
             #updating the ['radex']['title1'] and ['radex']['title2']
             #title1
             strng = 'radex LVG data'
@@ -1580,10 +1626,55 @@ class meshArxv():
                 strng += '%s\n%e\n' % (specStr, self.radexObj.inFile['nDensCollisionPartners'][i])                
             self.gui['radex']['title2'].set_text(strng)
 
+            # writing the parameters to a file (for debugging purposes)
+            # this file can be used to re-run radex as standalone
+            fName = self.parms['radex']['path'] + '-debug.inp'
+            fObj = open(fName, 'w')
+            fObj.write(self.radexObj.genInputFileContentAsStr() )
+            self.logger.debug(fName)
             
-            self.radexObj.setDefaultStatus()
-            self.radexObj.run( checkInput = True, verbose = True )
+            # running radex
+            #--------------
+            converged = False
+            
+            #parameters used for attempting to get radex to converge and vlaues make sense
+            inFileOrig = self.radexObj.inFile # original parameters
+            popDensTol = 1e-3   # ideally sum pop dens lower should be 1, for values less than tol
+                                # the parameters are changed by 'changeFac' and another attempt is done
+                                # until the sum of pop dens is close to 1 up to tol. 
+            changeFac  = 0.001
+            nMaxTrial  = 10
+            
+            nTried     = 0
+            while not converged:
+                self.radexObj.setDefaultStatus()
+                self.radexObj.run( checkInput = True, verbose = True )
 
+                if self.parms['radex']['checkOutputIntegrity']:
+                    # checking the integrity of the solution in case it converged
+                    if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
+                                            
+                        totalPopDensLower = np.sum(self.radexObj.transitions[:]['pop_down'])
+                        if np.fabs(1.0 - totalPopDensLower) > popDensTol:
+                            
+                            print '====>', 'pop dense does NOT make sense, trial %d' % nTried
+    
+                            #change in input parameters by a tiny amount 0.1% and run again
+                            #(this is a numerical bug in radex which fails sometimes)
+                            self.radexObj.inFile['tKin']     = inFileOrig['tKin']*(1.0 + np.random.rand()*changeFac)
+                            self.radexObj.inFile['molnDens'] = inFileOrig['molnDens']*(1.0 + np.random.rand()*changeFac)
+                            for i, dens in enumerate(self.radexObj.inFile['nDensCollisionPartners']):
+                                self.radexObj.inFile['nDensCollisionPartners'][i] = inFileOrig['nDensCollisionPartners'][i]*(1.0 + np.random.rand()*changeFac)
+                        else:
+                            converged = True
+                            print '====>', 'pop dense make sense, trial %d' % nTried
+                    
+                    nTried += 1
+                else:
+                    break
+
+            # plotting the data
+            # ----------------
             if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
                 
                 self.radexObj.plotModelInFigureColumn(allTrans = np.arange(self.parms['radex']['maxDisplayTranistion']),
