@@ -390,10 +390,11 @@ class meshArxv():
             else:
                 self.infoAllRadex[i]['info'][2] = -1
 
+            #writing the offset so far from the begining of the .db file
             np.array( self.infoAllRadex[i]['info'][2] ).tofile(dbDataFObj)
 
         dbDataFObj.close()
-        
+
         # writing the db info into a file
         dbInfoFObj = file(self.parms['dirPath'] + 'meshesRadex.db.info.' + self.parms['radex']['specStr'], 'wb')
         self.verRadex.tofile( dbInfoFObj)
@@ -452,9 +453,9 @@ class meshArxv():
             checkNum = np.fromfile( dbDataFObj, dtype = np.int64, count = 1)
 
             if checkNum != infoAllRadex[i]['info'][2]:
-                strng  = 'Error : checkpoint numbers do not match : database may be corrupt.\n'
-                strng += 'read = %d, expected = %d' % (checkNum, infoAllRadex[i]['info'][2])
-                strng += ' when reading mesh %d' % i                
+                strng  = 'Error : While reading mesh %d \n' % i
+                strng += '           Error : checkpoint numbers do not match : radex database may be corrupt.\n'
+                strng += '           Error : read = %d, expected = %d' % (checkNum, infoAllRadex[i]['info'][2])
                 raise NameError(strng)
 
             #self.meshes.append( thisMeshRadexData[0] )                
@@ -1049,23 +1050,22 @@ class meshArxv():
                 radexObj.printSetFlags()
                 continue
             
-            # running radex
-            #--------------
-            converged = False
+            #----------------------------------running radex---------------------------------
+            radexOutputMakesSense = False
             
             #parameters used for attempting to get radex to converge and vlaues make sense
-            inFileOrig = radexObj.inFile # original parameters
+            inFileOrig = radexObj.inFile.copy() # original parameters
             popDensTol = 1e-3   # ideally sum pop dens lower should be 1, for values less than tol
                                 # the parameters are changed by 'changeFac' and another attempt is done
                                 # until the sum of pop dens is close to 1 up to tol. 
-            changeFac  = 0.001
-            nMaxTrial  = 10
+            changeFac  = 0.001  # the relative amount by which the input parameters to radex are changed
+            nMaxTrial  = 10     # number of time random changes are done before giving up
             
             nTried     = 0
-            while not converged:
+            while not radexOutputMakesSense:
                 self.logger.debug('radex trial %d' % nTried)
                 radexObj.setDefaultStatus()
-                status = radexObj.run( checkInput = True, verbose = True )
+                status = radexObj.run( checkInput = True, verbose = False )
 
                 if self.parms['radex']['checkOutputIntegrity']:
                     # checking the integrity of the solution in case it converged
@@ -1080,37 +1080,35 @@ class meshArxv():
                             #(this is a numerical bug in radex which fails sometimes)
                             radexObj.inFile['tKin']     = inFileOrig['tKin']*(1.0 + np.random.rand()*changeFac)
                             radexObj.inFile['molnDens'] = inFileOrig['molnDens']*(1.0 + np.random.rand()*changeFac)
-                            for i, dens in enumerate(radexObj.inFile['nDensCollisionPartners']):
-                                radexObj.inFile['nDensCollisionPartners'][i] = inFileOrig['nDensCollisionPartners'][i]*(1.0 + np.random.rand()*changeFac)
+                            for j, dens in enumerate(radexObj.inFile['nDensCollisionPartners']):
+                                radexObj.inFile['nDensCollisionPartners'][j] = inFileOrig['nDensCollisionPartners'][j]*(1.0 + np.random.rand()*changeFac)
                         else:
-                            converged = True
+                            radexOutputMakesSense = True
                             print '====>', 'pop dense make sense, trial %d' % nTried
                     else: # radex did not succeed
-                        break
+                        break  # here radexOutputMakesSense woulbe be False
                     
                     nTried += 1
+                    
+                    if nTried >= nMaxTrial: #no meaningful output after nTried trials
+                        break # here radexOutputMakesSense woulbe be False
+                        
                 else: #no need to check for validity of the radex pop densities
+                    radexOutputMakesSense = True
                     break
-                
-            """
-            #setting radex to the defaul status before running it
-            radexObj.setDefaultStatus()
+            #------------------------------done running radex----------------------------------------
             
-            #run radex for this model
-            status = radexObj.run( checkInput = True )
-            """
-
             #setting the basic radex run info into the attribute
             #-----------------------------------------------------------
             #saving the number of transitions into radex info attribute
             infoAllRadex[i]['info'][0] = i
-            if not radexObj.flagSet('ERROR'):
-                infoAllRadex[i]['info'][1] = radexObj.nTransitions
-                meshesRadex.append(radexObj.transitions)
-            else:
+            if radexObj.flagSet('ERROR') or (radexOutputMakesSense is False): # radex failed, no transition data available
                 infoAllRadex[i]['info'][1] = 0 #no trainsitions
                 meshesRadex.append(None)
                 radexObj.printSetFlags()
+            else: # radex succeeded, wirint the transition data
+                infoAllRadex[i]['info'][1] = radexObj.nTransitions
+                meshesRadex.append(radexObj.transitions)
 
             #infoAllRadex[i]['info'][2] = NOT SET HERE, IT IS SET WHEN WRITING THE DB TO A FILE
             
@@ -1633,20 +1631,19 @@ class meshArxv():
             fObj.write(self.radexObj.genInputFileContentAsStr() )
             self.logger.debug(fName)
             
-            # running radex
-            #--------------
-            converged = False
+            #----------------------------------running radex---------------------------------
+            radexOutputMakesSense = False
             
             #parameters used for attempting to get radex to converge and vlaues make sense
-            inFileOrig = self.radexObj.inFile # original parameters
+            inFileOrig = self.radexObj.inFile.copy() # original parameters
             popDensTol = 1e-3   # ideally sum pop dens lower should be 1, for values less than tol
                                 # the parameters are changed by 'changeFac' and another attempt is done
                                 # until the sum of pop dens is close to 1 up to tol. 
-            changeFac  = 0.001
-            nMaxTrial  = 10
-            
+            changeFac  = 0.001  # the relative amount by which the input parameters to radex are changed
+            nMaxTrial  = 10     # number of time random changes are done before giving up    
+
             nTried     = 0
-            while not converged:
+            while not radexOutputMakesSense:
                 self.radexObj.setDefaultStatus()
                 self.radexObj.run( checkInput = True, verbose = True )
 
@@ -1666,15 +1663,21 @@ class meshArxv():
                             for i, dens in enumerate(self.radexObj.inFile['nDensCollisionPartners']):
                                 self.radexObj.inFile['nDensCollisionPartners'][i] = inFileOrig['nDensCollisionPartners'][i]*(1.0 + np.random.rand()*changeFac)
                         else:
-                            converged = True
+                            radexOutputMakesSense = True
                             print '====>', 'pop dense make sense, trial %d' % nTried
                     else: # radex did not succeed
-                        break
-
+                        break  # here radexOutputMakesSense woulbe be False
+                    
                     nTried += 1
-                else:
+                    
+                    if nTried >= nMaxTrial: #no meaningful output after nTried trials
+                        break # here radexOutputMakesSense woulbe be False
+                        
+                else: #no need to check for validity of the radex pop densities
+                    radexOutputMakesSense = True
                     break
-
+            #------------------------------done running radex----------------------------------------
+        
             # plotting the data
             # ----------------
             if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:

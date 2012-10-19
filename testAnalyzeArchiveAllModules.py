@@ -51,9 +51,9 @@ parms = {
                                      #'slabIdx'       : 0,  # not valid in 'radex' mode
                                      
                                      'type'           : 'radex',
-                                     'specStr'        : 'CO',     # database to be restored/computed 
+                                     'specStr'        : 'HNC',     # database to be restored/computed 
                                      #                 transition index, 'dict in dtype'    
-                                     'transitionIndx' : 0,
+                                     'transitionIndx' : 1,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
                                     },
@@ -65,7 +65,7 @@ parms = {
                              'writeDb'              : True, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                             'specStr'              : 'CO',
+                             'specStr'              : 'HNC',
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
@@ -113,6 +113,7 @@ if parms['radex']['use']:
     else:
         arxv.readDbRadex(parms['radex']['specStr'], check = True)
 
+    
 
 # plotting stuff
 pyl.ioff()
