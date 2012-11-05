@@ -898,7 +898,7 @@ class meshArxv():
                                                                                values = values,
                                                                                log10  = True,
                                                                                *args, **kwargs)
-    
+            
     def showSurfaceTemperatureGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the surface temperature grid
             
@@ -996,6 +996,7 @@ class meshArxv():
             panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im11, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
+        panel['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['specStr'],self.parms['gridsInfo']['11']['transitionIndx'])  )
         
     def constructRadexDatabase(self, writeDb = None):
         """runs radex on all the models in self.meshes, and computes the line info according
@@ -1055,11 +1056,11 @@ class meshArxv():
             
             #parameters used for attempting to get radex to converge and vlaues make sense
             inFileOrig = radexObj.inFile.copy() # original parameters
-            popDensTol = 1e-3   # ideally sum pop dens lower should be 1, for values less than tol
-                                # the parameters are changed by 'changeFac' and another attempt is done
-                                # until the sum of pop dens is close to 1 up to tol. 
-            changeFac  = 0.001  # the relative amount by which the input parameters to radex are changed
-            nMaxTrial  = 10     # number of time random changes are done before giving up
+            popDensTol = self.parms['radex']['popDensSumTol']  # ideally sum pop dens lower should be 1, for values less than tol
+                                                              # the parameters are changed by 'changeFac' and another attempt is done
+                                                              # until the sum of pop dens is close to 1 up to tol. 
+            changeFac  = self.parms['radex']['changeFracTrial']  # the relative amount by which the input parameters to radex are changed
+            nMaxTrial  = self.parms['radex']['nMaxTrial']     # number of time random changes are done before giving up
             
             nTried     = 0
             while not radexOutputMakesSense:
@@ -1275,9 +1276,7 @@ class meshArxv():
         ax3d['axes'].set_position((0.2, 0.68, 0.3, 0.3))
         #-----------------------------------------------------------------------------------        
         gui['ax3d'] = ax3d
-        
-        
-        
+                        
         # defining the axes which will be used to select the section in Z to show
         zSecSelector = {}
         #----------------------------------------------------------------------
@@ -1292,6 +1291,20 @@ class meshArxv():
         zSecSelector['pointsUnique'], = zSecSelector['axes'].plot([],[], 'yo')
         #----------------------------------------------------------------------
         gui['widgets']['zSecSelector'] = zSecSelector
+
+        # defining the axes which will be used to select the transition index to be displayed in the emission panel
+        transitionSelector = {}
+        #----------------------------------------------------------------------
+        transitionSelector['axes'] = gui['figure'].add_axes( [0.2, 0.53, 0.2, 0.02] )
+        transitionSelector['axes'].set_title('transition selector')
+        transitionSelector['axes'].set_xlim( [0, 40] )
+        transitionSelector['axes'].set_ylim( [0, 1] )
+        transitionSelector['axes'].get_yaxis().set_ticks([])
+        transitionSelector['point'], = transitionSelector['axes'].plot([],[], 'r+', markersize = 20)
+        transitionSelector['point'].set_xdata( self.parms['gridsInfo']['11']['transitionIndx'] )
+        transitionSelector['point'].set_ydata( 0.5 )
+        #----------------------------------------------------------------------
+        gui['widgets']['transitionSelector'] = transitionSelector
         
         # defining the grid where the maps will be plotted (maps2d)
         #----------------------------------------------------------
@@ -1553,11 +1566,38 @@ class meshArxv():
                 self.plotThisSec() #;;; rename this to update 2D grids
                 pyl.draw()
 
+            # getting the value of the transition to display in the emission panel
+            if event.inaxes is self.gui['widgets']['transitionSelector']['axes']:
+                
+                # setting the section closest to the data available
+                self.parms['gridsInfo']['11']['transitionIndx'] = np.round(xd)
+                self.gui['widgets']['transitionSelector']['point'].set_xdata( self.parms['gridsInfo']['11']['transitionIndx'] )
+                # updating the title
+                newTitle = 'transition selector, index = %d' % self.parms['gridsInfo']['11']['transitionIndx']
+                self.gui['widgets']['transitionSelector']['axes'].set_title(newTitle)
+
+                #for all the axes of the 2d maps
+                for panel in self.gui['maps2d'].values():
+                    #deleting the countour lines (if they are found)
+                    if 'collections' in dir(panel['contour']):
+                        for c in panel['contour'].collections:
+                            paths = c.get_paths()
+                            del paths[:]
+                        #deleting the labels
+                        for txt in panel['contour'].labelTexts:
+                            txt.set_text('')
+                    #deleting the images
+                    del panel['axes'].images[:]
+
+                self.computeAndSetInterpolationFunctions()
+                self.plotThisSec() #;;; rename this to update 2D grids
+                pyl.draw()
 
             # getting the coordinates inthe grid to display as a single mesh as a function of Av
             # and maybe display the radex calculations                
             if event.inaxes is self.gui['ax2d']['axes']:
-        
+                
+                self.logger.debug('####################################button 1 clicked###########################################')
                 l2Distance  = np.sqrt( (yd - self.grid_y)**2 + (xd - self.grid_x)**2 + (self.pltGmSec - self.grid_z)**2 )
                 rMin = min(l2Distance)
                 indMin = l2Distance.argmin()
@@ -1572,7 +1612,7 @@ class meshArxv():
                 self.gui['ax2d']['pts2'].set_ydata( self.grid_y[indMin] )
                 self.gui['ax2d']['pts2'].set_color('r')
                                     
-                self.mshTmp.plot()
+                self.mshTmp.plot() #plotting the PDR mesh curves in the panels
                                     
                 if self.parms['radex']['use']:
                     self.computeAndSetRadexCurves(meshObj = self.mshTmp)
@@ -1591,7 +1631,8 @@ class meshArxv():
         msh = meshObj
         #assigning the axes in which the radex curves will be plotted
         self.radexObj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
-        
+        self.radexObj.set_logger(self.logger)
+
         (gasTRadex, nColls, colDensThisSpec,) = msh.getRadexParameters(speciesStr = self.parms['radex']['specStr'], 
                                                                        threshold  = self.parms['radex']['xH2_Min'])
 
@@ -1612,8 +1653,6 @@ class meshArxv():
         if len(self.radexObj.inFile['collisionPartners']) == 0:
             self.logger.debug('not enough colliders')
         else:
-    
-            
             #updating the ['radex']['title1'] and ['radex']['title2']
             #title1
             strng = 'radex LVG data'
@@ -1629,18 +1668,18 @@ class meshArxv():
             fName = self.parms['radex']['path'] + '-debug.inp'
             fObj = open(fName, 'w')
             fObj.write(self.radexObj.genInputFileContentAsStr() )
-            self.logger.debug(fName)
+            self.logger.debug('input radex file written to %s' % fName)
             
             #----------------------------------running radex---------------------------------
             radexOutputMakesSense = False
             
             #parameters used for attempting to get radex to converge and vlaues make sense
             inFileOrig = self.radexObj.inFile.copy() # original parameters
-            popDensTol = 1e-3   # ideally sum pop dens lower should be 1, for values less than tol
-                                # the parameters are changed by 'changeFac' and another attempt is done
-                                # until the sum of pop dens is close to 1 up to tol. 
-            changeFac  = 0.001  # the relative amount by which the input parameters to radex are changed
-            nMaxTrial  = 10     # number of time random changes are done before giving up    
+            popDensTol = self.parms['radex']['popDensSumTol']  # ideally sum pop dens lower should be 1, for values less than tol
+                                                              # the parameters are changed by 'changeFac' and another attempt is done
+                                                              # until the sum of pop dens is close to 1 up to tol. 
+            changeFac  = self.parms['radex']['changeFracTrial']  # the relative amount by which the input parameters to radex are changed
+            nMaxTrial  = self.parms['radex']['nMaxTrial']     # number of time random changes are done before giving up
 
             nTried     = 0
             while not radexOutputMakesSense:
@@ -1666,6 +1705,13 @@ class meshArxv():
                             radexOutputMakesSense = True
                             print '====>', 'pop dense make sense, trial %d' % nTried
                     else: # radex did not succeed
+                        self.logger.debug('radex failed')
+                        self.logger.debug('---------------------------------------------------------')
+                        self.logger.debug('------------------------radex raw output-----------------')
+                        self.logger.debug('---------------------------------------------------------')
+                        print self.radexObj.rawOutput
+                        self.logger.debug('---------------------------------------------------------')
+                        self.radexObj.clearCurves()
                         break  # here radexOutputMakesSense woulbe be False
                     
                     nTried += 1
@@ -1688,9 +1734,11 @@ class meshArxv():
                 self.radexObj.setLabels()
                 
             else:
+                self.logger.debug('--------------warnings---------------')
                 for warning in self.radexObj.warnings:
-                    self.logger.debug('warnings')
-                    print warning  
+                    print warning
+                self.logger.debug('--------------warnings---------------')
+                    
 
         
     def clear(self):

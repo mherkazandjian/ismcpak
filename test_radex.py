@@ -64,6 +64,7 @@ if radexObj.getStatus() &  radexObj.FLAGS['SUCCESS'] :
             print transition['upper'], transition['lower'], transition['fluxcgs']
                
         radexObj.plotModel()
+        
 else:
     if radexObj.getStatus() &  radexObj.FLAGS['ITERWARN']:
         print 'did not converge'

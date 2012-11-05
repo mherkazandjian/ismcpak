@@ -51,9 +51,9 @@ parms = {
                                      #'slabIdx'       : 0,  # not valid in 'radex' mode
                                      
                                      'type'           : 'radex',
-                                     'specStr'        : 'HNC',     # database to be restored/computed 
+                                     'specStr'        : 'CO',     # database to be restored/computed 
                                      #                 transition index, 'dict in dtype'    
-                                     'transitionIndx' : 1,
+                                     'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
                                     },
@@ -61,23 +61,25 @@ parms = {
          'gridsRes'      : 100,
          
          'radex'         : { 'use'                  : True,
-                             'compute'              : True, #if true, runns radex on all meshes
-                             'writeDb'              : True, #if true, writes the computed stuff to a db
+                             'compute'              : False, #if true, runns radex on all meshes
+                             'writeDb'              : False, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                             'specStr'              : 'HNC',
+                             'specStr'              : 'CO',
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
-                             #'collisionPartners'    : ['H2','H+','H','e-','He'],
+                             'collisionPartners'    : ['H2','H+','H','e-','He'],
                              #'collisionPartners'    : ['H2','H','H+','e-'],
-                             'collisionPartners'    : ['H2'],
-                             #'collisionPartners'    : ['H2','H+','e-','H'],
+                             #'collisionPartners'    : ['H2'],
                              'tBack'                : 2.73,
                              'lineWidth'            : 1.0,
-                             'verbose'              : False, 
+                             'verbose'              : True, 
                              'maxDisplayTranistion' : 20,
                              'checkOutputIntegrity' : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)
+                             'popDensSumTol'        : 1e-3,
+                             'changeFracTrial'      : 0.001,
+                             'nMaxTrial'            : 100,
                             },
          #-----------------chemical network parameters------------------------
          'chemistry'     : {

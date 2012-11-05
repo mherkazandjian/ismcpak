@@ -4,6 +4,7 @@
 import numpy as np
 import pylab as pyl
 import subprocess
+import logging, sys
 
 ## @package Radex
 # Radex   
@@ -200,7 +201,8 @@ class radex( ):
         """integer : number of models to run and plot"""
         self.ny  = 4
         """integer : number of horizontal division in the figure (default)"""
-
+        self.logger = None
+        
     def setInFileParm(self, parm, value):
         """This method sets values to the parameters to be passed to radex.
 
@@ -225,7 +227,9 @@ class radex( ):
         return self.rawOutput
     def setStatus(self, status):
         self.status = status
-    
+    def set_logger(self, logger):
+        self.logger = logger
+        
     def setDefaultStatus(self):
         """sets the default status and self.transitions, self.rawOutput and self.nTransitions to None"""
         self.status = self.FLAGS['DEFAULT']
@@ -349,6 +353,8 @@ class radex( ):
         status to the default before calling self.#run using self.#setDefaultStatus()
         """
         
+        self.warnings = []
+
         if checkInput == True:
             self.checkParameters()
         else:
@@ -357,10 +363,13 @@ class radex( ):
         if self.status &  self.FLAGS['PARMSOK']:
         
             radexInput = self.genInputFileContentAsStr()
+            
             if verbose == True:
-                print '---------------------------------------------'
+                print '---------------------------------------------------------------------------------------'
+                print '----------------radex input parameters passed to the executable------------------------'
+                print '---------------------------------------------------------------------------------------'
                 print radexInput
-                print '---------------------------------------------'
+                print '---------------------------------------------------------------------------------------'
             
             self.proccess = subprocess.Popen(self.execPath           , 
                                              stdin=subprocess.PIPE   ,  
@@ -382,7 +391,10 @@ class radex( ):
                 print '-------------raw output of Radex stdout------------------'
                 print radexOutput
                 print '---------------------------------------------------------------------'
-                
+        else:
+            if verbose == True:
+                print 'radex.py : parameters NOT ok. radex.status = ', self.status 
+            
         return self.status
         
     def generateTransitionDtype(self):
@@ -654,7 +666,16 @@ class radex( ):
         axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
-    
+
+    def clearCurves(self):
+        """Clears the curves in an axes column. This is usually used when radex fails
+        and the data in a certain column need to be removed. Here it is assumes there
+        is one column."""
+
+        for ax in self.axs:            
+            ax.lines = []
+        
+        
     ## set the appropriate labels of all the axes
     def setLabels(self):
         
@@ -722,3 +743,34 @@ class radex( ):
         self.setLabels()   
         pyl.show()
         
+    def clear(self):
+        self.nCollPart    = None
+        self.rawOutput    = None
+        self.warnings     = []
+        self.nIter        = None
+        self.outputHdr    = None  
+        self.nTransitions = None
+        self.transitions = None
+        self.status = None
+
+    def setupLogger(self):
+        """sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger."""
+        # setting up the logger                                                                                                                                                                                                              
+        # create logger                                                                                                                                                                                                                      
+        self.logger = logging.getLogger('simple_example')
+        self.logger.setLevel(logging.DEBUG)
+
+        # create console handler and set level to debug                                                                                                                                                                                      
+        ch = logging.StreamHandler( sys.stdout )  # setting the stream to stdout                                                                                                                                                             
+        ch.setLevel(logging.DEBUG)
+
+        # create formatter                                                                                                                                                                                                                   
+        formatter = logging.Formatter('[%(asctime)s %(funcName)s() %(filename)s:%(lineno)s] %(message)s') # this was the original in the example                                                                              
+
+        # add formatter to ch                                                                                                                                                                                                                
+        ch.setFormatter(formatter)
+
+        # add ch to logger                                                                                                                                                                                                                   
+        self.logger.addHandler(ch)
+
+        return self.logger
