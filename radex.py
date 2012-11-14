@@ -48,6 +48,7 @@ class radex( ):
                                'C'    : 'catom.dat'    ,
                                'C+'   : 'c+.dat'       ,
                                'O'    : 'oatom.dat'    ,
+                               'SiO'  : 'sio.dat'      ,
                                'CN'   : 'cn.dat'       }
         """ dict : dictonary for the species files, the keys of this dict are as follows 
         (see radex.py for an example) : \n

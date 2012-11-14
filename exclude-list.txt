@@ -1,5 +1,1 @@
-*.git
-*.metadata
-*.*project*
-*lock*.odt*
-*.settings*
+/home/mher/exclude-list.txt

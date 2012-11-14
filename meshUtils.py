@@ -864,42 +864,76 @@ class meshArxv():
         # computing the line intensity interpolation function which will be used to make the high res maps
         ##################################################################################################
         if self.parms['gridsInfo']['11']['show']:
-            values = []
-            grid_x = []
-            grid_y = []
-            grid_z = []
              
-            transitionIdx = self.parms['gridsInfo']['11']['transitionIndx']
-            quantity      = self.parms['gridsInfo']['11']['quantity']
+            radiativeCodeType = self.parms['gridsInfo']['11']['type']
             
-            #looping over all the radex info of all the mesehes and getting the
-            #transition data to be displayed
-            for i in np.arange(self.nMeshes):
-                
-                if self.meshesRadex[i] != None:
-                    
-                    x = self.grid_x[i]
-                    y = self.grid_y[i]
-                    z = self.grid_z[i]
-                    v = self.meshesRadex[i][transitionIdx][quantity]
-                    
-                    # appending the data and the value to a list to be used
-                    # in making the interpolation function
-                    
-                    values.append( v )
-                    grid_x.append( x )
-                    grid_y.append( y )
-                    grid_z.append( z )
+            #----------------------------emissions using radex---------------------------------------
+            if radiativeCodeType == 'radex':
+
+                values, grid_x, grid_y, grid_z = [], [], [], []
+
+                transitionIdx = self.parms['gridsInfo']['11']['transitionIndx']
+                quantity      = self.parms['gridsInfo']['11']['quantity']
             
-            # getting the data in the shape that is accepted by the interpolation construction        
-            data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
-            values = np.array( values, dtype = np.float64)
-            self.intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
-                                                                               values = values,
-                                                                               log10  = True,
-                                                                               *args, **kwargs)
-            
-    def showSurfaceTemperatureGrid(self, ranges = None, res = None, *args, **kwargs):
+                #looping over all the radex info of all the mesehes and getting the
+                #transition data to be displayed
+                for i in np.arange(self.nMeshes):
+                    
+                        if self.meshesRadex[i] != None:
+                            
+                            x, y, z = self.grid_x[i], self.grid_y[i], self.grid_z[i]
+                            v = self.meshesRadex[i][transitionIdx][quantity]
+                            
+                            # appending the data and the value to a list to be used
+                            # in making the interpolation function
+                            
+                            values.append( v )
+                            grid_x.append( x )
+                            grid_y.append( y )
+                            grid_z.append( z )
+                            
+                # getting the data in the shape that is accepted by the interpolation construction        
+                data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
+                values = np.array( values, dtype = np.float64)
+                self.intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
+                                                                                   values = values,
+                                                                                   log10  = True,
+                                                                                   *args, **kwargs)
+
+            #----------------------------emissions from the PDR slabs---------------------------------------
+            if radiativeCodeType == 'pdr':
+
+                #getting the column densities for all the models
+                values  = np.ndarray(self.nMeshes, dtype = np.float64)
+             
+                for i in np.arange(self.nMeshes):
+                    
+                    m = self.meshes[i]
+                    nDense_m = m['hdr']['nGas']
+                    Av_m = m['state']['Av']
+
+                    # setting the thickness of the last slab to the one before it
+                    dxSlabs          =  getSlabThicknessFromAv(Av_m, nDense_m, self.metallicity)
+                    dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
+                    dxSlabsNew[0:-1] =  dxSlabs
+                    dxSlabsNew[-1]   =  dxSlabs[-1]
+                    dxSlabs          =  dxSlabsNew
+
+                    q = fetchNestedDtypeValue(m, self.parms['gridsInfo']['11']['quantity'] )
+                    v = np.sum( q*dxSlabs ) / (2.0 * np.pi)
+
+                    if v < 0:
+                        self.logger.warning('negative intensitiy detected - setting it to 0')
+                        v = np.float64(0)
+                        #print self.grid_x[i], self.grid_y[i], self.grid_z[i], v 
+
+                    values[i] = v 
+        
+                self.intensityGridInterp_f = self.construct3DInterpolationFunction(values = values,
+                                                                                 log10  = True,
+                                                                                 *args, **kwargs)
+                    
+    def show_pdr_mesh_quantity_grid(self, ranges = None, res = None, *args, **kwargs):
         """shows the surface temperature grid
             
            :todo: plot every other labeled contour as a tick in the colorbar
@@ -996,7 +1030,11 @@ class meshArxv():
             panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im11, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
-        panel['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['specStr'],self.parms['gridsInfo']['11']['transitionIndx'])  )
+        
+        if self.parms['gridsInfo']['11']['type'] == 'radex':
+            panel['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['specStr'],self.parms['gridsInfo']['11']['transitionIndx'])  )
+        elif self.parms['gridsInfo']['11']['type'] == 'pdr':
+            panel['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['quantity'][1], self.parms['gridsInfo']['11']['quantity'][3]) )
         
     def constructRadexDatabase(self, writeDb = None):
         """runs radex on all the models in self.meshes, and computes the line info according
@@ -1073,9 +1111,9 @@ class meshArxv():
                     if radexObj.getStatus() & radexObj.FLAGS['SUCCESS']:
                         
                         totalPopDensLower = np.sum(radexObj.transitions[:]['pop_down'])
-                        if np.fabs(1.0 - totalPopDensLower) > popDensTol:
+                        if np.fabs(self.parms['radex']['popDensSumExpected'] - totalPopDensLower) > popDensTol:
                             
-                            print '====>', 'pop dense does NOT make sense, trial %d' % nTried
+                            self.logger.warn('====> pop dens does NOT make sense, trial %d\n====> total pop dense lower = %20.10f' % (nTried, totalPopDensLower) )
     
                             #change in input parameters by a tiny amount 0.1% and run again
                             #(this is a numerical bug in radex which fails sometimes)
@@ -1150,7 +1188,7 @@ class meshArxv():
 
         #dumping the parameters of meshutils used in generating the data
         timeStr = ctime().replace(' ','-')
-        parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out-' + timeStr 
+        parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out' #-' + timeStr 
         parmsOut = open(parmsOutputFile, 'wb')
         pickle.dump(self.parms, parmsOut)
         parmsOut.close()
@@ -1233,11 +1271,110 @@ class meshArxv():
                     self.logger.warn('no valid radex data found in this section')
                     
         #dumping information about the files into a pickle file
-        fileInfoPath = self.dirPath + relativeDirPath + 'filesInfo.out-' + timeStr
+        fileInfoPath = self.dirPath + relativeDirPath + 'filesInfo.out' #-' + timeStr
         fileInfoFobj = open(fileInfoPath, 'wb')
         pickle.dump(filesInfo, fileInfoFobj)
         fileInfoFobj.close()
 
+
+    def save_PDR_grids(self, relativeDirPath = None, basename = None, transitions = None, quantity = None, *args, **kwargs):
+        """method that saves the emission grids computed from the PDR models (emission grids) for now into files"""
+        
+        ranges = self.parms['plotRanges'] 
+        res    = self.resPltGrids 
+
+        #dumping the parameters of meshutils used in generating the data
+        timeStr = ctime().replace(' ','-')
+        parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out' 
+        parmsOut = open(parmsOutputFile, 'wb')
+        pickle.dump(self.parms, parmsOut)
+        parmsOut.close()
+        
+        filesInfo = ()
+
+        specStr = self.parms['gridsInfo']['11']['quantity'][1]
+        quantity_PDR_em = ['fineStructureCoolingComponents', specStr, quantity, '']
+        
+        for zSec in self.grid_z_unique:
+            
+            for transStrng in transitions:
+            
+                ####################################################################################################################
+                #getting the inerpolation function for this section in z
+                ####################################################################################################################
+
+                values  = np.ndarray(self.nMeshes, dtype = np.float64)
+                quantity_PDR_em[3] = transStrng 
+                
+                #looping over all the radex info of all the mesehes and getting the
+                #transition data to be displayed
+                for i in np.arange(self.nMeshes):
+                    
+                    m = self.meshes[i]
+                    nDense_m = m['hdr']['nGas']
+                    Av_m = m['state']['Av']
+
+                    # setting the thickness of the last slab to the one before it
+                    dxSlabs          =  getSlabThicknessFromAv(Av_m, nDense_m, self.metallicity)
+                    dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
+                    dxSlabsNew[0:-1] =  dxSlabs
+                    dxSlabsNew[-1]   =  dxSlabs[-1]
+                    dxSlabs          =  dxSlabsNew
+
+                    q = fetchNestedDtypeValue(m, quantity_PDR_em )
+                    v = np.sum( q*dxSlabs ) / (2.0 * np.pi)
+
+                    if v < 0:
+                        self.logger.warning('negative intensitiy detected - setting it to 0')
+                        v = np.float64(0)
+                        #print self.grid_x[i], self.grid_y[i], self.grid_z[i], v 
+
+                    values[i] = v
+                #--------done extracting the data from the meshes------- 
+                
+                # getting the data in the shape that is accepted by the interpolation construction        
+                data   = np.array([self.grid_x, self.grid_y, self.grid_z], dtype = np.float64).T
+                intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
+                                                                              log10  = True,
+                                                                              values = values,
+                                                                              *args, **kwargs)
+        
+                ####################################################################################################################
+                #interpolating the grids
+                ####################################################################################################################
+        
+                grd = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                     res      = res,  
+                                                     zSec     = zSec, 
+                                                     fInterp  = intensityGridInterp_f,
+                                                     *args, **kwargs)
+                                                                
+                grd = grd.T
+
+                filename  = self.dirPath + relativeDirPath + basename
+                if quantity == 'rate': # just to make the filenames for emission the same as radex
+                    filename += '-' + 'fluxcgs' + '-' + transStrng
+                else:
+                    filename += '-' + quantity + '-' + transStrng
+                filename += '-log10zSec=%f' % zSec
+                filename += '.txt'
+                    
+                np.savetxt(filename, grd, fmt = '%1.4e')
+                self.logger.debug('wrote the file %s' % filename)
+                    
+                thisFileInfo = {'zSec'       : zSec,
+                                'transition' : transStrng,
+                                'filename'   : filename,
+                               }
+                filesInfo += (thisFileInfo,)
+            #--------end loop over transitions-------------
+        #-----end loop over zSections------------
+        
+        #dumping information about the files into a pickle file
+        fileInfoPath = self.dirPath + relativeDirPath + 'filesInfo.out'# + timeStr
+        fileInfoFobj = open(fileInfoPath, 'wb')
+        pickle.dump(filesInfo, fileInfoFobj)
+        fileInfoFobj.close()
                     
     #################################################################################
     def setupGui(self):
@@ -1301,8 +1438,9 @@ class meshArxv():
         transitionSelector['axes'].set_ylim( [0, 1] )
         transitionSelector['axes'].get_yaxis().set_ticks([])
         transitionSelector['point'], = transitionSelector['axes'].plot([],[], 'r+', markersize = 20)
-        transitionSelector['point'].set_xdata( self.parms['gridsInfo']['11']['transitionIndx'] )
-        transitionSelector['point'].set_ydata( 0.5 )
+        if self.parms['gridsInfo']['11']['type'] == 'radex':
+            transitionSelector['point'].set_xdata( self.parms['gridsInfo']['11']['transitionIndx'] )
+            transitionSelector['point'].set_ydata( 0.5 )
         #----------------------------------------------------------------------
         gui['widgets']['transitionSelector'] = transitionSelector
         
@@ -1318,7 +1456,7 @@ class meshArxv():
         maps2d_00 = {}
         maps2d_00['axes'] = gui['figure'].add_axes([left, bott + sz + vSpace, sz, sz])
         maps2d_00['axesCbar'] = gui['figure'].add_axes([left, bott + sz + sz + vSpace + 0.017, 0.2, 0.01 ])
-        maps2d_00['axesCbar'].set_title('$T_{gas}$')
+        maps2d_00['axesCbar'].set_title( '%s-%s' % tuple(self.parms['gridsInfo']['00']['quantity']) )
         maps2d_00['contour'] = None
         maps2d_00['axes'].set_ylabel( '$log_{10} G_0$' )
         for tick in maps2d_00['axes'].xaxis.get_major_ticks():
@@ -1359,7 +1497,10 @@ class meshArxv():
         maps2d_11 = {}
         maps2d_11['axes'] = gui['figure'].add_axes([left + sz + hSpace, bott, sz, sz])
         maps2d_11['axesCbar'] = gui['figure'].add_axes( [left + sz + hSpace, bott + sz + 0.017, 0.2, 0.01] )
-        maps2d_11['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['specStr'],self.parms['gridsInfo']['11']['transitionIndx'])  )
+        if self.parms['gridsInfo']['11']['type'] == 'radex':
+            maps2d_11['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['specStr'],self.parms['gridsInfo']['11']['transitionIndx'])  )
+        elif self.parms['gridsInfo']['11']['type'] == 'pdr':
+            maps2d_11['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['quantity'][1], self.parms['gridsInfo']['11']['quantity'][3]) )
         maps2d_11['contour'] = None
         maps2d_11['axes'].set_xlabel( '$log_{10} n_{gas}$' )
         for tick in maps2d_11['axes'].yaxis.get_major_ticks():
@@ -1515,7 +1656,7 @@ class meshArxv():
         #-------------------
         # temperature grid (top left grid)
         if self.parms['gridsInfo']['00']['show']:
-            self.showSurfaceTemperatureGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
+            self.show_pdr_mesh_quantity_grid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
 
         # abundances (top left grid)
         if self.parms['gridsInfo']['01']['show']:
@@ -1691,9 +1832,9 @@ class meshArxv():
                     if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
                                             
                         totalPopDensLower = np.sum(self.radexObj.transitions[:]['pop_down'])
-                        if np.fabs(1.0 - totalPopDensLower) > popDensTol:
+                        if np.fabs(self.parms['radex']['popDensSumExpected'] - totalPopDensLower) > popDensTol:
                             
-                            print '====>', 'pop dense does NOT make sense, trial %d' % nTried
+                            self.logger.warn('====> pop dens does NOT make sense, trial %d\n====> total pop dense lower = %20.10f' % (nTried, totalPopDensLower) )
     
                             #change in input parameters by a tiny amount 0.1% and run again
                             #(this is a numerical bug in radex which fails sometimes)

@@ -46,7 +46,8 @@ net.removeSpecies( species = removeManual )
 # reading the species number and their corresponding indies and abundances from ascii files
 net.assignNumbersToSpecies(fileName = specNumFile)
 
-m.plot( net)
+m.set_chemNet(net)
+m.plot( )
 
 pyl.show()
 print 'done'
