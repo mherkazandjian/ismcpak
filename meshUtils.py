@@ -7,11 +7,10 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from   mpl_toolkits.mplot3d import Axes3D
 
-
-from time         import *
-from mesh         import *
-from utils.ndmesh import ndmesh
-from utils.misc import fetchNestedDtypeValue
+from time  import *
+from mesh  import *
+from mylib.utils.ndmesh import ndmesh
+from mylib.utils.misc   import fetchNestedDtypeValue
 from ismUtils   import *
 from radex      import *
 from scipy      import interpolate
@@ -771,7 +770,7 @@ class meshArxv():
         self.logger.debug('interpolated %d points in %f seconds at a rate of %e pts/sec' % (nPts, tf-ti, nPts / (tf-ti)))
         tNew = np.reshape(tNew, grid_x.shape)
         
-        return tNew
+        return tNew, grid_x, grid_y
         
     def showGrid(self, quantity = None, slabIdx = None, ranges = None, res = None, zSec = None, fInterp = None, *args, **kwargs):
         """This method displays a plot (useful for standalone use) of a grid of the quantity pointed by quantity in a new
@@ -795,11 +794,11 @@ class meshArxv():
             f = self.construct3DInterpolationFunction(quantity = quantity, slabIdx  = slabIdx, *args, **kwargs)
         else:
             f = fInterp
-        grd = self.computeInterpolated2DGrid(ranges   = ranges,
-                                             res      = res, 
-                                             zSec     = zSec, 
-                                             fInterp  = f, *args, **kwargs)
-                
+        grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                        res      = res, 
+                                                        zSec     = zSec, 
+                                                        fInterp  = f, *args, **kwargs)
+             
         # taking the transpose for plotting purposes
         grd = grd.T
         
@@ -879,7 +878,7 @@ class meshArxv():
                 #transition data to be displayed
                 for i in np.arange(self.nMeshes):
                     
-                        if self.meshesRadex[i] != None:
+                    if self.meshesRadex[i] != None:
                             
                             x, y, z = self.grid_x[i], self.grid_y[i], self.grid_z[i]
                             v = self.meshesRadex[i][transitionIdx][quantity]
@@ -944,11 +943,11 @@ class meshArxv():
         """
         panel = self.gui['maps2d']['00']
         
-        grd = self.computeInterpolated2DGrid(ranges   = ranges,
-                                             res      = res,  
-                                             zSec     = self.pltGmSec, 
-                                             fInterp  = self.grdInterp_f, *args, **kwargs)
-        
+        grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                        res      = res,  
+                                                        zSec     = self.pltGmSec, 
+                                                        fInterp  = self.grdInterp_f, *args, **kwargs)
+
         grd = grd.T
         im00 = panel['axes'].imshow(grd, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
         nlevels = 10
@@ -967,10 +966,10 @@ class meshArxv():
         panel = self.gui['maps2d']['01']
             
 
-        grd = self.computeInterpolated2DGrid(ranges   = ranges,
-                                             res      = res,  
-                                             zSec     = self.pltGmSec, 
-                                             fInterp  = self.abunGridInterp_f, *args, **kwargs)
+        grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                         res      = res,  
+                                                         zSec     = self.pltGmSec, 
+                                                         fInterp  = self.abunGridInterp_f, *args, **kwargs)
         
         grd = grd.T
         im01 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
@@ -988,10 +987,10 @@ class meshArxv():
         """shows the abundances grid"""
         panel = self.gui['maps2d']['10']
 
-        grd = self.computeInterpolated2DGrid(ranges   = ranges,
-                                             res      = res,  
-                                             zSec     = self.pltGmSec, 
-                                             fInterp  = self.colDensGridInterp_f, *args, **kwargs)
+        grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                         res      = res,  
+                                                         zSec     = self.pltGmSec, 
+                                                         fInterp  = self.colDensGridInterp_f, *args, **kwargs)
         
         grd = grd.T
         im10 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
@@ -1010,10 +1009,10 @@ class meshArxv():
         """shows the line intensity grid"""            
         panel = self.gui['maps2d']['11']
 
-        grd = self.computeInterpolated2DGrid(ranges   = ranges,
-                                             res      = res,  
-                                             zSec     = self.pltGmSec, 
-                                             fInterp  = self.intensityGridInterp_f, *args, **kwargs)
+        grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                         res      = res,  
+                                                         zSec     = self.pltGmSec, 
+                                                         fInterp  = self.intensityGridInterp_f, *args, **kwargs)
                                                         
         grd = grd.T
         im11 = panel['axes'].imshow(grd,extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower')
@@ -1045,7 +1044,7 @@ class meshArxv():
         file self.dirPath/infoAllRadex.db.info.'specStr' and self.meshesRadex is written
         to self.dirPath/meshesRadex.db.'specStr'
         """
-        
+
         # defining the array holding the info about all the computed radex transitions
         # for each model in self.meshes and their location in the radex database ..etc..
         arxvRadexHdrDtype = np.dtype( self.arxvRadexHdrFormat() )
@@ -1180,8 +1179,13 @@ class meshArxv():
             self.writeDbRadex()
         
     
-    def saveRadexGrids(self, relativeDirPath = None, basename = None, transitionInds = None, quantity = None, *args, **kwargs):
-        """method that saves the radex grids (emission grids) for now into files"""
+    def save_radex_grids(self, relativeDirPath = None, basename = None, transitionInds = None, 
+                         quantity = None, fileFormat = None, *args, **kwargs):
+        """method that saves the radex grids (emission grids) for now into files.
+        
+           :param string fileFormat: When this is set to **'numpytxt'**, the grid is dumped written to an ascii file using numpy.savetxt, one row on each line.  When this parameter is set to **'3column'**, the coordinates
+           of the centroid of the grid cell and the value (x_i, y_i, v_i) are written on each line.  
+        """
         
         ranges          = self.parms['plotRanges'] 
         res             = self.resPltGrids 
@@ -1204,20 +1208,15 @@ class meshArxv():
                 ####################################################################################################################
                 #getting the inerpolation function for this section in z
                 ####################################################################################################################
-                values = []
-                grid_x = []
-                grid_y = []
-                grid_z = []
-                 
+                values, grid_x, grid_y, grid_z = [], [], [], []
+                
                 #looping over all the radex info of all the mesehes and getting the
                 #transition data to be displayed
                 for i in np.arange(self.nMeshes):
                     
                     if self.meshesRadex[i] != None:
                         
-                        x = self.grid_x[i]
-                        y = self.grid_y[i]
-                        z = self.grid_z[i]
+                        x, y, z = self.grid_x[i], self.grid_y[i], self.grid_z[i]
                         v = self.meshesRadex[i][transitionIdx][quantity]
                         
                         # appending the data and the value to a list to be used
@@ -1246,11 +1245,11 @@ class meshArxv():
                     ####################################################################################################################
                     
         
-                    grd = self.computeInterpolated2DGrid(ranges   = ranges,
-                                                         res      = res,  
-                                                         zSec     = zSec, 
-                                                         fInterp  = intensityGridInterp_f,
-                                                         *args, **kwargs)
+                    grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                                     res      = res,  
+                                                                     zSec     = zSec, 
+                                                                     fInterp  = intensityGridInterp_f,
+                                                                     *args, **kwargs)
                                                                 
                     grd = grd.T
     
@@ -1259,7 +1258,16 @@ class meshArxv():
                     filename += '-log10zSec=%f' % zSec
                     filename += '.txt'
                     
-                    np.savetxt(filename, grd, fmt = '%1.4e')
+                    #------------setting the format of the data to be written to a text file--------
+                    if fileFormat == 'numpytxt': #writing the grid as a 2D table
+                        fileData = grd
+                    elif fileFormat == '3columns':
+                        n = grd.size
+                        # converting the grids into a 3 column format 
+                        fileData = np.array([grdx.reshape(n), grdy.reshape(n), grd.reshape(n)]).T
+                    #--------------------------------------------------------------------------------
+                    
+                    np.savetxt(filename, fileData, fmt = '%1.4e')
                     self.logger.debug('wrote the file %s' % filename)
                     
                     thisFileInfo = {'zSec'       : zSec,
@@ -1282,7 +1290,7 @@ class meshArxv():
         
         ranges = self.parms['plotRanges'] 
         res    = self.resPltGrids 
-
+        
         #dumping the parameters of meshutils used in generating the data
         timeStr = ctime().replace(' ','-')
         parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out' 
@@ -1343,11 +1351,11 @@ class meshArxv():
                 #interpolating the grids
                 ####################################################################################################################
         
-                grd = self.computeInterpolated2DGrid(ranges   = ranges,
-                                                     res      = res,  
-                                                     zSec     = zSec, 
-                                                     fInterp  = intensityGridInterp_f,
-                                                     *args, **kwargs)
+                grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                                 res      = res,  
+                                                                 zSec     = zSec, 
+                                                                 fInterp  = intensityGridInterp_f,
+                                                                 *args, **kwargs)
                                                                 
                 grd = grd.T
 

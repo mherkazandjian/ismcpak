@@ -1,3 +1,3 @@
 PYTHONPATH=.:$PYTHONPATH
-PYTHONPATH=/home/mher/pythonLib/mylib/utils:$PYTHONPATH
+PYTHONPATH=/home/mher/pythonLib/:$PYTHONPATH
 export PYTHONPATH

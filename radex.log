@@ -1,11 +1,17 @@
-/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles/cn.dat
+/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles/co.dat
 foo
  0.000E+00   5.000E+04
- 9.780E+01
- 1
+ 1.016E+01
+ 4
  H2        
- 4.369E+04
+ 1.581E+04
+ H         
+ 1.018E+01
+ e-        
+ 2.037E-03
+ He        
+ 2.688E+03
  2.730E+00
- 5.060E+14
+ 7.698E+18
  1.000E+00
  1
