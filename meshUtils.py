@@ -1284,8 +1284,7 @@ class meshArxv():
         pickle.dump(filesInfo, fileInfoFobj)
         fileInfoFobj.close()
 
-
-    def save_PDR_grids(self, relativeDirPath = None, basename = None, transitions = None, quantity = None, *args, **kwargs):
+    def save_PDR_emission_grids(self, relativeDirPath = None, basename = None, transitions = None, quantity = None, *args, **kwargs):
         """method that saves the emission grids computed from the PDR models (emission grids) for now into files"""
         
         ranges = self.parms['plotRanges'] 
@@ -1376,6 +1375,67 @@ class meshArxv():
                                }
                 filesInfo += (thisFileInfo,)
             #--------end loop over transitions-------------
+        #-----end loop over zSections------------
+        
+        #dumping information about the files into a pickle file
+        fileInfoPath = self.dirPath + relativeDirPath + 'filesInfo.out'# + timeStr
+        fileInfoFobj = open(fileInfoPath, 'wb')
+        pickle.dump(filesInfo, fileInfoFobj)
+        fileInfoFobj.close()
+
+    def save_PDR_quantity_grids(self, relativeDirPath = None, basename = None, quantity = None, slabIdx = None, *args, **kwargs):
+        """method that saves a grid computed from the PDR models for now into files
+        keywords : save, grid, pdr, quantity, slab
+        """
+        
+        ranges = self.parms['plotRanges'] 
+        res    = self.resPltGrids 
+        
+        #dumping the parameters of meshutils used in generating the data
+        timeStr = ctime().replace(' ','-')
+        parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out' 
+        parmsOut = open(parmsOutputFile, 'wb')
+        pickle.dump(self.parms, parmsOut)
+        parmsOut.close()
+        
+        filesInfo = ()
+        
+        for zSec in self.grid_z_unique:
+            
+            ####################################################################################################################
+            #getting the inerpolation function for this section in z
+            ####################################################################################################################
+            grdInterp_f = self.construct3DInterpolationFunction(quantity = quantity, 
+                                                                slabIdx  = slabIdx,
+                                                                log10    = True,
+                                                                *args, **kwargs)
+            #--------done extracting the data from the meshes------- 
+            
+            ####################################################################################################################
+            #interpolating the grids
+            ####################################################################################################################
+    
+            grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
+                                                             res      = res,  
+                                                             zSec     = zSec, 
+                                                             fInterp  = grdInterp_f,
+                                                             *args, **kwargs)
+                                                            
+            grd = grd.T
+
+            filename  = self.dirPath + relativeDirPath + basename
+            filename += '-log10zSec=%f' % zSec
+            filename += '-%d-' % slabIdx
+            filename += '.txt'
+                
+            np.savetxt(filename, grd, fmt = '%1.4e')
+            self.logger.debug('wrote the file %s' % filename)
+                
+            thisFileInfo = {'zSec'       : zSec,
+                            'slabIdx'    : slabIdx, 
+                            'filename'   : filename,
+                           }
+            filesInfo += (thisFileInfo,)
         #-----end loop over zSections------------
         
         #dumping information about the files into a pickle file
@@ -2163,52 +2223,3 @@ class meshArxv():
     
         return np.array(sections, dtype=np.float64)
 
-        
-    """
-    def computeSurfaceTemperatureGrid( self, res = None, ranges = None ):
-        #generates color map of the surface temperature. if meshInds is not provided,
-        #    all the meshes in the arxive are used. In that case, res and ranges shoudl
-        #    be provided.
-        #    
-        #    :deprecated: remove this function...to slow..
-        # checking stuff
-        if meshInds == None:
-            meshInds = np.arange(self.nMeshes)
-        
-        if self.grds == None: # for standalone use of this function
-            if res == None:
-                raise ValueError('res = None, i need to have the resolution of the grid first!!')
-            if ranges == None:
-                raise ValueError('ranges = None, i need to have the ranges!!!')
-            grd = ndmesh( (res, res), dtype = np.float64, ranges = ranges, fill = 0.0) 
-        else:
-            grd = self.grds[0][0] # should have called self.plot first
-            ranges = grd.ranges 
-            grd.fill(0.0) 
-        
-        # doing the computations to fill the grid 
-        tGasGrid = grd     
-        spcs = self.chemNet.species
-        nInCells = tGasGrid.copy()
-        nx, ny = tGasGrid.shape
-        
-        # computing the surface temperature grid
-        for i in meshInds:
-            xThis = np.log10(self.meshes[i]['hdr']['G0'])
-            yThis = np.log10(self.meshes[i]['hdr']['nGas'])
-            #gasT = self.meshes[i]['state']['gasT']
-            gasT = fetchNestedDtypeValue(self.meshes[i], ['state', 'gasT'] )
-            zThis = gasT[0]
-            
-            indxInGrid = scale(xThis, 0, nx, ranges[0][0], ranges[0][1], integer = True) 
-            indyInGrid = scale(yThis, 0, ny, ranges[1][0], ranges[1][1], integer = True) 
-        
-            tGasGrid[indyInGrid][indxInGrid] += zThis
-            nInCells[indyInGrid][indxInGrid] += 1
-        
-        #print tGasGrid
-        #print nInCells
-        tGasGrid[:] = np.log10(tGasGrid / nInCells)
-        
-        return tGasGrid
-    """

@@ -45,7 +45,7 @@ parms = {
                                     'specStr'  : 'CO',
                                     },
                              '11' : { # line intensitities
-                                     'show'           : True,
+                                     'show'           : False,
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
                                      'type'           : 'radex',
@@ -57,7 +57,7 @@ parms = {
                            },
          'gridsRes'      : 100,
          
-         'radex'         : { 'use'                  : True,
+         'radex'         : { 'use'                  : False,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
@@ -125,7 +125,7 @@ if parms['plotGrids']:
 
 pyl.show()
 
-if True:
+if False:
     arxv.save_radex_grids(
                           #relativeDirPath = 'analysis/%s/' % parms['radex']['specStr'],
                           relativeDirPath = 'analysis/%s/colFmt/' % parms['radex']['specStr'],
@@ -135,10 +135,19 @@ if True:
                           #transitionInds  = [0,1],
                           quantity        = 'fluxcgs',
                           fileFormat      = '3columns')  # 'numpytxt' or '3columns'
+
 if False:
-    arxv.save_PDR_grids(relativeDirPath = 'analysis/%s/' % parms['gridsInfo']['11']['quantity'][1],
-                        basename        = 'pdrGrid',
-                        transitions     = ['1-0'],
-                        quantity        = 'rate')
+    arxv.save_PDR_emission_grids(relativeDirPath = 'analysis/%s/' % parms['gridsInfo']['11']['quantity'][1],
+                                 basename        = 'pdrGrid',
+                                 transitions     = ['1-0'],
+                                 quantity        = 'rate')
+
+if True:
+    arxv.save_PDR_quantity_grids(relativeDirPath = 'analysis/surfaceHeating/',
+                                 basename        = 'grid',
+                                 quantity        = ['therm', 'heating'],
+                                 slabIdx         = 0,
+                                )
+
     
 print 'done'

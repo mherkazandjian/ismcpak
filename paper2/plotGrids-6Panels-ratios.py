@@ -1,4 +1,6 @@
-# plot a grid into one panel with colorbar, contour lines (values are user specified)
+# plot a grid of line ratios into one panel with colorbar, contour lines (values are user specified)
+#   grid1/grid2
+# for different values of relative Gmech.
 #------------------------------------------------------------------------------------
 import numpy as np
 import pickle, os
@@ -10,17 +12,32 @@ import matplotlib.cm as cm
 from mylib.utils.misc import scale as scale
 from fetchGridData import fetchRadexGrid
 
-specStr       = 'O'
-transition    = '1-0'
+#-----------------------------------
+#grid 1
+specStr1       = 'HNC'
+transition1    = '01-00'
+#grid 2
+specStr2       = 'HCN'
+transition2    = '1-0'
+dirname2       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr2
+#-----------------------------------
+
 relGmech      = [[1e-3, 1e-2,5e-2], [0.1, 0.5, 1.0 ] ]
 v_range       = [-3, 3] # range of the values, also that of the cbar
 cLevels       = [0]
 cbarTicks     = np.arange(v_range[0], v_range[1], 1)
-dirname       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr
-parmsFile     = dirname + 'parms.out'
-fileInfoFile  = dirname + 'filesInfo.out'
+verbose       = True
+
+dirname1       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr1
+parmsFile1     = dirname1 + 'parms.out'
+fileInfoFile1  = dirname1 + 'filesInfo.out'
+
+dirname2       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr2
+parmsFile2     = dirname2 + 'parms.out'
+fileInfoFile2  = dirname2 + 'filesInfo.out'
+
 colormap      = cm.jet
-imageSavePath = '/home/mher/ism/docs/paper02/src/figs/%s-%s-gMech1.eps' % (specStr,transition)
+imageSavePath = '/home/mher/ism/docs/paper02/src/figs/lineRatio-%s-%s-%s-%s-gMech1.eps' % (specStr1, transition1, specStr2, transition2)
 #=====================================================================================
 
 ny = len(relGmech)
@@ -39,20 +56,15 @@ pyl.subplots_adjust( left = 0.15, bottom = 0.15, right = 0.95, top = 0.7,
 axCbar     = fig.add_axes( [0.2, 0.75, 0.7, 0.02])
 #------------done setting up axes----------------------
 
-#loading the pickle file holding the parameters used to generate the data (a dict)
-parms = pickle.load(open(parmsFile))
+parms = pickle.load(open(parmsFile1))
 ranges = parms['plotRanges']
 rangesLst = (ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]) 
-
-
-# getting the reference grid data
-refGrd = fetchRadexGrid( dirname  = dirname, specStr = specStr, 
-                         gmechSec = 1e-10, transition = transition, verbose = True)
 
 print '###############################################################'
 
 # setting the grids to be displayed with the desired mechanical heating percentages         
 dataGrds = [[None,None,None   ], [None,None,None] ]
+
 
 mn = -1.0 #initializing the mn, mx to defaults before finding them
 mx =  1.0
@@ -70,12 +82,15 @@ for r in panelInds: # looping over the rows (r)
         
         print 'indicies = ', i,j
         print 'relative gmech = ', rGmech
-
-        grd = fetchRadexGrid( dirname  = dirname, specStr = specStr, 
-                              gmechSec = rGmech, transition = transition, verbose = False)
+        
+        
+        grd1 = fetchRadexGrid(dirname  = dirname1, specStr = specStr1, 
+                              gmechSec = rGmech, transition = transition1, verbose = verbose)
+        grd2 = fetchRadexGrid(dirname  = dirname2, specStr = specStr2, 
+                              gmechSec = rGmech, transition = transition2, verbose = verbose)
 
         #taking the ratios of the base grid with the current one                
-        data = np.log10(10.0**grd / 10.0**refGrd)
+        data = np.log10(10.0**grd1 / 10.0**grd2)
         dataGrds[i][j] = data
                 
         ax = panelAxs[i][j]
@@ -90,10 +105,9 @@ for r in panelInds: # looping over the rows (r)
 
         mn = np.min([mn, currMin])
         mx = np.max([mx, currMax])
-        
-        print '##########################'
+                
+        print '-----------------------------'
 print 'global min = %f, global max = %f' % (mn,mx)
-
 #-----------------------done getting the data for the panels------------------------
 
 #-----------------plotting the colorbar and setting up the colorbar-----------------
@@ -105,7 +119,7 @@ cbarv = np.array(cbarv)
 im = axCbar.imshow(cbarv, aspect = 'auto', vmin= 0, vmax = 1, cmap = colormap,
                    extent = [-3,3,0,1])
 axCbar.axes.get_yaxis().set_ticks([])
-axCbar.set_title('$\log_{10}[ R( %s (%s) )]$' % (specStr,transition))
+axCbar.set_title('$\log_{10}[ R( %s (%s) %s (%s) )]$' % (specStr1,transition1,specStr2,transition2))
 #----------------------done plotting the colorbar-----------------------------------
 
 #-----------------------------------------------------------------------------------
