@@ -45,19 +45,19 @@ parms = {
                                     'specStr'  : 'CO',
                                     },
                              '11' : { # line intensitities
-                                     'show'           : False,
-                                     #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
-                                     #'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
-                                     'type'           : 'radex',
-                                     'specStr'        : 'CO',     # database to be restored/computed
-                                     'transitionIndx' : 0,
-                                     'quantity'       : 'fluxcgs',
+                                     'show'           : True,
+                                     'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
+                                     'quantity'      : ['fineStructureCoolingComponents','C+','rate','1-0'], # for use with 'pdr'
+                                     #'type'           : 'radex',
+                                     #'specStr'        : 'CO',     # database to be restored/computed
+                                     #'transitionIndx' : 0,
+                                     #'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
                                     },
                            },
          'gridsRes'      : 100,
          
-         'radex'         : { 'use'                  : False,
+         'radex'         : { 'use'                  : True,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
@@ -142,7 +142,7 @@ if False:
                                  transitions     = ['1-0'],
                                  quantity        = 'rate')
 
-if True:
+if False:
     arxv.save_PDR_quantity_grids(relativeDirPath = 'analysis/surfaceHeating/',
                                  basename        = 'grid',
                                  quantity        = ['therm', 'heating'],
