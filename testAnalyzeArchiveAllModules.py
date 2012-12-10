@@ -29,8 +29,8 @@ parms = {
          'plotGrids'     : True,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
-                                    #'quantity' : ['state', 'gasT'],
-                                    'quantity' : ['therm', 'heating'],
+                                    'quantity' : ['state', 'gasT'],
+                                    #'quantity' : ['therm', 'heating'],
                                     'slabIdx'  : 0,
                                     },
                              '01' : {# abundance 
@@ -47,7 +47,7 @@ parms = {
                              '11' : { # line intensitities
                                      'show'           : True,
                                      'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
-                                     'quantity'      : ['fineStructureCoolingComponents','C+','rate','1-0'], # for use with 'pdr'
+                                     'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
                                      #'type'           : 'radex',
                                      #'specStr'        : 'CO',     # database to be restored/computed
                                      #'transitionIndx' : 0,

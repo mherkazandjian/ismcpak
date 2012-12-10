@@ -1,4 +1,5 @@
 # utility function useful for ISM stuff
+import numpy as np
 
 def AvToLength(Av, nGas, Z):
     """ convert the input visual extinction value to the length in cm (L) of the the NH 
@@ -42,4 +43,7 @@ def getSlabThicknessFromAv(slabsAv, nGas, Z):
     dxSlabs  = AvToLength( dAvSlabs, nGas, Z)
     return dxSlabs
     
-    
+def planckOccupation(h, nu, kb, T):
+    """computes the planck function for input parameters."""
+    x = h*nu / (kb*T)
+    return 1.0 / (np.exp(x) - 1.0)

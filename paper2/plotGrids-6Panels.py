@@ -10,19 +10,19 @@ import matplotlib.cm as cm
 from mylib.utils.misc import scale as scale
 from fetchGridData import fetchRadexGrid
 
-specStr       = 'O'
+write         = True
+specStr       = 'C'
 transition    = '1-0'
 relGmech      = [[1e-3, 1e-2,5e-2], [0.1, 0.5, 1.0 ] ]
-v_range       = [-3, 3] # range of the values, also that of the cbar
+v_range       = [-1, 1] # range of the values, also that of the cbar
 cLevels       = [0]
 cbarTicks     = np.arange(v_range[0], v_range[1], 1)
 dirname       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr
 parmsFile     = dirname + 'parms.out'
 fileInfoFile  = dirname + 'filesInfo.out'
 colormap      = cm.jet
-imageSavePath = '/home/mher/ism/docs/paper02/src/figs/%s-%s-gMech1.eps' % (specStr,transition)
+imageSavePath = '/home/mher/ism/docs/paper02/src/figs/%s-%s-gMech.eps' % (specStr,transition)
 #=====================================================================================
-
 ny = len(relGmech)
 nx = len(relGmech[0])
 
@@ -103,7 +103,7 @@ for i in np.arange(50):
     cbarv.append( cbarData.copy() )
 cbarv = np.array(cbarv)
 im = axCbar.imshow(cbarv, aspect = 'auto', vmin= 0, vmax = 1, cmap = colormap,
-                   extent = [-3,3,0,1])
+                   extent = [v_range[0], v_range[1], 0, 1])
 axCbar.axes.get_yaxis().set_ticks([])
 axCbar.set_title('$\log_{10}[ R( %s (%s) )]$' % (specStr,transition))
 #----------------------done plotting the colorbar-----------------------------------
@@ -147,7 +147,8 @@ for r in panelInds:
 fig.text(0.45, 0.08, '$\log_{10} [ n_{gas} / (cm^{-3}) ] $')
 fig.text(0.08, 0.45, '$\log_{10} [ G_0 ] $', rotation = 'vertical')
 
-fig.savefig(imageSavePath)
-print 'saved image to file : %s' % imageSavePath
+if write == True:
+    fig.savefig(imageSavePath)
+    print 'saved image to file : %s' % imageSavePath
 pyl.show()
 print 'done'
