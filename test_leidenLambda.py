@@ -16,7 +16,7 @@ lambdaPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~mold
 reader = molData.reader(dirPath = lambdaPath)
 
 Tkin_min    = 15.0
-Tkin_max    = 100.0
+Tkin_max    = 300.0
 TkinSamples = 40.0 
 nH2         = [1e2, 1e4, 1e6]
 
@@ -166,6 +166,7 @@ def computeLuminosity(pNH3):
     return R
 #############################################################################
 
+####### plotting the line intensities per molecule as a function of Tkin#####
 for nc in nH2:
     
     Tkins = np.linspace(Tkin_min, Tkin_max, TkinSamples)
@@ -199,11 +200,56 @@ for nc in nH2:
         
     pyl.plot(Tkins, Llines['11'], colorStr)
     pyl.hold(True)
-    pyl.plot(Tkins, Llines['22'], colorStr+'-')
+    pyl.plot(Tkins, Llines['22'], colorStr+'--')
     pyl.plot(Tkins, Llines['44'], colorStr+'-.')
     
 pyl.xscale('log')    
 pyl.yscale('log')
-pyl.axis([15,100,1e-25,1e-22])
+pyl.axis([15,300,1e-25,1e-22])
+pyl.show()
+
+"""
+################ plotting the line ratios as a function of Tkin###############
+for nc in nH2:
+    
+    Tkins = np.linspace(Tkin_min, Tkin_max, TkinSamples)
+    Llines = {'11':[], '22':[], '44':[]}
+    
+    for Tkin in Tkins:
+        
+        full = computeRateMatrix(pNH3, Tkin, nc)
+        f    = solveEquilibrium(pNH3, full)
+        R    = computeLuminosity(pNH3)
+        
+        u11 = 1; l11 = 0;    
+        L11 = R[u11][l11]*f[u11]
+        
+        u22 = 3; l22 = 2;    
+        L22 = R[u22][l22]*f[u22]
+        
+        u44 = 11; l44 = 10;    
+        L44 = R[u44][l44]*f[u44]
+    
+        Llines['11'].append(L11)
+        Llines['22'].append(L22)
+        Llines['44'].append(L44)
+        
+    if nc == 100.0:
+        colorStr = 'g'
+    if nc == 10000.0:
+        colorStr = 'r'
+    if nc == 1000000.0:
+        colorStr = 'b'
+        
+    pyl.plot(Tkins, np.array(Llines['22'])/np.array(Llines['11']), colorStr)
+    pyl.hold(True)
+    pyl.plot(Tkins, np.array(Llines['44'])/np.array(Llines['22']), colorStr+'--')
+    pyl.plot(Tkins, np.array(Llines['44'])/np.array(Llines['11']), colorStr+'-.')
+    
+pyl.xscale('log')    
+pyl.yscale('log')
+pyl.axis([15, 300, 0.01, 1.0])
 pyl.show()    
+"""
+
 print 'done'

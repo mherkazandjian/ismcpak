@@ -2222,4 +2222,27 @@ class meshArxv():
             sections.append(mn)
     
         return np.array(sections, dtype=np.float64)
-
+    
+    def do_something_for_all_meshes(self):
+        """A template method which loops over all meshes and gets/computes something 
+        from each mesh.
+        """
+        
+        #array which will hold the computed quantity from all the meshes        
+        values = np.zeros(self.nMeshes, dtype = np.float64)
+        
+        #--------------------------looping over all the meshes------------------
+        for i in np.arange(self.nMeshes):
+            
+            if self.meshesRadex[i] != None:
+                data = self.meshesRadex[i]
+            else:
+                data = None
+            
+            x, y, z = self.grid_x[i], self.grid_y[i], self.grid_z[i] # model parms 
+            pdrMeshData = self.meshes[i]                             # pdf mesh data
+            rdxMeshData = data                                       # radex data
+            
+            print x,y,z
+            
+            

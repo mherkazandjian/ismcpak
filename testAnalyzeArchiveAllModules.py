@@ -148,6 +148,8 @@ if False:
                                  quantity        = ['therm', 'heating'],
                                  slabIdx         = 0,
                                 )
-
+if True:
+    arxv.do_something_for_all_meshes()
+    
     
 print 'done'
