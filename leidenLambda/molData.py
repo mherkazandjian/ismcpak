@@ -12,6 +12,7 @@ from scipy.interpolate import interp1d
 
 ### - add a method to return the index of a level given the quantum numbers
 ### - add another method which feches the transition info give the upper and lower levels (all transitions -rad-col..etc..)
+### - add a method which dumps the graphvis stuff for the transitions (radiative, coll...)
 
 class reader():
     """This is a class which provides an interface to the LAMDA database. 

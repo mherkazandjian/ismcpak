@@ -137,7 +137,8 @@ class meshArxv():
                     
         self.meshesRadex = None
         """A list holding all the info dumped by radex for each model. Each entry in the list is an ndarray
-        of dtype radex.transitionDtype. 
+         of dtype :data:`radex.radex.transitionDtype`. The keys in each transition dtype are listed in 
+         :data:`radex.radex.transitions` . 
         """
         #-------------------------------------------------------------------------------------
         
@@ -904,22 +905,15 @@ class meshArxv():
 
                 #getting the column densities for all the models
                 values  = np.ndarray(self.nMeshes, dtype = np.float64)
-             
-                for i in np.arange(self.nMeshes):
+                #a temporary object used to calculate stuff from a pdr mesh object
+                m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+                
+                for i, data in enumerate(self.meshes):
                     
-                    m = self.meshes[i]
-                    nDense_m = m['hdr']['nGas']
-                    Av_m = m['state']['Av']
-
-                    # setting the thickness of the last slab to the one before it
-                    dxSlabs          =  getSlabThicknessFromAv(Av_m, nDense_m, self.metallicity)
-                    dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
-                    dxSlabsNew[0:-1] =  dxSlabs
-                    dxSlabsNew[-1]   =  dxSlabs[-1]
-                    dxSlabs          =  dxSlabsNew
-
-                    q = fetchNestedDtypeValue(m, self.parms['gridsInfo']['11']['quantity'] )
-                    v = np.sum( q*dxSlabs ) / (2.0 * np.pi)
+                    m.setData( data )
+                    
+                    quantity = self.parms['gridsInfo']['11']['quantity']
+                    v = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity)
 
                     if v < 0:
                         self.logger.warning('negative intensitiy detected - setting it to 0')
@@ -1302,6 +1296,9 @@ class meshArxv():
         specStr = self.parms['gridsInfo']['11']['quantity'][1]
         quantity_PDR_em = ['fineStructureCoolingComponents', specStr, quantity, '']
         
+        #a temporary object used to calculate stuff from a pdr mesh object
+        m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+
         for zSec in self.grid_z_unique:
             
             for transStrng in transitions:
@@ -1315,20 +1312,12 @@ class meshArxv():
                 
                 #looping over all the radex info of all the mesehes and getting the
                 #transition data to be displayed
-                for i in np.arange(self.nMeshes):
+                for i, data in enumerate(self.meshes):
                     
-                    m = self.meshes[i]
-                    nDense_m = m['hdr']['nGas']
-                    Av_m = m['state']['Av']
-
-                    # setting the thickness of the last slab to the one before it
-                    dxSlabs          =  getSlabThicknessFromAv(Av_m, nDense_m, self.metallicity)
-                    dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
-                    dxSlabsNew[0:-1] =  dxSlabs
-                    dxSlabsNew[-1]   =  dxSlabs[-1]
-                    dxSlabs          =  dxSlabsNew
-
-                    q = fetchNestedDtypeValue(m, quantity_PDR_em )
+                    m.setData(data)
+                    dxSlabs = m.compute_dx()
+                    
+                    q = fetchNestedDtypeValue(data, quantity_PDR_em )
                     v = np.sum( q*dxSlabs ) / (2.0 * np.pi)
 
                     if v < 0:
@@ -1660,7 +1649,7 @@ class meshArxv():
         self.resPltGrids = [resGrids, resGrids] 
          
         # setting up a dummy mesh object to use its plotting functionalities
-        self.mshTmp = mesh()
+        self.mshTmp = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
         self.mshTmp.setFigureObjects(figObj = self.gui['figure'], 
                                      axObj  = np.array([
                                                         [self.gui['AV']['00']['axes'],self.gui['AV']['01']['axes']],
@@ -2228,21 +2217,48 @@ class meshArxv():
         from each mesh.
         """
         
-        #array which will hold the computed quantity from all the meshes        
-        values = np.zeros(self.nMeshes, dtype = np.float64)
+        fName = '/home/mher/ism/marissa/CO-ladder.out'
+        fObj = open(fName, 'w')
         
+        #a temporary object used to calculate stuff from a pdr mesh object
+        m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+                        
         #--------------------------looping over all the meshes------------------
-        for i in np.arange(self.nMeshes):
-            
-            if self.meshesRadex[i] != None:
-                data = self.meshesRadex[i]
-            else:
-                data = None
+        for i, pdrData in enumerate(self.meshes):
             
             x, y, z = self.grid_x[i], self.grid_y[i], self.grid_z[i] # model parms 
-            pdrMeshData = self.meshes[i]                             # pdf mesh data
-            rdxMeshData = data                                       # radex data
+            pdrMeshData = pdrData                                    # pdf mesh data
+            rdxMeshData = self.meshesRadex[i]                        # radex data
             
-            print x,y,z
-            
-            
+            m.setData( pdrMeshData )
+            dxSlabs = m.compute_dx()
+
+            if z == -10:
+                print 'mesh x,y,z = %.2f, %.2f, %.2f' % (x, y, z),
+                
+                """
+                #----------------dumping the total cooling--------------------
+                quantity = ['therm','heating']
+                v = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity)
+                fObj.write('%d %.2f %.2f %.5e\n' % (i, x, y, v))
+                #----------------done dumping the total cooling---------------
+                """
+                
+                #----------------dumping the radex CO lines--------------------
+                fObj.write('%d %.2f %.2f ' % (i, x, y))
+
+                if rdxMeshData != None:
+                    for trans in self.meshesRadex[i]:
+                        fObj.write('%.5e %.5e ' % (trans['pop_up'], trans['fluxcgs']))
+                else:
+                    fObj.write('nan')
+                fObj.write('\n')
+                #----------------done dumping the total cooling---------------
+                
+                
+                
+        #--------------------------done looping over the meshes---------------       
+                
+        fObj.close()
+        print 'wrote the file %s'
+                

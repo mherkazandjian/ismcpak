@@ -89,12 +89,12 @@ class mesh( ):
             self.set_metallicity(metallicity)
         else:
             self.metallicity = None #:
-            
+        
         self.figInit = 0     #:
         self.fig     = None  #:
         self.axs     = None  #:
         self.axsRef  = None  #:
-
+        
         
     def constructMeshDtype(self, nSpecs, nSteps, version ):
         """ constructs the numpy dtype of the mesh which will be used to read the contents of the binary data fiel
@@ -284,6 +284,8 @@ class mesh( ):
            :param chemicalNetwork.chemicalNetwork() chemNet: an instance of the object chemicalNetwork
             that holds the info about all the chemistry of the mesh. If this is not passed, self.chemNet 
             is used (assuming it is set).
+            
+           :todo: make use of self.compute_integrated_quantity in this method.
         """
         
         if specsStrs.__class__ is not [].__class__:
@@ -292,20 +294,16 @@ class mesh( ):
         colDensities = []
         
         # getting mesh parameters
-        m = self.data
-        nDense_m = m['hdr']['nGas'] 
-        abun_m   = m['state']['abun']
-        Av_m = m['state']['Av']
+        data = self.data
+        nDense_m = data['hdr']['nGas'] 
+        abun_m   = data['state']['abun']
+        Av_m = data['state']['Av']
 
         # setting the thickness of the last slab to the one before it
-        dxSlabs          =  getSlabThicknessFromAv(Av_m, nDense_m, self.metallicity)
-        dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
-        dxSlabsNew[0:-1] =  dxSlabs
-        dxSlabsNew[-1]   =  dxSlabs[-1]
-        dxSlabs          =  dxSlabsNew
-                
+        dxSlabs = self.compute_dx() 
+        
         if maxAv == None:
-            slabsIdx = np.arange(m['hdr']['nSteps'])
+            slabsIdx = np.arange(data['hdr']['nSteps'])
         else:
             slabsIdx = np.where( Av_m < maxAv)
 
@@ -485,11 +483,7 @@ class mesh( ):
         y = data['fineStructureCoolingComponents']['C+']['rate']['1-0']
         
         # setting the thickness of the last slab to the one before it
-        dxSlabs          =  getSlabThicknessFromAv(Av_m, nDense_m, self.metallicity)
-        dxSlabsNew       =  np.ndarray( len(dxSlabs)+1, dtype = np.float64 )
-        dxSlabsNew[0:-1] =  dxSlabs
-        dxSlabsNew[-1]   =  dxSlabs[-1]
-        dxSlabs          =  dxSlabsNew
+        dxSlabs = self.compute_dx()
         
         q = y
         v = np.sum( q*dxSlabs ) / (2.0 * np.pi)
@@ -500,7 +494,6 @@ class mesh( ):
         self.axs[1,1].set_ylim(1e-10, 1e-0)   
         self.plt11Spec1Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec1Plt.set_ydata( q*dxSlabs )
-
         """;;;remove those later;;;"""
 
         
@@ -660,3 +653,31 @@ class mesh( ):
     def set_metallicity(self, metallicity):
         self.metallicity = metallicity
     
+    def compute_dx(self):
+        """computes and returns the thickness of the slabs for this mesh using self.data.
+        
+           :warning: do some extensive tests for this.
+           :warning: the thickness of the last slab is set to be equal to the one before it. 
+               This is a good apporximation. 
+        """
+        
+        nDense_m = self.data['hdr']['nGas'] 
+        Av_m     = self.data['state']['Av']
+
+        # setting the thickness of the last slab to the one before it
+        dx          =  getSlabThicknessFromAv(Av_m, nDense_m, self.metallicity)
+        dxNew       =  np.ndarray( len(dx)+1, dtype = np.float64 )
+        dxNew[0:-1] =  dx
+        dxNew[-1]   =  dx[-1]
+        dx          =  dxNew
+
+        return dx
+        
+    def compute_integrated_quantity(self, quantity):
+        """does the integral \sum_0^{N-1} f_i dx_i, where f_i is the quantity
+        to be integrated upon and dx is the thickness of each slab"""
+        
+        q = fetchNestedDtypeValue(self.data, quantity)
+        dxSlabs = self.compute_dx()
+        
+        return np.sum(q*dxSlabs)        

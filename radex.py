@@ -140,7 +140,7 @@ class radex( ):
         
         self.transitions = None
         """an ndarray of dtype self.transitionFormat holding all the info of the transitions. The dtype
-        has the following keys :
+           has the following keys :
         
         .. code-block:: python
             
