@@ -39,6 +39,6 @@ def fetchRadexGrid( dirname = None, specStr = None, gmechSec = None, transition 
     #no grid found with matching specs
     print 'could not find : '
     print 'specStr = ', specStr, 'gmechSec = ', gmechSec, 'transition = ', transition
-
-    asdasd
+    raise ValueError('no grid found matching specs')
+        
     return None

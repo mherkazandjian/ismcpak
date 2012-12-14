@@ -590,13 +590,15 @@ class radex( ):
             
             thisTickStr = '$%s-%s$' %( upperStr, lowerStr )
             xticksStrs = xticksStrs + (thisTickStr ,)
-            
+
+        #plotting the intensities    
         axes.semilogy(xPlot, yPlot, 'b')
         axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1e-1])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
+        ##np.savetxt('/home/mher/ism/tmp/intensities.out', np.array([xPlot, yPlot]).T, '%e')
+        ##print '-----------> saved the file /home/mher/intensities.out'
         
-
         #---------------Tex and T_R--------------------------
         axes = inAxes[1]
         axes.lines = []        
@@ -642,6 +644,8 @@ class radex( ):
         axes.axis([np.min(allTrans), np.max(allTrans), -1, np.max(yPlot)])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
+        ##np.savetxt('/home/mher/ism/tmp/tau.out', np.array([xPlot, yPlot]).T, '%f')
+        ##print '-----------> saved the file /home/mher/tau.out'
         
         #------------------population densities-----------------------------
         axes = inAxes[3]

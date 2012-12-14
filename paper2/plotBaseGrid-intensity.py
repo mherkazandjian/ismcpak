@@ -9,10 +9,10 @@ import pylab as pyl
 import matplotlib.cm as cm
 from fetchGridData import fetchRadexGrid
 
-specStr       = 'O'
-transition    = '1-0'
+specStr       = '13CO'
+transition    = '6-5'
 cLevels       = [-15, -10, -8, -7, -6, -6.5, -5.5, -5.2, -5, -4, -3, -2]
-cbarTicks     = np.arange(-6,-4,0.1)
+cbarTicks     = np.arange(-18,-1, 2)
 dirname       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr
 parmsFile     = dirname + 'parms.out'
 fileInfoFile  = dirname + 'filesInfo.out'
@@ -45,7 +45,7 @@ cbar = pyl.colorbar(im, cax = axCbar, orientation = 'horizontal')
 ax1.set_xlabel('$\log_{10} [ n_{gas} / (cm^{-3}) ] $')
 ax1.set_ylabel('$\log_{10} [ G_0 ] $')
 
-axCbar.set_title('$\log_{10}[ %s (%s) / erg.cm^{-2} s^{-1} ]$' % (specStr, transition) )
+axCbar.set_title('$\log_{10}[ %s (%s) erg.cm^{-2} s^{-1} ]$' % (specStr, transition) )
 cbar.set_ticks( cbarTicks )
 
 fig.savefig(imageSavePath)

@@ -13,11 +13,11 @@ from fetchGridData import fetchRadexGrid
 
 #-----------------------------------
 #grid 1
-specStr1       = 'O'
-transition1    = '1-0'
+specStr1       = '13CO'
+transition1    = '6-5'
 #grid 2
-specStr2       = 'C'
-transition2    = '2-1'
+specStr2       = '13CO'
+transition2    = '1-0'
 dirname2       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr2
 #-----------------------------------
 log_v_range   = [-2, 2] # log10 of the range of the values, also that of the cbar

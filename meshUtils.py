@@ -1930,7 +1930,6 @@ class meshArxv():
                                                       inAxes = self.pltRadex, 
                                                       title='')
                 self.radexObj.setLabels()
-                
             else:
                 self.logger.debug('--------------warnings---------------')
                 for warning in self.radexObj.warnings:

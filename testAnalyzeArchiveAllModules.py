@@ -46,12 +46,12 @@ parms = {
                                     },
                              '11' : { # line intensitities
                                      'show'           : True,
-                                     'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
-                                     'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
-                                     #'type'           : 'radex',
-                                     #'specStr'        : 'CO',     # database to be restored/computed
-                                     #'transitionIndx' : 0,
-                                     #'quantity'       : 'fluxcgs',
+                                     #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
+                                     #'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
+                                     'type'           : 'radex',
+                                     'specStr'        : '13CO',     # database to be restored/computed
+                                     'transitionIndx' : 0,
+                                     'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
                                     },
                            },
@@ -63,7 +63,7 @@ parms = {
                              'writeDb'              : False, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                             'specStr'              : 'CO',
+                             'specStr'              : '13CO',
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
@@ -127,14 +127,14 @@ pyl.show()
 
 if False:
     arxv.save_radex_grids(
-                          #relativeDirPath = 'analysis/%s/' % parms['radex']['specStr'],
-                          relativeDirPath = 'analysis/%s/colFmt/' % parms['radex']['specStr'],
+                          relativeDirPath = 'analysis/%s/' % parms['radex']['specStr'],
+                          #relativeDirPath = 'analysis/%s/colFmt/' % parms['radex']['specStr'],
                           basename        = 'radexGrid',
-                          #transitionInds  = [0,1,2,3,4,5,6,7,8,9,10],
-                          transitionInds  = range(40), 
+                          transitionInds  = [0,1,2,3,4,5,6],
+                          #transitionInds  = range(40), 
                           #transitionInds  = [0,1],
                           quantity        = 'fluxcgs',
-                          fileFormat      = '3columns')  # 'numpytxt' or '3columns'
+                          fileFormat      = 'numpytxt')  # 'numpytxt' or '3columns'
 
 if False:
     arxv.save_PDR_emission_grids(relativeDirPath = 'analysis/%s/' % parms['gridsInfo']['11']['quantity'][1],
