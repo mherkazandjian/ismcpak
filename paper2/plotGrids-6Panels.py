@@ -11,8 +11,8 @@ from mylib.utils.misc import scale as scale
 from fetchGridData import fetchRadexGrid
 
 write         = True
-specStr       = '13CO'
-transition    = '6-5'
+specStr       = 'HCN'
+transition    = '4-3'
 relGmech      = [[1e-3, 1e-2,5e-2], [0.1, 0.5, 1.0 ] ]
 v_range       = [-2, 2] # range of the values, also that of the cbar
 cLevels       = [0]

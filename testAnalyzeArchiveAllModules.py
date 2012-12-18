@@ -42,14 +42,14 @@ parms = {
                              '10' : { # column density
                                     'show'     : True,
                                     'maxAv'    : 30,
-                                    'specStr'  : 'CO',
+                                    'specStr'  : 'HCN',
                                     },
                              '11' : { # line intensitities
                                      'show'           : True,
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
                                      'type'           : 'radex',
-                                     'specStr'        : '13CO',     # database to be restored/computed
+                                     'specStr'        : 'HCN',     # database to be restored/computed
                                      'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
@@ -63,7 +63,7 @@ parms = {
                              'writeDb'              : False, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                             'specStr'              : '13CO',
+                             'specStr'              : 'HCN',
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
@@ -125,7 +125,7 @@ if parms['plotGrids']:
 
 pyl.show()
 
-if False:
+if True:
     arxv.save_radex_grids(
                           relativeDirPath = 'analysis/%s/' % parms['radex']['specStr'],
                           #relativeDirPath = 'analysis/%s/colFmt/' % parms['radex']['specStr'],
@@ -148,7 +148,7 @@ if False:
                                  quantity        = ['therm', 'heating'],
                                  slabIdx         = 0,
                                 )
-if True:
+if False:
     arxv.do_something_for_all_meshes()
     
     

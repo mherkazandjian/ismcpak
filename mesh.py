@@ -410,14 +410,14 @@ class mesh( ):
         self.plt11Spec2Plt, = self.axs[1,1].semilogy([1],  [1], 'g' )
         self.plt11Spec3Plt, = self.axs[1,1].semilogy([1],  [1], 'b' )
         self.axs[1,1].set_xlim(0, 20)
-        #self.axs[1,1].set_ylim(1e-12, 2)   
+        self.axs[1,1].set_ylim(1e-12, 2)   
         self.axs[1,1].text(0.4, 1e-10, '$HCN$'  , color='r')
         self.axs[1,1].text(0.4, 1e-9 , '$HNC$'  , color='g')
         self.axs[1,1].text(0.4, 1e-8 , '$HCO^+$', color='b')
         self.axs[1,1].set_xlabel('$A_V$')
         for tick in self.axs[1,1].yaxis.get_major_ticks():
             tick.label1On = False
-        #pyl.setp(pyl.gca(), yticks=[])
+        pyl.setp(pyl.gca(), yticks=[])
         
     def plot(self):
         
@@ -466,17 +466,16 @@ class mesh( ):
         self.plt10Spec4Plt.set_ydata( data['state']['abun'][spcs['O'].num] )
 
         # subplot 1,1
-        """
         self.plt11Spec1Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec1Plt.set_ydata( data['state']['abun'][spcs['HCN'].num] )
         self.plt11Spec2Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec2Plt.set_ydata( data['state']['abun'][spcs['HNC'].num] )
         self.plt11Spec3Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec3Plt.set_ydata( data['state']['abun'][spcs['HCO+'].num] )
-        """
         
         
         """;;;remove those later;;;"""
+        """
         m = data
         nDense_m = m['hdr']['nGas']
         Av_m = m['state']['Av']
@@ -494,6 +493,7 @@ class mesh( ):
         self.axs[1,1].set_ylim(1e-10, 1e-0)   
         self.plt11Spec1Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec1Plt.set_ydata( q*dxSlabs )
+        """
         """;;;remove those later;;;"""
 
         
