@@ -57,6 +57,8 @@ class meshArxv():
       for a mesh number i, the checkNum_i should be the same as the i^th entry 
       in the info array offset...i.e chechNum = infoAll[i]['info'][2] 
         
+      :TODO: modify such that it can handle models with one slab only (the surface slab).
+      
       see test_writeReadArxv.py for an example
     """
     def __init__(self, *args, **kwargs):
@@ -67,10 +69,10 @@ class meshArxv():
         else:
             self.dirPath = None
             """path to the directory which contains all the database info and data"""
-
+            
         self.nMeshes    = None
         """ np.long64 : number of meshes in the database (this is now as 1x1 array, convert it just into an np.int32 scalar"""
-
+        
         self.ver        = None
         """ np.int32 array [3] version number of the database data"""
         
@@ -340,7 +342,7 @@ class meshArxv():
             
             thisMeshDtype = mDummy.constructMeshDtype(nSpecs, nSteps, meshVer)
             thisMeshData = np.fromfile( dbDataFObj, dtype = thisMeshDtype, count = 1)
-
+            
             self.meshes.append( thisMeshData[0] )                
             checkNum = np.fromfile( dbDataFObj, dtype = np.int64, count = 1)
             
@@ -2261,3 +2263,26 @@ class meshArxv():
         fObj.close()
         print 'wrote the file %s'
                 
+    def write_pdr_code_guess_database(self, path):
+        """writes the guess database that is used by the pdr code. See 
+        the struct 'database' in oneSided/src/vars.h.
+        """
+        from amuse.community.pdr.pyUtils.guess_db import guess_db
+        
+        pdrGuessDb = guess_db( path = path )
+        
+        #getting the data from all the meshes
+        #------------------------------------
+        logDens   = self.grid_x
+        logG0     = self.grid_y
+        logGammaM = self.grid_z
+        Teq       = self.getQuantityFromAllMeshes(quantity = ['state','gasT'], slabIdx = 0)
+        #collecting the abundance (taking the transpose to make it compatible with 
+        #the shape acceptable by the 'guess' class
+        abun      = [ m['state']['abun'][:,0] for m in self.meshes],
+        abun      = np.array(abun, dtype = np.float64)[0].T
+        #------------------------------------
+        
+        #print pdrGuessDb.get_path()
+        pdrGuessDb.set_db_data(logDens, logG0, logGammaM, Teq, abun)
+        pdrGuessDb.write()

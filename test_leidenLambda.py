@@ -166,6 +166,93 @@ def computeLuminosity(pNH3):
     return R
 #############################################################################
 
+####### solve for one set of parameters ######
+Tkin = 30.0
+nc = 1000.0
+
+#solving using matrix inversion
+#-----------------------------------------------
+full = computeRateMatrix(pNH3, Tkin, nc)
+f    = solveEquilibrium(pNH3, full.copy())
+
+#solving using minimization
+#-----------------------------------------------
+full2 = computeRateMatrix(pNH3, Tkin, nc)
+#generating the constraint equation and appending it to the Matrix
+cons  = np.ones(pNH3['nlevels'])
+full2 = np.vstack((full2, cons))
+#generating the RHS
+rhs   = np.zeros(pNH3['nlevels'] + 1)
+rhs[-1] = 1
+# solving
+sol = np.linalg.lstsq(full2, rhs)
+f2 = sol[0]
+
+pyl.figure(0)
+pyl.semilogy(f)
+pyl.hold(True)
+pyl.semilogy(f2, 'o')
+
+#solving by evolving with time
+#-----------------------------
+#setting up the initial conditions to population densities
+# that would be attained at LTE
+f0 = np.zeros(pNH3['nlevels'])
+Z = np.float64(0.0)  # the partition function
+for i in np.arange(pNH3['nlevels']):
+    f0[i] = pNH3['levels'][i]['g']*np.exp(- pNH3['levels'][i]['E'] / Tkin)
+    Z += f0[i]
+f0 /= Z # the initial fractional population densities
+#f0 = f #using the eq sol as ICs
+
+t0 = 0.0 # the initial time
+dt = 0.1  # initial timestep in seconds 
+tf = 10000.0 #final time
+
+#defining the function which will be the rhs of df/dt
+def ode_rhs(t, y, args):
+    return np.dot(full, y)
+
+#evolving with respect to time
+from scipy.integrate import ode
+r = ode(ode_rhs, jac = None).set_integrator('vode', method='bdf', with_jacobian = False)
+r.set_initial_value(f0, t0).set_f_params(1.0)
+
+lPlot = np.array([0, 1, 2]) + 6   
+t = []
+ft_0 = []
+ft_1 = []
+ft_2 = []
+while r.successful() and r.t < tf:
+    r.integrate(r.t+dt)
+    t.append(r.t)
+    ft_0.append(r.y[ lPlot[0] ])
+    ft_1.append(r.y[ lPlot[1] ])
+    ft_2.append(r.y[ lPlot[2] ])
+
+pyl.figure(1)
+"""
+#plotting the actual curves with the equilib sols (dashes)
+pyl.hold(True)
+pyl.loglog(t, ft_0,'r')
+pyl.loglog(t, ft_1,'g')
+pyl.loglog(t, ft_2,'b')
+pyl.loglog([dt,tf],[f2[lPlot[0]],f2[lPlot[0]]],'--r')
+pyl.loglog([dt,tf],[f2[lPlot[1]],f2[lPlot[1]]],'--g')
+pyl.loglog([dt,tf],[f2[lPlot[2]],f2[lPlot[2]]],'--b')
+pyl.axis([dt, tf, 1e-16, 1])
+"""
+
+pyl.hold(True)
+#plotting the relative difference between the final sol and the eq sol
+pyl.loglog(t, np.fabs(1.0 - ft_0/f2[lPlot[0]]),'r')
+pyl.loglog(t, np.fabs(1.0 - ft_1/f2[lPlot[1]]),'g')
+pyl.loglog(t, np.fabs(1.0 - ft_2/f2[lPlot[2]]),'b')
+pyl.axis([dt, tf, 1e-4, 1])
+
+pyl.show()
+
+"""
 ####### plotting the line intensities per molecule as a function of Tkin#####
 for nc in nH2:
     
@@ -207,6 +294,7 @@ pyl.xscale('log')
 pyl.yscale('log')
 pyl.axis([15,300,1e-25,1e-22])
 pyl.show()
+"""
 
 """
 ################ plotting the line ratios as a function of Tkin###############

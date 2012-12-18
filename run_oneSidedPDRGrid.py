@@ -14,7 +14,7 @@ nWorker = 1  # number of proccesses
 pdr     = interface.pdrInterface( channel_type = 'mpi', number_of_workers = nWorker, redirection='none') 
 
 #outputDir   = '/home/mher/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
-outputDir   = '/home/mher/ism/runs/oneSided/fo/'
+outputDir   = '/home/mher/ism/runs/oneSided/foo2/'
 metallicity = 1.0   # in terms of solar metallicity
  
 pdr.set_outputDir                  (outputDir + 'meshes/');
@@ -24,7 +24,8 @@ pdr.set_rate99_fName               ("/home/mher/ism/speciesInfo/rate99.inp");
 pdr.set_selfSheilding_CO_fName     ("/home/mher/ism/speciesInfo/self_shielding_CO.inp");
 pdr.set_rotationalCooling_baseName ("/home/mher/ism/speciesInfo/rotationalcooling/rotcool");
 pdr.set_vibrationalCooling_baseName("/home/mher/ism/speciesInfo/vibrationalcooling/vibcool");
-pdr.set_database_fName             ("/home/mher/ism/database/database2.dat");
+#pdr.set_database_fName             ("/home/mher/ism/database/database2.dat");
+pdr.set_database_fName             ("/home/mher/tmp/1.dat");
 pdr.set_zeta                       (5.0e-17);
 pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);
@@ -98,10 +99,9 @@ mshErr,err = pdr.get_errorFlags(ids)
 T,err = pdr.get_temperature(ids)
 
 # writing the results to an ascii file
-if 1:
-    f = file(outputDir+'results.out', 'w')
-    for i in arange(n):
-        f.write( '%d %.3f %.3f %.3e %.d\n' % (ids[i], rho[i], G0[i], Lmech[i], mshErr[i]))
-    f.close()
+f = file(outputDir+'results.out', 'w')
+for i in arange(n):
+    f.write( '%d %.3f %.3f %.3e %.d\n' % (ids[i], rho[i], G0[i], Lmech[i], mshErr[i]))
+f.close()
 
 print 'done'
