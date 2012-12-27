@@ -13,16 +13,16 @@ from fetchGridData import fetchRadexGrid
 
 #-----------------------------------
 #grid 1
-specStr1       = 'HCN'
-transition1    = '4-3'
+specStr1       = 'CN'
+transition1    = '2_1.5-1_0.5'
 #grid 2
-specStr2       = 'HNC'
-transition2    = '04-03'
+specStr2       = 'HCN'
+transition2    = '1-0'
 dirname2       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr2
 #-----------------------------------
 log_v_range   = [-2, 2] # log10 of the range of the values, also that of the cbar
 log_cbarTicks = np.arange(log_v_range[0], log_v_range[1] + 0.01, 0.5)
-log_cLevels   = np.log10([1, 2, 4, 6, 8, 10, 50])
+log_cLevels   = np.log10([0.1, 0.5, 1, 2, 4, 6, 8, 10, 50])
 #log_cLevels   = np.arange(log_v_range[0], log_v_range[1] + 0.01, 0.5)
 showLogLabels = False # if False the bar ticks are displayes as 10^x and the contour
                       # show the actual values  

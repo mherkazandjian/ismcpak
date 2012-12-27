@@ -22,6 +22,7 @@ Modules
 * :data:`meshUtils`
 * :data:`radex`
 * :data:`ismUtils`
+* :data:`leidenLambda.molData`
 
 Data and Definitions
 ********************
@@ -56,6 +57,11 @@ Data and Definitions
 
 .. automodule:: radex
 	:members:
+	
+--------------------------
+
+.. automodule:: leidenLambda.molData
+	:members: 
 
 --------------------------
 

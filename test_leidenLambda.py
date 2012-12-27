@@ -206,8 +206,8 @@ f0 /= Z # the initial fractional population densities
 #f0 = f #using the eq sol as ICs
 
 t0 = 0.0 # the initial time
-dt = 0.1  # initial timestep in seconds 
-tf = 10000.0 #final time
+dt = 2000.0  # initial timestep in seconds 
+tf = 1e7 #final time
 
 #defining the function which will be the rhs of df/dt
 def ode_rhs(t, y, args):
@@ -215,40 +215,48 @@ def ode_rhs(t, y, args):
 
 #evolving with respect to time
 from scipy.integrate import ode
-r = ode(ode_rhs, jac = None).set_integrator('vode', method='bdf', with_jacobian = False)
+#r = ode(ode_rhs, jac = None).set_integrator('vode', 
+r = ode(ode_rhs, jac = None).set_integrator('dopri', 
+                                            method='bdf', 
+                                            #with_jacobian = False,
+                                            rtol = 1e-12)
 r.set_initial_value(f0, t0).set_f_params(1.0)
 
-lPlot = np.array([0, 1, 2]) + 6   
+lPlot = np.array([0, 1, 2]) + 20   
 t = []
 ft_0 = []
 ft_1 = []
 ft_2 = []
+i = 0
 while r.successful() and r.t < tf:
     r.integrate(r.t+dt)
     t.append(r.t)
     ft_0.append(r.y[ lPlot[0] ])
     ft_1.append(r.y[ lPlot[1] ])
     ft_2.append(r.y[ lPlot[2] ])
+    if i % 100 == 0:
+        print 'i = %d' %i, 1.0 - np.sum(r.y), 1.0 - r.y[0]/f[0]
+    i+=1
 
 pyl.figure(1)
-"""
 #plotting the actual curves with the equilib sols (dashes)
 pyl.hold(True)
 pyl.loglog(t, ft_0,'r')
 pyl.loglog(t, ft_1,'g')
 pyl.loglog(t, ft_2,'b')
-pyl.loglog([dt,tf],[f2[lPlot[0]],f2[lPlot[0]]],'--r')
-pyl.loglog([dt,tf],[f2[lPlot[1]],f2[lPlot[1]]],'--g')
-pyl.loglog([dt,tf],[f2[lPlot[2]],f2[lPlot[2]]],'--b')
-pyl.axis([dt, tf, 1e-16, 1])
-"""
+pyl.loglog([dt,tf], [f2[lPlot[0]],f2[lPlot[0]]], '--r')
+pyl.loglog([dt,tf], [f2[lPlot[1]],f2[lPlot[1]]], '--g')
+pyl.loglog([dt,tf], [f2[lPlot[2]],f2[lPlot[2]]], '--b')
+pyl.axis([dt, tf, 1e-13, 1])
 
+"""
 pyl.hold(True)
 #plotting the relative difference between the final sol and the eq sol
 pyl.loglog(t, np.fabs(1.0 - ft_0/f2[lPlot[0]]),'r')
 pyl.loglog(t, np.fabs(1.0 - ft_1/f2[lPlot[1]]),'g')
 pyl.loglog(t, np.fabs(1.0 - ft_2/f2[lPlot[2]]),'b')
 pyl.axis([dt, tf, 1e-4, 1])
+"""
 
 pyl.show()
 

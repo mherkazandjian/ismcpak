@@ -14,16 +14,16 @@ from fetchGridData import fetchRadexGrid
 
 #-----------------------------------
 #grid 1
-specStr1       = 'HCN'
-transition1    = '4-3'
+specStr1       = 'CN'
+transition1    = '2_1.5-1_0.5'
 #grid 2
-specStr2       = 'HNC'
-transition2    = '04-03'
+specStr2       = 'HCN'
+transition2    = '1-0'
 dirname2       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr2
 #-----------------------------------
 
 relGmech      = [[1e-3, 1e-2,5e-2], [0.1, 0.5, 1.0 ] ]
-log_v_range   = [-4, 4] # range of the values, also that of the cbar
+log_v_range   = [-2, 2] # range of the values, also that of the cbar
 #cLevels       = np.arange(log_v_range[0], log_v_range[1] + 0.1, 0.5)
 cLevels       = [0, 1, 2, 3, 3.5]
 cbarTicks     = np.arange(log_v_range[0], log_v_range[1], 1)

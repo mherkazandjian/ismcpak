@@ -20,28 +20,30 @@ import chemicalNetwork
 class meshArxv():
     """ this class generates and manipulates archives of PDR meshes.
                
-     FILES AND THEIR FORMATS:\n
-     by default, the prefix name of the individual mesh files is assumed to be
-     mesh.dat-id-xxxxxx
+     FILES AND THEIR FORMATS: by default, the prefix name of the individual mesh files is assumed to be
+      mesh.dat-id-xxxxxx
      
-     the mesh database files are assumed to have the same prefix, for example, if the
-     database file provided is foo, then this routine will assume (or write)  
-         foo.info, foo.db
+     The mesh database files are assumed to have the same prefix, for example, if the database file provided is foo, then this routine will assume (or write).
+       
+        - foo.info, foo.db
+         
      for now the database can be stored into a single file and not split into
      multiple files.  
      
      the database for the meshes is constructed of two binary files:
-         foo.info : holding all the information about the meshes, locations and parameters
-         foo.db   : holds the data for all the meshes
+     
+         - foo.info : holding all the information about the meshes, locations and parameters
+         - foo.db   : holds the data for all the meshes
        
      the info file has the following structure :
         
-     - version number    : int32 int32 int32
-     - nMeshes           : int32 
-     - meshes info array : meshInfoArrayFormat (see also the method)
-       ( nMeshes, 1)          
+       - version number    : int32 int32 int32
+       - nMeshes           : int32 
+       - meshes info array : meshInfoArrayFormat (see also the method)
+         ( nMeshes, 1)          
 
-          the entries of the dtype are 
+          the entries of the dtype are
+           
             - mesh number     ( int64 ) :
             - data file index ( int64 ) : i.e in which .db file the mesh is located
             - offset ( int64 ) : the offset in bytes from the beginning of the file where the mesh is located
@@ -49,12 +51,13 @@ class meshArxv():
             - nSpecs ( int64 ) : the number of species in the mesh                                   .
                         
       the .db files have the following structure:
+      
          - mesh_1 ( mesh dtype )
          - checkNum_1 ( int64 )
          - mesh_2 ( mesh dtype )
          - checkNum_2 ( int64 )
 
-      for a mesh number i, the checkNum_i should be the same as the i^th entry 
+      For a mesh number i, the checkNum_i should be the same as the i^th entry 
       in the info array offset...i.e chechNum = infoAll[i]['info'][2] 
         
       :TODO: modify such that it can handle models with one slab only (the surface slab).
@@ -77,15 +80,17 @@ class meshArxv():
         """ np.int32 array [3] version number of the database data"""
         
         self.meshes     = None
-        """ a list of all the meshes of 'mesh' dtypes (see mesh.py)
+        """A list of all the meshes of 'mesh' dtypes (see mesh.py).
         
-            for a mesh of at index 'i' in 
-               self.meshes[i]
-            the corresponding info in the header are accessed as follows :
+           For a mesh of at index 'i' in
             
-            self.infoAll[i]['parms'][0]) which should be the same as self.meshes[i]['hdr']['G0'] 
-            self.infoAll[i]['parms'][1]) which should be the same as self.meshes[i]['hdr']['nGas']
-            self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
+               self.meshes[i]
+               
+           The corresponding info in the header are accessed as follows :
+            
+             - self.infoAll[i]['parms'][0]) which should be the same as self.meshes[i]['hdr']['G0'] 
+             - self.infoAll[i]['parms'][1]) which should be the same as self.meshes[i]['hdr']['nGas']
+             - self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
         """
 
         self.infoAll    = None 
@@ -112,29 +117,29 @@ class meshArxv():
         
         self.infoAllRadex = None
         """A numpy ndarray of length self.nMeshes of dtype returned by self.arxvRadexHdrFormat which
-        holds the number of transitions computed for the mesh it corresponds to in self.meshes and
-        self.infoAll. A value of zero means that there were was valid output from radex. The contents
-        of each elements in the array are (describing the dtype entries):
+           holds the number of transitions computed for the mesh it corresponds to in self.meshes and
+           self.infoAll. A value of zero means that there were was valid output from radex. The contents
+           of each elements in the array are (describing the dtype entries):
         
-        .. code-block:: python
+           .. code-block:: python
             
-            self.infoAllRadex[x]['info'][0]   mesh number 
-            self.infoAllRadex[x]['info'][1]   number of transitions (0 => no radex data for this mesh)
-            self.infoAllRadex[x]['info'][2]   offset from the start of file (computed and set only when the databse will be written, 0 otherwise)
-            self.infoAllRadex[x]['info'][3]   warning code # holds radex.status after radex runs for the model
-            self.infoAllRadex[x]['info'][4]   error code
+             self.infoAllRadex[x]['info'][0]   mesh number 
+             self.infoAllRadex[x]['info'][1]   number of transitions (0 => no radex data for this mesh)
+             self.infoAllRadex[x]['info'][2]   offset from the start of file (computed and set only when the databse will be written, 0 otherwise)
+             self.infoAllRadex[x]['info'][3]   warning code # holds radex.status after radex runs for the model
+             self.infoAllRadex[x]['info'][4]   error code
          
-            self.infoAllRadex[x]['parms'][0]  G0  (same as the entries in self.infoAll)
-            self.infoAllRadex[x]['parms'][1]  nGas
-            self.infoAllRadex[x]['parms'][2]  gammaMech
-            self.infoAllRadex[x]['parms'][3]  0.0, NOT USED
-            self.infoAllRadex[x]['parms'][4]  0.0  NOT USED
+             self.infoAllRadex[x]['parms'][0]  G0  (same as the entries in self.infoAll)
+             self.infoAllRadex[x]['parms'][1]  nGas
+             self.infoAllRadex[x]['parms'][2]  gammaMech
+             self.infoAllRadex[x]['parms'][3]  0.0, NOT USED
+             self.infoAllRadex[x]['parms'][4]  0.0  NOT USED
 
 
-        :note: the transitions are stored even if there are warnings when running radex. So 
-        take good care when analyzing the data. The info of this attribute is stored into 
-        infoAllRadex.db.info.(specStr). Each specie will have its own .db.info.... file
-        and a corresponding .db.(specStr) file which will hold all the data in self.meshesRadex.
+           :note: the transitions are stored even if there are warnings when running radex. So 
+            take good care when analyzing the data. The info of this attribute is stored into 
+            infoAllRadex.db.info.(specStr). Each specie will have its own .db.info.... file
+            and a corresponding .db.(specStr) file which will hold all the data in self.meshesRadex.
         """
                     
         self.meshesRadex = None
@@ -221,12 +226,11 @@ class meshArxv():
         
         self.gui = None
         
-    # read all the meshes files in the dir and construct the
-    # database
     def construct(self, meshNamePrefix = None, writeDb = None ):
-        """ construc the database anad write the .db files. If the meshNamePrefix is
-              not supplied all the files in self.dirPath are assumed to be data files
-              and all of them are put in the database."""
+        """Construc the database anad write the .db files. If the meshNamePrefix 
+            is not supplied all the files in :data:`dirPath` are assumed to be 
+            data files and all of them are put in the database.
+        """
         
         if meshNamePrefix == None:
             meshNamePrefix = ''
@@ -1032,13 +1036,13 @@ class meshArxv():
             panel['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['quantity'][1], self.parms['gridsInfo']['11']['quantity'][3]) )
         
     def constructRadexDatabase(self, writeDb = None):
-        """runs radex on all the models in self.meshes, and computes the line info according
-        to the parameters in self.parms['radex']. Once done computing, it stores
-        all the generated info into self.infoAllRadex and self.meshesRadex.
+        """runs radex on all the models in self.meshes, and computes the line info 
+           according to the parameters in self.parms['radex']. Once done computing,
+           it stores all the generated info into self.infoAllRadex and :data:`meshesRadex`.
         
-        :param bool writeDb: if this is set to true, self.infoAllRadex is writtent to a 
-        file self.dirPath/infoAllRadex.db.info.'specStr' and self.meshesRadex is written
-        to self.dirPath/meshesRadex.db.'specStr'
+           :param bool writeDb: if this is set to true, self.infoAllRadex is writtent to a 
+            file self.dirPath/infoAllRadex.db.info.'specStr' and self.meshesRadex is written
+            to self.dirPath/meshesRadex.db.'specStr'
         """
 
         # defining the array holding the info about all the computed radex transitions
@@ -1179,8 +1183,11 @@ class meshArxv():
                          quantity = None, fileFormat = None, *args, **kwargs):
         """method that saves the radex grids (emission grids) for now into files.
         
-           :param string fileFormat: When this is set to **'numpytxt'**, the grid is dumped written to an ascii file using numpy.savetxt, one row on each line.  When this parameter is set to **'3column'**, the coordinates
-           of the centroid of the grid cell and the value (x_i, y_i, v_i) are written on each line.  
+           :param string fileFormat: When this is set to **'numpytxt'**, the grid 
+            is dumped written to an ascii file using numpy.savetxt, one row on 
+            each line.  When this parameter is set to **'3column'**, the 
+            coordinates of the centroid of the grid cell and the value 
+            (x_i, y_i, v_i) are written on each line.  
         """
         
         ranges          = self.parms['plotRanges'] 

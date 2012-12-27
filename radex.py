@@ -1,25 +1,7 @@
-## @file radex.py
-#  implementation of the radex interface in python
-
 import numpy as np
 import pylab as pyl
 import subprocess
 import logging, sys
-
-## @package Radex
-# Radex   
-# @author: Mher V. Kazandjian
-# @date  : 2012-Mar-05
-# @version: xxx
-# @section Radex This is a python module through which RADEX can be called from python.
-# Plotting features are also included to visualize the output. Minor modifications
-# for the RADEX source are required to make it easier to the python module to parse
-# the output. Otherwise, the numerics are left intact. See 
-# www.strw.leidenuniv.nl/~moldata/radex.html 
-# for more details on RADEX.
-# @section Examples 
-# A simple example on using this package/class is test_radex.py. A less trivial example
-# is radexView.py
 
 class radex( ):
     """A wrapper class which runs radex parses its output into objects. see test_radex.py
@@ -29,7 +11,7 @@ class radex( ):
     :todo: docment the order in which things must be called.
     
     :warning: make sure that the lower and upper string names for the transitions are not longer than
-    10 character, or change the length accordinglt in self.generateTransitionDtype().
+     10 character, or change the length accordinglt in self.generateTransitionDtype().
     
     :test: test_radex.py, radexView.py
     """
@@ -51,23 +33,23 @@ class radex( ):
                                'SiO'  : 'sio.dat'      ,
                                'CN'   : 'cn.dat'       }
         """ dict : dictonary for the species files, the keys of this dict are as follows 
-        (see radex.py for an example) : \n
+          (see radex.py for an example) :
+          
           SPECIE_STRING : FILENAME
 
         .. literalinclude:: radex.py
-           :lines: 35-44
+           :lines: 24-34
            :linenos:
 
         .. todo:: implement a method to generate this dict automatically from all the files
-                  in the directory molDataFiles
+                  in the directory :data:`molDataFiles`.
 
         .. todo:: also implement a dict for the collision partners like 'e-' : 'e', but it might not
                   be necessary since RADEX takes both 'e' and 'e-'
         """
-        self.inFile       = None     
+        self.inFile = None     
         """
-        dict : dictionary holding all the input parameters. It is used to construct the input
-          parameter file that is piped to the radex executable. It should be of the form
+        dict : dictionary holding all the input parameters. It is used to construct the input parameter file that is piped to the radex executable. It should be of the form.
           
           .. code-block:: python
              :linenos:
@@ -244,7 +226,7 @@ class radex( ):
         transition
         
         :param int32 idx: The index of the transition in the transition list. must be between 0 and len(self.#transitions) 
-        :return dict:self.#transitions item
+        :return: dict :data:`transitions` item
         """
         return self.transitions[idx]
     
@@ -308,9 +290,8 @@ class radex( ):
     def checkParameters(self):
         """chech whether the contents of self.inFile are within the ranges where RADEX can work.
         
-        :raise exception: NameException
-        :attention: This method sets the value of self.status. The flag 'PARMSOK' is set if the 
-        paramteres are ok, 'ERROR' is set otherwise.
+        :raise:  exception NameException
+        :attention: This method sets the value of self.status. The flag 'PARMSOK' is set if the paramteres are ok, 'ERROR' is set otherwise.
         """
         inFile = self.inFile
         
@@ -342,16 +323,20 @@ class radex( ):
     def run(self, checkInput = None, verbose = None ):
         """run the radex executable.
         
-        :param bool checkInput: By default this is False. In this case, the input
-         parameters are not checked and the flag 'PARMSOK' (see #FLAGS) is set to self.#status. 
-         Otherwise, set this to True to force a paremter input check. 
-        :param bool verbose: By default this is False. Set it to True to to write the raw output to stdout. 
-        :return int: returns self.status.  Upon a successful run, 'RUNOK' and 'SUCCESS' flags are set. If 
-        the number of iterations excceeds 10,000 'RUNOK','WARNING' and 'ITERWARN' flags are set. if the 
-        'PARMSOK' is true self.#rawOutput and self.#transitions are set, otherwise they remaine None
-        :todo: extract other warnings also, not just the one due to the max iterations
-        :warning: when running the same radex instance multiple times, make sure to set the 
-        status to the default before calling self.#run using self.#setDefaultStatus()
+        :param bool checkInput: By default this is False. In this case, the input 
+          parameters are not checked and the flag 'PARMSOK' (see #FLAGS) is set to :data:`status`. Otherwise, set this to True to force a paremter input check.
+        :param bool verbose: By default this is False. Set it to True to to write 
+          the raw output to stdout.
+        :return: (int) :data:`status`. Upon a successful run, 'RUNOK' and 'SUCCESS' 
+          flags are set. If the number of iterations excceeds 10,000 'RUNOK',
+          'WARNING' and 'ITERWARN' flags are set. if the 'PARMSOK' is true 
+          :data:`rawOutput` and :data:`transitions` are set, otherwise they 
+          remaine None.
+        :todo: extract other warnings also, not just the one due to the max 
+          iterations.
+        :warning: when running the same radex instance multiple times, make sure 
+          to set the status to the default before calling :data:`run` using 
+          :data:`setDefaultStatus()`.
         """
         
         self.warnings = []
@@ -422,17 +407,21 @@ class radex( ):
         
     def parseOutput(self):
         """Once radex exectues and dumps transition information, this method is used
-         to extract the line data.
+          to extract the line data.
          
         :return: None. The instance variable self.transitions is set.
-        
-        :note: in parsing the output, the transitions info is between the lines containing
-        the units 
-              "(K)    (GHz) ..."
-        and
-              "Another calculation"
-        thisway, we can get the number of transitions (the number of new lines, the work on parsing the data
-        without the need to append anythign to a list..just preallocate the dtype and fill in the values.
+        :note: in parsing the output, the transitions info is between the lines 
+         containing the units:
+          
+             "(K)    (GHz) ..."
+             
+         and
+         
+             "Another calculation"
+              
+         thisway, we can get the number of transitions (the number of new lines, 
+         the work on parsing the data without the need to append anythign to a 
+         list..just preallocate the dtype and fill in the values.
         """
         
         try:

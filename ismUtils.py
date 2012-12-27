@@ -44,6 +44,8 @@ def getSlabThicknessFromAv(slabsAv, nGas, Z):
     return dxSlabs
     
 def planckOccupation(h, nu, kb, T):
-    """computes the planck function for input parameters."""
+    """computes the planck function for input parameters.
+       :keywords: beta, nu,  
+    """
     x = h * nu / (kb * T)
     return 1.0 / (np.exp(x) - 1.0)
