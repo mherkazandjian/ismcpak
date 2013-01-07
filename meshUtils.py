@@ -1,4 +1,4 @@
-import os, glob, sys, pickle
+import os, glob, fnmatch, sys, pickle
 import numpy as np
 import pylab as pyl
 import logging
@@ -15,6 +15,8 @@ from ismUtils   import *
 from radex      import *
 from scipy      import interpolate
 import chemicalNetwork
+
+
 
 
 class meshArxv():
@@ -229,16 +231,21 @@ class meshArxv():
     def construct(self, meshNamePrefix = None, writeDb = None ):
         """Construc the database anad write the .db files. If the meshNamePrefix 
             is not supplied all the files in :data:`dirPath` are assumed to be 
-            data files and all of them are put in the database.
+            data files and all of them are put in the database. The files with 
+            matching name prefix are looked for resusively in the 'meshes' directory.
         """
         
         if meshNamePrefix == None:
             meshNamePrefix = ''
         
-        # getting the names of the meshes in that dir
+        sourceDir = os.path.join(self.dirPath, 'meshes')
+        lookFor   = meshNamePrefix + '*'
+        
+        # getting the names of the meshes in that dir (recursively)
         files = []
-        for infile in glob.glob( os.path.join(self.dirPath, 'meshes/'+meshNamePrefix + '*') ):
-            files.append(infile)
+        for root, dirnames, filenames in os.walk(sourceDir):
+            for filename in fnmatch.filter(filenames, lookFor):
+                files.append(os.path.join(root, filename))
         
         # setting variable for the 
         self.nMeshes = np.zeros( 1, dtype = np.int32 )
@@ -2273,11 +2280,22 @@ class meshArxv():
     def write_pdr_code_guess_database(self, path):
         """writes the guess database that is used by the pdr code. See 
         the struct 'database' in oneSided/src/vars.h.
+        
+        Steps involved in preparing the data before calling this method:
+        
+          - collect a bunch of mesh files in simulation folder
+          - construct the database by running : constructReadArchive.py
+          - then call this method and save the file to be used later 
+          
         """
         from amuse.community.pdr.pyUtils.guess_db import guess_db
         
         pdrGuessDb = guess_db( path = path )
-        
+
+        # setting the x,y,z coordinate variables
+        if self.grid_x == None or self.grid_x == None or self.grid_x == None:
+            self.set_grid_axes_quantity_values()            
+
         #getting the data from all the meshes
         #------------------------------------
         logDens   = self.grid_x

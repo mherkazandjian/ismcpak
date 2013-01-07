@@ -13,9 +13,9 @@ import time, sys, os
 nWorker = 1  # number of proccesses
 pdr     = interface.pdrInterface( channel_type = 'mpi', number_of_workers = nWorker, redirection='none') 
 
-#outputDir   = '/home/mher/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
-outputDir   = '/home/mher/ism/runs/oneSided/foo2/'
-metallicity = 1.0   # in terms of solar metallicity
+outputDir   = '/home/mher/ism/runs/oneSided/surfaceGrid-z-2.0/'
+#outputDir   = '/home/mher/ism/runs/oneSided/foo2/'
+metallicity = 2.0   # in terms of solar metallicity
  
 pdr.set_outputDir                  (outputDir + 'meshes/');
 pdr.set_species_fName              ("/home/mher/ism/speciesInfo/species.inp");
@@ -25,7 +25,7 @@ pdr.set_selfSheilding_CO_fName     ("/home/mher/ism/speciesInfo/self_shielding_C
 pdr.set_rotationalCooling_baseName ("/home/mher/ism/speciesInfo/rotationalcooling/rotcool");
 pdr.set_vibrationalCooling_baseName("/home/mher/ism/speciesInfo/vibrationalcooling/vibcool");
 #pdr.set_database_fName             ("/home/mher/ism/database/database2.dat");
-pdr.set_database_fName             ("/home/mher/tmp/1.dat");
+pdr.set_database_fName             ("/home/mher/z-2.0-no-gmech.dat");
 pdr.set_zeta                       (5.0e-17);
 pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);
@@ -37,12 +37,11 @@ pdr.set_min_deltaAv                (0.01);
 pdr.set_max_deltaAv                (0.5);
 pdr.set_maxSlabs                   (100);
 
-
-dx   = 1.0      # log10 density
+dx   = 3.0      # log10 density
 xMin = 0.0
 xMax = 6.01
 
-dy   = 1.0     # log10 G0
+dy   = 3.0     # log10 G0
 yMin = 0.0  
 yMax = 6.01
 

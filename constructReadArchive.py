@@ -10,8 +10,9 @@ home = '/home/mher'
 #runDirPath =  home + '/ism/runs/oneSided/testOneSidedPDRGrid4/'
 #runDirPath =  home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
 #runDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1/'
-runDirPath =  home + '/ism/runs/oneSided/foo/'
+#runDirPath =  home + '/ism/runs/oneSided/foo/'
 #runDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1-subset/'
+runDirPath =  home + '/ism/runs/oneSided/surfaceGrid-z-2.0/'
 
 # constructing the archive
 t0 = time()
