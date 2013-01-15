@@ -599,24 +599,42 @@ class meshArxv():
             strng = 'archive integrity test failed. database file may be corrupt' 
             raise NameError(strng)
     
-    def setupChemistry(self):
+    def setupChemistry(self, parms = None):
         """sets up the attributes related to the chemistry assuming self.parms['chemistry'] is set.
            sets the attribute self.chemNet.
+           
+           :param parms: a dict holding the paths and definitions needed to setup the 
+            chemical network.  An example of this dict :
+            
+            .. code-block:: python
+            
+                parms = {
+                        'rxnFile'       : '/home/mher/rate99Fixed.inp',   # path of the reaction file
+                        'specNumFile'   : '/home/mher/species.inp',       # the species in the rxnFile
+                        'underAbunFile' : '/home/mher/underabundant.inp', # species to be excluded from the rxn file
+                        'removeManual'  : ['13CH3'],                      # species to be removed explicitly not in the underabundant file
+                        'baseSpecies'   : 'baseSpeciesDefault',           # name of the module holding the base species
+                        'umistVer'      : 'umist99',                      # version of the umist database
+                         }
         """
         
+        if parms == None:
+            parms =  self.parms['chemistry']
+            
         #importing the module which holds the definitions of the base species
-        baseSpecies = __import__(self.parms['chemistry']['baseSpecies'])
+        baseSpecies = __import__(parms['baseSpecies'])
         baseSpecs = baseSpecies.baseSpecies()
         
         # settin up the orignial netowrk
-        net = chemicalNetwork.chemicalNetwork(self.parms['chemistry']['rxnFile'], 
+        net = chemicalNetwork.chemicalNetwork(parms['rxnFile'], 
                                               baseSpecs,
-                                              UMISTVER = self.parms['chemistry']['umistVer'])
+                                              UMISTVER = parms['umistVer'])
+        
         # reading the species to be removed from a file
-        net.removeSpecies( underAbunFile = self.parms['chemistry']['underAbunFile'] )
-        net.removeSpecies( species = self.parms['chemistry']['removeManual'] )
+        net.removeSpecies( underAbunFile = parms['underAbunFile'] )
+        net.removeSpecies( species = parms['removeManual'] )
         # reading the species number and their corresponding indies and abundances from ascii files
-        net.assignNumbersToSpecies(fileName = self.parms['chemistry']['specNumFile'])
+        net.assignNumbersToSpecies(fileName = parms['specNumFile'])
         
         self.setChemicalNetwork(net) # assiginig the chemical network to the archive
             
