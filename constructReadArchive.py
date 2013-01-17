@@ -12,7 +12,8 @@ home = '/home/mher'
 #runDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1/'
 #runDirPath =  home + '/ism/runs/oneSided/foo/'
 #runDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1-subset/'
-runDirPath =  home + '/ism/runs/oneSided/uniformSweep2-z-1.0/'
+#runDirPath =  home + '/ism/runs/oneSided/uniformSweep2-z-1.0/'
+runDirPath =  home + '/ism/runs/oneSided/surfaceGrid-z-0.1/'
 
 # constructing the archive
 t0 = time()
@@ -25,17 +26,5 @@ print 'time constructing %f' % (time() - t0)
 t0 = time()
 arxvR = meshArxv( dirPath = runDirPath )
 arxvR.readDb( )
+arxvR.checkIntegrity()
 print 'time reading %f' % (time() - t0)
-
-# checking the accuracy
-diff = 0.0
-for i in np.arange(arxvR.nMeshes):
-    mr = arxvR.meshes[i]
-    diff += (mr['hdr']['G0']        - arxvR.infoAll[i]['parms'][0])   
-    diff += (mr['hdr']['nGas']      - arxvR.infoAll[i]['parms'][1])   
-    diff += (mr['hdr']['gammaMech'] - arxvR.infoAll[i]['parms'][2])
-    
-if diff == 0.0:
-    print 'database reading check passed'
-else:      
-    print 'database might be corrupt'

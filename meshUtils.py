@@ -16,9 +16,6 @@ from radex      import *
 from scipy      import interpolate
 import chemicalNetwork
 
-
-
-
 class meshArxv():
     """ this class generates and manipulates archives of PDR meshes.
                
@@ -113,9 +110,12 @@ class meshArxv():
            self.infoAll[x]['parms'][4]  0.0  NOT USED\n
         """
 
-        #---------------------------radex data storage attributes0000-----------------------------------
+        #---------------------------radex data storage attributes-----------------------------------
         self.verRadex = None
         """a 3 element np.int32 array holding the version of the radex database currently in use."""
+        
+        self.currentRadexDb = None
+        """A string which holds the species name of the current radex database being used."""
         
         self.infoAllRadex = None
         """A numpy ndarray of length self.nMeshes of dtype returned by self.arxvRadexHdrFormat which
@@ -148,6 +148,23 @@ class meshArxv():
         """A list holding all the info dumped by radex for each model. Each entry in the list is an ndarray
          of dtype :data:`radex.radex.transitionDtype`. The keys in each transition dtype are listed in 
          :data:`radex.radex.transitions` . 
+        """
+        
+        self.radexDbs = {}
+        """A dictionary holding the radex databases read so far. Each entry in the
+        dictionary is a dictionary of two keys : 'infoAll' and 'meshes'. For example, 
+        this could hold the databases for CO, HCN and HNC. Those can be mannualy
+        to self.meshesRadex and self.infoAllRadex via :
+        
+        .. code-block:: python
+        
+            #setting the CO radex database
+            self.meshesRadex  = self.radexDbs['CO']['meshes']
+            self.infoAllRadex = self.radexDbs['CO']['infoAll']
+            
+            #setting the HCN radex database
+            self.meshesRadex  = self.radexDbs['HCN']['meshes']
+            self.infoAllRadex = self.radexDbs['HCN']['infoAll']
         """
         #-------------------------------------------------------------------------------------
         
@@ -367,7 +384,7 @@ class meshArxv():
         
         if check:
             self.checkIntegrity()
-    
+            
     def writeDbRadex(self, dirName = None):
         """ writes the radex meshesRadex.db and meshesRadex.db.info files.  By default the files are
         written to the directorey self.dirName. , unless a diffrent path is specified via
@@ -417,7 +434,9 @@ class meshArxv():
         self.logger.debug('wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
 
     def readDbRadex(self, specStr, check = None):
-        """ reads the database sufficed by specStr (i.e meshesRadex.db.(specStr)and assigns the appropritate attributes (document)
+        """ reads the database sufficed by specStr (i.e meshesRadex.db.(specStr)and assigns the
+         appropritate attributes (document) and assigns the read data to self.meshesRadex and
+         self.infoAllRadex. 
             
             :param bool check: if this is set (to any value) the self.checkIntegrity() is called.
             :param string specStr: the string of the specie whose database is to be read.
@@ -426,61 +445,92 @@ class meshArxv():
               assigned to self.radexObj. 
         """ 
         
-        dbInfoFObj = file(self.dirPath + 'meshesRadex.db.info.' + self.parms['radex']['specStr'], 'rb')
-        dbDataFObj = file(self.dirPath + 'meshesRadex.db.' + self.parms['radex']['specStr'], 'rb')
-
-        self.verRadex = np.fromfile( dbInfoFObj, dtype = (np.int32, 3), count = 1)
-        self.verRadex = self.verRadex[0]
-
-        nMeshes = np.fromfile( dbInfoFObj, dtype = np.int32, count = 1)
-        if self.nMeshes != nMeshes:
-            raise ValueError('number of meshes in radex database is different from that of the meshes database')
-        
-        arxvRadexHdrDtype = np.dtype( self.arxvRadexHdrFormat() )
-        infoAllRadex = np.fromfile( dbInfoFObj, dtype = arxvRadexHdrDtype, count = self.nMeshes)
-        dbInfoFObj.close()
-        
-        # reading the meshes in database into a list 
-        meshesRadex = []
-        radexTransitionsDtype = self.radexObj.generateTransitionDtype()
-
-        for i in np.arange(self.nMeshes):
-
-            meshParms = np.fromfile( dbDataFObj, dtype = np.float64, count = 3)
-
-            #overwriting the read parms into the infoAllRadex['parms']
-            infoAllRadex[i]['parms'][0] = meshParms[0] #G0
-            infoAllRadex[i]['parms'][1] = meshParms[1] #nGas
-            infoAllRadex[i]['parms'][2] = meshParms[2] #gammaMech
-                         
-            # the number of transitions save in the database for this mesh
-            nTransitions = infoAllRadex[i]['info'][1]
-            
-            if nTransitions > 0:
-                #reading the transition data for this mesh 
-                thisMeshRadexData = np.fromfile( dbDataFObj, dtype = radexTransitionsDtype, count = nTransitions)
-            else:
-                thisMeshRadexData = None
-                
-            #reading the check flag, which is the position in bytes in the database
-            checkNum = np.fromfile( dbDataFObj, dtype = np.int64, count = 1)
-
-            if checkNum != infoAllRadex[i]['info'][2]:
-                strng  = 'Error : While reading mesh %d \n' % i
-                strng += '           Error : checkpoint numbers do not match : radex database may be corrupt.\n'
-                strng += '           Error : read = %d, expected = %d' % (checkNum, infoAllRadex[i]['info'][2])
-                raise NameError(strng)
-
-            #self.meshes.append( thisMeshRadexData[0] )                
-            meshesRadex.append( thisMeshRadexData )                
-        self.logger.debug('read successfully radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
-
-        self.infoAllRadex = infoAllRadex
-        self.meshesRadex = meshesRadex
-        
-        if check:
-            self.checkIntegrityRadex()            
+        #reading the database only if it is not already read. If it is read, it would
+        #have a key in radexDbs
+        if specStr not in self.radexDbs.keys():
+            dbInfoFObj = file(self.dirPath + 'meshesRadex.db.info.' + specStr, 'rb')
+            dbDataFObj = file(self.dirPath + 'meshesRadex.db.' + specStr, 'rb')
     
+            self.verRadex = np.fromfile( dbInfoFObj, dtype = (np.int32, 3), count = 1)
+            self.verRadex = self.verRadex[0]
+    
+            nMeshes = np.fromfile( dbInfoFObj, dtype = np.int32, count = 1)
+            if self.nMeshes != nMeshes:
+                raise ValueError('number of meshes in radex database is different from that of the meshes database')
+            
+            arxvRadexHdrDtype = np.dtype( self.arxvRadexHdrFormat() )
+            infoAllRadex = np.fromfile( dbInfoFObj, dtype = arxvRadexHdrDtype, count = self.nMeshes)
+            dbInfoFObj.close()
+            
+            # reading the meshes in database into a list 
+            meshesRadex = []
+            radexTransitionsDtype = self.radexObj.generateTransitionDtype()
+    
+            for i in np.arange(self.nMeshes):
+    
+                meshParms = np.fromfile( dbDataFObj, dtype = np.float64, count = 3)
+    
+                #overwriting the read parms into the infoAllRadex['parms']
+                infoAllRadex[i]['parms'][0] = meshParms[0] #G0
+                infoAllRadex[i]['parms'][1] = meshParms[1] #nGas
+                infoAllRadex[i]['parms'][2] = meshParms[2] #gammaMech
+                             
+                # the number of transitions save in the database for this mesh
+                nTransitions = infoAllRadex[i]['info'][1]
+                
+                if nTransitions > 0:
+                    #reading the transition data for this mesh 
+                    thisMeshRadexData = np.fromfile( dbDataFObj, dtype = radexTransitionsDtype, count = nTransitions)
+                else:
+                    thisMeshRadexData = None
+                    
+                #reading the check flag, which is the position in bytes in the database
+                checkNum = np.fromfile( dbDataFObj, dtype = np.int64, count = 1)
+    
+                if checkNum != infoAllRadex[i]['info'][2]:
+                    strng  = 'Error : While reading mesh %d \n' % i
+                    strng += '           Error : checkpoint numbers do not match : radex database may be corrupt.\n'
+                    strng += '           Error : read = %d, expected = %d' % (checkNum, infoAllRadex[i]['info'][2])
+                    raise NameError(strng)
+    
+                #self.meshes.append( thisMeshRadexData[0] )                
+                meshesRadex.append( thisMeshRadexData )                
+            self.logger.debug('read successfully radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
+    
+            self.infoAllRadex = infoAllRadex
+            self.meshesRadex = meshesRadex
+            
+            if check:
+                self.checkIntegrityRadex()            
+        
+            #storing the read Db into a dict
+            self.currentRadexDb = specStr   
+            radexDb = { 'meshes' : self.meshesRadex, 'infoAll' : self.infoAllRadex}
+            self.radexDbs[specStr] = radexDb
+            self.logger.debug('added %s radex database to memory' % specStr)
+        else:
+            self.logger.debug('%s radex database already read...skipping' % specStr)
+
+    def readDbsRadex(self, species = None):
+        """Loads radex database files from disk to a dictionary. The last database loaded is
+        the one being used.
+        
+           :param species: A list of string holding the names of the species files to be loaded. 
+        """
+        
+        if species == None:
+            raise ValueError('keyword species is None, must be a list of strings.')
+        
+        for specStr in species:
+            self.readDbRadex(specStr, check = True)
+
+    def use_radexDb(self, specStr):
+        """A method which sets a radex database from the databases available in self.radexDbs."""
+        self.meshesRadex    = self.radexDbs[specStr]['meshes']
+        self.infoAllRadex   = self.radexDbs[specStr]['infoAll']
+        self.currentRadexDb = specStr
+        self.logger.debug('swithced to %s radex database' % specStr)
+        
     def mergeDbs(self, newDbRunDirPath, outDirPath = None):
         """ merges two databases into one and write the resulting db and its info file
             :param string newDbRunDirPath: the dir in which the new db to be added to the current db is located.
@@ -1508,7 +1558,7 @@ class meshArxv():
         # defining the axes which will be used to select the section in Z to show
         zSecSelector = {}
         #----------------------------------------------------------------------
-        zSecSelector['axes'] = gui['figure'].add_axes( [0.2, 0.6, 0.2, 0.02] )
+        zSecSelector['axes'] = gui['figure'].add_axes( [0.05, 0.6, 0.4, 0.02] )
         zSecSelector['axes'].set_title('z section selector')
         zSecSelector['axes'].set_xlim( [self.ranges[2][0], self.ranges[2][1] ] )
         zSecSelector['axes'].set_ylim( [0, 1] )
@@ -1523,7 +1573,7 @@ class meshArxv():
         # defining the axes which will be used to select the transition index to be displayed in the emission panel
         transitionSelector = {}
         #----------------------------------------------------------------------
-        transitionSelector['axes'] = gui['figure'].add_axes( [0.2, 0.53, 0.2, 0.02] )
+        transitionSelector['axes'] = gui['figure'].add_axes( [0.05, 0.53, 0.2, 0.02] )
         transitionSelector['axes'].set_title('transition selector')
         transitionSelector['axes'].set_xlim( [0, 40] )
         transitionSelector['axes'].set_ylim( [0, 1] )
@@ -1830,9 +1880,7 @@ class meshArxv():
             if event.inaxes is self.gui['ax2d']['axes']:
                 
                 self.logger.debug('####################################button 1 clicked###########################################')
-                l2Distance  = np.sqrt( (yd - self.grid_y)**2 + (xd - self.grid_x)**2 + (self.pltGmSec - self.grid_z)**2 )
-                rMin = min(l2Distance)
-                indMin = l2Distance.argmin()
+                indMin = self.get_mesh_index(x = xd, y = yd, z = self.pltGmSec)
                 self.mshTmp.setData( self.meshes[indMin] )
                 
                 #updating the title of ['ax2d']['axes']
@@ -2180,22 +2228,24 @@ class meshArxv():
         """sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger."""
         # setting up the logger                                                                                                                                                                                                              
         # create logger                                                                                                                                                                                                                      
-        self.logger = logging.getLogger('simple_example')
-        self.logger.setLevel(logging.DEBUG)
+        logger = logging.getLogger('simple_example')
+        if not len(logger.handlers):
+            logger.setLevel(logging.DEBUG)
 
-        # create console handler and set level to debug                                                                                                                                                                                      
-        ch = logging.StreamHandler( sys.stdout )  # setting the stream to stdout                                                                                                                                                             
-        ch.setLevel(logging.DEBUG)
+            # create console handler and set level to debug                                                                                                                                                                                      
+            ch = logging.StreamHandler( sys.stdout )  # setting the stream to stdout                                                                                                                                                             
+            ch.setLevel(logging.DEBUG)
+    
+            # create formatter                                                                                                                                                                                                                   
+            formatter = logging.Formatter('[%(asctime)s %(funcName)s() %(filename)s:%(lineno)s] %(message)s') # this was the original in the example                                                                              
+    
+            # add formatter to ch                                                                                                                                                                                                                
+            ch.setFormatter(formatter)
+    
+            # add ch to logger                                                                                                                                                                                                                   
+            logger.addHandler(ch)
 
-        # create formatter                                                                                                                                                                                                                   
-        formatter = logging.Formatter('[%(asctime)s %(funcName)s() %(filename)s:%(lineno)s] %(message)s') # this was the original in the example                                                                              
-
-        # add formatter to ch                                                                                                                                                                                                                
-        ch.setFormatter(formatter)
-
-        # add ch to logger                                                                                                                                                                                                                   
-        self.logger.addHandler(ch)
-
+        self.logger = logger
         return self.logger
     
     def writeRadexDbAscii(self):
@@ -2328,4 +2378,13 @@ class meshArxv():
         
         #print pdrGuessDb.get_path()
         pdrGuessDb.set_db_data(logDens, logG0, logGammaM, Teq, abun)
-        pdrGuessDb.write()
+        pdrGuessDb.write()    
+    
+    def get_mesh_index(self, x = None, y = None, z = None):
+        """Returns the index of the mesh in the x,y,z parmaerter coordinate lests self.grid_x, self.grid_y, self.grid_z
+        which are closest to the input x,y,z."""
+        
+        l2Distance  = np.sqrt( (y - self.grid_y)**2 + (x - self.grid_x)**2 + (z - self.grid_z)**2 )
+        indMin = l2Distance.argmin()
+    
+        return indMin

@@ -348,7 +348,7 @@ class mesh( ):
         # subplot 0,0        
         self.plt00tgasPlt,  = self.axs[0,0].semilogy([1],  [1], 'r' )
         self.plt00tdustPlt, = self.axs[0,0].semilogy([1],  [1], 'b' )
-        self.axs[0,0].set_xlim(0, 20)
+        self.axs[0,0].set_xlim(0, 30)
         self.axs[0,0].set_ylim(1, 100000)
         self.axs[0,0].set_ylabel('$T(K)$')
         self.axs[0,0].text(0.4, 1e3, '$T_{gas}$' , color='r')
