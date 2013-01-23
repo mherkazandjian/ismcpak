@@ -1,4 +1,3 @@
-# the models of paper1 (table-1)
 #---------------------------------------------------------------------------------------------------
 from numpy import *
 from numpy.random import *
@@ -9,13 +8,13 @@ from mesh import *
 from chemicalNetwork import *
 from enumSpecies import *
 from ismUtils import *
-import time
+import time, sys, os
 
-nWorker = 3  # number of proccesses
-pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none') 
+nWorker = 2  # number of proccesses
+pdr     = interface.pdrInterface( channel_type = 'mpi', number_of_workers = nWorker, redirection='none') 
 
-outputDir   = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid3/'
 metallicity = 1.0   # in terms of solar metallicity
+outputDir   = '/home/mher/ism/runs/oneSided/surfaceGrid-z-%.1f-very-high-res-no-gmech/' % metallicity
  
 pdr.set_outputDir                  (outputDir + 'meshes/');
 pdr.set_species_fName              ("/home/mher/ism/speciesInfo/species.inp");
@@ -24,7 +23,7 @@ pdr.set_rate99_fName               ("/home/mher/ism/speciesInfo/rate99.inp");
 pdr.set_selfSheilding_CO_fName     ("/home/mher/ism/speciesInfo/self_shielding_CO.inp");
 pdr.set_rotationalCooling_baseName ("/home/mher/ism/speciesInfo/rotationalcooling/rotcool");
 pdr.set_vibrationalCooling_baseName("/home/mher/ism/speciesInfo/vibrationalcooling/vibcool");
-pdr.set_database_fName             ("/home/mher/ism/database/database2.dat");
+pdr.set_database_fName             ("/home/mher/ism/database/z-%.1f.dat" % metallicity);
 pdr.set_zeta                       (5.0e-17);
 pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);
@@ -34,36 +33,32 @@ pdr.set_AvMax                      (0.01);
 pdr.set_slabSizeCrit               (0.5);
 pdr.set_min_deltaAv                (0.01);
 pdr.set_max_deltaAv                (0.5);
-pdr.set_maxSlabs                   (5000);
+pdr.set_maxSlabs                   (100);
 
-
-dx   = 0.5      # log10 density
-xMin = dx/2.0
+dx   = 0.125      # log10 density
+xMin = 0.0
 xMax = 6.0
 
-dy   = 0.5     # log10 G0
-yMin = dy/2.0  
+dy   = 0.125     # log10 G0
+yMin = 0.0  
 yMax = 6.0
 
-zMin = -30.0    # log10 mechanical heating
-zMax = -16.0
+zMin = -50.0    # log10 mechanical heating
+zMax = -49.0
 dz   =  1.0
 
 # generating the parameter space 
-xg = arange(xMin, xMax, dx)
-yg = arange(yMin, yMax, dy)
-zg = arange(zMin, zMax + 1e-10, dz)
-x, y, z = mgrid[ xMin:(xMax+1e-10):dx, yMin:(yMax+1e-10):dy, zMin:(zMax+1e-10):dz]
-
-nx=xg.size
-ny=yg.size
-nz=zg.size
+if zMin == zMax:
+    x, y = mgrid[ xMin:(xMax+1e-10):dx, yMin:(yMax+1e-10):dy]
+    z = ones(x.size)*zMin
+else:
+    x, y, z = mgrid[ xMin:(xMax+1e-10):dx, yMin:(yMax+1e-10):dy, zMin:(zMax+1e-10):dz]
 
 x = x.flatten()
 y = y.flatten()
 z = z.flatten()
 
-n = nx*ny*nz
+n = x.size
 
 pyl.ion()
 figModels = pyl.figure()
@@ -74,7 +69,6 @@ axsModels.plot( x, y, 'o' )
 axsModels.set_xlim( [-1, 7] )
 axsModels.set_ylim( [-1, 7] )
 pyl.draw()
-
 
 print 'number of models to run = ', n
 
@@ -99,15 +93,9 @@ mshErr,err = pdr.get_errorFlags(ids)
 T,err = pdr.get_temperature(ids)
 
 # writing the results to an ascii file
-if 1:
-    f = file(outputDir+'results.out', 'w')
-    for i in arange(n):
-        f.write( format(ids[i]    , 's'  ) + ' ' + 
-                 format(rho[i]    , '.3f') + ' ' + 
-                 format(G0[i]     , '.3f') + ' ' + 
-                 format(Lmech[i]  , '.3e') + ' ' + 
-                 format(T[i]      , '.8f') + ' ' + 
-                 format(mshErr[i] , 's'  ) + '\n')
-    f.close()
+f = file(outputDir+'results.out', 'w')
+for i in arange(n):
+    f.write( '%d %.3f %.3f %.3e %.d\n' % (ids[i], rho[i], G0[i], Lmech[i], mshErr[i]))
+f.close()
 
 print 'done'

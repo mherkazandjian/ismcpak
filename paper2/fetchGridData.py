@@ -1,4 +1,4 @@
-# looks up and restors a grid from a file name
+# looks up and restors a 2D grided of data from a file name
 #------------------------------------------------------------------------------------
 import numpy as np
 import pickle, os

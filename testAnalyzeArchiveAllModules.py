@@ -17,18 +17,19 @@ parms = {
          #'dirPath'     : home + '/ism/runs/oneSided/uniformSweep2-z-2-no-mech/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweepNew-1and2/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-2/',         
-         'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-0.1/',
-
-         # reference database
-         'runDirPath2'   : home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/',
+         'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-0.1/',
+         #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-0.1/',
          
-         'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+         # reference database
+         'runDirPath2'   : home + '/ism/runs/oneSided/surfaceGrid-z-0.1-high-res-no-gmech/',
+         
+         'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
-         #'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
-         'plotRanges'     : [[0,6],[0,6],[-51, -15]],  # uniform gmech
-         'metallicity'    : 1.0,
+         'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
+         #'plotRanges'     : [[0,6],[0,6],[-51, -15]],  # uniform gmech
+         'metallicity'    : 0.1,
 
-         'plotGrids'     : True,
+         'plotGrids'     : False,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
                                     'quantity' : ['state', 'gasT'],
@@ -47,7 +48,7 @@ parms = {
                                     'specStr'  : 'CO',
                                     },
                              '11' : { # line intensitities
-                                     'show'           : False,
+                                     'show'           : True,
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
                                      'type'           : 'radex',
@@ -59,10 +60,10 @@ parms = {
                            },
          'gridsRes'      : 100,
          
-         'radex'         : { 'use'                  : True,
+         'radex'         : { 'use'                  : False,
                              ###-----------radex database parms-----------------
-                             'compute'              : False, #if true, runns radex on all meshes
-                             'writeDb'              : False, #if true, writes the computed stuff to a db
+                             'compute'              : True, #if true, runns radex on all meshes
+                             'writeDb'              : True, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : 'CO',
@@ -103,11 +104,6 @@ arxv = meshArxv( **parms )
 arxv.readDb( check = True)
 print 'time reading data %f' % (time() - t0)
 
-# read and setting up the chemical network used in the 
-t0 = time()
-arxv.setupChemistry()
-print 'time setting up the chemistry %f' % (time() - t0)
-
 # setting the x,y,z quantities to be used for ploting
 arxv.set_grid_axes_quantity_values(relativeGmech         = parms['relativeGmech'], 
                                    referenceDatabasePath = parms['runDirPath2'] )
@@ -119,13 +115,11 @@ if parms['radex']['use'] and parms['gridsInfo']['11']['show']:
         arxv.readDbRadex(parms['radex']['specStr'], check = True)
 
 
-# plotting stuff
-pyl.ioff()
-
 if parms['plotGrids']:
+    # plotting stuff
+    pyl.ioff()
     arxv.plotGrids()
-
-pyl.show()
+    pyl.show()
 
 if False:
     arxv.save_radex_grids(

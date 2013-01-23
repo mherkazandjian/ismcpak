@@ -18,7 +18,13 @@ import chemicalNetwork
 
 class meshArxv():
     """ this class generates and manipulates archives of PDR meshes.
-               
+
+     :param bool readDb: if this is set, the database is read during initialization.
+      
+     :param bool set_defaults: if this is passed as a keyword, self.set_default attributes and self.set_grid_axes_quantity_values are called upon intialization.
+       
+     :param bool no_init_from_run_parms: if this is passed as a keyword, nothing is initialized from used_parms.pkl.                
+
      FILES AND THEIR FORMATS: by default, the prefix name of the individual mesh files is assumed to be
       mesh.dat-id-xxxxxx
      
@@ -58,7 +64,7 @@ class meshArxv():
 
       For a mesh number i, the checkNum_i should be the same as the i^th entry 
       in the info array offset...i.e chechNum = infoAll[i]['info'][2] 
-        
+      
       :TODO: modify such that it can handle models with one slab only (the surface slab).
       
       see test_writeReadArxv.py for an example
@@ -91,7 +97,7 @@ class meshArxv():
              - self.infoAll[i]['parms'][1]) which should be the same as self.meshes[i]['hdr']['nGas']
              - self.infoAll[i]['parms'][2]) which should be the same as self.meshes[i]['hdr']['gammaMech']
         """
-
+        
         self.infoAll    = None 
         """A numpy ndarray of dtype arxvHdrDtype (see below) which contains the info
            (headers) about all the meshes each entry in this array contains two things,
@@ -245,6 +251,31 @@ class meshArxv():
         
         self.gui = None
         
+        #reading the used_parms.pkl file (if found) and setting the vaues read from it
+        if 'no_init_from_run_parms' in kwargs:
+            self.read_used_parms_used_in_PDR_models()
+        
+        if 'readDb' in kwargs:
+            kwargs.pop('readDb')
+            self.readDb( check = True)
+
+        if 'set_defaults' in kwargs:
+            kwargs.pop('set_defaults')
+            self.set_default_attributes()
+            self.set_grid_axes_quantity_values()
+
+    def read_used_parms_used_in_PDR_models(self):
+        fpath_parms_used = os.path.join(self.dirPath,'used_parms.pkl')
+        if os.path.isfile(fpath_parms_used):
+            self.logger.debug('setting metallicity and chemical network from : %s' % fpath_parms_used)
+            #loading the parameters
+            parms = pickle.load(open(fpath_parms_used))
+            #setting the attributes
+            self.metallicity = parms['metallicity']
+            self.setupChemistry(parms['chemistry']) 
+        else:
+            self.logger.debug('no used_parms.pkl file found : %s' % fpath_parms_used) 
+    
     def construct(self, meshNamePrefix = None, writeDb = None ):
         """Construc the database anad write the .db files. If the meshNamePrefix 
             is not supplied all the files in :data:`dirPath` are assumed to be 
@@ -434,7 +465,7 @@ class meshArxv():
         self.logger.debug('wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
 
     def readDbRadex(self, specStr, check = None):
-        """ reads the database sufficed by specStr (i.e meshesRadex.db.(specStr)and assigns the
+        """ reads the database suffixed by specStr (i.e meshesRadex.db.(specStr)and assigns the
          appropritate attributes (document) and assigns the read data to self.meshesRadex and
          self.infoAllRadex. 
             
@@ -730,12 +761,10 @@ class meshArxv():
              :param list quantity: this is a list of strings which point to the data
                  to be extracted from the dtype :data:`mesh`. (see example above)
                  
-             :param int32 slabIdx: the index of the slab from which the value will be
-                 extracted
+             :param int32 slabIdx: the index of the slab from which the value will be extracted.
                  
-             :param int32 arrIdx: The first index in the 2D array (in case the quantity points to
-              a 2D array) to be extracted first (usually for ['state','abun']). And slabIdx is used
-              as the seconds index. 
+             :param int32 arrIdx: The first index in the 2D array (ONLY necessary if the quantity pointed
+               to is a 2D array, like ['state', 'abun']). In this case slabIdx is used as the seconds index. 
                 
              :param bool log10: keyword which when passes as True, will generate the log10 of the quantity
 
@@ -1267,6 +1296,9 @@ class meshArxv():
         
         ranges          = self.parms['plotRanges'] 
         res             = self.resPltGrids 
+
+        #self.set_default_attributes()
+        #self.set_grid_axes_quantity_values()
 
         #dumping the parameters of meshutils used in generating the data
         timeStr = ctime().replace(' ','-')
@@ -2150,8 +2182,10 @@ class meshArxv():
           mechanical heating is zero. If this is set, the keyword 'referenceDatabase'
           sould be provided. It is assumed that the reference database has exact same
           parameters as the current one. It is assumed that the minimum gmech in 
-          reference database is low enough to be assumed to be zero. This keyword
-          cuases self.grid_qz to be set to 'gMech/gSurface(gMech=0)'
+          reference database is low enough to be assumed to be zero. An interpolation
+          function is constructed which picks the lowest gMech of the reference
+          database. This keyword cuases self.grid_qz to be set to 
+          'gMech/gSurface(gMech=0)'
 
         :param string referenceDatabasePath: a string containing the path of the 
              reference database.
@@ -2201,17 +2235,26 @@ class meshArxv():
                     self.logger.debug('time reading %f' % (time() - t0))
                     arxvRef.setChemicalNetwork(self.chemNet) # assiginig the chemical network to the archive
     
+                    #finding the minimum gMech of the reference database, and constructing
+                    #an interpolation function which returns the surface heating corresponding
+                    #to that mechanical heating rate.
+                    min_gMech = np.min( np.array( 
+                                                 [mesh['hdr']['gammaMech'] for mesh in arxvRef.meshes] 
+                                                 )
+                                       )
+                    
                     gMechZero = self.grid_x.copy()
-                    gMechZero[:] = np.log10(arxvRef.meshes[0]['hdr']['gammaMech']) # assumig all the meshes have this value as well
+                    #setting the values of gMech where the surface heating will be computed
+                    gMechZero[:] = np.log10(min_gMech)
                     
                     #getting the surface heating that the models in the current would have
                     #from the reference database which has gmech = 0
                     arxvRef.set_grid_qx( self.grid_qx )
                     arxvRef.set_grid_qy( self.grid_qy )
-                    f         = arxvRef.construct3DInterpolationFunction(quantity = ['therm', 'heating'], 
-                                                                         slabIdx  = 0, 
-                                                                         log10 = True,
-                                                                         grid_qz = ['hdr','gammaMech'])
+                    f = arxvRef.construct3DInterpolationFunction(quantity = ['therm', 'heating'], 
+                                                                 slabIdx  = 0, 
+                                                                 log10 = True,
+                                                                 grid_qz = ['hdr','gammaMech'])
                     dataNew   = np.array( [self.grid_x, self.grid_y, gMechZero] ).T
                     
                     # the surface heating that the models in the current would have if the 
@@ -2388,3 +2431,63 @@ class meshArxv():
         indMin = l2Distance.argmin()
     
         return indMin
+    
+    def get_mesh_data(self, quantity, x = None, y = None, z = None):
+        """Returns the data (of dtype :data:`mesh`.data) of the pdr mesh in the x,y,z parmaerter 
+        coordinate lests self.grid_x, self.grid_y, self.grid_z which are closest to the input x,y,z."""
+        
+        ind = self.get_mesh_index(x, y, z)
+        return self.meshes[ind] 
+    
+    def grid_interpolator(self, n_gas, fuv_heating, g_mech,
+                          quantity = None, slabIdx = None):
+        """Returns interpolated vlaues for input quantities. The input
+        values are gas density, fuv heating and mechanical heating as
+        numpy arrays with amuse units.  These are converted to the 
+        same units as the PDR meshes.  An interpolation function is 
+        constructed and the interpolation is done for a quantity pointing
+        to the dtype of data of a mesh."""
+        
+        from amuse.units import units, constants
+
+        #----------------------------------------------------------------
+        # converting the quantities to units compatible with PDR models
+        # getting the quantities as numpy arrays
+        #----------------------------------------------------------------
+        #converting gas density to cgs
+        n_gas_cgs = n_gas.as_quantity_in( units.g / units.cm **3 )
+        n_gas_cgs *= constants.Avogadro_constant # (g  mol-1 cm-3)
+        n_gas_cgs = n_gas_cgs.value_in( n_gas_cgs.unit ) 
+        n_gas_cgs *= (1.0/1.00794) # 1 mol of H is 1.000794 g 
+
+        #converting the G0 to correct units
+        G0 = 6.54*fuv_heating.value_in( fuv_heating.unit )
+        
+        #converting the mechanical heating to the correct unit
+        #from m2 / s3 (Inti Units) to  erg / (cm^3 s)
+        g_mech = g_mech.as_quantity_in( units.erg / (units.g * units.s ) )
+        # converting the mechanical heating rate from per unit mass (of H gas)     
+        # to per unit volume (see notesISM.odt)
+        g_mech = g_mech.value_in( g_mech.unit ) # gMech in erg / (g s )
+        g_mech = g_mech * 1.6474e-24 * n_gas_cgs # gMech in erg / (cm^3 s) 
+
+        #talking the log of the input quantities at which the interpolated
+        #quantities will be returned
+        lx = np.log10(n_gas_cgs)
+        ly = np.log10(G0)
+        lz = np.log10(g_mech)
+        #-----------------------done converting units----------------------
+        
+        #-----------------------generate the interpolation function--------
+        fInterp = self.construct3DInterpolationFunction(quantity, slabIdx)
+
+        #picking the SPH particles which are within the parametrer space
+        #of the PDR grids 
+        lx = lx.clip(self.grid_x.min(), self.grid_x.max())
+        ly = ly.clip(self.grid_y.min(), self.grid_y.max())
+        lz = lz.clip(self.grid_z.min(), self.grid_z.max())
+        
+        dataNew = np.array( [lx, ly, lz] ).T
+        qInterp = fInterp(dataNew)
+
+        return qInterp
