@@ -7,7 +7,7 @@ def baseSpecies():
         can be defined and imported into scripts, or the specie definition
         of this file can be modified.   
         
-        .. literalinclude:: baseSpecies.py
+        .. literalinclude:: baseSpeciesDefault.py
            :lines: 19-38  
            :linenos:
            
@@ -15,7 +15,7 @@ def baseSpecies():
         
         .. code-block:: python
         
-            import baseSpecies
+            from baseSpeciesDefault import baseSpecies
             baseSpecs = baseSpecies.baseSpecies()
     """
     specList = [  specie('CRPHOT', specType = -1, charge=0 , init=1),

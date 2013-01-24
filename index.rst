@@ -26,13 +26,14 @@ Modules
 
 Data and Definitions
 ********************
-* :data:`baseSpecies`
+* :data:`baseSpeciesDefault`
 
 --------------------------
 
 .. automodule:: specie
 	:members:
-
+	:private-members:
+	
 --------------------------
 
 .. automodule:: reaction
@@ -70,7 +71,7 @@ Data and Definitions
 
 --------------------------
 
-.. automodule:: baseSpecies
+.. automodule:: baseSpeciesDefault
     :members: 
 
 

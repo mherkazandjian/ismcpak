@@ -53,7 +53,7 @@ pdr.set_max_deltaAv                (0.5);
 pdr.set_maxSlabs                   (200);
 
 # getting the basic species defined in baseSpecies.py
-import baseSpecies
+import baseSpeciesDefault as baseSpecies
 baseSpecs = baseSpecies.baseSpecies()
 
 # reading the archive

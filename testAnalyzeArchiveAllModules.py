@@ -12,24 +12,23 @@ home = '/home/mher'
 
 parms = {
          #path to the database files
-         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
+         'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
          #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-2.0/',
          #'dirPath'     : home + '/ism/runs/oneSided/uniformSweep2-z-2-no-mech/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweepNew-1and2/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-2/',         
-         'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-0.1/',
+         #'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-0.1/',
-         
-         # reference database
-         'runDirPath2'   : home + '/ism/runs/oneSided/surfaceGrid-z-0.1-high-res-no-gmech/',
          
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
+         'min_gMech'     : 1e-50,
+         
          'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
          #'plotRanges'     : [[0,6],[0,6],[-51, -15]],  # uniform gmech
-         'metallicity'    : 0.1,
-
-         'plotGrids'     : False,
+         
+         'plot'          : True, 
+         'showGrids'     : True,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
                                     'quantity' : ['state', 'gasT'],
@@ -60,10 +59,10 @@ parms = {
                            },
          'gridsRes'      : 100,
          
-         'radex'         : { 'use'                  : False,
+         'radex'         : { 'use'                  : True,
                              ###-----------radex database parms-----------------
-                             'compute'              : True, #if true, runns radex on all meshes
-                             'writeDb'              : True, #if true, writes the computed stuff to a db
+                             'compute'              : False, #if true, runns radex on all meshes
+                             'writeDb'              : False, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : 'CO',
@@ -85,28 +84,17 @@ parms = {
                              'changeFracTrial'      : 0.001,
                              'nMaxTrial'            : 100,
                             },
-         #-----------------chemical network parameters------------------------
-         'chemistry'     : {
-                            'rxnFile'       : home + '/ism/code/ismcpak/data/rate99Fixed.inp',
-                            'specNumFile'   : home + '/ism/code/ismcpak/data/species.inp',
-                            'underAbunFile' : home + '/ism/code/ismcpak/data/underabundant.inp',
-                            'removeManual'  : ['13CH3'],
-                            'baseSpecies'   : 'baseSpeciesDefault', #name of the module holding the base species
-                            'umistVer'      : 'umist99',
-                           }
         }
 #############################################################################################################
 
 # reading the archive
 print 'setting up the archive'
 t0 = time()
-arxv = meshArxv( **parms )
-arxv.readDb( check = True)
+arxv = meshArxv(readDb = True, **parms)
 print 'time reading data %f' % (time() - t0)
 
 # setting the x,y,z quantities to be used for ploting
-arxv.set_grid_axes_quantity_values(relativeGmech         = parms['relativeGmech'], 
-                                   referenceDatabasePath = parms['runDirPath2'] )
+arxv.set_grid_axes_quantity_values(relativeGmech = parms['relativeGmech']) 
 
 if parms['radex']['use'] and parms['gridsInfo']['11']['show']:
     if parms['radex']['compute']:
@@ -115,7 +103,7 @@ if parms['radex']['use'] and parms['gridsInfo']['11']['show']:
         arxv.readDbRadex(parms['radex']['specStr'], check = True)
 
 
-if parms['plotGrids']:
+if parms['plot']:
     # plotting stuff
     pyl.ioff()
     arxv.plotGrids()

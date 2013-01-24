@@ -13,7 +13,13 @@ from ismUtils import planckOccupation as ng
 restore = False
 #reading the whole database of line info of species from LAMBDA
 lambdaPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
-reader = molData.reader(dirPath = lambdaPath)
+
+#reads the whole database
+#------------------------
+#reader = molData.reader(dirPath = lambdaPath)
+
+#retrieves only one specie
+reader = molData.reader(dirPath = lambdaPath, specie = 'NH3', type = 'p-')
 
 Tkin_min    = 15.0
 Tkin_max    = 300.0
@@ -31,11 +37,11 @@ ev2erg = 1.602e-12   #erg
 
 #selecting the one holding the info for p-NH3
 for specDict in reader.speciesInfo:
-    if 'p-NH3' in specDict['specStr']:
+    if 'NH3' in specDict['specStr'] and 'p-' in specDict['info']:
         pNH3 = specDict
         print 'found p-NH3 info, filePath : %s' % pNH3['path']
         break
-    
+
 # converting the energy units to K 
 for idx, level in enumerate(pNH3['levels']):
     level['E'] *= hPlank*cLight/kBoltz # energies in K
@@ -188,10 +194,13 @@ rhs[-1] = 1
 sol = np.linalg.lstsq(full2, rhs)
 f2 = sol[0]
 
-pyl.figure(0)
+pyl.figure( figsize = (6,12))
+pyl.subplot(211)
 pyl.semilogy(f)
 pyl.hold(True)
 pyl.semilogy(f2, 'o')
+pyl.xlabel('level')
+pyl.ylabel('population density')
 
 #solving by evolving with time
 #-----------------------------
@@ -205,9 +214,18 @@ for i in np.arange(pNH3['nlevels']):
 f0 /= Z # the initial fractional population densities
 #f0 = f #using the eq sol as ICs
 
+"""
+f0[0] = 0.3
+f0[1] = 1e-2
+f0[2] = 1e-3
+f0[3] = 0.5
+f0[4] = 1e-5
+f0[5] = 1e-6
+"""
+
 t0 = 0.0 # the initial time
-dt = 2000.0  # initial timestep in seconds 
-tf = 1e7 #final time
+dt = 2e3 # initial timestep in seconds 
+tf = 2e5 #final time
 
 #defining the function which will be the rhs of df/dt
 def ode_rhs(t, y, args):
@@ -222,11 +240,14 @@ r = ode(ode_rhs, jac = None).set_integrator('dopri',
                                             rtol = 1e-12)
 r.set_initial_value(f0, t0).set_f_params(1.0)
 
-lPlot = np.array([0, 1, 2]) + 20   
+lPlot = np.array([0, 1, 2, 3, 4, 5])   
 t = []
 ft_0 = []
 ft_1 = []
 ft_2 = []
+ft_3 = []
+ft_4 = []
+ft_5 = []
 i = 0
 while r.successful() and r.t < tf:
     r.integrate(r.t+dt)
@@ -234,20 +255,33 @@ while r.successful() and r.t < tf:
     ft_0.append(r.y[ lPlot[0] ])
     ft_1.append(r.y[ lPlot[1] ])
     ft_2.append(r.y[ lPlot[2] ])
+    ft_3.append(r.y[ lPlot[3] ])
+    ft_4.append(r.y[ lPlot[4] ])
+    ft_5.append(r.y[ lPlot[5] ])
+
     if i % 100 == 0:
-        print 'i = %d' %i, 1.0 - np.sum(r.y), 1.0 - r.y[0]/f[0]
+        print 'i = %d t = %e' % (i, r.t), 1.0 - np.sum(r.y), 1.0 - r.y[0]/f[0]
     i+=1
 
-pyl.figure(1)
+#pyl.figure(1)
+pyl.subplot(212)
 #plotting the actual curves with the equilib sols (dashes)
 pyl.hold(True)
 pyl.loglog(t, ft_0,'r')
 pyl.loglog(t, ft_1,'g')
 pyl.loglog(t, ft_2,'b')
+pyl.loglog(t, ft_3,'c')
+pyl.loglog(t, ft_4,'k')
+pyl.loglog(t, ft_5,'y')
 pyl.loglog([dt,tf], [f2[lPlot[0]],f2[lPlot[0]]], '--r')
 pyl.loglog([dt,tf], [f2[lPlot[1]],f2[lPlot[1]]], '--g')
 pyl.loglog([dt,tf], [f2[lPlot[2]],f2[lPlot[2]]], '--b')
+pyl.loglog([dt,tf], [f2[lPlot[3]],f2[lPlot[3]]], '--c')
+pyl.loglog([dt,tf], [f2[lPlot[4]],f2[lPlot[4]]], '--k')
+pyl.loglog([dt,tf], [f2[lPlot[5]],f2[lPlot[5]]], '--y')
 pyl.axis([dt, tf, 1e-13, 1])
+pyl.xlabel('time (s)')
+pyl.ylabel('population density')
 
 """
 pyl.hold(True)
@@ -255,9 +289,10 @@ pyl.hold(True)
 pyl.loglog(t, np.fabs(1.0 - ft_0/f2[lPlot[0]]),'r')
 pyl.loglog(t, np.fabs(1.0 - ft_1/f2[lPlot[1]]),'g')
 pyl.loglog(t, np.fabs(1.0 - ft_2/f2[lPlot[2]]),'b')
-pyl.axis([dt, tf, 1e-4, 1])
+pyl.axis([dt, tf, 1e-9, 1])
 """
 
+pyl.ion()
 pyl.show()
 
 """

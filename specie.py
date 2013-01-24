@@ -5,52 +5,57 @@ import re
 # class definition for a single specie
 # --------------------------------------
 class specie():
-    """ methods :  self.__init__(specStr, specType=None, charge=None, init=None)
-               self.show()
-               self.getComponents(baseSpec)
-               self.get Abun(), setAbun( x ), getNum()
+    """A class for defining species.
     """
     def __init__(self, specStr, specType=None, charge=None, init=None, comp=None):
-        self.type = specType   # -2 => ignore specie
-                               # -1 => do not conisder it as a specie
-                               #  0 => basic specie
-                               # 1 => composite specie
-        self.str  = specStr    # string representation of the specie
-        self.num  = None         # numeric representation of the specie
+        self.type = specType
+        """   
+             + -2 => ignore specie
+             + -1 => do not conisder it as a specie
+             + 0 => basic specie
+             + 1 => composite specie
+             
+        """
+        
+        self.str  = specStr    #: string representation of the specie
+        self.num  = None       #: numeric representation of the specie
 
         if comp == None:
-            if specType == 0:               # a list holding the indicies of the basic species making 
-                self.comp  = [[specStr,1]]   # it up and the number number of each sub-specie
+            if specType == 0:               #: a list holding the indicies of the basic species making 
+                self.comp  = [[specStr,1]]  #: it up and the number number of each sub-specie
             else:
                 self.comp = []
         else:
             self.comp = comp
 
         self.charge = charge
-        self.abun = None     # abundance of the specie relative to total H nuclei
-        self.init = None     # flag which indicates if the specie is inetialized or not
+        self._abun = None
+        """
+            Abundance of the specie relative to total H nuclei. It is either None or an ndarray of shape (1,)
+        """
+        self.init = None     #: flag which indicates if the specie is inetialized or not
         self.active = None
 
-    # method that prints the string representation of the specie
     def show(self):
+        """method that prints the string representation of the specie."""
+
 
         if self.num != None:
             print 'num = %04d ' % self.num,
-            print '%-12s charge = %+-d  type = %+-d abun = %+-e' % (self.str, self.charge, self.type, self.getAbun() ),
+            print '%-12s charge = %+-d  type = %+-d _abun = %+-e' % (self.str, self.charge, self.type, self.abun() ),
         else:
             print 'num = NA   ',   
-            print '%-12s charge = NA  type = %+-d abun = NA' % (self.str, self.type),
+            print '%-12s charge = NA  type = %+-d _abun = NA' % (self.str, self.type),
 
         print self.comp
 
-    # method that parses the components of species by counting the elements in each specie
-    # make sure baseSpec has the species with String in a decreasing order in length
-    # (except for the charge for example e-), i.e in this order
-    #     longest string names ( CRPHOTON, PHOTON, CRP)
-    #     regular elements (Na, Cl,...)
-    #     elements with a single letter Upper case (H, F, C...)
-    #     species denoted with lower case letters ( e-)
     def getComponents(self, baseSpec):
+        """Method that parses the components of species by counting the elements in each specie
+           make sure baseSpec has the species with String in a decreasing order in length
+           (except for the charge for example e-), i.e in this order longest string names ( CRPHOTON, PHOTON, CRP)
+           regular elements (Na, Cl,...) elements with a single letter Upper case (H, F, C...)
+           species denoted with lower case letters ( e-).
+        """
 
         specStr = self.str
 
@@ -88,10 +93,14 @@ class specie():
         # succcessfully processes
         self.init = 1
         
-    # returns True if the base species in specList ['XX','YY'] are in self.comp
-    #     ex : print net.species['HCN'].hasComponents(['H','N','C'])
-    #     ex : print net.species['13C'].hasComponents(['C'])
     def hasBaseSpecies(self, specStrList ):
+        """Returns True if the base species in specList ['XX','YY'] are in self.comp
+           ex : 
+           
+              print net.species['HCN'].hasComponents(['H','N','C']) 
+              print net.species['13C'].hasComponents(['C'])
+              
+        """
         
         hasAllComponents = True
         
@@ -103,14 +112,33 @@ class specie():
                 
         return hasAllComponents
         
-    def getAbun(self):
-        if self.abun != None:
-            return self.abun[0]
+    def abun(self, *args):
+        """This works both ways to set and to get the value of self._abun. When passed
+           without an argment it returns self._abun. When passed with an argument it
+           sets the value of the argument to self._abun[0].
+           
+           .. code-block:: python
+           
+               x = spec.abun()  # return spec._abun[0]
+               spec.abun(0.53)  # set spec._abun[0] to 0.53
+               
+           .. warning:: It is highly recommended to use the specie.abun(x) method to set the abun
+              of a species. Since it is easy to get confused and set the abundance via specie._abun = x
+              which would break the mapping with net.abun. The way to change the abundance without
+              breaking the mapping would be to use specie.abun[0] = x, since specie._abun is an ndarray
+              of shape (1,) and setting the value via specie._abun = x would assign a new object instead
+              of a new value.
+
+            .. todo:: see how to include the documentation of _abun with sphinx
+        """
+
+        if len(args) == 0:        
+            if self._abun != None:
+                return self._abun[0]
+            else:
+                return None
         else:
-            return None
+            self._abun[0] = args[0]
         
-    def setAbun(self, abun):
-        self.abun[0] = abun
-    
-    def getNum(self):
+    def get_num(self):
         return self.num

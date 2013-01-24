@@ -1,43 +1,19 @@
-from string import *
-import numpy as np
-import StringIO
-import re
-from specie import *
-
-"""
-     methods : self.__init__()
-               self.active()
-               self.passive()
-               self.setAllFromRxnStrArr(rxnStr)
-               self.display(full=None)
-               self.setId(id)
-               self.setType(type)
-               self.setSpeciesFromStrings( )
-               self.updateSpecies( [R1, R2, R3, P1, P2, P3, P4] )
-               self.setReactantsFromString(R1, R2, R3)
-               self.setProductsFromString(P1, P2, P3, P4)
-               self.setAlpha(alpha)
-               self.setBeta(beta)
-               self.setGamma(gamma)
-               self.setSrc(src)
-               self.setTl(Tl)
-               self.setTu(Tu)
-               self.setAccuracy(acc)
-               self.setRefCode(refCode)
-               
-   * write a method which checks if the reaction is balanced or not
-
-"""
+import string
+import numpy
+from specie import specie
 
 # class definition for a single reaction
 # --------------------------------------
 class reaction():
-    """ asdasdadasda"""
+    """asdasdadasda
+    
+       .. todo:: write a method which checks if the reaction is balanced or not
+    """
     def __init__(self):
         self.str = ''
         self.status = -1
-        self.id   = -1
-        self.hash = uint64(0)
+        self.ID   = -1
+        self.hash = numpy.uint64(0)
         #--------------
         self.type = ''  # umist string for the reaction
         self.ntype = '' # numeric type/code of reaction
@@ -67,33 +43,35 @@ class reaction():
         #--------------
         self.refCode = ''
 
-    # set all the attributes from the string array of the reaction line
     def setAllFromRxnStrArr(self, rxnStr):
+        """set all the attributes from the string array of the reaction line"""
+
         self.str = rxnStr
         self.active()
-        self.setId  ( int32(rxnStr[0]) )
-        self.setType( rxnStr[1]        )
+        self.setId  (numpy.int32(rxnStr[0]))
+        self.setType(rxnStr[1])
         
-        self.setReactantsFromStrings( [ rxnStr[2], rxnStr[3], rxnStr[4] ] )
-        self.setProductsFromStrings(  [ rxnStr[5], rxnStr[6], rxnStr[7], rxnStr[8] ])
-        self.setAlpha( float64(rxnStr[9])  )
-        self.setBeta(  float64(rxnStr[10]) )
-        self.setGamma( float64(rxnStr[11])  )
-        self.setSrc( rxnStr[12] )
+        self.setReactantsFromStrings([rxnStr[2], rxnStr[3], rxnStr[4]])
+        self.setProductsFromStrings([rxnStr[5], rxnStr[6], rxnStr[7], rxnStr[8]])
+        self.setAlpha(numpy.float64(rxnStr[9]))
+        self.setBeta(numpy.float64(rxnStr[10]))
+        self.setGamma(numpy.float64(rxnStr[11]))
+        self.setSrc(rxnStr[12] )
         # be more careful in setting the upper and lower temperature warnings
-        Tl = np.float64(rxnStr[13]) if len(rxnStr[13]) > 0 else -1 
-        self.setTl( Tl )
-        Tu = np.float64(rxnStr[14]) if len(rxnStr[14]) > 0 else -1 
-        self.setTu( Tu )
-        self.setAccuracy( rxnStr[15] )
-        self.setRefCode( rxnStr[16] )
+        Tl = numpy.float64(rxnStr[13]) if len(rxnStr[13]) > 0 else -1 
+        self.setTl(Tl)
+        Tu = numpy.float64(rxnStr[14]) if len(rxnStr[14]) > 0 else -1 
+        self.setTu(Tu)
+        self.setAccuracy(rxnStr[15])
+        self.setRefCode(rxnStr[16])
 
-    # if CUSTOM reactions are added to the reaction file, sometimes the type 
-    # of the reaction is missing. Here, the type of the reaction is set based
-    # on what is in the reactants. It is set to CP is it is a CRP reaction,
-    # CR is it is a CRPHOT reaction and to PH if it is a PHOTO reaction.
-    # otherwise, it is set to NB indicating a two or three body reaction  
-    def updateType(self):        
+    def updateType(self):
+        """if CUSTOM reactions are added to the reaction file, sometimes the type 
+           of the reaction is missing. Here, the type of the reaction is set based
+           on what is in the reactants. It is set to CP is it is a CRP reaction,
+           CR is it is a CRPHOT reaction and to PH if it is a PHOTO reaction.
+           otherwise, it is set to NB indicating a two or three body reaction
+        """  
         
         if len(self.type) == 0:
             
@@ -119,30 +97,38 @@ class reaction():
                         #print 'setting reaction type to default'
                         self.type = defualtType
 
-    # method that computes the reaction constant  
-    def setReactionConstantComputingFunction(self, functionDict):          
-        a = 1#SETS THE FUNCTION WHICH COMPUTES THE REACTION CONSTANT FROM A FUNCTION NAME 
-        #DICTIONARY
+    def setReactionConstantComputingFunction(self, functionDict):
+        """method that computes the reaction constant.
+        
+           .. todo:: SETS THE FUNCTION WHICH COMPUTES THE REACTION CONSTANT FROM A FUNCTION NAME DICTIONARY 
+        """  
+        pass
 
-    # method that computes the reaction constant  
-    def getReactionConstant(self, parameters):        
-        a = 1 #RETURNS THE REACTION CONSTANT BASED ON THE TEMPERATURE AND THE REST OF THE PARAMETERS
+    def getReactionConstant(self, parameters):
+        """method that computes the reaction constant
+        
+           .. todo:: RETURNS THE REACTION CONSTANT BASED ON THE TEMPERATURE AND THE REST OF THE PARAMETERS. 
+        """  
+        pass
     
-    # sets status to 1 indication the reaction IS being used
     def active(self):
+        """sets status to 1 indication the reaction IS being used"""
         self.status=1
-    # sets status to 0 indication the reaction IS NOT being used
+        
     def passive(self):
+        """sets status to 0 indication the reaction IS NOT being used"""
         self.status=0
-    # sets id and type
-    def setId(self, id):
-        self.id=id
-    def setType(self, type):
-        self.type=type
         
-    # set the reactants
+    def setId(self, ID):
+        """sets ID and type"""
+        self.ID = ID
+        
+    def setType(self, typ):
+        """Set the type"""
+        self.type=typ
+        
     def setReactantsFromStrings(self, reactantsStrArr):
-        
+        """set the reactants"""
         for specStr in reactantsStrArr:
             if len(specStr) != 0:
                 self.species[ specStr] =  specie(specStr)
@@ -150,9 +136,8 @@ class reaction():
         
         self.nReactants = len(self.reactants)
             
-
-    # set the products
     def setProductsFromStrings(self, productsStrArr):
+        """set the products"""
 
         for specStr in productsStrArr:
             if len(specStr) != 0:
@@ -165,32 +150,41 @@ class reaction():
     def updateSpecieInReaction(self, specStr, specObj):
         self.species[specStr] = specObj
         
-    # set alpha, beta, gamma
     def setAlpha(self, alpha):
+        """set alpha"""
         self.alpha=alpha
     def setBeta(self, beta):
+        """set beta"""
         self.beta=beta
     def setGamma(self, gamma):
+        """set gamma"""
         self.gamma=gamma
-    # set src
     def setSrc(self, src):
+        """set src"""
         self.src=src
-    # set Tl, Tu
     def setTl(self, Tl):
+        """set Tl"""
         self.Tl = Tl
     def setTu(self, Tu):
+        """set Tu"""
         self.Tu = Tu
-    # set the accuracu and the refcode
     def setAccuracy(self, acc):
+        """set the accuracu and the refcode"""
         self.accuracy = acc
     def setRefCode(self, refCode):
+        """set the reference code"""
         self.refCode = refCode
  
-    def display(self, format = None ):
-
-        # methods which print the compoments of a reaction
+    def display(self, fmt = None ):
+        """display a reaction based on the input format requested.
+        
+           .. todo:: document the parameter fmt
+           
+        """
+        
+        # functions which print the compoments of a reaction
         def printStatus () : print "%d"   % self.status,
-        def printId     () : print "%04d" % self.id,
+        def printId     () : print "%04d" % self.ID,
         def printHash   () : print "%20d" % self.hash,
         def printType   () : print "%2s"  % self.type,
         def printReacts () :
@@ -283,13 +277,13 @@ class reaction():
 
             print ''
             for spec in self.reactants:
-                if spec.abun != None:
-                    print "%10s : %+-15.8e" % ( spec.str, spec.abun )
+                if spec._abun != None:
+                    print "%10s : %+-15.8e" % ( spec.str, spec._abun )
                 else:
                     print "     NA     "
             for spec in self.products:
-                if spec.abun != None:
-                    print "%10s : %+-15.8e" % ( spec.str, spec.abun )
+                if spec._abun != None:
+                    print "%10s : %+-15.8e" % ( spec.str, spec._abun )
                 else:
                     print "     NA     "
 
@@ -312,10 +306,10 @@ class reaction():
             "abun"       : printAbun}
 
 
-        if format != None:
-            fmtStrSplt = format.split(' ')
+        if fmt != None:
+            fmtStrSplt = fmt.split(' ')
             for fmtComp in fmtStrSplt:
-                action.get( strip(fmtComp) )()
+                action.get( string.strip(fmtComp) )()
             print 
         else:
             print 'NOT IMPLEMENTED YET, IMPLENT PRINTINTG THE WHOLE UMIST LINE'

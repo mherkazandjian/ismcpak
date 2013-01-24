@@ -21,7 +21,7 @@ cLight = 1.5 #arbitrary unit
 kBoltz = 1.0 #arbitrary unit
 #------------------------------
 
-restore = False
+restore = True
 #reading the whole database of line info of species from LAMBDA
 lambdaPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 reader = molData.reader(dirPath = lambdaPath)

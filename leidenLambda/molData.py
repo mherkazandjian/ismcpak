@@ -128,8 +128,8 @@ class reader():
                 
         if 'dirPath' in kwargs:
             self.set_dirPath(kwargs['dirPath'])
-            self.dataFiles = self.findFiles()
-            self.collectAllFilesInfo() 
+            self.dataFiles = self.findFiles(**kwargs)
+            self.collectAllFilesInfo(**kwargs) 
         else:
             self.dirPath = None
             """The path of the directory holding all the information about all the species"""
@@ -138,7 +138,7 @@ class reader():
         """Returns a numpy dtype holding all the information about the specie in the LMBDA database"""
         pass
 
-    def collectAllFilesInfo(self):
+    def collectAllFilesInfo(self, **kwargs):
         """Loops over all the data files in self.dirPath and collects the basic information
          
           - name of the species
@@ -152,16 +152,15 @@ class reader():
             #ignoring proccessing file that can not be processed by default
             if fPath.split('/')[-1] in self.ignoreList:
                 continue
-            """
-            if 'co@neufeld-old.dat' not in fPath:  #;;;rmove this later
-                continue                  #;;;remove this later
-            """
+
             print fPath
             #if 'test.dat' not in fPath:  #;;;rmove this later
             #    continue                  #;;;remove this later
             #input('press 1 to process the next file %s' % fPath)
             specDict = self.parseDataFile(fPath)
-            #specDict = self.cleanSpecDict(specDict)
+            if 'specie' in kwargs:
+                if kwargs['specie'] == specDict['specStr']:
+                    specDict = self.cleanSpecDict(specDict)
             self.speciesInfo += (specDict,)
             
     def cleanSpecDict(self, specDict):
@@ -437,7 +436,7 @@ class reader():
 
         return specDict 
          
-    def findFiles(self):
+    def findFiles(self, **kwargs):
         """returns a list of all the files ending with a .dat in :data:`dirPath`"""
         # getting the names of the meshes in that dir
         files = []

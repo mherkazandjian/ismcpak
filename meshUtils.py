@@ -250,11 +250,14 @@ class meshArxv():
         """The logging object which will be used to output stuff to stdout"""
         
         self.gui = None
+        self.parms_used_in_PDR_models = None
+        """a dictionary holding the parameters used in modeling the PDRs.  This is read
+        from self.dirPath/used_parms.pkl""" 
         
         #reading the used_parms.pkl file (if found) and setting the vaues read from it
-        if 'no_init_from_run_parms' in kwargs:
+        if 'no_init_from_run_parms' not in kwargs:
             self.read_used_parms_used_in_PDR_models()
-        
+
         if 'readDb' in kwargs:
             kwargs.pop('readDb')
             self.readDb( check = True)
@@ -273,6 +276,7 @@ class meshArxv():
             #setting the attributes
             self.metallicity = parms['metallicity']
             self.setupChemistry(parms['chemistry']) 
+            self.parms_used_in_PDR_models = parms 
         else:
             self.logger.debug('no used_parms.pkl file found : %s' % fpath_parms_used) 
     
@@ -1751,18 +1755,19 @@ class meshArxv():
         #setting up the gui attribute
         self.gui = self.setupGui()
 
-        # getting the interpolation function which will be used to display the 2D grids
-        self.computeAndSetInterpolationFunctions(*args, **kwargs)        
-
-        # defining and intialising the ndmesh objects which will be used
-        # for computing the grid properties and then displayed                                
-                                #xaxis    yaxis 
-        self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 ), 
-                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 )], 
-                      [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 ),
-                       ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 )] ]  
-
-        self.resPltGrids = [resGrids, resGrids] 
+        if self.parms['showGrids']:
+            # getting the interpolation function which will be used to display the 2D grids
+            self.computeAndSetInterpolationFunctions(*args, **kwargs)        
+    
+            # defining and intialising the ndmesh objects which will be used
+            # for computing the grid properties and then displayed                                
+                                    #xaxis    yaxis 
+            self.grds = [ [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 ), 
+                           ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 )], 
+                          [ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 ),
+                           ndmesh( (resGrids, resGrids), dtype=np.float64, ranges = [self.ranges[0], self.ranges[1]], fill = 0.0 )] ]  
+    
+            self.resPltGrids = [resGrids, resGrids] 
          
         # setting up a dummy mesh object to use its plotting functionalities
         self.mshTmp = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
@@ -1827,21 +1832,22 @@ class meshArxv():
         
         # plotting the grids
         #-------------------
-        # temperature grid (top left grid)
-        if self.parms['gridsInfo']['00']['show']:
-            self.show_pdr_mesh_quantity_grid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
-
-        # abundances (top left grid)
-        if self.parms['gridsInfo']['01']['show']:
-            self.showAbundancesGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
-
-        # column densities (bottom left grid)
-        if self.parms['gridsInfo']['10']['show']:
-            self.showColumnDensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
-
-        # line intensity (bottom right grid)
-        if self.parms['gridsInfo']['11']['show']:
-            self.showLineIntensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
+        if self.parms['showGrids']:
+            # temperature grid (top left grid)
+            if self.parms['gridsInfo']['00']['show']:
+                self.show_pdr_mesh_quantity_grid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
+    
+            # abundances (top left grid)
+            if self.parms['gridsInfo']['01']['show']:
+                self.showAbundancesGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
+    
+            # column densities (bottom left grid)
+            if self.parms['gridsInfo']['10']['show']:
+                self.showColumnDensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
+    
+            # line intensity (bottom right grid)
+            if self.parms['gridsInfo']['11']['show']:
+                self.showLineIntensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
         
     def onB1Down(self, event):
         """method called on the event of a mouse button down in self.fig"""
@@ -1865,17 +1871,18 @@ class meshArxv():
                 self.gui['widgets']['zSecSelector']['axes'].set_title(newTitle)
                                 
                 #for all the axes of the 2d maps
-                for panel in self.gui['maps2d'].values():
-                    #deleting the countour lines (if they are found)
-                    if 'collections' in dir(panel['contour']):
-                        for c in panel['contour'].collections:
-                            paths = c.get_paths()
-                            del paths[:]
-                        #deleting the labels
-                        for txt in panel['contour'].labelTexts:
-                            txt.set_text('')
-                    #deleting the images
-                    del panel['axes'].images[:]
+                if self.parms['showGrids']:
+                    for panel in self.gui['maps2d'].values():
+                        #deleting the countour lines (if they are found)
+                        if 'collections' in dir(panel['contour']):
+                            for c in panel['contour'].collections:
+                                paths = c.get_paths()
+                                del paths[:]
+                            #deleting the labels
+                            for txt in panel['contour'].labelTexts:
+                                txt.set_text('')
+                        #deleting the images
+                        del panel['axes'].images[:]
                     
                 self.plotThisSec() #;;; rename this to update 2D grids
                 pyl.draw()
@@ -2189,6 +2196,9 @@ class meshArxv():
 
         :param string referenceDatabasePath: a string containing the path of the 
              reference database.
+        
+        :param float64 min_gMech: If this is present, the gMech of the reference models
+          used would be this values instead of the minimum.
          
         :note: by default, the log of the quantities from the meshes are used. Only
           when the relative keyword is present, the value of the heating ratios is 
@@ -2213,56 +2223,63 @@ class meshArxv():
             try: 
                 setRelativeGmech = kwargs['relativeGmech']
             except:
-                setRelativeGmech = False
-                
+                setRelativeGmech = False                
             
             # if relativeGmech is present AND it is True
             if setRelativeGmech == True:
-                if 'referenceDatabasePath' not in kwargs:
-                    raise ValueError('missing the keyword argument "referenceDatabasePath"')
+                
+                #setting the path of the reference database
+                if 'referenceDatabasePath' in kwargs:
+                    referenceDbDirPath = kwargs['referenceDatabasePath']
+                elif 'runDirPath2' in self.parms_used_in_PDR_models:
+                    referenceDbDirPath =  self.parms_used_in_PDR_models['runDirPath2']
                 else:
-                    #computing (for the mesh points in the current database) the ratio of 
-                    #the mechanical heating to the surface heating when gmech = 0
-                    
-                    self.set_grid_qz(['','gMech/gSurface(gMech=0)'])
-                    
-                    # reading the reference archive
-                    self.logger.debug('setting up the reference archive')
-                    t0 = time()
-                    arxvRef = meshArxv( dirPath = kwargs['referenceDatabasePath'], 
-                                        metallicity = self.metallicity )
-                    arxvRef.readDb( check = True )
-                    self.logger.debug('time reading %f' % (time() - t0))
-                    arxvRef.setChemicalNetwork(self.chemNet) # assiginig the chemical network to the archive
-    
-                    #finding the minimum gMech of the reference database, and constructing
-                    #an interpolation function which returns the surface heating corresponding
-                    #to that mechanical heating rate.
+                    raise ValueError("""missing the path of the reference database. Either "referenceDatabasePath"
+                                        should be passed as a keyword or self.parms_used_in_PDR_models['runDirPath2']
+                                        should be set.""")
+
+                #computing (for the mesh points in the current database) the ratio of 
+                #the mechanical heating to the surface heating when gmech = 0
+                
+                self.set_grid_qz(['','gMech/gSurface(gMech=0)'])
+                
+                # reading the reference archive
+                self.logger.debug('setting up the reference archive')
+                t0 = time()
+                arxvRef = meshArxv(dirPath = referenceDbDirPath, readDb = True )
+                self.logger.debug('time reading %f' % (time() - t0))
+                
+                #finding the minimum gMech of the reference database, and constructing
+                #an interpolation function which returns the surface heating corresponding
+                #to that mechanical heating rate.
+                if 'min_gMech' in self.parms:
+                    min_gMech = self.parms['min_gMech']
+                else: 
                     min_gMech = np.min( np.array( 
-                                                 [mesh['hdr']['gammaMech'] for mesh in arxvRef.meshes] 
-                                                 )
+                                                [mesh['hdr']['gammaMech'] for mesh in arxvRef.meshes] 
+                                                )
                                        )
-                    
-                    gMechZero = self.grid_x.copy()
-                    #setting the values of gMech where the surface heating will be computed
-                    gMechZero[:] = np.log10(min_gMech)
-                    
-                    #getting the surface heating that the models in the current would have
-                    #from the reference database which has gmech = 0
-                    arxvRef.set_grid_qx( self.grid_qx )
-                    arxvRef.set_grid_qy( self.grid_qy )
-                    f = arxvRef.construct3DInterpolationFunction(quantity = ['therm', 'heating'], 
-                                                                 slabIdx  = 0, 
-                                                                 log10 = True,
-                                                                 grid_qz = ['hdr','gammaMech'])
-                    dataNew   = np.array( [self.grid_x, self.grid_y, gMechZero] ).T
-                    
-                    # the surface heating that the models in the current would have if the 
-                    # mechanical heating were zero
-                    gammaSurf = f(dataNew) 
-            
-                    z = np.log10(self.getQuantityFromAllMeshes( ['hdr', 'gammaMech']) )
-                    self.grid_z = np.log10(10.0**z / 10.0**gammaSurf)
+                
+                gMechZero = self.grid_x.copy()
+                #setting the values of gMech where the surface heating will be computed
+                gMechZero[:] = np.log10(min_gMech)
+                
+                #getting the surface heating that the models in the current would have
+                #from the reference database which has gmech = 0
+                arxvRef.set_grid_qx( self.grid_qx )
+                arxvRef.set_grid_qy( self.grid_qy )
+                f = arxvRef.construct3DInterpolationFunction(quantity = ['therm', 'heating'], 
+                                                             slabIdx  = 0, 
+                                                             log10 = True,
+                                                             grid_qz = ['hdr','gammaMech'])
+                dataNew   = np.array( [self.grid_x, self.grid_y, gMechZero] ).T
+                
+                # the surface heating that the models in the current would have if the 
+                # mechanical heating were zero
+                gammaSurf = f(dataNew) 
+
+                z = np.log10(self.getQuantityFromAllMeshes( ['hdr', 'gammaMech']) )
+                self.grid_z = np.log10(10.0**z / 10.0**gammaSurf)
             else:
                 # just use gMech as the 3rd axis
                 self.grid_z = np.log10( self.getQuantityFromAllMeshes(self.grid_qz) )
