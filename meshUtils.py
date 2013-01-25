@@ -716,10 +716,10 @@ class meshArxv():
                                               UMISTVER = parms['umistVer'])
         
         # reading the species to be removed from a file
-        net.removeSpecies( underAbunFile = parms['underAbunFile'] )
-        net.removeSpecies( species = parms['removeManual'] )
+        net.remove_species( underAbunFile = parms['underAbunFile'] )
+        net.remove_species( species = parms['removeManual'] )
         # reading the species number and their corresponding indies and abundances from ascii files
-        net.assignNumbersToSpecies(fileName = parms['specNumFile'])
+        net.assign_numbers_to_species(fileName = parms['specNumFile'])
         
         self.setChemicalNetwork(net) # assiginig the chemical network to the archive
             

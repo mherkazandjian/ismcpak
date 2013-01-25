@@ -14,6 +14,15 @@ class chemicalNetwork(specie, reaction):
        depend on the order the reactnats or the products appear in the reaction input file. When 
        computing the hash code, the species are picked in the increasing order as they appeat in
        the sorted string array (using the sorted function).
+       
+       The reaction types supported are those of UMIST2006. They are only used when computing the
+       reaction constants and rates. When a UMIST99 reaction network file is provided, they are 
+       assigned types bases on the reaction ID. 
+       
+       .. warning:: The user might need to check the method self.convert_rxn_line_from_U99_to_U06_format_str to
+        make sure it is done correctly in case the reaction file is customised.
+        
+        The types of reaction and their abbreviations are listed in Table-7 of the UMIST2006 paper.   
         
        .. todo::  Write a method which merges reactions with the same hashcode into one reaction 
         where in different temperature ranges different temperatures are set.
@@ -70,15 +79,15 @@ class chemicalNetwork(specie, reaction):
     def setup(self, networkFname, baseSpecies):
         """Setup all the chemical network."""
 
-        self.readNetworkFile(networkFname)   # read the database into a buffer
-        self.parseReactions()                # parse the reaction lines from the database
-        self.getUniqueSpecies(baseSpecies)   # fileter the unique species and parse them in their components
-        self.assignNumbersToSpecies()        # assingns the index of the specie in the dictionary
-        self.setReactionHashcodes()          # compute the hashcodes of the reactions
-        self.updateReactionsTypes()          # make sure reaction types are correct
-        self.checkReactionsTypes()           # make sure reaction types are correct
+        self.read_network_file(networkFname)   # read the database into a buffer
+        self.parse_reactions()                # parse the reaction lines from the database
+        self.get_unique_species(baseSpecies)   # fileter the unique species and parse them in their components
+        self.assign_numbers_to_species()        # assingns the index of the specie in the dictionary
+        self.set_reaction_hash_codes()          # compute the hashcodes of the reactions
+        self.update_reactions_types()          # make sure reaction types are correct
+        self.check_reactions_types()           # make sure reaction types are correct
          
-    def readNetworkFile(self, fileName):
+    def read_network_file(self, fileName):
         """Read and parses the UMIST 2006 or UMIST 99 reaction file (without the header) and assigns 
            the variable fileStr and counts the number of reactions in the file sets : self.fileStr
            self.nRxn.
@@ -101,7 +110,7 @@ class chemicalNetwork(specie, reaction):
         fObj.close()
         print '     Read ', self.nReactions, 'reactions'
 
-    def parseReactions(self):
+    def parse_reactions(self):
         """define rxn object list for all the reaction from the ascii database lines
            here the reactant and product objects are not set.
         """
@@ -115,12 +124,12 @@ class chemicalNetwork(specie, reaction):
         
         print 'using '+ self.umistVer + ' format...',
         for line in (self.fileStr).splitlines():
-            rxn = self.setRxnAttributes(line)    # create a new  rxn object from reaction line
+            rxn = self.set_rxn_attributes(line)    # create a new  rxn object from reaction line
             self.reactions.append(rxn)           # append the new rxn to the reactions
             
         print 'complete'
 
-    def getUniqueSpecies(self, baseSpecies):
+    def get_unique_species(self, baseSpecies):
         """Construct the the speices dict for all the species in the network self.species
            also here all the unique species in the network are put in that dictionary and
            the components of the species are also extracted
@@ -135,7 +144,7 @@ class chemicalNetwork(specie, reaction):
             for spec in rxn.species.values():
                 if spec.str not in self.species: 
                     spec.type = 1   # setting the object as a non-base specie
-                    spec.getComponents(baseSpecies)      # parsing the specie
+                    spec.get_components(baseSpecies)      # parsing the specie
                     self.species [spec.str] = spec
                                         
         self.nSpecs = len(self.species)
@@ -196,7 +205,7 @@ class chemicalNetwork(specie, reaction):
 
         print 'compelte'
 
-    def removeSpecies(self, species = None, underAbunFile = None):
+    def remove_species(self, species = None, underAbunFile = None):
         """Remove species from the network. The species strings which appear in the list are
            moved to speciesRemoved list and the reactions with the removed species are moved
            to reactionRemoved.
@@ -241,11 +250,11 @@ class chemicalNetwork(specie, reaction):
 
         self.__pstr = '     '
         self.initializeDefaultAbunBuffer()
-        self.assignNumbersToSpecies()
+        self.assign_numbers_to_species()
         
         print 'complete'
             
-    def assignNumbersToSpecies(self, fileName = None):
+    def assign_numbers_to_species(self, fileName = None):
         """Assing the self.species[:].num to their index in the dictionary and update
            these indecis in the chemical network as well.
            
@@ -286,25 +295,36 @@ class chemicalNetwork(specie, reaction):
         
         print  self.__pstr + 'finished assigning the new species numbers'
         
-        # printintg the species which did not get a number assigned to
-        i = 0
+        # getting the list species which did not get a number assigned to
+        specsWithNoNum = []
         for spec in self.species.values():
             if spec.num == None:
-                print self.__pstr + 'index of %-12s is missing in the file, it is kept as ' % spec.str, spec.num
-                i += 1
+                specsWithNoNum.append(spec.str)
                 
-        if i != 0:
-            print self.__pstr + 'A total of %d species will have no numbers' % i 
-        
-        self.mapSpeciesAbundances()
+        #printing the species with no numbers (10 per line)
+        if len(specsWithNoNum) != 0:
+            print self.__pstr + 'A total of %d species will have no numbers' % len(specsWithNoNum)
+            
+            print self.__pstr,
+            
+            for i, specStr in enumerate(specsWithNoNum):
+                print ' %s' % specStr,
+                if ((i+1) % 10) == 0:
+                    print '\n%s' % self.__pstr,
+            
+            print 
+                     
+        self.map_species_abundances()
         self.__pstr = ''        
         
-    def mapSpeciesAbundances(self):
+        
+    def map_species_abundances(self):
         """Map self.species[]._abun to self.abun, so that changing the abundace of the element
            'X' in self.species[] would change the value in self.abun[self.specie['X'].num] and 
            vise versa.
         
            .. warning::  species which do not have a number, get their abundance set to None.
+             i.e they are not mapped. 
         
         """
 
@@ -316,7 +336,7 @@ class chemicalNetwork(specie, reaction):
                 self.species[specStr]._abun = None
         print self.__pstr + 'mapped spcies abundances to the abundance array'
         
-    def setReactionHashcodes(self):
+    def set_reaction_hash_codes(self):
         """Each reaction has 7 species max involved (UMIST). In the UMIST2006 there are ~450
            species. Each specie can be represented by a 9 bit integer ( we use an unsigned integer)
            which can have a max value of 512. So each reaction can have a tag composed of 9*7=63 
@@ -349,26 +369,30 @@ class chemicalNetwork(specie, reaction):
             
         print 'complete'
 
-    def updateReactionsTypes(self): 
-        """Checks and updates the types of the reactions."""
+    def update_reactions_types(self): 
+        """Checks and updates the types of the reactions. Reactions whose types are not
+           within those of UMIST2006 and are custom types for example, get their types
+           set based on their reactants. This is done by calling the method 
+           reaction.update_type() for each reaction."""
         
         # maybe it is better if the dictonary definig the reaction types
         # based on what is in the reactants here instead of in the reaction class
         for rxn in self.reactions:
-            rxn.updateType()
+            rxn.update_type()
         print 'updated reaction types'
         
-    def checkReactionsTypes(self): 
-        """Checks and updates the types of the reactions."""
+    def check_reactions_types(self): 
+        """Checks the types of the reactions and raises an error if a reaction without 
+           a type is detected. This should be called before trying to compute constants."""
         
         for rxn in self.reactions:
             if rxn.type == '':
                 strng = 'reaction types, reaction :\n%s\n has no type set' % rxn.str
                 raise NameError(strng)
-
+        
         print 'reaction check completed...all passed.'
                     
-    def findIdenticalReactions(self):
+    def find_identical_reactions(self):
         """Finds identical reactions which have the same reactants and the same products
            and returns a tuple holding the reaction indecis ( (ind1,ind2), (ind1,ind2)...).
         """
@@ -414,7 +438,7 @@ class chemicalNetwork(specie, reaction):
                 
         return sets
     
-    def setAbundances(self, fromFile = None, fromArray = None):
+    def set_abundances(self, fromFile = None, fromArray = None):
         """Set the abundances of the species from an ascii input file or from a numpy array. 
            The file contains one abundance on each line. each value will be set to the corresponding
            vlaue in self.abun at the index corresponding to the line number (staring with index 0). 
@@ -422,7 +446,7 @@ class chemicalNetwork(specie, reaction):
            array should have the same length as the species with numbers. 
            
            .. warning::  since self.specie[]._abun are mapped to self.abun, in chanfing all the values
-             of the array the method self.copyAbundancesFromArray( array ) should be used, which
+             of the array the method self.copy_abundances_from_array( array ) should be used, which
              sets the values one by one, instead of replacing self.abun with another array when
              self.abun = newAbun which removes the mapping.
         """
@@ -439,9 +463,9 @@ class chemicalNetwork(specie, reaction):
             print 'file : %s' % fromArray            
             newAbunArr = fromArray
         
-        self.copyAbundancesFromArray( newAbunArr )
+        self.copy_abundances_from_array( newAbunArr )
 
-    def copyAbundancesFromArray(self, array):
+    def copy_abundances_from_array(self, array):
         n = len(array)
         self.abun[0:n, 0] = array
 
@@ -450,27 +474,44 @@ class chemicalNetwork(specie, reaction):
 
         print self.fileStr
 
-    def printReactions(self, rxnIds = None, fmt = None ):
-        """Prints the reaction file without the header. 
+    def print_reactions(self, rxnIDs = None, fmt = None ):
+        """Prints the reaction file without the header. NOTE: this should not be
+           confused with reaction index (i.e the position in the self.reactions[] list). 
         
-        :param int rxnIds: an integer list of the reaction indecies to be printed.
+        :param int rxnIDs: an integer or an integer list (or numpy array) of reaction IDs to be printed.
         
-        :param string fmt: a string for the format of the reactions (see reaction object doc).
+        :param string fmt: a string for the format of the reactions (see reaction object doc). IF
+           this is not passed, a default format of 'type rxn' is used. 
         
         """
-
-        if rxnIds == None: # print all the reactions
+        
+        if fmt == None:
+            fmt = 'type rxn'
+            
+        if rxnIDs == None: # print all the reactions
             print 'total number of reactions = ', len(self.reactions)
             for rxn in self.reactions:
-                rxn.display( fmt = format )
+                rxn.display(fmt = fmt)
         else: # print reactions with specified ids
-            for rxnId in rxnIds:
-                for rxn in self.reactions:
-                    if rxnId == rxn.ID:
-                        rxn.display(  fmt = fmt )
-                        break
+                        
+            #if rxnIDs is just an interger, putting it into a list
+            if hasattr(rxnIDs, '__iter__') == False:
+                rxnIDs = numpy.array([rxnIDs])
+            
+            for rxnID in rxnIDs:
+                
+                found = False
 
-    def printSpecies(self, removed = None):
+                for rxn in self.reactions:
+                    if rxnID == rxn.ID:
+                        found = True 
+                        rxn.display(fmt = fmt)
+                        break
+            
+                if found == False:
+                    raise ValueError('No reaction found with ID = %d' %rxnID)
+                    
+    def print_species(self, removed = None):
         """print all the species"""
         
         if removed == None:
@@ -481,7 +522,7 @@ class chemicalNetwork(specie, reaction):
         for spec in specs: 
             spec.show()
             
-    def getSpecieIndex(self, specStr):
+    def get_specie_index(self, specStr):
         """Returns the index of the specie which matches the input string."""
 
         if specStr in self.species: #i = 0
@@ -490,22 +531,24 @@ class chemicalNetwork(specie, reaction):
             print 'Specie ' + specStr + ' not found'
             return None
 
-    def setRxnAttributes(self, lineStr):
+    def set_rxn_attributes(self, lineStr):
         """Pasrse the UMIST reaction line and return the reaction object."""
 
         if self.umistVer == 'umist06':
-            lineParsed = lineStr.split(',')
+            rxnStr06 = lineStr
         
         if self.umistVer == 'umist99':
-            u06Str = self.convertRxnLineToU06FormatStr(lineStr)
-            lineParsed = u06Str.split(',')
-            
+            rxnStr06 = self.convert_rxn_line_from_U99_to_U06_format_str(lineStr)
+        
         rxn = reaction()
-        rxn.setAllFromRxnStrArr( lineParsed )
+        rxn.set_all_attr_from_rxn_str(rxnStr06)
         return rxn
 
-    def convertRxnLineToU06FormatStr( self, line ):
-        """Converts a umist99 reaction string line to one as it would be formatted in the umist06 database."""  
+    def convert_rxn_line_from_U99_to_U06_format_str( self, line ):
+        """Converts a umist99 reaction string line to one as it would be formatted in the umist06
+           database. Reactions withs IDs >= 4108 and <= 4113 are assigned the type SU short for  
+           Sundries.
+        """  
         
         # function which returns the type of the reaction based on its ID (table 5 in umist99 papper)
         def getReactionType( rxnID ):
@@ -537,7 +580,7 @@ class chemicalNetwork(specie, reaction):
             if rxnID >= 4078 and rxnID <= 4107:
                 return 'TR'
             if rxnID >= 4108 and rxnID <= 4113:
-                return '-'
+                return 'SU'
 
             return ''
         
@@ -600,9 +643,11 @@ class chemicalNetwork(specie, reaction):
 
         return newLine
     
-    def filterReactions(self, withReacts = None, withProds = None, show = None, **kwargs):
-        """Method that returns the indicies of the reactions containing certain reactants
-           or products or both. Either one of those two keywords should be provided.
+    def filter_reactions(self, withReacts = None, withProds = None, withType = None, 
+                               show = None, **kwargs):
+        """Method that returns the IDs (as a numpy int32 array) of the reactions containing certain reactants
+           or products or both. Either one of those two keywords should be provided. The
+           matching is done using &&, so all the entries must be present in the reaction.
            
            :param withReacts: a string or a list of strings holding the reactants to be used as a filter.
            
@@ -611,31 +656,37 @@ class chemicalNetwork(specie, reaction):
            :param bool show: if this is True, the filtered reactions are printed. If it is False (or None). 
               only the ids are returned. By default *kwargs* is passed to the function which prints the reactions,
               so the format of the printed reactions can be determined by passing the format
-              argument which internallty is passed to self.printReactions.
+              argument which internallty is passed to self.print_reactions.
+           
+           :param string withType: the reaction type against which filtering will be done.           
            
            for example:
            
            .. code-block:: python
 
                #filter with prodcuts only
-               inds = filterReactions(withProds = 'H2')
+               inds = filter_reactions(withProds = 'H2')
            
                #filter with reactants only
-               inds = filterReactions(withReacts = ['H','CN-'])
+               inds = filter_reactions(withReacts = ['H','CN-'])
            
                #filter with some reactants and products
-               inds = filterReactions(withReacts = ['H','CN-'], withProds = ['HCN','e-'])
+               inds = filter_reactions(withReacts = ['H','CN-'], withProds = ['HCN','e-'])
 
                #filter with some reactants and products
-               inds = filterReactions(withReacts = ['H','CN-'], withProds = ['HCN','e-'], show = True)
+               inds = filter_reactions(withReacts = ['H','CN-'], withProds = ['HCN','e-'], show = True)
 
                #filter with some reactants and products
-               inds = filterReactions(withReacts = ['H','CN-'], withProds = ['HCN','e-'], 
+               inds = filter_reactions(withReacts = ['H','CN-'], withProds = ['HCN','e-'], 
                                       show = True, format = 'type rxn')
                
         """
         
-        rxnIndsFound = []
+        rxnIDsFound = []
+        
+        #checking if withType is of the correct type
+        if hasattr(withType, '__iter__'):
+            raise ValueError('withType can not be a list or an iterable object, it must be a string.')
         
         #checking for the type of the input parameter of the reactants
         if hasattr(withReacts, '__iter__'):
@@ -648,7 +699,7 @@ class chemicalNetwork(specie, reaction):
             lookForProds = withProds
         else:
             lookForProds = [withProds] 
-        
+                
         for rxn in self.reactions:
 
             inReacts = True
@@ -669,97 +720,174 @@ class chemicalNetwork(specie, reaction):
                         inProds = inProds and True
                     else:
                         inProds = inProds and False
+            
+            #checking for the type
+            if withType != None:
+                if rxn.type == withType:
+                    hasType = True
+                else:
+                    hasType = False
+            else:
+                hasType = True
                 
-
-            if inReacts and inProds:
-                rxnIndsFound.append( rxn.ID )
+            #appending the reaction ID to a list
+            if inReacts and inProds and hasType:
+                rxnIDsFound.append( rxn.ID )
 
         if show == True:
-                self.printReactions(rxnIndsFound, **kwargs)
+                self.print_reactions(rxnIDsFound, **kwargs)
                 
-        return rxnIndsFound
+        return numpy.array(rxnIDsFound)
 
-    def computeReactionConstants(self):
-        """Compute the reaction constants from the state of the gas in the environment.
+    def compute_rxn_constants(self):
+        """Compute the reaction constants from the state of the gas in the environment. The
+           equation used in computing the rate is based on the type of the reaction (reaction.type).
+           In case a custom reaction is added make sure to modify this method to compute the 
+           reaction constant correctly.
+           
+           .. note:: The attributes self.T, self.Av and self.albedo must be set before call this method.
+           
+           .. todo:: eventually this should be done in the reaction calss, where the state of the 
+            environment is passed as an argument which is used to compute the constant.
+            
+           .. todo:: document the actual equations (in latex) for the reaction constants. As in, reaction
+             type and the equation for it.
 
-           .. todo::  CONTINUE FROM HERE!!!!!!!! DO IT THE SAME WAY IT IS DONE IN THE PDR CODE THINK OF A MORE ELEGANT WAY AFTERWARDS 
         """
-        
-        def computePhotoRxnCnst(rxn):
-            return rxn.alpha * numpy.exp( - rxn.gamma * self.Av )
-        def computeCrpRxnCnst(rxn):
-            return rxn.alpha
-        def computeRrpPhotonRxnCnst(rxn):
-            return rxn.alpha * ((self.T / 300.0)**rxn.beta) * rxn.gamma / ( 1.0 - self.albedo )
-        def computeTwoBodyRxnRate(rxn):
-            return rxn.alpha * ((self.T / 300.0)**rxn.beta) * numpy.exp( - rxn.gamma / self.T ) 
 
-        reactionTypes = { 'PHOTON'   : computePhotoRxnCnst,
-                          'CRP'      : computeCrpRxnCnst,
-                          'CRPHOT'   : computeRrpPhotonRxnCnst,
-                          'twoBody'  : computeTwoBodyRxnRate }
-        
+        #definitng the functions which compute the reaction constants. The general
+        #signature of those functions should be as follows:
+        #    compute_bla_bla_bla_cnst(rxn, state)
+        #where state is the dict which holds the parameters used to compute the rate
+        #in the functions.
+        def compute_photo_rxn_cnst(rxn, state):
+            return rxn.alpha * numpy.exp( - rxn.gamma * state['Av'] )
+        def compute_CP_rxn_cnst(rxn, state):
+            return rxn.alpha
+        def compute_CR_rxn_cnst(rxn, state):
+            return rxn.alpha * ((state['T'] / 300.0)**rxn.beta) * rxn.gamma / ( 1.0 - state['albedo'] )
+        def compute_nbody_rxn_cnst(rxn, state):
+            return rxn.alpha * ((state['T'] / 300.0)**rxn.beta) * numpy.exp( - rxn.gamma / state['T'] ) 
+
+        if self.T == None or self.Av == None or self.albedo == None:
+            raise ValueError('values of attributes of T, Av and albedo are not set.')
+                
+        #a dictonary which sets the function for computing the reaction
+        #constant based on the reaction type (see table-7 in umist06 paper
+        #and table-5 in umist99)
+        compute_cst = {
+                       #two or three body reactions
+                       'IN': compute_nbody_rxn_cnst, #umist06
+                       'NN': compute_nbody_rxn_cnst, #umist06
+                       'CE': compute_nbody_rxn_cnst, #umist06
+                       'II': compute_nbody_rxn_cnst, #umist06
+                       'DR': compute_nbody_rxn_cnst, #umist06
+                       'RR': compute_nbody_rxn_cnst, #umist06
+                       'AD': compute_nbody_rxn_cnst, #umist06
+                       'RA': compute_nbody_rxn_cnst, #umist06
+                       'CD': compute_nbody_rxn_cnst, #umist06
+                       'CI': compute_nbody_rxn_cnst, #umist06
+                       'IM': compute_nbody_rxn_cnst, #umist06
+                       'CL': compute_nbody_rxn_cnst, #umist06
+                       'TR': compute_nbody_rxn_cnst, #umist99
+                       'SU': compute_nbody_rxn_cnst, #umist99 (Sundries)
+                       'NB': compute_nbody_rxn_cnst, #general type (NBODY reactions)
+                       #photoprocess
+                       'PH': compute_photo_rxn_cnst, #umist06
+                       #cosmic ray photon (CRP)
+                       'CP': compute_CP_rxn_cnst,    #umist06
+                       #cosmic ray photon (CRPHOT)
+                       'CR': compute_CR_rxn_cnst,    #umist06
+                       } 
+
+        #the state of the environment (gas)
+        state = {'Av':self.Av, 'T':self.T, 'albedo':self.albedo}
+                
         # it might be a good idea to put a check if
         # temperature,A_v are set...         
         for rxn in self.reactions:
-            id = rxn.ID
-            print id
+            rxn.cst = compute_cst[rxn.type](rxn, state)
             
-    def computeRates(self):
-        """Compute the reaction constants and rates assuming all the abundances are set
-           adapted to new variables but need to check it!!!!
+    def compute_rxn_rates(self):
+        """Compute the reaction rates assuming all the abundances are set and the reaction
+           constants are already computed. 
+           
+           ..warning:: The rates are computed by multiplying the reaction constant with the
+            DENSITY of all the reactants.  The reactants which have an abundance of None are
+            skipped (this is useful for the reactions which have CRP, PHOTON, M and CRPHOT
+            as reactants.  So in case custom reactions are added, there is a caveat where
+            if a reaction includes any of the 4 mentioned 'species' in addition to a thrid
+            reactant the rate might be computed incorrectly. For example, a reaction like : 
+            
+                    CO + PHOTON + XYZ ->  ....
+                    
+            would have the rate computed as : rxn.cst * density(CO) * density(XYZ)
+            which might not be what we want to do.
         """
 
         for rxn in self.reactions:
-            
-            rxn.rate = rxn.cst
-            # use a dictionary for the types of reactions instead 
-            # of if/else statments
-            
+
             reactants = rxn.reactants
             species   = rxn.species
-            
-            # compute the rate for reactions involving a photon
-            if 'PHOTON' in rxn.reactants:
-                rxn.rate *= (self.nDens * species[reactants[0]].abun())
-            else:
-                # compute the rate for reactions involving CRP
-                if 'CRP' in rxn.reactants:
-                    rxn.rate *= self.nDens * species[reactants[0]].abun()
-                else:
-                    # compute the constant for reactions involving CRPHOTON
-                    if 'CRPHOTON' in rxn.reactants:
-                            rxn.rate *= self.nDens * species[reactants[0]].abun()
-                    else:
-                        # compute the constant for two body reactions
-                        for specStr in rxn.reactants:
-                            rxn.rate *= self.nDens * species[specStr].abun()
 
-    def sortRxnsDecreasingRates(self, rxnIds):
-        """Sort the reactions with decreasing absolute rates adapted to new variables but need to check it!!!!
-           adapted to new variables but need to check it!!!!
+            
+            #mutiplyuing the reaction constant with the density of the first reactant
+            #this is always the case for all the reactions including the PH, CP and CR ones. 
+            rate = rxn.cst * (self.nDens * species[reactants[0]].abun())
+
+            #if the reaction is not a PH or CP or CR, the other reactants also must
+            #be taken into account in computing the rate          
+            # compute the rate for reactions involving a photon
+            for specStr in rxn.reactants:
+                abun = species[specStr].abun()
+                 
+                if abun != None:
+                    rate *= (self.nDens * abun)
+                
+            rxn.rate = rate
+
+    def sort_rxns_decreasing_rates(self, rxnIDs):
+        """Sort the reactions with decreasing absolute rates.
         """
+        
         rates = []
         ids   = []
 
-        for rxnId in rxnIds:
+        for rxnId in rxnIDs:
             for rxn in self.reactions:
                 if rxnId == rxn.ID and rxn.rate != None:
                     rates.append( rxn.rate )
                     ids.append( rxn.ID )
-
-        def sortIndices( data ):
-            return sorted( range(len(data)), key = data.__getitem__, reverse=True)
-
-        inds = sortIndices( rates )
-
-        idsSorted = []
-        for i in inds:
-            idsSorted.append( ids[i] )
-
-        return idsSorted
-
-    def setCloudParms(self, T, zeta, Av, albedo, nDens, G0):
+        
+        #sorting the reaction with decreasing rates
+        rates = numpy.abs(numpy.array(rates))
+        ids   = numpy.array(ids)
+        
+        inds  = numpy.argsort(rates)
+        idsSorted = ids[inds]
+        
+        return idsSorted[::-1]
+    
+    def get_unique_rxn_types(self):
+        """Returns a dict holding the type and the counts of the available
+           reactions types in the network"""
+        
+        rxnTypes = {}
+        
+        for rxn in self.reactions:
+            
+            if rxn.type in rxnTypes: 
+                rxnTypes[rxn.type] += 1
+            else:
+                rxnTypes[rxn.type] = 1
+            
+        return rxnTypes
+        
+    def set_environment_state(self, T = None, zeta = None, Av = None, 
+                                    albedo = None, nDens = None, G0 = None):
+        """This method is used to set the properties of the environment, mainly needed
+           to compute the reaction constants and rates.
+        """ 
         self.setGasTemperature(T)
         self.setCrRate(zeta)
         self.setAlbed(albedo)

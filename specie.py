@@ -39,17 +39,15 @@ class specie():
     def show(self):
         """method that prints the string representation of the specie."""
 
-
-        if self.num != None:
-            print 'num = %04d ' % self.num,
-            print '%-12s charge = %+-d  type = %+-d _abun = %+-e' % (self.str, self.charge, self.type, self.abun() ),
-        else:
-            print 'num = NA   ',   
-            print '%-12s charge = NA  type = %+-d _abun = NA' % (self.str, self.type),
-
+        chargeStr = '%+-d' % self.charge if self.charge != None else 'NA'
+        numStr    = '%04d' % self.num if self.num != None else '%-4s' % 'NA'
+        typeStr   = '%+-d' % self.type if self.type != None else 'NA'
+        abunStr   = '%+-.2e' % self.abun() if self.abun() != None else '%-9s' % 'NA'
+        
+        print 'num = %s %-10s charge = %s type = %s abun = %s elements = ' % (numStr, self.str, chargeStr, typeStr, abunStr),
         print self.comp
-
-    def getComponents(self, baseSpec):
+        
+    def get_components(self, baseSpec):
         """Method that parses the components of species by counting the elements in each specie
            make sure baseSpec has the species with String in a decreasing order in length
            (except for the charge for example e-), i.e in this order longest string names ( CRPHOTON, PHOTON, CRP)

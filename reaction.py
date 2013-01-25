@@ -10,7 +10,7 @@ class reaction():
        .. todo:: write a method which checks if the reaction is balanced or not
     """
     def __init__(self):
-        self.str = ''
+        self.str = ''  #: The string representation of the reaction
         self.status = -1
         self.ID   = -1
         self.hash = numpy.uint64(0)
@@ -43,16 +43,19 @@ class reaction():
         #--------------
         self.refCode = ''
 
-    def setAllFromRxnStrArr(self, rxnStr):
+    def set_all_attr_from_rxn_str(self, rxnStr):
         """set all the attributes from the string array of the reaction line"""
 
         self.str = rxnStr
+        
+        rxnStr = rxnStr.split(',')
+        
         self.active()
         self.setId  (numpy.int32(rxnStr[0]))
         self.setType(rxnStr[1])
         
-        self.setReactantsFromStrings([rxnStr[2], rxnStr[3], rxnStr[4]])
-        self.setProductsFromStrings([rxnStr[5], rxnStr[6], rxnStr[7], rxnStr[8]])
+        self.set_reactants_from_strings([rxnStr[2], rxnStr[3], rxnStr[4]])
+        self.set_products_from_strings([rxnStr[5], rxnStr[6], rxnStr[7], rxnStr[8]])
         self.setAlpha(numpy.float64(rxnStr[9]))
         self.setBeta(numpy.float64(rxnStr[10]))
         self.setGamma(numpy.float64(rxnStr[11]))
@@ -65,7 +68,7 @@ class reaction():
         self.setAccuracy(rxnStr[15])
         self.setRefCode(rxnStr[16])
 
-    def updateType(self):
+    def update_type(self):
         """if CUSTOM reactions are added to the reaction file, sometimes the type 
            of the reaction is missing. Here, the type of the reaction is set based
            on what is in the reactants. It is set to CP is it is a CRP reaction,
@@ -97,17 +100,19 @@ class reaction():
                         #print 'setting reaction type to default'
                         self.type = defualtType
 
-    def setReactionConstantComputingFunction(self, functionDict):
+    def set_rxn_cst_func(self, functionDict):
         """method that computes the reaction constant.
         
-           .. todo:: SETS THE FUNCTION WHICH COMPUTES THE REACTION CONSTANT FROM A FUNCTION NAME DICTIONARY 
+           .. todo:: SETS THE FUNCTION WHICH COMPUTES THE REACTION CONSTANT FROM A FUNCTION NAME DICTIONARY
+           .. warning:: not implmented yet. 
         """  
         pass
 
-    def getReactionConstant(self, parameters):
+    def get_reaction_constant(self, parameters):
         """method that computes the reaction constant
         
-           .. todo:: RETURNS THE REACTION CONSTANT BASED ON THE TEMPERATURE AND THE REST OF THE PARAMETERS. 
+           .. todo:: RETURNS THE REACTION CONSTANT BASED ON THE TEMPERATURE AND THE REST OF THE PARAMETERS.
+           .. warning:: not implemented yet 
         """  
         pass
     
@@ -127,7 +132,7 @@ class reaction():
         """Set the type"""
         self.type=typ
         
-    def setReactantsFromStrings(self, reactantsStrArr):
+    def set_reactants_from_strings(self, reactantsStrArr):
         """set the reactants"""
         for specStr in reactantsStrArr:
             if len(specStr) != 0:
@@ -136,7 +141,7 @@ class reaction():
         
         self.nReactants = len(self.reactants)
             
-    def setProductsFromStrings(self, productsStrArr):
+    def set_products_from_strings(self, productsStrArr):
         """set the products"""
 
         for specStr in productsStrArr:
@@ -147,7 +152,7 @@ class reaction():
         self.nProducts = len(self.products)
         self.nSpecs = self.nReactants + self.nProducts
     
-    def updateSpecieInReaction(self, specStr, specObj):
+    def update_specie_in_reaction(self, specStr, specObj):
         self.species[specStr] = specObj
         
     def setAlpha(self, alpha):
@@ -181,7 +186,7 @@ class reaction():
            .. todo:: document the parameter fmt
            
         """
-        
+
         # functions which print the compoments of a reaction
         def printStatus () : print "%d"   % self.status,
         def printId     () : print "%04d" % self.ID,
@@ -267,7 +272,11 @@ class reaction():
         def printTrng   () : print "|%-5d %-5d|" % (self.Tl, self.Tu), 
         def printAcc    () : print " %s " % ( self.accuracy ),
         def printRef    () : print " %s " % ( self.refCode ),
-        def printCst    () : print " %+-15.8e" % ( self.cst ),
+        def printCst    () :
+            if self.cst == None:
+                print "    NA   ",  
+            else:
+                print " %+-15.8e" % ( self.cst ),
         def printRate   () :
             if self.rate != None:
                 print " %+-15.8e" % ( self.rate ),
@@ -286,31 +295,34 @@ class reaction():
                     print "%10s : %+-15.8e" % ( spec.str, spec._abun )
                 else:
                     print "     NA     "
-
-
+                    
+        def printStr():
+            print self.str
+            
         action = {
-            "status"     : printStatus,
-            "id"         : printId,
-            "hash"       : printHash,
-            "type"       : printType,
-            "reacts"     : printReacts,
-            "prods"      : printProds,
-            "rxn"        : printRxn,
-            "rxnNumeric" : printRxnNumeric,
-            "abg"        : printABG,
-            "trng"       : printTrng,
-            "acc"        : printAcc,
-            "ref"        : printRef,
-            "cst"        : printCst, 
-            "rate"       : printRate,
-            "abun"       : printAbun}
-
-
-        if fmt != None:
+                 "status"     : printStatus,
+                 "id"         : printId,
+                 "hash"       : printHash,
+                 "type"       : printType,
+                 "reacts"     : printReacts,
+                 "prods"      : printProds,
+                 "rxn"        : printRxn,
+                 "rxnNumeric" : printRxnNumeric,
+                 "abg"        : printABG,
+                 "trng"       : printTrng,
+                 "acc"        : printAcc,
+                 "ref"        : printRef,
+                 "cst"        : printCst, 
+                 "rate"       : printRate,
+                 "abun"       : printAbun,
+                 "str"        : printStr, 
+            }
+        
+        if fmt != None:    
             fmtStrSplt = fmt.split(' ')
             for fmtComp in fmtStrSplt:
-                action.get( string.strip(fmtComp) )()
+                action[fmtComp.strip()]()
             print 
         else:
-            print 'NOT IMPLEMENTED YET, IMPLENT PRINTINTG THE WHOLE UMIST LINE'
+            print self.str
         
