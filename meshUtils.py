@@ -65,6 +65,19 @@ class meshArxv():
       For a mesh number i, the checkNum_i should be the same as the i^th entry 
       in the info array offset...i.e chechNum = infoAll[i]['info'][2] 
       
+      features:
+      
+          - cliking on the panel of the temperature, sets the Av and gasT to the chemical
+            network of the self.mshTmp object (which is the same as self.chemNet). Once
+            those are set, the reactions can be examined, for example :
+              
+            .. code-block:: python
+              
+                ids = net.filter_reactions(withType='CP', 
+                                           show=True,  
+                                           fmt='id type rxn abg cst rate', 
+                                           sort = True)
+          
       :TODO: modify such that it can handle models with one slab only (the surface slab).
       
       see test_writeReadArxv.py for an example
