@@ -10,19 +10,22 @@ G0       = 10**5
 zeta     = 5e-17
 albedo   = 0.6
 #--------------------------------------
-specAbunFname = 'data/abun.out'
 rxnFile       = 'data/rate99Fixed.inp'
 version       = 'umist99'
 
 #rxnFile  = 'data/RATE06.txt'
 #version  = 'umist06'
+
+speciesNums      = 'data/species.inp'
+specAbunFname    = 'data/abun.out'            #file containing the abundances in the same ordfer of speciesNumAndName.inp 
+underAbunFile    = 'data/underabundant.inp'   #rxns with those species are scratched (moved to the removed list)
+manualRemoveList = ['13CH3']                  #rxns with those species are scratched (moved to the removed list)
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 
 baseSpecies = __import__('baseSpeciesDefault')
 baseSpecs = baseSpecies.baseSpecies()
-
 
 net = chemicalNetwork(rxnFile, baseSpecs, UMISTVER = version)
 
@@ -63,19 +66,15 @@ print "index H = %d, abun H = %e (from net.species['H'])" % (net.species['H'].nu
 
 #assigning new numbers to the species from a file listing the species numbers and strings
 print '------------------------------------------------------------------------------' 
-net.assign_numbers_to_species(fileName = 'data/speciesNumAndName.inp')
+net.assign_numbers_to_species(fileName = speciesNums)
 # reading the species to be removed from a file
-net.remove_species( underAbunFile = 'data/underabundant.inp' )
+net.remove_species( underAbunFile = underAbunFile)
+#removing a specie manually from the network
+net.remove_species( species = manualRemoveList )
 #re-assign numbers to species(this is not neccessary, just to check if 
 #there are species which do not have a number and that remove_species
 #does what is supposed to do 
-net.assign_numbers_to_species(fileName = 'data/speciesNumAndName.inp')
-#removing a specie manually from the network 
-net.remove_species( species = ['13CH3'] )
-#re-assign numbers to species(this is not neccessary, just to check if 
-#there are species which do not have a number and that remove_species
-#does what is supposed to do 
-net.assign_numbers_to_species(fileName = 'data/speciesNumAndName.inp')
+net.assign_numbers_to_species(fileName = speciesNums)
 
 #setting the abundances from a file (after this, all the species in the 
 #network (being used [not the one which was read since we modified it
@@ -90,9 +89,7 @@ net.compute_rxn_constants()
 net.compute_rxn_rates()
 
 #printing all the reactions involving a CRP (with rates and rxn constants)
-idsCP = net.filter_reactions(withType='CP', show=True, fmt='id type rxn abg cst rate')
 print 'reactions of type CP with decreasing reaction rates'
-idsCP_sorted = net.sort_rxns_decreasing_rates(idsCP)
-net.print_reactions(idsCP_sorted, fmt='id type rxn abg cst rate')
+idsCP = net.filter_reactions(withType='CP', show=True, fmt='id type rxn abg cst rate', sort = True)
 
 print 'done'

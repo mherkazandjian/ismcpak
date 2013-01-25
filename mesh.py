@@ -19,12 +19,16 @@ class mesh( ):
             m.data['hdr']  # dtype defined in self.headerFormat()
             m.data['hdr']['version']
             m.data['hdr']['G0']
-            m.data['hdr']['remaining tags in self.headerFormat()']
+            m.data['hdr']['nGas']
+            m.data['hdr']['gammaMech']  
+            m.data['hdr']['nSteps']
+            m.data['hdr']['nSpecs']
             
             m.data['state']  # dtype defined in self.stateFormat()
-            m.data['state']['gasT']
-            m.data['state']['dustT']
-            m.data['state']['remaining tags in self.stateFormat()']
+            m.data['state']['gasT']    # shape = (nSteps)
+            m.data['state']['dustT']   # shape = (nSteps)
+            m.data['state']['Av']      # shape = (nSteps)
+            m.data['state']['abun']    # shape = (nSpecs, nSteps)
             
             m.data['therm'] # dtype defined in self.thermoFormat()
             m.data['therm']['heating'] 
@@ -340,15 +344,24 @@ class mesh( ):
         self.axs     = axObj
         self.figInit = 1
         
-    def setupFigures(self):
+    def setupFigures(self, plot_Av_range = None):
+        """Setup the ranges, labels...etc..for the plots.
         
+           :param list plot_Av_range: a list holding the (min, max) of the x axis.  
+        """
+        
+        if plot_Av_range == None:
+            plot_x_range = [0, 20]
+        else:
+            plot_x_range = plot_Av_range
+            
         if self.figInit == 0:
             self.setFigureObjects()
             
         # subplot 0,0        
         self.plt00tgasPlt,  = self.axs[0,0].semilogy([1],  [1], 'r' )
         self.plt00tdustPlt, = self.axs[0,0].semilogy([1],  [1], 'b' )
-        self.axs[0,0].set_xlim(0, 30)
+        self.axs[0,0].set_xlim(plot_x_range[0], plot_x_range[1])
         self.axs[0,0].set_ylim(1, 100000)
         self.axs[0,0].set_ylabel('$T(K)$')
         self.axs[0,0].text(0.4, 1e3, '$T_{gas}$' , color='r')
@@ -364,7 +377,7 @@ class mesh( ):
         self.plt01Spec3Plt, = self.axs[0,1].semilogy([1],  [1], 'b' )
         self.plt01Spec4Plt, = self.axs[0,1].semilogy([1],  [1], 'c' )
         self.plt01Spec5Plt, = self.axs[0,1].semilogy([1],  [1], 'y' )
-        self.axs[0,1].set_xlim(0, 20.0)
+        self.axs[0,1].set_xlim(plot_x_range[0], plot_x_range[1])
         self.axs[0,1].set_ylim(1e-12, 2)
         self.axs[0,1].text(0.4, 1e-10, '$H^+$' , color='r')
         self.axs[0,1].text(0.4, 1e-9 , '$H$'   , color='g')
@@ -396,7 +409,7 @@ class mesh( ):
         self.plt10Spec2Plt, = self.axs[1,0].semilogy([1],  [1], 'g' )
         self.plt10Spec3Plt, = self.axs[1,0].semilogy([1],  [1], 'b' )
         self.plt10Spec4Plt, = self.axs[1,0].semilogy([1],  [1], 'c' )
-        self.axs[1,0].set_xlim(0, 20)
+        self.axs[1,0].set_xlim(plot_x_range[0], plot_x_range[1])
         self.axs[1,0].set_ylim(1e-12, 2)
         self.axs[1,0].text(0.4, 1e-11, '$O$'   , color='c')
         self.axs[1,0].text(0.4, 1e-10, '$C^+$' , color='r')
@@ -409,7 +422,7 @@ class mesh( ):
         self.plt11Spec1Plt, = self.axs[1,1].semilogy([1],  [1], 'r' )
         self.plt11Spec2Plt, = self.axs[1,1].semilogy([1],  [1], 'g' )
         self.plt11Spec3Plt, = self.axs[1,1].semilogy([1],  [1], 'b' )
-        self.axs[1,1].set_xlim(0, 20)
+        self.axs[1,1].set_xlim(plot_x_range[0], plot_x_range[1])
         self.axs[1,1].set_ylim(1e-12, 2)   
         self.axs[1,1].text(0.4, 1e-10, '$HCN$'  , color='r')
         self.axs[1,1].text(0.4, 1e-9 , '$HNC$'  , color='g')
@@ -422,7 +435,7 @@ class mesh( ):
     def plot(self):
         
         if self.chemNet == None:
-            strng = "Error : chemical networ object not set." 
+            strng = "Error : chemical network object not set." 
             raise NameError(strng)
         else:
             chemNet = self.chemNet

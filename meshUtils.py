@@ -1700,8 +1700,7 @@ class meshArxv():
                 tick.label1On = False
                 tick.label2On = False
 
-        # the axes to plot in the 3D grid (default axes are n,G0,gmech) showing the points
-        # where models are present in the database
+        # the axes to plot in the mesh stuff as a function of AV.
         AV = {}
         #-----------------------------------------------------------------------------------
         left  = 0.07
@@ -1777,9 +1776,8 @@ class meshArxv():
                                                         [self.gui['AV']['10']['axes'],self.gui['AV']['11']['axes']]
                                                         ])
                                      )
-        self.mshTmp.setupFigures()
-        self.mshTmp.set_chemNet( self.chemNet )
-        self.mshTmp.set_metallicity( self.metallicity )
+        self.mshTmp.setupFigures(plot_Av_range = self.parms['meshPltAvRng'])
+        self.mshTmp.set_metallicity(self.metallicity)
 
         # plotting all the points in the archive in 3D
         self.plot_3D_grid_points(figure = self.gui['figure'], 
@@ -1801,7 +1799,7 @@ class meshArxv():
         self.gui['widgets']['zSecSelector']['pointsUnique'].set_ydata(self.grid_z_unique*0.0 + 0.5)
 
         # attaching mouse click event to fig 1
-        cid = self.gui['figure'].canvas.mpl_connect('button_press_event', self.onB1Down)
+        cid = self.gui['figure'].canvas.mpl_connect('button_press_event', self.on_b1_down)
         
         self.plotThisSec()
         
@@ -1849,8 +1847,10 @@ class meshArxv():
             if self.parms['gridsInfo']['11']['show']:
                 self.showLineIntensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
         
-    def onB1Down(self, event):
-        """method called on the event of a mouse button down in self.fig"""
+    def on_b1_down(self, event):
+        """method called on the event of a mouse button down in self.fig. See self.setupGui()
+           for the layout of the window.
+        """
        
         ti = time()
 
@@ -1859,9 +1859,11 @@ class meshArxv():
         
         if event.button == 1:
 
+            clickedInAxes = False
+            
             # getting the value of the section in z to display
             if event.inaxes is self.gui['widgets']['zSecSelector']['axes']:
-                
+                clickedInAxes = True
                 # setting the section closest to the data available
                 inds = np.argmin(np.fabs( self.grid_z - xd ) )
                 self.pltGmSec = self.grid_z[inds]
@@ -1889,7 +1891,7 @@ class meshArxv():
 
             # getting the value of the transition to display in the emission panel
             if event.inaxes is self.gui['widgets']['transitionSelector']['axes']:
-                
+                clickedInAxes = True
                 # setting the section closest to the data available
                 self.parms['gridsInfo']['11']['transitionIndx'] = np.round(xd)
                 self.gui['widgets']['transitionSelector']['point'].set_xdata( self.parms['gridsInfo']['11']['transitionIndx'] )
@@ -1917,7 +1919,7 @@ class meshArxv():
             # getting the coordinates inthe grid to display as a single mesh as a function of Av
             # and maybe display the radex calculations                
             if event.inaxes is self.gui['ax2d']['axes']:
-                
+                clickedInAxes = True
                 self.logger.debug('####################################button 1 clicked###########################################')
                 indMin = self.get_mesh_index(x = xd, y = yd, z = self.pltGmSec)
                 self.mshTmp.setData( self.meshes[indMin] )
@@ -1937,9 +1939,45 @@ class meshArxv():
                     self.computeAndSetRadexCurves(meshObj = self.mshTmp)
                 
                 pyl.draw()
+
+            # setting the Av of the position clicked on the plots of the current mesh
+            # to the chemical netowrk object.
+            if event.inaxes is self.gui['AV']['00']['axes']:
+                clickedInAxes = True
+                Av_clicked = xd
+
+                self.logger.debug('####################################button 1 clicked###########################################')
+                self.logger.debug('Av clicked = %.4f' % Av_clicked)
                 
-        tf = time()
-        self.logger.debug('time elapased after click : %f\n' % (tf - ti))
+                #getting the index along the mesh which is closest in Av to the place
+                #where the mouse was clicked, the closes values will be used in the
+                #chemical netowrk of the mesh
+                mshAv = self.mshTmp.data['state']['Av']
+                indAv = np.argmin( np.fabs(mshAv - Av_clicked) )
+                
+                #the values to be assigned to the chemical network
+                Av_use = self.mshTmp.data['state']['Av'][indAv]
+                gasT_use = self.mshTmp.data['state']['gasT'][indAv]
+                abun_use = self.mshTmp.data['state']['abun'][:,indAv]
+                
+                #setting the parameters of the gas and the environment at that slab
+                self.mshTmp.chemNet.set_environment_state(gasT_use, 
+                                                          self.parms_used_in_PDR_models['zeta'], 
+                                                          Av_use,
+                                                          self.parms_used_in_PDR_models['albedo'],
+                                                          self.mshTmp.data['hdr']['nGas'],
+                                                          self.mshTmp.data['hdr']['G0'])
+                
+                #set the abundances at that slab
+                self.mshTmp.chemNet.set_abundances(fromArray = abun_use) 
+                self.mshTmp.chemNet.compute_rxn_constants()
+                self.mshTmp.chemNet.compute_rxn_rates()
+
+                self.logger.debug('set the environment variable to the chemical netowrk of the mesh.')
+            
+            if clickedInAxes == True:
+                tf = time()
+                self.logger.debug('time elapased after click : %f\n' % (tf - ti))
         
     def computeAndSetRadexCurves(self, meshObj = None):
         """This is a utilty method (make it a private method), for populating the radex axes

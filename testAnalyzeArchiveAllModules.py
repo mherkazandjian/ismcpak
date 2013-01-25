@@ -59,6 +59,7 @@ parms = {
                            },
          'gridsRes'      : 100,
          
+         'meshPltAvRng'  : [0, 30.0],
          'radex'         : { 'use'                  : True,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes

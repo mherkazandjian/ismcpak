@@ -206,9 +206,9 @@ class chemicalNetwork(specie, reaction):
         print 'compelte'
 
     def remove_species(self, species = None, underAbunFile = None):
-        """Remove species from the network. The species strings which appear in the list are
-           moved to speciesRemoved list and the reactions with the removed species are moved
-           to reactionRemoved.
+        """Remove species from the network. All reactions containing those species are moved to 
+           the self.reactionsRemoved list. Also those species are moved from self.species to 
+           self.removedSpecies list.
         """
         print 'removing species from the network....', 
         
@@ -439,11 +439,17 @@ class chemicalNetwork(specie, reaction):
         return sets
     
     def set_abundances(self, fromFile = None, fromArray = None):
-        """Set the abundances of the species from an ascii input file or from a numpy array. 
-           The file contains one abundance on each line. each value will be set to the corresponding
-           vlaue in self.abun at the index corresponding to the line number (staring with index 0). 
-           There should be as much lines as there are species with assigned numbers. Also the numpy
-           array should have the same length as the species with numbers. 
+        """Set the abundances of the species from an ascii input file or from a numpy array.
+        
+           :param string fromFile: The path of the file which contains one abundance which will be
+             assigned to the species. The file should have one abundance on each line. Each value 
+             will be set to the corresponding vlaue in self.abun[] at the index corresponding to 
+             the line number (staring with index 0). There should be as much lines as there are 
+             species with assigned numbers. 
+             
+           :param numpy.ndarray fromArray: A numpy array holding the abundances of the speceies. The 
+             values of this array will be copies element-wise to self.abun[]. They must have the same
+             length. 
            
            .. warning::  since self.specie[]._abun are mapped to self.abun, in chanfing all the values
              of the array the method self.copy_abundances_from_array( array ) should be used, which
@@ -458,23 +464,23 @@ class chemicalNetwork(specie, reaction):
         if fromFile != None:
             print 'file : %s' % fromFile            
             newAbunArr = numpy.fromfile(fromFile, dtype = numpy.float64, sep = " ")
-            
+        
         if fromArray != None:
-            print 'file : %s' % fromArray            
+            print 'array (id) : %d' % id(fromArray)            
             newAbunArr = fromArray
         
-        self.copy_abundances_from_array( newAbunArr )
+        self.copy_abundances_from_array( newAbunArr.flatten() )
 
     def copy_abundances_from_array(self, array):
         n = len(array)
-        self.abun[0:n, 0] = array
+        self.abun[0:n, 0] = array[:]
 
     def printFile(self):
         """prints the reaction file without the header."""
 
         print self.fileStr
 
-    def print_reactions(self, rxnIDs = None, fmt = None ):
+    def print_reactions(self, rxnIDs = None, fmt = None):
         """Prints the reaction file without the header. NOTE: this should not be
            confused with reaction index (i.e the position in the self.reactions[] list). 
         
@@ -644,7 +650,7 @@ class chemicalNetwork(specie, reaction):
         return newLine
     
     def filter_reactions(self, withReacts = None, withProds = None, withType = None, 
-                               show = None, **kwargs):
+                               show = None, sort = None, **kwargs):
         """Method that returns the IDs (as a numpy int32 array) of the reactions containing certain reactants
            or products or both. Either one of those two keywords should be provided. The
            matching is done using &&, so all the entries must be present in the reaction.
@@ -660,6 +666,9 @@ class chemicalNetwork(specie, reaction):
            
            :param string withType: the reaction type against which filtering will be done.           
            
+           :param bool sorted: if this is set to True, the reactions are printed in decreasnig 
+             reaction rate order.
+
            for example:
            
            .. code-block:: python
@@ -735,7 +744,11 @@ class chemicalNetwork(specie, reaction):
                 rxnIDsFound.append( rxn.ID )
 
         if show == True:
-                self.print_reactions(rxnIDsFound, **kwargs)
+            
+            if sort == True:
+                rxnIDsFound = self.sort_rxns_decreasing_rates(rxnIDsFound)
+    
+            self.print_reactions(rxnIDsFound, **kwargs)
                 
         return numpy.array(rxnIDsFound)
 
@@ -765,7 +778,7 @@ class chemicalNetwork(specie, reaction):
         def compute_CP_rxn_cnst(rxn, state):
             return rxn.alpha
         def compute_CR_rxn_cnst(rxn, state):
-            return rxn.alpha * ((state['T'] / 300.0)**rxn.beta) * rxn.gamma / ( 1.0 - state['albedo'] )
+            return rxn.alpha * ((state['T'] / 300.0)**rxn.beta) * (rxn.gamma / ( 1.0 - state['albedo'] )) * (state['zeta']/1.36e-17) 
         def compute_nbody_rxn_cnst(rxn, state):
             return rxn.alpha * ((state['T'] / 300.0)**rxn.beta) * numpy.exp( - rxn.gamma / state['T'] ) 
 
@@ -801,7 +814,7 @@ class chemicalNetwork(specie, reaction):
                        } 
 
         #the state of the environment (gas)
-        state = {'Av':self.Av, 'T':self.T, 'albedo':self.albedo}
+        state = {'Av':self.Av, 'T':self.T, 'albedo':self.albedo, 'zeta':self.zeta}
                 
         # it might be a good idea to put a check if
         # temperature,A_v are set...         
@@ -843,7 +856,10 @@ class chemicalNetwork(specie, reaction):
                  
                 if abun != None:
                     rate *= (self.nDens * abun)
-                
+
+            if rate == None:
+                raise ValueError('reaction %s has a rate equal to None. Something has gone wrong while computing its rate' % rxn.str)
+
             rxn.rate = rate
 
     def sort_rxns_decreasing_rates(self, rxnIDs):
