@@ -2516,20 +2516,18 @@ class meshArxv():
         constructed and the interpolation is done for a quantity pointing
         to the dtype of data of a mesh."""
         
-        from amuse.units import units, constants
+        from amuse.units import units
 
         #----------------------------------------------------------------
         # converting the quantities to units compatible with PDR models
         # getting the quantities as numpy arrays
         #----------------------------------------------------------------
         #converting gas density to cgs
-        n_gas_cgs = n_gas.as_quantity_in( units.g / units.cm **3 )
-        n_gas_cgs *= constants.Avogadro_constant # (g  mol-1 cm-3)
-        n_gas_cgs = n_gas_cgs.value_in( n_gas_cgs.unit ) 
-        n_gas_cgs *= (1.0/1.00794) # 1 mol of H is 1.000794 g 
-
+        meanmwt=1.3|units.amu
+        n_gas_cgs = (n_gas/meanmwt).value_in( units.cm **-3 )
+        
         #converting the G0 to correct units
-        G0 = 6.54*fuv_heating.value_in( fuv_heating.unit )
+        G0 = 6.54*fuv_heating.value_in( units.none )
         
         #converting the mechanical heating to the correct unit
         #from m2 / s3 (Inti Units) to  erg / (cm^3 s)
