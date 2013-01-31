@@ -108,11 +108,14 @@ class reader():
     based on the filename holding the data, since there are may o- and p- files
     in the current database.  
         
-    :todo: add a method to return the index of a level given the quantum numbers
-    :todo: add another method which feches the transition info give the upper and lower levels (all transitions -rad-col..etc..)
-    :todo: add a method which dumps the graphvis stuff for the transitions (radiative, coll...)
-    :todo: add a method which clears memory and check for memory leaks
-    :todo: see what it is about the differences in the computed and tabulated deltaEs and energy levels
+    .. todo:: add a method to return the index of a level given the quantum numbers
+    .. todo:: add another method which feches the transition info give the upper and lower levels (all transitions -rad-col..etc..)
+    .. todo:: add a method which dumps the graphvis stuff for the transitions (radiative, coll...)
+    .. todo:: add a method which clears memory and check for memory leaks
+    .. todo:: see what it is about the differences in the computed and tabulated deltaEs and energy levels
+    .. todo:: collect the filenames only by doing one pass over all the files and compiling a dictionary
+      for the species and different versions of the files. Also write a routine which writes all the info
+      of the read files. 
     """
     def __init__(self, *args, **kwargs):
         

@@ -659,14 +659,16 @@ class chemicalNetwork(specie, reaction):
            
            :param withProds: a string or a list of strings holding the products to be used as a filter.
            
-           :param bool show: if this is True, the filtered reactions are printed. If it is False (or None). 
+           :param int|bool show: if this is True, all filtered reactions are printed. If it is False|0|None 
               only the ids are returned. By default *kwargs* is passed to the function which prints the reactions,
               so the format of the printed reactions can be determined by passing the format
-              argument which internallty is passed to self.print_reactions.
+              argument which internallty is passed to self.print_reactions. If this is set to an integer X, only
+              X reactions are printed.  This is useful when the sorted keyword is passed, since only the top X
+              reactions with highest decreasing rates are displayed.
            
            :param string withType: the reaction type against which filtering will be done.           
            
-           :param bool sorted: if this is set to True, the reactions are printed in decreasnig 
+           :param bool sort: if this is set to True, the reactions are printed in decreasnig 
              reaction rate order.
 
            for example:
@@ -743,12 +745,17 @@ class chemicalNetwork(specie, reaction):
             if inReacts and inProds and hasType:
                 rxnIDsFound.append( rxn.ID )
 
-        if show == True:
+        if show == True or show >= 1:
             
             if sort == True:
                 rxnIDsFound = self.sort_rxns_decreasing_rates(rxnIDsFound)
     
-            self.print_reactions(rxnIDsFound, **kwargs)
+            #determining how many reactions will be printed
+            if isinstance(show, bool):
+                self.print_reactions(rxnIDsFound, **kwargs)
+            else:
+                #assuming show is an integer
+                self.print_reactions(rxnIDsFound[0:show], **kwargs)
                 
         return numpy.array(rxnIDsFound)
 

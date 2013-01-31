@@ -1,6 +1,5 @@
-import numpy as np
-import pylab as pyl
-import inspect
+import numpy
+import pylab
 
 from ismUtils import getSlabThicknessFromAv
 from mylib.utils.misc import fetchNestedDtypeValue
@@ -70,14 +69,14 @@ class mesh( ):
             self.fName = fileName #: path (py:string) of the binary file holding the data of the mesh.
         
             # reading the header, constructing the full mesh dtype
-            dtHdr = np.dtype( self.headerFormat() ) 
-            hdr   = np.fromfile(self.fName, dtype = dtHdr, count = 1 ) 
+            dtHdr = numpy.dtype( self.headerFormat() ) 
+            hdr   = numpy.fromfile(self.fName, dtype = dtHdr, count = 1 ) 
             self.hdr = hdr[0]  #: data of the header 
 
             # re-reading the whole file and constructing the full dtype
             # with the header info read above 
             dtMesh    = self.constructMeshDtype( self.hdr['nSpecs'], self.hdr['nSteps'], self.hdr['version'])
-            data      = np.fromfile( fileName, dtype = dtMesh, count = 1)
+            data      = numpy.fromfile( fileName, dtype = dtMesh, count = 1)
             #print fileName
             self.data = data[0] 
         else:
@@ -104,30 +103,30 @@ class mesh( ):
         """ constructs the numpy dtype of the mesh which will be used to read the contents of the binary data fiel
         """
         meshFormat = self.meshFormat( nSpecs, nSteps, version )
-        meshDtype  = np.dtype( meshFormat )
+        meshDtype  = numpy.dtype( meshFormat )
         return  meshDtype
 
     def meshFormat(self, nSpecs, nSteps, version):
         """ define the format of the mesh from which the dtype is contrsucted.
         
-             :param np.int32 nSpecs: number of species in the chemical network in the file
-             :param np.int32 nSteps: number of slabs in the file
-             :param np.int32: the version of the data file. For now can handle up to version = 2.
+             :param numpy.int32 nSpecs: number of species in the chemical network in the file
+             :param numpy.int32 nSteps: number of slabs in the file
+             :param numpy.int32: the version of the data file. For now can handle up to version = 2.
              :returns: list
         """
-        dt =  [  ('hdr'    , np.dtype( self.headerFormat ()               ), 1),
-                 ('state'  , np.dtype( self.stateFormat  ( nSpecs, nSteps)), 1),
-                 ('therm'  , np.dtype( self.thermoFormat( nSteps)         ), 1),
-                 ('heating', np.dtype( self.heatingFormat( nSteps)        ), 1),
-                 ('cooling', np.dtype( self.coolingFormat( nSteps)        ), 1),
+        dt =  [  ('hdr'    , numpy.dtype( self.headerFormat ()               ), 1),
+                 ('state'  , numpy.dtype( self.stateFormat  ( nSpecs, nSteps)), 1),
+                 ('therm'  , numpy.dtype( self.thermoFormat( nSteps)         ), 1),
+                 ('heating', numpy.dtype( self.heatingFormat( nSteps)        ), 1),
+                 ('cooling', numpy.dtype( self.coolingFormat( nSteps)        ), 1),
               ]
 
         # if the data file version is the second version, append the rest of the 
         # file format to be read, detailed cooling and self sheilding stuff
         if version == 2:
-            dt.append( ('metaStableCoolingCmponents'    , np.dtype( self.coolingFormaMetaStable(nSteps))    , 1), )
-            dt.append( ('fineStructureCoolingComponents', np.dtype( self.coolingFormatFineStructure(nSteps)), 1), )
-            dt.append( ('selfSheilding'                 , np.dtype( self.selfSheildingFormat( nSteps))      , 1), )
+            dt.append( ('metaStableCoolingCmponents'    , numpy.dtype( self.coolingFormaMetaStable(nSteps))    , 1), )
+            dt.append( ('fineStructureCoolingComponents', numpy.dtype( self.coolingFormatFineStructure(nSteps)), 1), )
+            dt.append( ('selfSheilding'                 , numpy.dtype( self.selfSheildingFormat( nSteps))      , 1), )
             
         return dt
     
@@ -135,12 +134,12 @@ class mesh( ):
         """ define and return the format of the mesh header."""
 
         return [ 
-                  ('version'  , np.int32   ),
-                  ('G0'       , np.float64 ),
-                  ('nGas'     , np.float64 ),
-                  ('gammaMech', np.float64 ),
-                  ('nSteps'   , np.int32   ),
-                  ('nSpecs'   , np.int32   ),
+                  ('version'  , numpy.int32   ),
+                  ('G0'       , numpy.float64 ),
+                  ('nGas'     , numpy.float64 ),
+                  ('gammaMech', numpy.float64 ),
+                  ('nSteps'   , numpy.int32   ),
+                  ('nSpecs'   , numpy.int32   ),
                ]
         
     def stateFormat(self, nSpecs, nSteps):
@@ -149,10 +148,10 @@ class mesh( ):
         n = int(nSteps)
         m = int(nSpecs)
         fmt = [
-                  ('gasT'  , np.float64, ( n) ),
-                  ('dustT' , np.float64, ( n) ),
-                  ('Av'    , np.float64, ( n) ),
-                  ('abun'  , np.float64, (m, n) ),
+                  ('gasT'  , numpy.float64, ( n) ),
+                  ('dustT' , numpy.float64, ( n) ),
+                  ('Av'    , numpy.float64, ( n) ),
+                  ('abun'  , numpy.float64, (m, n) ),
                ]
         return fmt
     
@@ -161,48 +160,48 @@ class mesh( ):
 
         n = int(nSteps)
         return [
-                  ('heating', np.float64, (n) ),
-                  ('cooling', np.float64, (n) ),
+                  ('heating', numpy.float64, (n) ),
+                  ('cooling', numpy.float64, (n) ),
                ]
 
     def heatingFormat(self, nSteps):
         """ define the format of the heating components."""
         n = int(nSteps)
         return [
-                  ('photo'    , np.float64, (n) ),
-                  ('cIon'     , np.float64, (n) ),
-                  ('molHydro' , np.float64, (n) ),
-                  ('H2pump'   , np.float64, (n) ),
-                  ('ggColl'   , np.float64, (n) ),
-                  ('visc'     , np.float64, (n) ),
-                  ('cr'       , np.float64, (n) ),
+                  ('photo'    , numpy.float64, (n) ),
+                  ('cIon'     , numpy.float64, (n) ),
+                  ('molHydro' , numpy.float64, (n) ),
+                  ('H2pump'   , numpy.float64, (n) ),
+                  ('ggColl'   , numpy.float64, (n) ),
+                  ('visc'     , numpy.float64, (n) ),
+                  ('cr'       , numpy.float64, (n) ),
                ]
 
     def coolingFormat(self, nSteps):
         """ define the format of the cooling components."""
         n = int(nSteps)
         return [
-                  ('metaStable'    , np.float64, ( n) ),
-                  ('fineStructure' , np.float64, ( n) ),
-                  ('roVib'         , np.float64, ( n) ),
-                  ('recom'         , np.float64, ( n) ),
-                  ('lymanAlpha'    , np.float64, ( n) ),
+                  ('metaStable'    , numpy.float64, ( n) ),
+                  ('fineStructure' , numpy.float64, ( n) ),
+                  ('roVib'         , numpy.float64, ( n) ),
+                  ('recom'         , numpy.float64, ( n) ),
+                  ('lymanAlpha'    , numpy.float64, ( n) ),
                ]
 
     def coolingFormaMetaStable(self, nSteps):
         """ define the format of the meta stable cooling components."""
-        n = np.int32(nSteps)
+        n = numpy.int32(nSteps)
         return [
-                  ('C'  , np.float64, (n) ),
-                  ('C+' , np.float64, (n) ),
-                  ('Fe' , np.float64, (n) ),
-                  ('Fe+', np.float64, (n) ),
-                  ('O'  , np.float64, (n) ),
-                  ('O+' , np.float64, (n) ),
-                  ('S'  , np.float64, (n) ),
-                  ('S+' , np.float64, (n) ),
-                  ('Si' , np.float64, (n) ),
-                  ('Si+', np.float64, (n) ),
+                  ('C'  , numpy.float64, (n) ),
+                  ('C+' , numpy.float64, (n) ),
+                  ('Fe' , numpy.float64, (n) ),
+                  ('Fe+', numpy.float64, (n) ),
+                  ('O'  , numpy.float64, (n) ),
+                  ('O+' , numpy.float64, (n) ),
+                  ('S'  , numpy.float64, (n) ),
+                  ('S+' , numpy.float64, (n) ),
+                  ('Si' , numpy.float64, (n) ),
+                  ('Si+', numpy.float64, (n) ),
                ]
 
     # tansitions = ['upper1-lower1', 'upper2-lower2'....etc ]
@@ -221,8 +220,8 @@ class mesh( ):
              
              .. code-block:: python
              
-                 ['SPECIE']['popDens']['0'] # np.float64 array of the population density of level '0' 
-                 ['SPECIE']['popDens']['1'] # np.float64 array of the population density of level '1'
+                 ['SPECIE']['popDens']['0'] # numpy.float64 array of the population density of level '0' 
+                 ['SPECIE']['popDens']['1'] # numpy.float64 array of the population density of level '1'
 
              :param list transitions: a list containing the transitions. For each transitions an array is created as a dtype which can be used to access the cooling rate. For example.
 
@@ -234,48 +233,48 @@ class mesh( ):
              
              .. code-block:: python
              
-                 ['SPECIE']['rate']['1-0'] # np.float64 array of the cooling rate for transition '1-0' 
-                 ['SPECIE']['rate']['2-1'] # np.float64 array of the cooling rate for transition '2-1' 
+                 ['SPECIE']['rate']['1-0'] # numpy.float64 array of the cooling rate for transition '1-0' 
+                 ['SPECIE']['rate']['2-1'] # numpy.float64 array of the cooling rate for transition '2-1' 
             
-             :param np.int32 n: the number of steps which will be the size of all the np.float64 arrays mentioned above             
+             :param numpy.int32 n: the number of steps which will be the size of all the numpy.float64 arrays mentioned above             
         """
         fmtCool    = []
         fmtPopDens = []
         
         for trans in transitions:
-            fmtCool.append(     (trans, np.float64, (n)),   )
+            fmtCool.append(     (trans, numpy.float64, (n)),   )
         for level in levels:
-            fmtPopDens.append(  (level, np.float64, (n)),   )
+            fmtPopDens.append(  (level, numpy.float64, (n)),   )
             
         return [           
-                 ('rate'   , np.dtype(fmtCool), 1),
-                 ('popDens', np.dtype(fmtPopDens), 1),
+                 ('rate'   , numpy.dtype(fmtCool), 1),
+                 ('popDens', numpy.dtype(fmtPopDens), 1),
                ]
         
     def coolingFormatFineStructure(self, nSteps):
         """ defines the format of the contents of each specie's fine structure cooling info
             
-            :param np.int32 nSteps: the number of steps in the mesh to be set as the size of the arrays holding the fine structure info for the cooling rate and population densitites for each transition and level respectively.
+            :param numpy.int32 nSteps: the number of steps in the mesh to be set as the size of the arrays holding the fine structure info for the cooling rate and population densitites for each transition and level respectively.
         
         """
-        n = np.int32(nSteps)
-        return [ ('C+' , np.dtype(self.coolingFmtFsSpecie(['0','1']    , ['1-0']            , n)), 1),
-                 ('Si+', np.dtype(self.coolingFmtFsSpecie(['0','1']    , ['1-0']            , n)), 1),
-                 ('C'  , np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
-                 ('O'  , np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
-                 ('S'  , np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
-                 ('Fe+', np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
-                 ('Si' , np.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+        n = numpy.int32(nSteps)
+        return [ ('C+' , numpy.dtype(self.coolingFmtFsSpecie(['0','1']    , ['1-0']            , n)), 1),
+                 ('Si+', numpy.dtype(self.coolingFmtFsSpecie(['0','1']    , ['1-0']            , n)), 1),
+                 ('C'  , numpy.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+                 ('O'  , numpy.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+                 ('S'  , numpy.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+                 ('Fe+', numpy.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
+                 ('Si' , numpy.dtype(self.coolingFmtFsSpecie(['0','1','2'], ['1-0','2-1','2-0'], n)), 1),
                 ]
 
     def selfSheildingFormat(self, nSteps):
         """ defines the format of the arrays which will hold the self sheilding data for the slabs in the mesh.
          
-        :param np.int32 nSteps: the number of steps in the mesh to be set as the size of the arrays holding the fine structure info for the cooling rate and population densitites for each transition and level respectively.
+        :param numpy.int32 nSteps: the number of steps in the mesh to be set as the size of the arrays holding the fine structure info for the cooling rate and population densitites for each transition and level respectively.
         """
-        return [ ('H2'  ,  np.float64, (nSteps)),
-                 ('CO'  ,  np.float64, (nSteps)),
-                 ('13CO',  np.float64, (nSteps)),
+        return [ ('H2'  ,  numpy.float64, (nSteps)),
+                 ('CO'  ,  numpy.float64, (nSteps)),
+                 ('13CO',  numpy.float64, (nSteps)),
                ] 
     def getColumnDensity(self, specsStrs = None, maxAv = None):
         """returns a list of the same lenght as specsStrs containing the column densities
@@ -307,16 +306,16 @@ class mesh( ):
         dxSlabs = self.compute_dx() 
         
         if maxAv == None:
-            slabsIdx = np.arange(data['hdr']['nSteps'])
+            slabsIdx = numpy.arange(data['hdr']['nSteps'])
         else:
-            slabsIdx = np.where( Av_m < maxAv)
+            slabsIdx = numpy.where( Av_m < maxAv)
 
         # computing the column densities for the species in the list
         for specStr in specsStrs:
             specIdx = self.chemNet.species[specStr].num
             nDensSpec = nDense_m * abun_m[ specIdx ][ : ]
             NSpec = dxSlabs[slabsIdx] * nDensSpec[slabsIdx]
-            colDens = np.sum( NSpec )
+            colDens = numpy.sum( NSpec )
             colDensities.append( colDens )
 
         return colDensities
@@ -338,7 +337,7 @@ class mesh( ):
         if figObj != None and axObj != None:
             pass
         else:
-            figObj, axObj = pyl.subplots(2, 2, sharex=False, sharey=False, figsize=(12,12))
+            figObj, axObj = pylab.subplots(2, 2, sharex=False, sharey=False, figsize=(12,12))
 
         self.fig     = figObj
         self.axs     = axObj
@@ -361,6 +360,7 @@ class mesh( ):
         # subplot 0,0        
         self.plt00tgasPlt,  = self.axs[0,0].semilogy([1],  [1], 'r' )
         self.plt00tdustPlt, = self.axs[0,0].semilogy([1],  [1], 'b' )
+        self.plt00_v_line,  = self.axs[0,0].semilogy([1],  [1], 'k--' )
         self.axs[0,0].set_xlim(plot_x_range[0], plot_x_range[1])
         self.axs[0,0].set_ylim(1, 100000)
         self.axs[0,0].set_ylabel('$T(K)$')
@@ -377,8 +377,8 @@ class mesh( ):
         self.plt01Spec3Plt, = self.axs[0,1].semilogy([1],  [1], 'b' )
         self.plt01Spec4Plt, = self.axs[0,1].semilogy([1],  [1], 'c' )
         self.plt01Spec5Plt, = self.axs[0,1].semilogy([1],  [1], 'y' )
-        self.axs[0,1].set_xlim(plot_x_range[0], plot_x_range[1])
-        self.axs[0,1].set_ylim(1e-12, 2)
+        self.plt01_v_line,  = self.axs[0,1].semilogy([1],  [1], 'k--' )
+
         self.axs[0,1].text(0.4, 1e-10, '$H^+$' , color='r')
         self.axs[0,1].text(0.4, 1e-9 , '$H$'   , color='g')
         self.axs[0,1].text(0.4, 1e-8 , '$H_2$' , color='b')
@@ -388,12 +388,12 @@ class mesh( ):
         for tick in self.plt01ax1.xaxis.get_major_ticks():
             tick.label1On = False
         self.plt01ax2 = self.axs[0,1].twinx()
-        pyl.setp(self.plt01ax2, 'ylim',(1e-12, 2) )
-        pyl.setp(self.plt01ax2, 'xlim',(0, 20) )
+
         # redundant, but we do it just to get the right ticks on the y axis
         self.plt01ax2.semilogy([1],  [1], 'g' )
         self.plt01ax2.semilogy([1],  [1], 'b' )
         self.plt01ax2.semilogy([1],  [1], 'c' )
+
         # deleting all the ticks on the first axis
         for tick in self.plt01ax1.yaxis.get_major_ticks():
             tick.label1On = False
@@ -404,11 +404,15 @@ class mesh( ):
             tick.label2On = True
         self.plt01ax2.set_ylabel('abun')
 
+        self.axs[0,1].set_xlim(plot_x_range[0], plot_x_range[1])
+        self.axs[0,1].set_ylim(1e-12, 2)
+
         # subplot 1,0
         self.plt10Spec1Plt, = self.axs[1,0].semilogy([1],  [1], 'r' )
         self.plt10Spec2Plt, = self.axs[1,0].semilogy([1],  [1], 'g' )
         self.plt10Spec3Plt, = self.axs[1,0].semilogy([1],  [1], 'b' )
         self.plt10Spec4Plt, = self.axs[1,0].semilogy([1],  [1], 'c' )
+        self.plt10_v_line,  = self.axs[1,0].semilogy([1],  [1], 'k--' )
         self.axs[1,0].set_xlim(plot_x_range[0], plot_x_range[1])
         self.axs[1,0].set_ylim(1e-12, 2)
         self.axs[1,0].text(0.4, 1e-11, '$O$'   , color='c')
@@ -422,6 +426,7 @@ class mesh( ):
         self.plt11Spec1Plt, = self.axs[1,1].semilogy([1],  [1], 'r' )
         self.plt11Spec2Plt, = self.axs[1,1].semilogy([1],  [1], 'g' )
         self.plt11Spec3Plt, = self.axs[1,1].semilogy([1],  [1], 'b' )
+        self.plt11_v_line,  = self.axs[1,1].semilogy([1],  [1], 'k--' )
         self.axs[1,1].set_xlim(plot_x_range[0], plot_x_range[1])
         self.axs[1,1].set_ylim(1e-12, 2)   
         self.axs[1,1].text(0.4, 1e-10, '$HCN$'  , color='r')
@@ -430,7 +435,25 @@ class mesh( ):
         self.axs[1,1].set_xlabel('$A_V$')
         for tick in self.axs[1,1].yaxis.get_major_ticks():
             tick.label1On = False
-        pyl.setp(pyl.gca(), yticks=[])
+        pylab.setp(pylab.gca(), yticks=[])
+    
+    def plot_v_lines_used_in_chemnet(self):
+        """plotting the vertical lines on the gui indicating the positions
+           in the slab used for the chemistry.
+        """
+
+        self.plt00_v_line.set_xdata( [self.chemNet.Av, self.chemNet.Av] )
+        self.plt00_v_line.set_ydata( [1, 100000])
+        
+        self.plt01_v_line.set_xdata( [self.chemNet.Av, self.chemNet.Av] )
+        self.plt01_v_line.set_ydata( [1e-12, 1])
+        
+        self.plt10_v_line.set_xdata( [self.chemNet.Av, self.chemNet.Av] )
+        self.plt10_v_line.set_ydata( [1e-12, 1])
+        
+        self.plt11_v_line.set_xdata( [self.chemNet.Av, self.chemNet.Av] )
+        self.plt11_v_line.set_ydata( [1e-12, 1])
+
         
     def plot(self):
         
@@ -447,14 +470,14 @@ class mesh( ):
         spcs = chemNet.species
         
         if self.fig == None:
-            self.fig, self.axs = pyl.subplots(2, 2, sharex=True, sharey=False) 
+            self.fig, self.axs = pylab.subplots(2, 2, sharex=True, sharey=False) 
 
         # subplot 0,0
         self.plt00tgasPlt.set_xdata( data['state']['Av'] )
         self.plt00tgasPlt.set_ydata( data['state']['gasT'] )
         self.plt00tdustPlt.set_xdata( data['state']['Av'] )
         self.plt00tdustPlt.set_ydata( data['state']['dustT'] )
-        self.plt00Ttl.set_text('$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (np.log10(data['hdr']['G0']), np.log10(data['hdr']['nGas']), np.log10(data['hdr']['gammaMech']) ) )
+        self.plt00Ttl.set_text('$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (numpy.log10(data['hdr']['G0']), numpy.log10(data['hdr']['nGas']), numpy.log10(data['hdr']['gammaMech']) ) )
         
         # subplot 0,1
         self.plt01Spec1Plt.set_xdata( data['state']['Av'] )
@@ -498,7 +521,7 @@ class mesh( ):
         dxSlabs = self.compute_dx()
         
         q = y
-        v = np.sum( q*dxSlabs ) / (2.0 * np.pi)
+        v = numpy.sum( q*dxSlabs ) / (2.0 * numpy.pi)
         print ';;;', y
         print ';;;', dxSlabs
         print ';;;', q*dxSlabs
@@ -557,13 +580,13 @@ class mesh( ):
         xCollH2 = m.data['state']['abun'][ net.species['H2'].num ]
 
         #getting the indicies of the slab which have xH2 greater than xMin
-        inds = np.nonzero( xCollH2  > xMin  )
+        inds = numpy.nonzero( xCollH2  > xMin  )
         if len(inds[0]) == 0:                
             return (None, None, None)
         
         # assigning the thickness of the last slab to the one before the last one
         dx    = getSlabThicknessFromAv(Av, nGas, Z)
-        dxNew = np.ndarray( len(dx)+1, dtype = np.float64 )
+        dxNew = numpy.ndarray( len(dx)+1, dtype = numpy.float64 )
         dxNew[0:-1] = dx
         dxNew[-1]   = dx[-1]
         dx = dxNew
@@ -588,14 +611,14 @@ class mesh( ):
         nCollH2  = xCollH2 * nGas
         
         NSpec     = nSpec * dx
-        N_specLVG = np.sum(NSpec)
+        N_specLVG = numpy.sum(NSpec)
 
-        TMean = np.sum( NSpec*gasT    ) / N_specLVG
-        nColleMean  = np.sum( NSpec*nColle  ) / N_specLVG
-        nCollHPMean = np.sum( NSpec*nCollHP ) / N_specLVG
-        nCollHMean  = np.sum( NSpec*nCollH  ) / N_specLVG
-        nCollHeMean = np.sum( NSpec*nCollHe ) / N_specLVG
-        nCollH2Mean = np.sum( NSpec*nCollH2 ) / N_specLVG
+        TMean = numpy.sum( NSpec*gasT    ) / N_specLVG
+        nColleMean  = numpy.sum( NSpec*nColle  ) / N_specLVG
+        nCollHPMean = numpy.sum( NSpec*nCollHP ) / N_specLVG
+        nCollHMean  = numpy.sum( NSpec*nCollH  ) / N_specLVG
+        nCollHeMean = numpy.sum( NSpec*nCollHe ) / N_specLVG
+        nCollH2Mean = numpy.sum( NSpec*nCollH2 ) / N_specLVG
         
         nDenseColl = {'e-': nColleMean ,
                       'H+': nCollHPMean,
@@ -611,7 +634,7 @@ class mesh( ):
 
     def plotMeshGeometry(self):
         
-        fig = pyl.figure()
+        fig = pylab.figure()
         axs = fig.add_axes([0.1, 0.1, 0.8, 0.8])
         
         #Av = self.data['state']['Av']
@@ -629,7 +652,7 @@ class mesh( ):
             Av += dAv
              
             if Av < 1.0:
-                dAv = 10.0**(int(np.log10(Av)))
+                dAv = 10.0**(int(numpy.log10(Av)))
                 
             print Av
                 
@@ -640,17 +663,17 @@ class mesh( ):
             
         Av = [dAv]
         
-        Av = np.arange(31)
-        for i in np.arange(30):
+        Av = numpy.arange(31)
+        for i in numpy.arange(30):
             if i > 0 and i <= 10: 
-                Av[i] = np.float64(i)/100
+                Av[i] = numpy.float64(i)/100
             if i > 10 and i <= 20:
-                Av[i] = np.float64(i)/10
+                Av[i] = numpy.float64(i)/10
             if i <= 10: 
-                Av[i] = np.float64(i)/100
+                Av[i] = numpy.float64(i)/100
             
             
-        y  = np.ones(Av.shape)
+        y  = numpy.ones(Av.shape)
         #asdasd
         axs.semilogx(Av, y, 'r')
         axs.semilogx(Av, y, 'ro')
@@ -658,7 +681,7 @@ class mesh( ):
         axs.set_ylim( ymin=0, ymax=2)
         axs.set_xlim( xmin=0.01, xmax=10)
         #axs.xaxis.set_scale('log')
-        pyl.show()
+        pylab.show()
         """
     
     def set_chemNet(self, chemNet):
@@ -679,7 +702,7 @@ class mesh( ):
 
         # setting the thickness of the last slab to the one before it
         dx          =  getSlabThicknessFromAv(Av_m, nDense_m, self.metallicity)
-        dxNew       =  np.ndarray( len(dx)+1, dtype = np.float64 )
+        dxNew       =  numpy.ndarray( len(dx)+1, dtype = numpy.float64 )
         dxNew[0:-1] =  dx
         dxNew[-1]   =  dx[-1]
         dx          =  dxNew
@@ -693,4 +716,4 @@ class mesh( ):
         q = fetchNestedDtypeValue(self.data, quantity)
         dxSlabs = self.compute_dx()
         
-        return np.sum(q*dxSlabs)        
+        return numpy.sum(q*dxSlabs)        

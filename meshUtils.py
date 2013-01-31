@@ -207,7 +207,7 @@ class meshArxv():
         
         self.chemNet    = None
         """ object of class type chemicalNetwork holds info about the chemical network used"""
-    
+        
         if 'plotRanges' in kwargs:
             self.ranges = kwargs['plotRanges']
         else:
@@ -563,12 +563,15 @@ class meshArxv():
         """Loads radex database files from disk to a dictionary. The last database loaded is
         the one being used.
         
-           :param species: A list of string holding the names of the species files to be loaded. 
+           :param species: A string or a list of strings holding the names of the species files to be loaded. 
         """
-        
+  
         if species == None:
             raise ValueError('keyword species is None, must be a list of strings.')
-        
+
+        if hasattr(species, '__iter__') == False:
+            species = [species]      
+            
         for specStr in species:
             self.readDbRadex(specStr, check = True)
 
@@ -1074,7 +1077,7 @@ class meshArxv():
         nlevels = 10
         dl = (np.nanmax(grd) - np.nanmin(grd))/nlevels
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
-    
+
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
         panel['axes'].clabel(panel['contour'], levels, fmt = '%.1f' )
         
@@ -1951,11 +1954,21 @@ class meshArxv():
                 if self.parms['radex']['use']:
                     self.computeAndSetRadexCurves(meshObj = self.mshTmp)
                 
+                #;;;remove later (to plot the emissions along the grid)
+                """
+                pyl.figure(figsize=(6,6))
+                pyl.plot(self.mshTmp.data['state']['Av'],
+                         self.mshTmp.data['fineStructureCoolingComponents']['C']['rate']['1-0'],'r')
+                pyl.plot(self.mshTmp.data['state']['Av'],
+                         self.mshTmp.data['fineStructureCoolingComponents']['C']['rate']['2-1'],'b')
+                """
+                #;;;end remove later
                 pyl.draw()
 
             # setting the Av of the position clicked on the plots of the current mesh
             # to the chemical netowrk object.
-            if event.inaxes is self.gui['AV']['00']['axes']:
+            if event.inaxes is self.gui['AV']['00']['axes'] or event.inaxes is self.gui['AV']['01']['axes'] or event.inaxes is self.gui['AV']['10']['axes'] or event.inaxes is self.gui['AV']['11']['axes']:
+                
                 clickedInAxes = True
                 Av_clicked = xd
 
@@ -1972,6 +1985,9 @@ class meshArxv():
                 Av_use = self.mshTmp.data['state']['Av'][indAv]
                 gasT_use = self.mshTmp.data['state']['gasT'][indAv]
                 abun_use = self.mshTmp.data['state']['abun'][:,indAv]
+
+                self.logger.debug('Av   used = %.4f' % Av_use)
+                self.logger.debug('Tgas used = %.4f' % gasT_use)
                 
                 #setting the parameters of the gas and the environment at that slab
                 self.mshTmp.chemNet.set_environment_state(gasT_use, 
@@ -1980,6 +1996,11 @@ class meshArxv():
                                                           self.parms_used_in_PDR_models['albedo'],
                                                           self.mshTmp.data['hdr']['nGas'],
                                                           self.mshTmp.data['hdr']['G0'])
+                
+                #plotting the vertical lines on the gui indicating the positions
+                #in the slab used for the chemistry
+                self.mshTmp.plot_v_lines_used_in_chemnet()
+                pyl.draw()
                 
                 #set the abundances at that slab
                 self.mshTmp.chemNet.set_abundances(fromArray = abun_use) 
@@ -2275,10 +2296,10 @@ class meshArxv():
                 setRelativeGmech = kwargs['relativeGmech']
             except:
                 setRelativeGmech = False                
-            
+                        
             # if relativeGmech is present AND it is True
             if setRelativeGmech == True:
-                
+            
                 #setting the path of the reference database
                 if 'referenceDatabasePath' in kwargs:
                     referenceDbDirPath = kwargs['referenceDatabasePath']
@@ -2500,7 +2521,7 @@ class meshArxv():
     
         return indMin
     
-    def get_mesh_data(self, quantity, x = None, y = None, z = None):
+    def get_mesh_data(self, x = None, y = None, z = None):
         """Returns the data (of dtype :data:`mesh`.data) of the pdr mesh in the x,y,z parmaerter 
         coordinate lests self.grid_x, self.grid_y, self.grid_z which are closest to the input x,y,z."""
         
