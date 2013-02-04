@@ -5,13 +5,12 @@ from ismUtils import planckOccupation as ng
 
 #reading the whole database of line info of species from LAMBDA
 lambdaPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
-reader = molData.reader(dirPath = lambdaPath)
+reader = molData.reader(dirPath = lambdaPath, specie = 'CO')
 
-#selecting the one holding the info for p-NH3
-"""
-for specDict in reader.speciesInfo:
-    if 'p-NH3' in specDict['specStr']:
-        pNH3 = specDict
-        print 'found p-NH3 info, filePath : %s' % pNH3['path']
-        break
-"""
+# getting the data from a particular file
+#CO = reader.get_specie(specStr = 'CO', inPath = 'xpol_new.dat')
+
+for spec in reader.speciesInfo:
+    print '----------------------------------------------'
+    for partner in spec['transColl']['partnersList']:   
+        print '          %s' % partner 

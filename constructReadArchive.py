@@ -12,17 +12,17 @@ home = '/home/mher'
 #runDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1/'
 #runDirPath =  home + '/ism/runs/oneSided/foo/'
 #runDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1-subset/'
-#runDirPath =  home + '/ism/runs/oneSided/uniformSweep2-z-1.0/'
+runDirPath =  home + '/ism/runs/oneSided/uniformSweep2-z-1.0/'
 #runDirPath =  home + '/ism/runs/oneSided/surfaceGrid-z-0.1/'
 #runDirPath =  home + '/ism/runs/oneSided/singleModels-z-2.0/' 
 
 #runDirPath =  home + '/ism/runs/oneSided/surfaceGrid-z-2.0-high-res-no-gmech/'
-runDirPath =  home + '/ism/runs/oneSided/singleModels-z-2.0/' 
+#runDirPath =  home + '/ism/runs/oneSided/singleModels-z-2.0/' 
 
 # constructing the archive
 t0 = time()
 arxvW = meshArxv( dirPath = runDirPath )
-arxvW.construct( writeDb = True )
+arxvW.construct( meshNamePrefix = 'mesh', writeDb = True )
 print 'time constructing %f' % (time() - t0)
 
 

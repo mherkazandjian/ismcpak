@@ -12,23 +12,24 @@ home = '/home/mher'
 
 parms = {
          #path to the database files
-         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
          #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-2.0/',
          #'dirPath'     : home + '/ism/runs/oneSided/uniformSweep2-z-2-no-mech/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweepNew-1and2/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-2/',         
-         'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-2.0/',
+         #'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-2.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-0.1/',
-         
+         'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
+         #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
+        
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
-         #'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
+         'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
-         'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
+         'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
          #'plotRanges'     : [[0,6],[0,6],[-51, -15]],  # uniform gmech
          
          'plot'          : True, 
-         'showGrids'     : False,
+         'showGrids'     : True,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
                                     'quantity' : ['state', 'gasT'],
@@ -47,11 +48,11 @@ parms = {
                                     'specStr'  : 'CO',
                                     },
                              '11' : { # line intensitities
-                                     'show'           : False,
+                                     'show'           : True,
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
                                      'type'           : 'radex',
-                                     'specStr'        : 'CO',     # database to be restored/computed
+                                     'specStr'        : 'HNC',     # database to be restored/computed
                                      'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
@@ -62,11 +63,11 @@ parms = {
          'meshPltAvRng'  : [0, 30.0],
          'radex'         : { 'use'                  : True,
                              ###-----------radex database parms-----------------
-                             'compute'              : True, #if true, runns radex on all meshes
-                             'writeDb'              : True, #if true, writes the computed stuff to a db
+                             'compute'              : False, #if true, runns radex on all meshes
+                             'writeDb'              : False, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                             'specStr'              : 'HCN',
+                             'specStr'              : 'CO',
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
@@ -110,7 +111,7 @@ if parms['plot']:
     arxv.plotGrids()
     pyl.show()
 
-if True:
+if False:
     """construct radex databases for a bunch of species"""
     species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'CN']
     for specStr in species:

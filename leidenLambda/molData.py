@@ -107,7 +107,8 @@ class reader():
     to provide the inPath parameter to decide which information to return
     based on the filename holding the data, since there are may o- and p- files
     in the current database.  
-        
+
+    .. note:: see  www.sron.rug.nl/~vdtak/radex/index.shtml#moldata for the format of the data ascii files.
     .. todo:: add a method to return the index of a level given the quantum numbers
     .. todo:: add another method which feches the transition info give the upper and lower levels (all transitions -rad-col..etc..)
     .. todo:: add a method which dumps the graphvis stuff for the transitions (radiative, coll...)
@@ -115,7 +116,27 @@ class reader():
     .. todo:: see what it is about the differences in the computed and tabulated deltaEs and energy levels
     .. todo:: collect the filenames only by doing one pass over all the files and compiling a dictionary
       for the species and different versions of the files. Also write a routine which writes all the info
-      of the read files. 
+      of the read files.
+    .. warning:: in the online data there are few mistakes (not sure if they were corrected):
+               
+         - in hcl@hfs.dat : the number of collisional transitions should be 378
+         - the files : c-h2.dat, c+-h2.dat, hcl.dat, old-hc3n.dat, o-h2.dat, old-hnco.dat are missing
+           the numerical code of the colliders. For example :
+            
+              C + o-H2  !  K. Schroeder et al. 1991, J. Phys. B, 24, 2487
+           
+           should be replaced by :
+           
+              3 C + o-H2  !  K. Schroeder et al. 1991, J. Phys. B, 24, 2487
+           
+         - in p-nh3.dat : the code for the collision partner for p-H2 is set as 1, it should be 2
+         
+              1 p-NH3 on p-H2: Danby et al 1988, MNRAS 235, 229
+              
+           should be:
+              
+              2 p-NH3 on p-H2: Danby et al 1988, MNRAS 235, 229
+
     """
     def __init__(self, *args, **kwargs):
         
@@ -127,7 +148,8 @@ class reader():
         are old ones which are not combatible with the current parser of this class."""
 
         self.speciesInfo = ()
-        """A dictionary holding the species string and the files containing data about them"""
+        """A tuple of dicts objects. Each dict object holds all the info 
+           read from a file."""
                 
         if 'dirPath' in kwargs:
             self.set_dirPath(kwargs['dirPath'])
@@ -178,7 +200,7 @@ class reader():
                temperature as an argument and returns the rate coefficient for that temperature.
              - in the above : 'n' is a transition index.
              - ['levels'], ['transRad'], ['transColl']['partnerX']['dtype'] are ndarrays one entry for each level/transition.
-        """ 
+        """
         
         #-----------------------------
         # extracting the energy levels
@@ -255,23 +277,24 @@ class reader():
                       [ ('n', np.int32), ('u', np.int32), ('l', np.int32), ('rc', object) ]
                      )
 
-        transColl = np.ndarray(specDict['transColl']['partner0']['nTrans'], dtype = dt)
-        tKin =  specDict['transColl']['partner0']['temps']
-        for idx, transCollStr in enumerate(specDict['transColl']['partner0']['table']):
-            transCollStrParsed = re.split('\s+', transCollStr.strip())
-            transColl[idx]['n']  = np.int32(transCollStrParsed[0]) - 1 
-            transColl[idx]['u']  = np.int32(transCollStrParsed[1]) - 1
-            transColl[idx]['l']  = np.int32(transCollStrParsed[2]) - 1
-            # getting the interpolation function
-            rc = np.array(transCollStrParsed[3:])
-            
-            if len(rc) == 1:
-                f_rc = lambda x: rc if x == tKin else -1.0
-            else:
-                f_rc = interp1d(tKin, rc)
-            transColl[idx]['rc'] = f_rc
-            
-        specDict['transColl']['partner0']['trans'] = transColl  
+        for partner in specDict['transColl']['partnersList']:
+            transColl = np.ndarray(specDict['transColl'][partner]['nTrans'], dtype = dt)
+            tKin =  specDict['transColl'][partner]['temps']
+            for idx, transCollStr in enumerate(specDict['transColl'][partner]['table']):
+                transCollStrParsed = re.split('\s+', transCollStr.strip())
+                transColl[idx]['n']  = np.int32(transCollStrParsed[0]) - 1 
+                transColl[idx]['u']  = np.int32(transCollStrParsed[1]) - 1
+                transColl[idx]['l']  = np.int32(transCollStrParsed[2]) - 1
+                # getting the interpolation function
+                rc = np.array(transCollStrParsed[3:])
+                
+                if len(rc) == 1:
+                    f_rc = lambda x: rc if x == tKin else -1.0
+                else:
+                    f_rc = interp1d(tKin, rc)
+                transColl[idx]['rc'] = f_rc
+                
+            specDict['transColl'][partner]['trans'] = transColl  
 
         return specDict
     
@@ -293,20 +316,20 @@ class reader():
                          ['transRad']
                          ['transColl']['nPartners']
                                       ['partnersList']
-                                      ['partner0']['nTrans']
-                                                  ['info']   #todo: not implemented
-                                                  ['nTemps']
-                                                  ['temps']
-                                                  ['table']
-                                      ['partner1']['nTrans'] 
-                                                  ['info']   #todo: not implemented
-                                                  ['nTemps']
-                                                  ['temps']
-                                                  ['table']
-                                                     .
-                                                     .
-                                                     .
-                                                    etc
+                                      ['first']['nTrans']
+                                               ['info']   #todo: not implemented
+                                               ['nTemps']
+                                               ['temps']
+                                               ['table']
+                                      ['second']['nTrans'] 
+                                                ['info']   #todo: not implemented
+                                                ['nTemps']
+                                                ['temps']
+                                                ['table']
+                                                    .
+                                                    .
+                                                    .
+                                                   etc
         """
         
         strng = open(fPath, 'r').read()
@@ -331,6 +354,7 @@ class reader():
             specDict['weight'] = np.float64((tok.split('\n'))[-1])
         else:
             raise ValueError('expected the MOLECULE WEIGHT section of the file, got *%s* instead'  % tok)
+
         #token : n levels
         #####################
         tok = tokens.pop(0)
@@ -341,6 +365,7 @@ class reader():
             specDict['nlevels'] = np.int32(tok)
         else:
             raise ValueError('expected the the NUMBER OF ENERGY LEVELS section file, got *%s* instead' % tok)
+
         #token : the levels
         ####################
         tok = (tokens.pop(0)).split('\n')
@@ -358,6 +383,7 @@ class reader():
             specDict['levels'] = data
         else:
             raise ValueError('expected the the LEVELs section file, got *%s* instead' % tok)
+
         #token : the number of radiative transitions
         ############################################
         tok = tokens.pop(0)
@@ -365,6 +391,7 @@ class reader():
             specDict['nTransRad'] = np.int32((tok.split('\n'))[-1])
         else:
             raise ValueError('expected the the NUMBER OF RADIATIVE TRANSITIONS section file, got *%s* instead' % tok)
+        
         #token : the radiative transitions
         ##################################
         tok = (tokens.pop(0)).split('\n')
@@ -374,6 +401,7 @@ class reader():
             specDict['transRad'] = data
         else:
             raise ValueError('expected the TRANS + UP + LOW + EINSTEINA(s^-1) + FREQ(GHz) + E_u(K) section file, got *%s* instead' % hdr)
+
         # collisional transitions
         ##########################
         specDict['transColl'] = {}
@@ -386,26 +414,24 @@ class reader():
             raise ValueError('expected the NUMBER OF COLL PARTNERS section file, got *%s* instead' % tok)
 
         #parsing the collisional information for each partner
+        partnerTypeDict = {'1': 'H2', '2': 'p-H2', '3': 'o-H2', '4': 'e-', '5':'H', '6':'He', '7':'H+'}
         for i in np.arange(specDict['transColl']['nPartners']):
             #token : the collisional partner
             tok = tokens.pop(0)
-            """
-            p1 = fPath.split('/')[-1]
-            p2 = tok.split('\n')[1]
-            p2 = re.sub(r'!.*','',p2)
-            p2 = re.sub(r'from.*','',p2)
-            p2 = re.sub(r',.*','',p2)
-            p2 = re.sub(r'scaled.*','',p2)
-            self.dummy += ((p1, p2,),)
-            """
+
             if 'COLLISION' in tok.upper() or 'PARTNER' in tok.upper():
-                specDict['transColl']['partnersList'].append((tok.split('\n'))[-1])
+                tokSplt = tok.split('\n') #splitting the token to extract the 2nd line which holds the coll info
+                tokSplt = tokSplt[-1].split(' ') #splitting the 2nd line to extract the numerical code of the collider
+                tokSplt = tokSplt[0].strip() # the first number indicating the type of the collider
+                partnerNumCode = tokSplt
+                partnerSpecStr = partnerTypeDict[partnerNumCode]
+                specDict['transColl']['partnersList'].append(partnerSpecStr)
             else:
                 raise ValueError('expected the COLLISIONS BETWEEN section file, got *%s* instead' % tok)
-            partnerLabel = 'partner%s' % i
-            specDict['transColl'][partnerLabel] = {}
+
+            specDict['transColl'][partnerSpecStr] = {}
             
-            specDict['transColl'][partnerLabel]['info'] = tok
+            specDict['transColl'][partnerSpecStr]['info'] = tok
             
             #token : number of collisional transitions
             tok = tokens.pop(0)
@@ -413,13 +439,13 @@ class reader():
                 tok = (tok.split('\n'))[-1]
                 tok = re.findall(r"\w+", tok) #splitting to words     
                 tok = tok[0] # picking the first (assuming it is the number we need)
-                specDict['transColl'][partnerLabel]['nTrans'] = np.int32(tok)
+                specDict['transColl'][partnerSpecStr]['nTrans'] = np.int32(tok)
             else:
                 raise ValueError('expected the NUMBER OF COLL TRANS section file, got *%s* instead' % tok)
             #token : number of temperatures at which the rates are tabulated
             tok = tokens.pop(0)
             if 'NUMBER OF' in tok.upper() and 'TEMP' in tok.upper():
-                specDict['transColl'][partnerLabel]['nTemps'] = np.int32((tok.split('\n'))[-1])
+                specDict['transColl'][partnerSpecStr]['nTemps'] = np.int32((tok.split('\n'))[-1])
             else:
                 raise ValueError('expected the NUMBER OF COLL TEMPS section file, got *%s* instead' % tok)
             #token : the temperature at which the rates are tabulated
@@ -427,13 +453,13 @@ class reader():
             if 'TEMP' in tok.upper():
                 temps = re.split('\n', tok, maxsplit=1)[1] # discaring the header
                 temps = re.sub('\n', ' ', temps)           # replacing the newline (if any) with a whitespace char
-                specDict['transColl'][partnerLabel]['temps'] = np.float64(temps.split())
+                specDict['transColl'][partnerSpecStr]['temps'] = np.float64(temps.split())
             else:
                 raise ValueError('expected the COLL TEMPS section file, got *%s* instead' % tok)
             #token : the collision rates data table
             tok = tokens.pop(0)
             if 'TRANS' in tok or 'RATE' in tok or 'cm^3 s^-1' in tok:
-                specDict['transColl'][partnerLabel]['table'] = (tok.split('\n'))[1:]
+                specDict['transColl'][partnerSpecStr]['table'] = (tok.split('\n'))[1:]
             else:
                 raise ValueError('expected the TRANS + UP + LOW + COLLRATES section file, got *%s* instead' % tok)
 
@@ -483,13 +509,21 @@ class reader():
         """This method can be used to return the data for a certain specie one
          the data has been read.  None of the keywords are mandatory. But
          at least one should be present. The checks are done using the 'AND'
-         logic.  
+         logic. Note that all the matches are returned. So a tuple of matches
+         might be returned.
+         
+         .. code-block:: python
+            
+              co_data = reader.get_specie( specStr = 'CO', inPath = 'xpol_new' )
+         
+         this call returns the data about CO which is in the file co@xpol_new.dat
          
          :param string specStr: the specie to be returned (not that if multiple 
            files contain info about the same specie, multiple species info
            will be returned. 
-         :param string inFname: If this string is in the filename, the specie
-           will be consider (assuming the remaining keyword checks restuls True).  
+         :param string inPath: If this string is in the filename from which the
+           species data was read, then the specie will be consider (assuming the
+           remaining keyword checks restuls True).  
          :param string inInfo: if this string is in the MOLECULE feild, the check
            results as True.               
         """
@@ -516,10 +550,15 @@ class reader():
                 else:
                     consider *= False
             
-            if consider == True:                     
+            if consider == True:
                 returnList += (spec,)
     
-        return returnList
+        if len(returnList) == 1:
+            print 'returning data from the file :\n     %s' % returnList[0]['path']
+            return returnList[0]
+        else:
+            print 'data returned matches content of %d files' % len(returnList)
+            return returnList
     
     def set_dirPath(self, path):
         self.dirPath = path

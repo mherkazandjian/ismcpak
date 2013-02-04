@@ -9,6 +9,8 @@ from leidenLambda import molData
 import numpy as np
 import re
 from ismUtils import planckOccupation as ng
+#### NEED TO MODIFY THIS WITH THE NEW COLLISION FORMAT OF moldata.py
+####-----------------------------------------------------------------
 
 #parameters
 Tkin  = 15.0 # kinetic temperature of the gas (K)
@@ -25,7 +27,6 @@ restore = True
 #reading the whole database of line info of species from LAMBDA
 lambdaPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 reader = molData.reader(dirPath = lambdaPath)
-
 
 #selecting the one holding the info for p-NH3
 for specDict in reader.speciesInfo:

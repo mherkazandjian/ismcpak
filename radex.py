@@ -1,5 +1,5 @@
-import numpy as np
-import pylab as pyl
+import numpy
+import pylab
 import subprocess
 import logging, sys
 
@@ -276,7 +276,7 @@ class radex( ):
         strng  += '%f\n' % (self.inFile['tKin'])
         strng  += '%d\n' % self.nCollPart
         
-        for i in np.arange( self.nCollPart ):
+        for i in numpy.arange( self.nCollPart ):
             strng += '%s\n' % self.inFile['collisionPartners'][i]
             strng += '%e\n' % self.inFile['nDensCollisionPartners'][i]
 
@@ -387,19 +387,19 @@ class radex( ):
         """generates the trasition dtype which will be used in assigning the transition info in self.transitionsNdArry.
         """
         fmt = [
-               ('upper'   , np.str_, 10),   
-               ('lower'   , np.str_, 10),   
-               ('E_up'    , np.float64),
-               ('Tex'     , np.float64), 
-               ('tau'     , np.float64), 
-               ('T_R'     , np.float64), 
-               ('pop_up'  , np.float64), 
-               ('pop_down', np.float64), 
-               ('fluxKkms', np.float64), 
-               ('fluxcgs' , np.float64), 
+               ('upper'   , numpy.str_, 10),   
+               ('lower'   , numpy.str_, 10),   
+               ('E_up'    , numpy.float64),
+               ('Tex'     , numpy.float64), 
+               ('tau'     , numpy.float64), 
+               ('T_R'     , numpy.float64), 
+               ('pop_up'  , numpy.float64), 
+               ('pop_down', numpy.float64), 
+               ('fluxKkms', numpy.float64), 
+               ('fluxcgs' , numpy.float64), 
               ] # 2 * 10b + 8 * 8b = 84b per transition 
        
-        return np.dtype(fmt)
+        return numpy.dtype(fmt)
     
     def flagSet(self, flag):
         """returns True 'flag' is set, false otherwise"""
@@ -453,7 +453,7 @@ class radex( ):
     
             lineNum = lineNumHdrEnd
             lineSplt = lines[lineNum].split()
-            self.nIter = np.int32(lineSplt[3])          
+            self.nIter = numpy.int32(lineSplt[3])          
             
             transitions = []
             #--------------------------------------------------------------------------
@@ -467,14 +467,14 @@ class radex( ):
                 #print lineSplt
                 info['upper'   ] = lineSplt[0].strip()
                 info['lower'   ] = lineSplt[1].strip()
-                info['E_up'    ] = np.float64(lineSplt[2]) 
-                info['Tex'     ] = np.float64(lineSplt[5]) 
-                info['tau'     ] = np.float64(lineSplt[6]) 
-                info['T_R'     ] = np.float64(lineSplt[7]) 
-                info['pop_up'  ] = np.float64(lineSplt[8]) 
-                info['pop_down'] = np.float64(lineSplt[9]) 
-                info['fluxKkms'] = np.float64(lineSplt[10]) 
-                info['fluxcgs' ] = np.float64(lineSplt[11]) 
+                info['E_up'    ] = numpy.float64(lineSplt[2]) 
+                info['Tex'     ] = numpy.float64(lineSplt[5]) 
+                info['tau'     ] = numpy.float64(lineSplt[6]) 
+                info['T_R'     ] = numpy.float64(lineSplt[7]) 
+                info['pop_up'  ] = numpy.float64(lineSplt[8]) 
+                info['pop_down'] = numpy.float64(lineSplt[9]) 
+                info['fluxKkms'] = numpy.float64(lineSplt[10]) 
+                info['fluxcgs' ] = numpy.float64(lineSplt[11]) 
                 
                 return info
             #--------------------------------------------------------------------------
@@ -488,7 +488,7 @@ class radex( ):
             ##:note: do this at one go without storing things first in self.transitiosn
             #******************************************************
             self.nTransitions = len(transitions)
-            transitionsNdarray = np.ndarray((self.nTransitions), dtype = self.transitionDtype)
+            transitionsNdarray = numpy.ndarray((self.nTransitions), dtype = self.transitionDtype)
             for i, trans in enumerate(transitions):
                 for key in trans.keys():
                     transitionsNdarray[i][key] = trans[key]
@@ -531,8 +531,8 @@ class radex( ):
             nx = 1
 
         # axs[0,0] is the one in the top left corner
-        fig, axs = pyl.subplots(4, nx, sharex = False, sharey = False, figsize=(8,8) )
-        pyl.subplots_adjust(left=0.1, bottom=0.15, right=0.95, top=0.95, wspace=0.0, hspace=0.0)
+        fig, axs = pylab.subplots(4, nx, sharex = False, sharey = False, figsize=(8,8) )
+        pylab.subplots_adjust(left=0.1, bottom=0.15, right=0.95, top=0.95, wspace=0.0, hspace=0.0)
         self.setAxes(fig, axs)
         
     ## plots the output of a certain model in a certain column in a predefined figure
@@ -545,7 +545,7 @@ class radex( ):
     def plotModelInFigureColumn(self, allTrans = None, inAxes = None, title = None):
         
         if allTrans == None:
-            allTrans =  np.arange( len(self.transitions) )
+            allTrans =  numpy.arange( len(self.transitions) )
 
         nTrans = len(allTrans)
         #----------------flux-------------------------
@@ -554,8 +554,8 @@ class radex( ):
         xticksStrs = ()
         
         xPlot = allTrans
-        yPlot = np.ndarray(nTrans, dtype=np.float64)
-        for i in np.arange(nTrans):
+        yPlot = numpy.ndarray(nTrans, dtype=numpy.float64)
+        for i in numpy.arange(nTrans):
     
             thisTrans = allTrans[i]
             xPlot[i] = thisTrans
@@ -582,10 +582,10 @@ class radex( ):
 
         #plotting the intensities    
         axes.semilogy(xPlot, yPlot, 'b')
-        axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1e-1])
+        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-10, 1e-1])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
-        ##np.savetxt('/home/mher/ism/tmp/intensities.out', np.array([xPlot, yPlot]).T, '%e')
+        ##numpy.savetxt('/home/mher/ism/tmp/intensities.out', numpy.array([xPlot, yPlot]).T, '%e')
         ##print '-----------> saved the file /home/mher/intensities.out'
         
         #---------------Tex and T_R--------------------------
@@ -593,9 +593,9 @@ class radex( ):
         axes.lines = []        
 
         xPlot = allTrans
-        yPlot1 = np.ndarray(nTrans, dtype=np.float64)
-        yPlot2 = np.ndarray(nTrans, dtype=np.float64)
-        for i in np.arange(nTrans):
+        yPlot1 = numpy.ndarray(nTrans, dtype=numpy.float64)
+        yPlot2 = numpy.ndarray(nTrans, dtype=numpy.float64)
+        for i in numpy.arange(nTrans):
     
             thisTrans = allTrans[i]
     
@@ -607,9 +607,11 @@ class radex( ):
     
             yPlot1[i] = yThis1
             yPlot2[i] = yThis2
+            
+        axes.semilogy([0, 1000], [self.inFile['tKin'], self.inFile['tKin']], 'k--')
         axes.semilogy(xPlot, yPlot1, 'b')
         axes.semilogy(xPlot, yPlot2, 'r')
-        axes.axis([np.min(allTrans), np.max(allTrans), 1, 10000])
+        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1, 10000])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
         
@@ -618,8 +620,8 @@ class radex( ):
         axes.lines = []        
 
         xPlot = allTrans
-        yPlot = np.ndarray(nTrans, dtype=np.float64)
-        for i in np.arange(nTrans):
+        yPlot = numpy.ndarray(nTrans, dtype=numpy.float64)
+        for i in numpy.arange(nTrans):
     
             thisTrans = allTrans[i]
     
@@ -630,10 +632,10 @@ class radex( ):
     
             yPlot[i] = yThis
         axes.plot(xPlot, yPlot, 'b')
-        axes.axis([np.min(allTrans), np.max(allTrans), -1, np.max(yPlot)])
+        axes.axis([numpy.min(allTrans), numpy.max(allTrans), -1, numpy.max(yPlot)])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
-        ##np.savetxt('/home/mher/ism/tmp/tau.out', np.array([xPlot, yPlot]).T, '%f')
+        ##numpy.savetxt('/home/mher/ism/tmp/tau.out', numpy.array([xPlot, yPlot]).T, '%f')
         ##print '-----------> saved the file /home/mher/tau.out'
         
         #------------------population densities-----------------------------
@@ -641,9 +643,9 @@ class radex( ):
         axes.lines = []        
 
         xPlot = allTrans
-        yPlot1 = np.ndarray(nTrans, dtype=np.float64)
-        yPlot2 = np.ndarray(nTrans, dtype=np.float64)
-        for i in np.arange(nTrans):
+        yPlot1 = numpy.ndarray(nTrans, dtype=numpy.float64)
+        yPlot2 = numpy.ndarray(nTrans, dtype=numpy.float64)
+        for i in numpy.arange(nTrans):
     
             thisTrans = allTrans[i]
     
@@ -657,7 +659,7 @@ class radex( ):
             yPlot2[i] = yThis2
         axes.semilogy(xPlot, yPlot1, 'b')
         axes.semilogy(xPlot, yPlot2, 'r')
-        axes.axis([np.min(allTrans), np.max(allTrans), 1e-10, 1])
+        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-10, 1])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
 
@@ -735,7 +737,7 @@ class radex( ):
         self.setupPlot(nx = 1)
         self.plotModelInFigureColumn( allTrans = None, inAxes = self.axs, title='')
         self.setLabels()   
-        pyl.show()
+        pylab.show()
         
     def clear(self):
         self.nCollPart    = None

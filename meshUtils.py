@@ -1591,8 +1591,8 @@ class meshArxv():
         ax2d['pts2'], = ax2d['axes'].plot( [1], [1], color = 'r', marker = 'o', linestyle = '')
         ax2d['pts3'], = ax2d['axes'].plot( [1], [1], color = 'w', marker = 'o', linestyle = '')
         ax2d['axes'].set_title('$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' % (0, 0, 0) )
-        ax2d['axes'].set_xlim( [-1, 7.0] )
-        ax2d['axes'].set_ylim( [-1, 7.0] )
+        ax2d['axes'].set_xlim(self.parms['plotRanges'][0])
+        ax2d['axes'].set_ylim(self.parms['plotRanges'][1])
         ax2d['axes'].set_xlabel('$log_{10} n_{gas}$')
         ax2d['axes'].set_ylabel('$log_{10} G_0$')
         #-----------------------------------------------------------------------------------        

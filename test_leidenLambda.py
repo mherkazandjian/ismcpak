@@ -6,7 +6,7 @@ if 'particle3' in os.uname():
 import pylab as pyl
 
 from leidenLambda import molData 
-import numpy as np
+import numpy
 import re
 from ismUtils import planckOccupation as ng
 
@@ -53,7 +53,7 @@ def computeRateMatrix(pNH3, Tkin, nc):
          
     levels = pNH3['levels']
     transRad = pNH3['transRad']
-    transColl = pNH3['transColl']['partner0']['trans']
+    transColl = pNH3['transColl']['p-H2']['trans']
       
     ###########################################################
     # constructing the matrix 
@@ -61,26 +61,26 @@ def computeRateMatrix(pNH3, Tkin, nc):
     def fill_K_matrix():
         """fill the kij matrix from the lambda collisional transition database"""
         #n  = 5
-        K = np.zeros( (n, n), dtype = np.float64)
+        K = numpy.zeros( (n, n), dtype = numpy.float64)
         for trans in transColl:
             u  = trans['u']; l = trans['l']
             gu = levels[u]['g']; gl = levels[l]['g']
             
-            dE = np.abs(levels[u]['E'] - levels[l]['E']) # difference in the enrergy in K
+            dE = numpy.abs(levels[u]['E'] - levels[l]['E']) # difference in the enrergy in K
             
             K[u, l] = trans['rc'](Tkin)
-            K[l, u] = (np.float64(gu) / np.float64(gl)) * K[u,l] * np.exp(-dE / Tkin)
+            K[l, u] = (numpy.float64(gu) / numpy.float64(gl)) * K[u,l] * numpy.exp(-dE / Tkin)
         
         return K
     
     
     def fill_AP_matrix():
         """fill the (A prime)_ij matrix from the lambda radiative transitions database"""
-        AP = np.zeros( (n, n), dtype = np.float64)
+        AP = numpy.zeros( (n, n), dtype = numpy.float64)
         
         for trans in transRad:
             u  = trans['u']; l = trans['l']
-            dE = np.abs( levels[u]['E'] - levels[l]['E'] ) # energy in K
+            dE = numpy.abs( levels[u]['E'] - levels[l]['E'] ) # energy in K
             
             nu = dE*kBoltz / hPlank # freq in Hz
             
@@ -90,22 +90,22 @@ def computeRateMatrix(pNH3, Tkin, nc):
     
     def fill_ABS_matrix():
         """fill the Aij matrix for absorbtion transitions from the lambda radiative transitions database"""
-        ABS = np.zeros( (n, n), dtype = np.float64)
+        ABS = numpy.zeros( (n, n), dtype = numpy.float64)
         
         for trans in transRad:
             u  = trans['u']; l = trans['l']
-            dE = np.abs( levels[u]['E'] - levels[l]['E'] ) # energy in K
+            dE = numpy.abs( levels[u]['E'] - levels[l]['E'] ) # energy in K
             gu = levels[u]['g']; gl = levels[l]['g'] 
             
             nu = dE*kBoltz / hPlank # freq in Hz
             
-            ABS[u, l] = (np.float64(gu)/np.float64(gl))*ng(hPlank, nu, kBoltz, Tcmb)*trans['A']
+            ABS[u, l] = (numpy.float64(gu)/numpy.float64(gl))*ng(hPlank, nu, kBoltz, Tcmb)*trans['A']
     
         return ABS
     
     def fill_E_matrix():
         """This is a matrix full of ones (it is a utility matrix"""
-        return np.ones((n,n))
+        return numpy.ones((n,n))
     
     K = fill_K_matrix()
     AP = fill_AP_matrix()
@@ -113,7 +113,7 @@ def computeRateMatrix(pNH3, Tkin, nc):
     E = fill_E_matrix()
     
     F = nc * K + AP + ABS.T
-    diag = np.eye(n)*np.dot(F,E)[:,1]
+    diag = numpy.eye(n)*numpy.dot(F,E)[:,1]
     offdiag = F.T
     
     full = -diag + offdiag
@@ -126,7 +126,7 @@ def solveEquilibrium(pNH3, full):
 
     # solving directly
     #replacing the first row with the conservation equation
-    dndt = np.zeros((n,1))
+    dndt = numpy.zeros((n,1))
     full[0,:] = 1.0
     dndt[0]   = 1.0
     
@@ -135,9 +135,9 @@ def solveEquilibrium(pNH3, full):
     #solving the system A.x = b
     #--------------------------
     #before solving, we will devide each row by the diagonal
-    for i in np.arange(n):
+    for i in numpy.arange(n):
         A[i,:] = A[i,:]/A[i,i]
-    x = np.linalg.solve(A, b)
+    x = numpy.linalg.solve(A, b)
     
     #print x.T
     
@@ -154,11 +154,11 @@ def computeLuminosity(pNH3):
     #----------------------------------
     def fill_R_matrix():
         """fill the L_ij matrix from the lambda radiative transitions database"""
-        R = np.zeros( (n, n), dtype = np.float64)
+        R = numpy.zeros( (n, n), dtype = numpy.float64)
         
         for trans in transRad:
             u  = trans['u']; l = trans['l']
-            dE = np.abs( levels[u]['E'] - levels[l]['E'] ) # energy in K
+            dE = numpy.abs( levels[u]['E'] - levels[l]['E'] ) # energy in K
             
             nu = dE*kBoltz / hPlank # freq in Hz
             
@@ -185,13 +185,13 @@ f    = solveEquilibrium(pNH3, full.copy())
 #-----------------------------------------------
 full2 = computeRateMatrix(pNH3, Tkin, nc)
 #generating the constraint equation and appending it to the Matrix
-cons  = np.ones(pNH3['nlevels'])
-full2 = np.vstack((full2, cons))
+cons  = numpy.ones(pNH3['nlevels'])
+full2 = numpy.vstack((full2, cons))
 #generating the RHS
-rhs   = np.zeros(pNH3['nlevels'] + 1)
+rhs   = numpy.zeros(pNH3['nlevels'] + 1)
 rhs[-1] = 1
 # solving
-sol = np.linalg.lstsq(full2, rhs)
+sol = numpy.linalg.lstsq(full2, rhs)
 f2 = sol[0]
 
 pyl.figure( figsize = (6,12))
@@ -206,10 +206,10 @@ pyl.ylabel('population density')
 #-----------------------------
 #setting up the initial conditions to population densities
 # that would be attained at LTE
-f0 = np.zeros(pNH3['nlevels'])
-Z = np.float64(0.0)  # the partition function
-for i in np.arange(pNH3['nlevels']):
-    f0[i] = pNH3['levels'][i]['g']*np.exp(- pNH3['levels'][i]['E'] / Tkin)
+f0 = numpy.zeros(pNH3['nlevels'])
+Z = numpy.float64(0.0)  # the partition function
+for i in numpy.arange(pNH3['nlevels']):
+    f0[i] = pNH3['levels'][i]['g']*numpy.exp(- pNH3['levels'][i]['E'] / Tkin)
     Z += f0[i]
 f0 /= Z # the initial fractional population densities
 #f0 = f #using the eq sol as ICs
@@ -225,11 +225,11 @@ f0[5] = 1e-6
 
 t0 = 0.0 # the initial time
 dt = 2e3 # initial timestep in seconds 
-tf = 2e5 #final time
+tf = 2e8 #final time
 
 #defining the function which will be the rhs of df/dt
 def ode_rhs(t, y, args):
-    return np.dot(full, y)
+    return numpy.dot(full, y)
 
 #evolving with respect to time
 from scipy.integrate import ode
@@ -240,7 +240,7 @@ r = ode(ode_rhs, jac = None).set_integrator('dopri',
                                             rtol = 1e-12)
 r.set_initial_value(f0, t0).set_f_params(1.0)
 
-lPlot = np.array([0, 1, 2, 3, 4, 5])   
+lPlot = numpy.array([0, 1, 2, 3, 4, 5])   
 t = []
 ft_0 = []
 ft_1 = []
@@ -260,7 +260,7 @@ while r.successful() and r.t < tf:
     ft_5.append(r.y[ lPlot[5] ])
 
     if i % 100 == 0:
-        print 'i = %d t = %e' % (i, r.t), 1.0 - np.sum(r.y), 1.0 - r.y[0]/f[0]
+        print 'i = %d t = %e' % (i, r.t), 1.0 - numpy.sum(r.y), 1.0 - r.y[0]/f[0]
     i+=1
 
 #pyl.figure(1)
@@ -286,9 +286,9 @@ pyl.ylabel('population density')
 """
 pyl.hold(True)
 #plotting the relative difference between the final sol and the eq sol
-pyl.loglog(t, np.fabs(1.0 - ft_0/f2[lPlot[0]]),'r')
-pyl.loglog(t, np.fabs(1.0 - ft_1/f2[lPlot[1]]),'g')
-pyl.loglog(t, np.fabs(1.0 - ft_2/f2[lPlot[2]]),'b')
+pyl.loglog(t, numpy.fabs(1.0 - ft_0/f2[lPlot[0]]),'r')
+pyl.loglog(t, numpy.fabs(1.0 - ft_1/f2[lPlot[1]]),'g')
+pyl.loglog(t, numpy.fabs(1.0 - ft_2/f2[lPlot[2]]),'b')
 pyl.axis([dt, tf, 1e-9, 1])
 """
 
@@ -299,7 +299,7 @@ pyl.show()
 ####### plotting the line intensities per molecule as a function of Tkin#####
 for nc in nH2:
     
-    Tkins = np.linspace(Tkin_min, Tkin_max, TkinSamples)
+    Tkins = numpy.linspace(Tkin_min, Tkin_max, TkinSamples)
     Llines = {'11':[], '22':[], '44':[]}
     
     for Tkin in Tkins:
@@ -343,7 +343,7 @@ pyl.show()
 ################ plotting the line ratios as a function of Tkin###############
 for nc in nH2:
     
-    Tkins = np.linspace(Tkin_min, Tkin_max, TkinSamples)
+    Tkins = numpy.linspace(Tkin_min, Tkin_max, TkinSamples)
     Llines = {'11':[], '22':[], '44':[]}
     
     for Tkin in Tkins:
@@ -372,10 +372,10 @@ for nc in nH2:
     if nc == 1000000.0:
         colorStr = 'b'
         
-    pyl.plot(Tkins, np.array(Llines['22'])/np.array(Llines['11']), colorStr)
+    pyl.plot(Tkins, numpy.array(Llines['22'])/numpy.array(Llines['11']), colorStr)
     pyl.hold(True)
-    pyl.plot(Tkins, np.array(Llines['44'])/np.array(Llines['22']), colorStr+'--')
-    pyl.plot(Tkins, np.array(Llines['44'])/np.array(Llines['11']), colorStr+'-.')
+    pyl.plot(Tkins, numpy.array(Llines['44'])/numpy.array(Llines['22']), colorStr+'--')
+    pyl.plot(Tkins, numpy.array(Llines['44'])/numpy.array(Llines['11']), colorStr+'-.')
     
 pyl.xscale('log')    
 pyl.yscale('log')
