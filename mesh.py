@@ -418,7 +418,7 @@ class mesh( ):
         self.axs[1,0].text(0.4, 1e-11, '$O$'   , color='c')
         self.axs[1,0].text(0.4, 1e-10, '$C^+$' , color='r')
         self.axs[1,0].text(0.4, 1e-9 , '$C$'   , color='g')
-        self.axs[1,0].text(0.4, 1e-8 , '$13CO$'  , color='b')
+        self.axs[1,0].text(0.4, 1e-8 , '$CO$'  , color='b')
         self.axs[1,0].set_xlabel('$A_V$')
         self.axs[1,0].set_ylabel('abun')
         
@@ -497,7 +497,7 @@ class mesh( ):
         self.plt10Spec2Plt.set_xdata( data['state']['Av'] )
         self.plt10Spec2Plt.set_ydata( data['state']['abun'][spcs['C'].num] )
         self.plt10Spec3Plt.set_xdata( data['state']['Av'] )
-        self.plt10Spec3Plt.set_ydata( data['state']['abun'][spcs['13CO'].num] )
+        self.plt10Spec3Plt.set_ydata( data['state']['abun'][spcs['CO'].num] )
         self.plt10Spec4Plt.set_xdata( data['state']['Av'] )
         self.plt10Spec4Plt.set_ydata( data['state']['abun'][spcs['O'].num] )
 

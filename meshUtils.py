@@ -2032,7 +2032,8 @@ class meshArxv():
                 
                 clickedInAxes = True
                 Av_clicked = xd
-
+                chemNet = self.mshTmp.chemNet
+                
                 self.logger.debug('####################################button 1 clicked###########################################')
                 self.logger.debug('Av clicked = %.4f' % Av_clicked)
                 
@@ -2044,30 +2045,29 @@ class meshArxv():
                 
                 #the values to be assigned to the chemical network
                 Av_use = self.mshTmp.data['state']['Av'][indAv]
-                gasT_use = self.mshTmp.data['state']['gasT'][indAv]
+                gasT_use  = self.mshTmp.data['state']['gasT'][indAv]
                 dustT_use = self.mshTmp.data['state']['dustT'][indAv]
-                abun_use = self.mshTmp.data['state']['abun'][:,indAv]
+                beta_CO   = self.mshTmp.data['selfSheilding']['CO'][indAv]
+                beta_13CO = self.mshTmp.data['selfSheilding']['13CO'][indAv]
+                beta_H2   = self.mshTmp.data['selfSheilding']['H2'][indAv]
+                abun_use  = self.mshTmp.data['state']['abun'][:,indAv]
 
                 self.logger.debug('Av   used = %.4f' % Av_use)
                 self.logger.debug('Tgas used = %.4f' % gasT_use)
                 
                 #setting the parameters of the gas and the environment at that slab
-                self.mshTmp.chemNet.set_environment_state(T           = gasT_use, 
-                                                          zeta        = self.parms_used_in_PDR_models['zeta'], 
-                                                          Av          = Av_use,
-                                                          albedo      = self.parms_used_in_PDR_models['albedo'],
-                                                          nDens       = self.mshTmp.data['hdr']['nGas'],
-                                                          G0          = self.mshTmp.data['hdr']['G0'],
-                                                          Tdust       = dustT_use,
-                                                          metallicity = self.metallicity,
-                                                          PHI_PAH     = 0.5,
-                                                          beta_CO     = 0.5,
-                                                          beta_13CO   = 0.5,
-                                                          beta_H2     = 0.5)
-                
-                self.logger.critical("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                self.logger.critical("!!!!!!!!!!make sure to set the correct sheilding factors!!!!!!!")
-                self.logger.critical("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                chemNet.set_environment_state(T           = gasT_use, 
+                                              zeta        = self.parms_used_in_PDR_models['zeta'], 
+                                              Av          = Av_use,
+                                              albedo      = self.parms_used_in_PDR_models['albedo'],
+                                              nDens       = self.mshTmp.data['hdr']['nGas'],
+                                              G0          = self.mshTmp.data['hdr']['G0'],
+                                              Tdust       = dustT_use,
+                                              metallicity = self.metallicity,
+                                              PHI_PAH     = 0.5,
+                                              beta_CO     = beta_CO,
+                                              beta_13CO   = beta_13CO,
+                                              beta_H2     = beta_H2)
                 
                 #plotting the vertical lines on the gui indicating the positions
                 #in the slab used for the chemistry
@@ -2075,12 +2075,17 @@ class meshArxv():
                 pyl.draw()
                 
                 #cleaning previously computerd rxn rates and constants (if they were computed)
-                self.mshTmp.chemNet.set_all_rxn_rates_and_cst_to_none()
+                chemNet.set_all_rxn_rates_and_cst_to_none()
                  
                 #set the abundances at that slab
-                self.mshTmp.chemNet.set_abundances(fromArray = abun_use) 
-                self.mshTmp.chemNet.compute_rxn_constants()
-                self.mshTmp.chemNet.compute_rxn_rates()
+                chemNet.set_abundances(fromArray = abun_use) 
+                chemNet.compute_rxn_constants()
+                chemNet.compute_rxn_rates()
+
+                IDs_filtered = chemNet.filter_reactions(withReacts='CO', 
+                                                        fmt='id rxn trng cst rate', 
+                                                        show=10, 
+                                                        sort=True)
 
                 self.logger.debug('set the environment variable to the chemical netowrk of the mesh.')
             
