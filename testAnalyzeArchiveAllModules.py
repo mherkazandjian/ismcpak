@@ -29,7 +29,7 @@ parms = {
          #'plotRanges'     : [[-3,7],[-3,7],[-51, -15]],  # uniform gmech
          
          'plot'          : True, 
-         'showGrids'     : False,
+         'showGrids'     : True,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
                                     'quantity' : ['state', 'gasT'],
@@ -45,7 +45,7 @@ parms = {
                              '10' : { # column density
                                     'show'     : True,
                                     'maxAv'    : 30,
-                                    'specStr'  : 'CO',
+                                    'specStr'  : '13CO',
                                     },
                              '11' : { # line intensitities
                                      'show'           : False,

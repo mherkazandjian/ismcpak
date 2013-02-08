@@ -1213,11 +1213,11 @@ def compute_CR_rxn_cst(rxn, state):
     return rxn.alpha * ((T/300.0)**rxn.beta) * (rxn.gamma / ( 1.0 - albedo )) * (zeta/1.3e-17) 
 
 def compute_PAH_rxn_cst(rxn, state):
-    """compute the reaction constant for reactions involving PAHs.
+    """compute the reaction constant for reactions involving PAHs 
     
-          alpha * (T/100.0)**beta * PHI_PAH *gamma
-          
+       alpha * (T/100.0)**beta * PHI_PAH * gamma
     """
+    
     T = state['T']
     PHI_PAH = state['PHI_PAH']
     return rxn.alpha * (T/100.0)**rxn.beta * PHI_PAH *rxn.gamma

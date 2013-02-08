@@ -2126,7 +2126,7 @@ class meshArxv():
         else:
             #updating the ['radex']['title1'] and ['radex']['title2']
             #title1
-            strng = 'radex LVG data'
+            strng = 'radex LVG data for species %s' %  self.parms['radex']['specStr']
             self.gui['radex']['title1'].set_text(strng)
             #title2
             strng = 'gasT\n%f\nN(specie)\n%e\n' % (gasTRadex, colDensThisSpec)

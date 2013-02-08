@@ -18,10 +18,13 @@ import collections
 #########################################parameters##########################################################
 home = '/home/mher'
 
-metallicity = 0.1
+metallicity = 1.0
 
-#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-atomic-z-%.1f.eps' % metallicity
-imageSavePath = '/home/mher/foo.eps'
+spec1Str = '13CO'
+spec2Str = 'CO'
+
+imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-%s-%s-z-%.1f.eps' % (spec1Str, spec2Str, metallicity)
+#imageSavePath = '/home/mher/foo.eps'
 
 parms = {
          #path to the database files
@@ -77,7 +80,7 @@ def get_intensities_and_ratios(idx):
     #get the intensities from a model
     flux = collections.OrderedDict()
 
-    specStr = 'HCN'
+    specStr = spec1Str
     transitions = arxv.radexDbs[specStr]['meshes'][idx]
     if transitions == None:
         return (None, None)
@@ -86,9 +89,9 @@ def get_intensities_and_ratios(idx):
         flux[specStr + '(2-1)']  = transitions[2]['fluxcgs'] 
         flux[specStr + '(3-2)']  = transitions[2]['fluxcgs'] 
         flux[specStr + '(4-3)']  = transitions[3]['fluxcgs'] 
-        flux[specStr + '(5-4)']  = transitions[3]['fluxcgs'] 
+        flux[specStr + '(7-6)']  = transitions[3]['fluxcgs'] 
 
-    specStr = 'HNC'
+    specStr = spec2Str
     transitions = arxv.radexDbs[specStr]['meshes'][idx]
     if transitions == None:
         return (None, None)
@@ -97,15 +100,15 @@ def get_intensities_and_ratios(idx):
         flux[specStr + '(2-1)']  = transitions[2]['fluxcgs'] 
         flux[specStr + '(3-2)']  = transitions[2]['fluxcgs'] 
         flux[specStr + '(4-3)']  = transitions[3]['fluxcgs'] 
-        flux[specStr + '(5-4)']  = transitions[3]['fluxcgs'] 
+        flux[specStr + '(7-6)']  = transitions[3]['fluxcgs'] 
 
     ratios = collections.OrderedDict()
 
-    rStr = 'HCN(1-0)/HNC(1-0)'; ratios[rStr] = computeRatio(flux, rStr)    
-    rStr = 'HCN(2-1)/HNC(2-1)'; ratios[rStr] = computeRatio(flux, rStr)
-    rStr = 'HCN(3-2)/HNC(3-2)'; ratios[rStr] = computeRatio(flux, rStr)
-    rStr = 'HCN(4-3)/HNC(4-3)'; ratios[rStr] = computeRatio(flux, rStr)
-    rStr = 'HCN(5-4)/HNC(5-4)'; ratios[rStr] = computeRatio(flux, rStr)
+    rStr = spec1Str + '(1-0)/' + spec2Str + '(1-0)'; ratios[rStr] = computeRatio(flux, rStr)    
+    rStr = spec1Str + '(2-1)/' + spec2Str + '(2-1)'; ratios[rStr] = computeRatio(flux, rStr)
+    rStr = spec1Str + '(3-2)/' + spec2Str + '(3-2)'; ratios[rStr] = computeRatio(flux, rStr)
+    rStr = spec1Str + '(4-3)/' + spec2Str + '(4-3)'; ratios[rStr] = computeRatio(flux, rStr)
+    rStr = spec1Str + '(7-6)/' + spec2Str + '(7-6)'; ratios[rStr] = computeRatio(flux, rStr)
     
     return (flux, ratios)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,30 +156,30 @@ gm_v   = numpy.array([0.1, 1.0, 5.0, 10.0, 50.0])/100.0
 colors = [            'k', 'g', 'b', 'c' , 'y',   'r']
 
 #####################################################################################
-info = plot_ratios_bars(arxv, [-3.0, 1.0], 'MA1', log_n = 1.0, log_G0 = 1.0)
+info = plot_ratios_bars(arxv, [-2.0, 0.5], 'MA1', log_n = 1.0, log_G0 = 1.0)
 pylab.xticks(range(len(info['ratios'].keys())))
 pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 10)
 
 pylab.subplot(615)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [-0.5, 2.0], 'MA2', log_n = 2.0, log_G0 = 2.0)
+info = plot_ratios_bars(arxv, [-1.0, 0.5], 'MA2', log_n = 2.0, log_G0 = 2.0)
 
 
 pylab.subplot(614)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 3.0], 'M1', log_n = 3.0, log_G0 = 3.0)
+info = plot_ratios_bars(arxv, [-0.5, 0.5], 'M1', log_n = 3.0, log_G0 = 3.0)
 
 pylab.subplot(613)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 4.0], 'M2', log_n = 3.0, log_G0 = 5.0)
+info = plot_ratios_bars(arxv, [-0.5, 0.5], 'M2', log_n = 3.0, log_G0 = 5.0)
 
 pylab.subplot(612)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 5.0], 'M3', log_n = 5.5, log_G0 = 3.0)
+info = plot_ratios_bars(arxv, [-0.5, 0.5], 'M3', log_n = 5.5, log_G0 = 3.0)
 
 pylab.subplot(611)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 5.0], 'M4', log_n = 5.5, log_G0 = 5.0)
+info = plot_ratios_bars(arxv, [-0.5, 0.5], 'M4', log_n = 5.5, log_G0 = 5.0)
 
 legen = pylab.legend(info['rects'], info['strings'], 
                    bbox_to_anchor = (-0.1, 1.1, 1.2, .102), loc = 3,  
@@ -186,4 +189,4 @@ legen = pylab.legend(info['rects'], info['strings'],
 pylab.show()
 
 fig.savefig(imageSavePath)
-
+print 'saved image to path %s', imageSavePath

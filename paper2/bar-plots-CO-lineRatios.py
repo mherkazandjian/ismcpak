@@ -18,10 +18,11 @@ import collections
 #########################################parameters##########################################################
 home = '/home/mher'
 
-metallicity = 0.1
+metallicity = 1.0
 
-#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-atomic-z-%.1f.eps' % metallicity
-imageSavePath = '/home/mher/foo.eps'
+specStr = 'CO'
+imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-%s-z-%.1f.eps' % (specStr,metallicity)
+#imageSavePath = '/home/mher/foo.eps'
 
 parms = {
          #path to the database files
@@ -64,30 +65,30 @@ arxv = meshUtils.meshArxv(readDb = True, **parms)
 arxv.set_grid_axes_quantity_values(relativeGmech = parms['relativeGmech']) 
 
 #reading all the available precomputed radex databases
-arxv.readDbsRadex(species = 'CO')
+arxv.readDbsRadex(species = specStr)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 def get_intensities_and_ratios(transitions):
     #get the intensities from a model
     flux = collections.OrderedDict()
-    
-    flux['CO(1-0)']  = transitions[0]['fluxcgs'] 
-    flux['CO(2-1)']  = transitions[1]['fluxcgs'] 
-    flux['CO(3-2)']  = transitions[2]['fluxcgs'] 
-    flux['CO(4-3)']  = transitions[3]['fluxcgs'] 
-    flux['CO(7-6)']  = transitions[6]['fluxcgs'] 
-    flux['CO(10-9)'] = transitions[9]['fluxcgs'] 
-    flux['CO(16-15)'] = transitions[15]['fluxcgs'] 
+
+    flux[specStr + '(1-0)']  = transitions[0]['fluxcgs'] 
+    flux[specStr + '(2-1)']  = transitions[1]['fluxcgs'] 
+    flux[specStr + '(3-2)']  = transitions[2]['fluxcgs'] 
+    flux[specStr + '(4-3)']  = transitions[3]['fluxcgs'] 
+    flux[specStr + '(7-6)']  = transitions[6]['fluxcgs'] 
+    flux[specStr + '(10-9)'] = transitions[9]['fluxcgs'] 
+    flux[specStr + '(16-15)'] = transitions[15]['fluxcgs'] 
 
     ratios = collections.OrderedDict()
     
-    ratios['CO(2-1)/CO(1-0)']    = flux['CO(2-1)']/flux['CO(1-0)']
-    ratios['CO(3-2)/CO(1-0)']    = flux['CO(3-2)']/flux['CO(1-0)']
-    ratios['CO(4-3)/CO(1-0)']    = flux['CO(4-3)']/flux['CO(1-0)']
-    ratios['CO(16-15)/CO(1-0)']  = flux['CO(16-15)']/flux['CO(1-0)']
-    ratios['CO(7-6)/CO(3-2)']    = flux['CO(7-6)']/flux['CO(3-2)']
-    ratios['CO(10-9)/CO(7-6)']   = flux['CO(10-9)']/flux['CO(7-6)']
-    ratios['CO(16-15)/CO(10-9)'] = flux['CO(16-15)']/flux['CO(10-9)']
+    ratios[specStr + '(2-1)'   + specStr + '(1-0)']  = flux[specStr + '(2-1)'  ]/flux[specStr + '(1-0)']
+    ratios[specStr + '(3-2)'   + specStr + '(1-0)']  = flux[specStr + '(3-2)'  ]/flux[specStr + '(1-0)']
+    ratios[specStr + '(4-3)'   + specStr + '(1-0)']  = flux[specStr + '(4-3)'  ]/flux[specStr + '(1-0)']
+    ratios[specStr + '(16-15)' + specStr + '(1-0)']  = flux[specStr + '(16-15)']/flux[specStr + '(1-0)']
+    ratios[specStr + '(7-6)'   + specStr + '(3-2)']  = flux[specStr + '(7-6)'  ]/flux[specStr + '(3-2)']
+    ratios[specStr + '(10-9)'  + specStr + '(7-6)']  = flux[specStr + '(10-9)' ]/flux[specStr + '(7-6)']
+    ratios[specStr + '(16-15)' + specStr + '(10-9)'] = flux[specStr + '(16-15)']/flux[specStr + '(10-9)']
     
     return (flux, ratios)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,28 +132,28 @@ gm_v   = numpy.array([0.1, 1.0, 5.0, 10.0, 50.0])/100.0
 colors = [            'k', 'g', 'b', 'c' , 'y',   'r']
 
 #####################################################################################
-info = plot_ratios_bars(arxv, [-3.0, 1.0], 'MA1', log_n = 1.0, log_G0 = 1.0)
+info = plot_ratios_bars(arxv, [-3.0, 2.0], 'MA1', log_n = 1.0, log_G0 = 1.0)
 pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 6)
 
 pylab.subplot(615)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [-0.5, 2.0], 'MA2', log_n = 2.0, log_G0 = 2.0)
+info = plot_ratios_bars(arxv, [-1.0, 3.0], 'MA2', log_n = 2.0, log_G0 = 2.0)
 
 pylab.subplot(614)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 3.0], 'M1', log_n = 3.0, log_G0 = 3.0)
+info = plot_ratios_bars(arxv, [-1.0, 3.0], 'M1', log_n = 3.0, log_G0 = 3.0)
 
 pylab.subplot(613)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 4.0], 'M2', log_n = 3.0, log_G0 = 5.0)
+info = plot_ratios_bars(arxv, [-1.0, 2.0], 'M2', log_n = 3.0, log_G0 = 5.0)
 
 pylab.subplot(612)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 5.0], 'M3', log_n = 5.5, log_G0 = 3.0)
+info = plot_ratios_bars(arxv, [-1.0, 4.0], 'M3', log_n = 5.5, log_G0 = 3.0)
 
 pylab.subplot(611)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 5.0], 'M4', log_n = 5.5, log_G0 = 5.0)
+info = plot_ratios_bars(arxv, [-1.0, 4.0], 'M4', log_n = 5.5, log_G0 = 5.0)
 
 
 legen = pylab.legend(info['rects'], info['strings'], 
