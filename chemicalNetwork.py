@@ -817,6 +817,9 @@ class chemicalNetwork(specie, reaction):
            .. warning:: this ignores reactions with complements. So make sure to call this
             before calling self.merge_identical_reactions().
             
+            .. note:: in computing rates and constants, it is advised to use reaction.rxn_in_trng
+               to avoid confusion with other reactions which might be defined over different temperature
+               ranges.
         """
 
         #a dictonary which sets the function for computing the reaction
@@ -862,7 +865,13 @@ class chemicalNetwork(specie, reaction):
             if rxn.ID == 4264:                    rxn.compute_rxn_cst_func = compute_rxn_cst_fmisc_1
         
     def compute_rxn_constants(self):
-        """compute the reaction constant by passing the parameters to the assigned functions."""
+        """compute the reaction constant by passing the parameters to the assigned functions.
+        
+            .. note:: in computing rates and constants, it is advised to use reaction.rxn_in_trng
+               to avoid confusion with other reactions which might be defined over different temperature
+               ranges.
+        
+        """
 
         #the state of the environment (gas)
         state = {'T'           : self.T,
@@ -884,69 +893,36 @@ class chemicalNetwork(specie, reaction):
             rxn.compute_reaction_constant(state)
             
         rxn = self.get_reactions(IDs=3811)[0]
-        rxn.cst *= self.beta_CO
+        rxn.rxn_in_trng.cst *= self.beta_CO
         
         rxn = self.get_reactions(IDs=4115)[0]
-        rxn.cst *= self.beta_H2
+        rxn.rxn_in_trng.cst *= self.beta_H2
         
         rxn = self.get_reactions(IDs=4268)[0]
-        rxn.cst *= self.beta_H2
+        rxn.rxn_in_trng.cst *= self.beta_H2
         
         rxn = self.get_reactions(IDs=4426)[0]
-        rxn.cst *= self.beta_13CO
+        rxn.rxn_in_trng.cst *= self.beta_13CO
             
     def compute_rxn_rates(self):
         """Compute the reaction rates assuming all the abundances are set and the reaction                                                                                                                                                   
-           constants are already computed.                                                                                                                                                                                                   
-                                                                                                                                                                                                                                             
-           ..warning:: The rates are computed by multiplying the reaction constant with the                                                                                                                                                  
-            DENSITY of all the reactants.  The reactants which have an abundance of None are                                                                                                                                                 
-            skipped (this is useful for the reactions which have CRP, PHOTON, M and CRPHOT                                                                                                                                                   
-            as reactants.  So in case custom reactions are added, there is a caveat where                                                                                                                                                    
-            if a reaction includes any of the 4 mentioned 'species' in addition to a thrid                                                                                                                                                   
-            reactant the rate might be computed incorrectly. For example, a reaction like :                                                                                                                                                  
-                                                                                                                                                                                                                                             
-                    CO + PHOTON + XYZ ->  ....                                                                                                                                                                                               
-                                                                                                                                                                                                                                             
-            would have the rate computed as : rxn.cst * density(CO) * density(XYZ)                                                                                                                                                           
-            which might not be what we want to do.                                                                                                                                                                                           
+           constants are already computed.
         """
 
         for rxn in self.reactions:
-
-            reactants = rxn.reactants
-            species   = rxn.species
-
-            #mutiplyuing the reaction constant with the density of the first reactant                                                                                                                                                        
-            #this is always the case for all the reactions including the PH, CP and CR ones.                                                                                                                                                 
-            rate = rxn.cst * (self.nDens * species[reactants[0]].abun())
-
-            #if the reaction is not a PH or CP or CR, the other reactants also must                                                                                                                                                          
-            #be taken into account in computing the rate                                                                                                                                                                                     
-            # compute the rate for reactions involving a photon                                                                                                                                                                              
-            for specStr in rxn.reactants:
-                abun = species[specStr].abun()
-
-                if abun != None:
-                    rate *= (self.nDens * abun)
-
-            if rate == None:
-                raise ValueError('reaction %s has a rate equal to None. Something has gone wrong while computing its rate' % rxn.str)
-
-            rxn.rate = rate
+            rxn.compute_reaction_rate(self.nDens)
 
     def sort_rxns_decreasing_rates(self, rxnIDs):
-        """Sort the reactions with decreasing absolute rates.
-        """
+        """Sort the reactions with input IDs in decreasing absolute rates."""
         
         rates = []
         ids   = []
 
         for rxnId in rxnIDs:
             for rxn in self.reactions:
-                if rxnId == rxn.ID and rxn.rate != None:
-                    rates.append( rxn.rate )
-                    ids.append( rxn.ID )
+                if rxn.has_ID(rxnId) and rxn.rxn_in_trng.rate != None:
+                    rates.append(rxn.rxn_in_trng.rate)
+                    ids.append(rxn.ID)
         
         #sorting the reaction with decreasing rates
         rates = numpy.abs(numpy.array(rates))
@@ -1152,10 +1128,13 @@ class chemicalNetwork(specie, reaction):
         raise ValueError("rxn with ID %d not found" % ID)
         
     def set_all_rxn_rates_and_cst_to_none(self):
-        """sets all the reaction constants and rates to none."""
+        """sets all the reaction (and the sub complements) constants and rates to None."""
         for rxn in self.reactions:
-            rxn.cst = None
-            rxn.rate = None
+            rxn.cst_use = rxn.rate_use = None
+            if rxn.complements != None: 
+                for sub_rxn in rxn.complements:
+                    sub_rxn.cst = sub_rxn.rate = None
+            
             
     def replace_reaction(self, ID = None, new_rxn = None):
         """Replaces a reaction with ID in self.reactions with rxn"""

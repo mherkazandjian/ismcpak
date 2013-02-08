@@ -1,4 +1,3 @@
-import string
 import numpy
 from specie import specie
 
@@ -80,6 +79,8 @@ class reaction():
            argument a dictonary which has all the parameters it needs to compute 
            the reaction constant.
         """
+        
+        self.rxn_in_trng = None #: the reaction which is chosen to compute the reaction rate
          
     def set_all_attr_from_rxn_str(self, rxnStr):
         """set all the attributes from the string array of the reaction line"""
@@ -159,8 +160,49 @@ class reaction():
         rxn = self.get_rxn_in_trange(state['T'])
         cst = rxn.compute_rxn_cst_func(rxn, state)
         
-        self.cst = rxn.cst = cst
+        rxn.cst = cst
+        self.rxn_in_trng = rxn
     
+    def compute_reaction_rate(self, nDens):
+        """computes the reaction rate from the reaction constant and the
+           abundances of the reactants. The rate is set to self.rxn_in_trng.rate
+           and not to self.rate
+           
+           ..warning:: The rates are computed by multiplying the reaction constant with the                                                                                                                                                  
+             DENSITY of all the reactants.  The reactants which have an abundance of None are                                                                                                                                                 
+             skipped (this is useful for the reactions which have CRP, PHOTON, M and CRPHOT                                                                                                                                                   
+             as reactants.  So in case custom reactions are added, there is a caveat where                                                                                                                                                    
+             if a reaction includes any of the 4 mentioned 'species' in addition to a thrid                                                                                                                                                   
+             reactant the rate might be computed incorrectly. For example, a reaction like :                                                                                                                                                  
+                                                                                                                                                                                                                                             
+                    CO + PHOTON + XYZ ->  ....                                                                                                                                                                                               
+                                                                                                                                                                                                                                             
+             would have the rate computed as : rxn.cst * density(CO) * density(XYZ)                                                                                                                                                           
+             which might not be what we want to do.                                                                                                                                                                                           
+        """
+        
+        reactants = self.reactants
+        species   = self.species
+
+        #mutiplyuing the reaction constant with the density of the first reactant                                                                                                                                                        
+        #this is always the case for all the reactions including the PH, CP and CR ones.                                                                                                                                                 
+        rate = self.rxn_in_trng.cst * (nDens * species[reactants[0]].abun())
+
+        #if the reaction is not a PH or CP or CR, the other reactants also must                                                                                                                                                          
+        #be taken into account in computing the rate                                                                                                                                                                                     
+        # compute the rate for reactions involving a photon                                                                                                                                                                              
+        for specStr in reactants:
+            abun = species[specStr].abun()
+
+            if abun != None:
+                rate *= (nDens * abun)
+
+        if rate == None:
+            raise ValueError('reaction %s has a rate equal to None. Something has gone wrong while computing its rate' % rxn.str)
+
+        self.rxn_in_trng.rate = rate
+    
+        
     def active(self):
         """sets status to 1 indication the reaction IS being used"""
         self.status=1

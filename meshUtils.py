@@ -2074,6 +2074,9 @@ class meshArxv():
                 self.mshTmp.plot_v_lines_used_in_chemnet()
                 pyl.draw()
                 
+                #cleaning previously computerd rxn rates and constants (if they were computed)
+                self.mshTmp.chemNet.set_all_rxn_rates_and_cst_to_none()
+                 
                 #set the abundances at that slab
                 self.mshTmp.chemNet.set_abundances(fromArray = abun_use) 
                 self.mshTmp.chemNet.compute_rxn_constants()
