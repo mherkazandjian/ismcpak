@@ -5,44 +5,82 @@ from specie import specie
 # class definition for a single reaction
 # --------------------------------------
 class reaction():
-    """asdasdadasda
+    """This class parses a reaction line read (as a string) into its components 
+       (reactants, prodcuts, temperature ranges, constants...etc..). It also
+       provides a method to print the reaction in a pretty format. 
     
        .. todo:: write a method which checks if the reaction is balanced or not
     """
     def __init__(self):
-        self.str = ''  #: The string representation of the reaction
-        self.status = -1
-        self.ID   = -1
-        self.hash = numpy.uint64(0)
+        self.str = ''      #: The string representation of the reaction
+        self.status = -1   #: NA 
+        self.ID   = -1     #: ID of the reaction, read from the reaction file
+        self.hash = numpy.uint64(0) #: a number generated from the products and the reactants (useful to check for identical reactions efficiently)
         #--------------
-        self.type = ''  # umist string for the reaction
-        self.ntype = '' # numeric type/code of reaction
+        self.type = ''  #: umist (or customly defined ) string indicating the type of the reaction.
         #--------------
-        self.reactants  = []  # a string list of the reactants
-        self.nReactants = None
+        self.reactants  = []  #: a list of strings of the reactants
+        self.nReactants = None  #: number of reactants
         
         #--------------
-        self.products  = [] # a string list of the products
-        self.nProducts = None
+        self.products  = [] #: a list of strings of the products
+        self.nProducts = None #: number of the products
         
-        self.species = {} # a dictionary of the species
-        self.nSpec = None
+        self.species = {} #: a dictionary whose keys are the reactants and the products.
+        self.nSpec = None #: number of species involved in the reaction. 
         
         #--------------
-        self.alpha = 0.0
-        self.beta  = 0.0
-        self.gamma = 0.0
-        self.cst   = None
-        self.rate  = None
-        self.src   = ''
-        self.Tl = -1.0
-        self.Tu = -1.0
+        self.alpha = 0.0 #: the first constant in the reaction line.
+        self.beta  = 0.0 #: the second constant in the reaction line.
+        self.gamma = 0.0 #: the third constant in the reaction line.
+        self.cst   = None #: the reaction constant computed from alpha, beta, gamma (and maybe other parameters)
+        self.rate  = None #: the reaction rate computed from self.cst and the abundances (and maybe other parameters) 
+        self.src   = '' #: a string indicating the literature source of the reaction.
+        self.Tl = -1.0 #: lower temperature range where the reaction is valid
+        self.Tu = -1.0 #: upper temperature range where the reaction is valid
         #--------------
-        self.accuracy = ''  # umist error code of accuracy of the reaction constatn
-        self.naccuracy = '' # numeric error of the reaction constant
+        self.accuracy = ''  #: umist error code of accuracy of the reaction constatn
+        self.naccuracy = '' #: numeric error of the reaction constant
         #--------------
-        self.refCode = ''
+        self.refCode = '' #: ??? (not used anywhere)
+        self.complements = None
+        """list of other reactions objects which have the same hash codes, but are 
+           have reaction constants defined over other (non-overlapping) complementary
+           temperature ranges. If this is None, then the reaction does not have any
+           complements.
+        """
+        
+        self.all_rxns = None
+        "same as self.complements with self appended to it"
 
+        self.bounds = {'below':None, 'above':None} 
+        """dictonary which helps decide which reaction to use when the the temperature
+           at which the reaction constant will be computed is not withing the range 
+           defined in the reaction file. (See set_bound_rxns)
+           
+           .. code-block:: python
+           
+               self.bouds['below']['T']    #the minimum temperature where the reaction is defined
+               self.bouds['below']['rxn']  #the reaction which has the constants defined for this minimum temperature
+               
+               self.bouds['above']['T']    #the maximum temperature where the reaction is defined
+               self.bouds['above']['rxn']  #the reaction which has the constants defined for this maximum temperature
+   
+        """  
+        
+        self.Tlb = None;
+        """This is the temperature value used as a minimum for computing the reaction constant.
+           i.e if a temperature lower than this is passed to compute the reaction constant, this
+           self.Tlb is used instead. This is usually use by the function which computes the 
+           constant self.compute_cst_func
+        """
+        
+        self.compute_rxn_cst_func = None
+        """The function which computes the reaction constant. It should take as first  
+           argument a dictonary which has all the parameters it needs to compute 
+           the reaction constant.
+        """
+         
     def set_all_attr_from_rxn_str(self, rxnStr):
         """set all the attributes from the string array of the reaction line"""
 
@@ -108,13 +146,20 @@ class reaction():
         """  
         pass
 
-    def get_reaction_constant(self, parameters):
-        """method that computes the reaction constant
+    def compute_reaction_constant(self, state):
+        """method that computes the reaction constant using the constants from the the 
+           appropriate temperature range.  The computed value is set to self.cst
+           and to the reaction which was used to compute the constant.
         
-           .. todo:: RETURNS THE REACTION CONSTANT BASED ON THE TEMPERATURE AND THE REST OF THE PARAMETERS.
-           .. warning:: not implemented yet 
-        """  
-        pass
+           :param dict state: a dictionary holding all the parameters needed by the
+            functions which compute the constants to do their job. 
+            
+        """
+        
+        rxn = self.get_rxn_in_trange(state['T'])
+        cst = rxn.compute_rxn_cst_func(rxn, state)
+        
+        self.cst = rxn.cst = cst
     
     def active(self):
         """sets status to 1 indication the reaction IS being used"""
@@ -179,7 +224,111 @@ class reaction():
     def setRefCode(self, refCode):
         """set the reference code"""
         self.refCode = refCode
- 
+        
+    def has_ID(self, ID_check):
+        """Returns True if the reaction ID is the same as the input ID. and if the ID
+           matches one of the complement reactions (if any) in self.complements.
+           
+           .. todo:: see if using rxn.has_ID( ID_check) for the cmplements below
+             is a good idea. Snice it might be recursive if self.complements are linked
+             to the current reactions!!.
+        """
+        
+        IDs = [self.ID]
+        
+        if self.has_complements():
+            for rxn in self.complements:
+                IDs.append(rxn.ID)
+                    
+        if ID_check in IDs:
+            return True
+        else:
+            return False
+    
+    def set_bound_rxns(self):
+        """In this method, we setup a dictionary of complementaty reactions. They
+           keys of the dictonary are 'below' and 'above'. Those point to the
+           reaction objects which are used when the temperature is above or 
+           below the gloab ranges where the reactions are defined: For example, if 
+           a reaction with ranges [30,300] for rxn1 and [300, 1000] for rxn2, 
+           and [1000,30000] for rxn3. Then 'above' would be rxn3 and below would
+           be rxn1.  Such that the rates of those are used whenever the temperature
+           range is not withing 30 and 30000.
+        """
+        
+        below = {'T':self.Tl, 'rxn':self}
+        above = {'T':self.Tu, 'rxn':self}
+
+        #collecting the reactions into a list (including self and the complements)
+        if self.complements != None:
+            rxns = self.all_rxns
+        else:
+            rxns = [self]
+        
+        #finding and setting the min and max and the corresponding reactions   
+        for rxn in rxns:
+            if rxn.Tl < below['T']:
+                below['rxn'] = rxn
+            if rxn.Tu > above['T']:
+                above['rxn'] = rxn
+
+        self.bounds['below'] = below
+        self.bounds['above'] = above
+            
+    def get_rxn_in_trange(self, T):
+        """Returns the reaction among self or self.complements (if any) where the
+           temperature range of the reaction is within the value (or range) passed.
+        """
+
+        #if the temperature is out of bounds
+        if T < self.bounds['below']['T']:
+            return self.bounds['below']['rxn']
+        if T > self.bounds['above']['T']:
+            return self.bounds['above']['rxn']
+        
+        #collecting the reactions into a list (including self and the complements)
+        if self.complements != None:
+            rxns = self.all_rxns
+        else:
+            rxns = [self]
+        
+        #checking if the temperature ranges match one
+        #of those of the reaction and it complements
+        #(Note that the Tu comparison is not inclusive)      
+        for rxn in rxns:
+            if T >= rxn.Tl and T < rxn.Tu:
+                return rxn
+        
+        #the code should not get here
+        raise ValueError("""can determin what reaction to use to compute the reaction 
+                            constant. This might be because there are gaps between the
+                            complements (defining the temperature ranges""")
+    
+    def get_rxn_with_ID(self, ID):
+        """returns the reaction which mateched ID. A value error is raise if it is not found.
+           Also a vlaue error is raise if self.complement == None. It is also assumed that
+        """
+        
+        if self.complements == None:
+            raise ValueError("This method should be called only if self.complements is NOT None.")
+        else:
+            if self.ID == ID:
+                return self
+            else:
+                for rxn in self.complements:
+                    if rxn.ID == ID:
+                        return rxn
+                    
+        raise ValueError("""The code should not get here. If it does, it means that the ID %d  
+                            which is being looked for is not in the composite reacation.""" % ID)
+    
+    def has_complements(self):
+        """Returns True if self.complements is not None. Returns False if it is None"""
+        if self.complements == None:
+            return False
+        else:
+            return True
+                
     def display(self, fmt = None ):
         """display a reaction based on the input format requested.
         
@@ -298,6 +447,12 @@ class reaction():
                     
         def printStr():
             print self.str
+
+        def printTlb():
+            if self.Tlb != None:
+                print " %.4e " % self.Tlb,
+            else:
+                print " None ",
             
         action = {
                  "status"     : printStatus,
@@ -315,14 +470,26 @@ class reaction():
                  "cst"        : printCst, 
                  "rate"       : printRate,
                  "abun"       : printAbun,
-                 "str"        : printStr, 
+                 "str"        : printStr,
+                 "Tlb"        : printTlb,
             }
         
+        if self.complements != None:
+            print '---------------------------------------------------------------------' 
+        
         if fmt != None:    
-            fmtStrSplt = fmt.split(' ')
+            fmtStrSplt = fmt.split()
             for fmtComp in fmtStrSplt:
                 action[fmtComp.strip()]()
             print 
         else:
             print self.str
+        
+        #printing also the complement reactions
+        if self.complements != None:
+            for rxn in self.complements:
+                rxn.display(fmt = fmt)
+            print '---------------------------------------------------------------------' 
+
+        
         

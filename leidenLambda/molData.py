@@ -77,11 +77,17 @@ class reader():
                                            .      ['info']   # the raw content of the collion partner feild (useful for extra checks)
                                            .      ['nTemps'] # number of temperatures in the collisions table 
                                            .      ['temps']  # the temperatures values for which the rate coefficient are tabulated
-                                           .      ['table'][0] #an ndarray holding the info of the collisional transitions with this  
+                                           .      ['table'][0] #each line is the (split) raw data (as strings) of each transition read  
+                                           .               [1] #  from the file
+                                           .                .  
+                                           .                .  
+                                           .               [nTrans-1]
+                                           .      ['trans'][0] #an ndarray holding the info of the collisional transitions with this  
                                            .               [1] #partner. The keys of the dtype are : 'n', 'u', 'l', 'rc'
                                            .                .  #'rc' is an interpolation function which given a temperature returns
                                            .                .  #the rate coefficient.
                                            .               [nTrans-1]   
+   
                                       ['partner1']['nTrans']
                                            .      ['info']
                                            .      ['nTemps']
@@ -95,6 +101,21 @@ class reader():
                                            .          
                                       ['partner(nPartners-1)']
 
+    The collision partners in the data files are the same as those mentioned in the
+    documentation of Radex (mention the link to Floris's page)
+    
+    .. code-block:: python 
+    
+            partnerTypeDict = {'1': 'H2', 
+                               '2': 'p-H2', 
+                               '3': 'o-H2', 
+                               '4': 'e-', 
+                               '5':'H', 
+                               '6':'He', 
+                               '7':'H+'}
+                               
+    .. todo:: use a literal include to include this from the method self.parseDtaFile(). 
+     
     An example for getting a rate coefficient. Once the reader has been invoked, we
     can use the :data:`get_specie` method to extract a certain specie info. Lets say 
     we want the rate coefficient for the para-H2O molecule. 
@@ -178,14 +199,17 @@ class reader():
             if fPath.split('/')[-1] in self.ignoreList:
                 continue
 
-            print fPath
+            print 'reading file : %s' % fPath
             #if 'test.dat' not in fPath:  #;;;rmove this later
             #    continue                  #;;;remove this later
             #input('press 1 to process the next file %s' % fPath)
             specDict = self.parseDataFile(fPath)
+            print '       prased successfully'
+            
             if 'specie' in kwargs:
                 if kwargs['specie'] == specDict['specStr']:
                     specDict = self.cleanSpecDict(specDict)
+                    print '       cleaned successfully'
             self.speciesInfo += (specDict,)
             
     def cleanSpecDict(self, specDict):
@@ -266,7 +290,7 @@ class reader():
             maxRelErr = np.maximum(abs(relErr), abs(maxRelErr))
             totalRelErr += relErr
             #print relErr
-        print 'avertage relative error = %e (min,max)=[%e,%e]' % (totalRelErr/specDict['nTransRad'], minRelErr, maxRelErr) 
+        #print 'avertage relative error = %e (min,max)=[%e,%e]' % (totalRelErr/specDict['nTransRad'], minRelErr, maxRelErr)  
         #--------------------------------------------------------------------------
 
         #-----------------------------------------------------------------------------
@@ -564,4 +588,34 @@ class reader():
         self.dirPath = path
     def get_dirPath(self):
         return self.dirPath
+    
+def critical_density( specInfo = None, upper = None, lower = None, T_kin = None, collider = None):
+    """computes the cricical density (n_crit = A/K) of a transition given the cleaned output
+       of :data:`reader` (see also :data:`reader.get_specie`). The inputs are the
+       upper and lower levels corresponding to specInfo['levels'] and the kinetic
+       temperature at which the collisional coefficient will be computed. Also
+       it is required to specify the collider specie as a string. See documentation
+       of reader for the supported colliders. 
+    """
+    
+    eins_A = None    
+    k_coll = None
+    
+    #getting the einstein A coefficient
+    for trans in specInfo['transRad']:
+        if trans['u'] == upper and trans['l'] == lower:
+            eins_A = trans['A']
+    
+    if eins_A == None:
+        raise ValueError("transition not found upper = %d, lower = %d" % (upper, lower))
+    
+    #gettnig the collisional coefficient for the input temperature
+    for trans in specInfo['transColl'][collider]['trans']:
+        if trans['u'] == upper and trans['l'] == lower:
+            k_coll = trans['rc'](T_kin)
+    
+    if k_coll == None:
+        raise ValueError("collisional transition not found upper = %d, lower = %d" % (upper, lower))
+
+    return eins_A / k_coll
     

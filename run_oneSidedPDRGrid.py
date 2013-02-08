@@ -12,7 +12,7 @@ import time, sys, os
 # make sure to use the appropriate database when changing metallicities
 #---------------------------------------------------------------------------------------------------
 
-nWorker = 1  # number of proccesses
+nWorker = 3  # number of proccesses
 pdr     = interface.pdrInterface( channel_type = 'mpi', number_of_workers = nWorker, redirection='none') 
 
 metallicity = 1.0   # in terms of solar metallicity
@@ -38,16 +38,16 @@ pdr.set_max_deltaAv                (0.5);
 pdr.set_maxSlabs                   (100);
 
 dx   = 0.5      # log10 density
-xMin = -2.0
-xMax = 0.0 - dx + 0.000001
+xMin = 0.0
+xMax = 2.0 - dx + 0.000001
 
 dy   = 0.5     # log10 G0
-yMin = -2.0  
-yMax = 6.0 - 0.000001
+yMin = -3.0  
+yMax = 0.0 - 0.000001
 
 zMin = -35.0    # log10 mechanical heating
 zMax = -21.0
-dz   =  1.0
+dz   =  2.0
 
 # generating the parameter space 
 if zMin == zMax:

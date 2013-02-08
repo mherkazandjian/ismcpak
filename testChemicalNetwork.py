@@ -20,7 +20,7 @@ speciesNums      = 'data/species.inp'
 specAbunFname    = 'data/abun.out'            #file containing the abundances in the same ordfer of speciesNumAndName.inp 
 underAbunFile    = 'data/underabundant.inp'   #rxns with those species are scratched (moved to the removed list)
 manualRemoveList = ['13CH3']                  #rxns with those species are scratched (moved to the removed list)
-#-----------------------------------------------------------------------------------
+#-----------------------------------------------------------------e------------------
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 
@@ -30,8 +30,17 @@ baseSpecs = baseSpecies.baseSpecies()
 net = chemicalNetwork(rxnFile, baseSpecs, UMISTVER = version)
 
 # filter reactions with certain products and reactants
+print '\n\nreactions with PHOTO as reactant and H and e- as products'
 IDs = net.filter_reactions(withReacts = ['PHOTON'], withProds = ['H', 'e-'],
                            show = True, fmt = 'type rxn')
+
+#finding indentical reactions and printing them
+sets = net.find_identical_reactions()
+print '\n\nthe following are the identical reactions in the rxn file'
+for ids in sets:
+    print 'these reactions have the same hash code : ', ids
+    net.print_reactions(IDs=ids, fmt='id hash type rxn abg trng')
+    print '-------------------------------------------------------'
 
 print '-----------------------------------------------------------------------------' 
 # filter reactions with certain reactants only

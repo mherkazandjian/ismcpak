@@ -14,11 +14,11 @@ from fetchGridData import fetchRadexGrid
 
 #-----------------------------------
 #grid 1
-specStr1       = 'C+'
-transition1    = '1-0'
+specStr1       = 'CO'
+transition1    = '6-5'
 #grid 2
-specStr2       = 'C'
-transition2    = '1-0'
+specStr2       = 'CO'
+transition2    = '6-5'
 dirname2       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr2
 #-----------------------------------
 

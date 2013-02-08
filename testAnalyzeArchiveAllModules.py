@@ -17,7 +17,7 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweepNew-1and2/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-2/',         
          #'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-2.0/',
-         #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-0.1/',
+         #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-1.0-high-res-no-gmech/',
          'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
         
@@ -26,10 +26,10 @@ parms = {
          'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
          'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
-         #'plotRanges'     : [[0,6],[0,6],[-51, -15]],  # uniform gmech
+         #'plotRanges'     : [[-3,7],[-3,7],[-51, -15]],  # uniform gmech
          
          'plot'          : True, 
-         'showGrids'     : True,
+         'showGrids'     : False,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
                                     'quantity' : ['state', 'gasT'],
@@ -48,11 +48,11 @@ parms = {
                                     'specStr'  : 'CO',
                                     },
                              '11' : { # line intensitities
-                                     'show'           : True,
+                                     'show'           : False,
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
                                      'type'           : 'radex',
-                                     'specStr'        : 'HNC',     # database to be restored/computed
+                                     'specStr'        : '13CO',     # database to be restored/computed
                                      'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
@@ -67,7 +67,7 @@ parms = {
                              'writeDb'              : False, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                             'specStr'              : 'CO',
+                             'specStr'              : '13CO',
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,

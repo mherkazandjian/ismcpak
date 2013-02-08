@@ -9,10 +9,10 @@ import pylab as pyl
 import matplotlib.cm as cm
 from fetchGridData import fetchRadexGrid
 
-specStr       = 'CS'
-transition    = '1-0'
+specStr       = 'CO'
+transition    = '6-5'
 cLevels       = [-15, -10, -8, -7, -6, -6.5, -5.5, -5.2, -5, -4, -3, -2]
-cbarTicks     = np.arange(-18,-1, 0.2)
+cbarTicks     = np.arange(-18,-1, 2)
 dirname       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr
 parmsFile     = dirname + 'parms.out'
 fileInfoFile  = dirname + 'filesInfo.out'
