@@ -429,7 +429,7 @@ class mesh( ):
         self.plt11_v_line,  = self.axs[1,1].semilogy([1],  [1], 'k--' )
         self.axs[1,1].set_xlim(plot_x_range[0], plot_x_range[1])
         self.axs[1,1].set_ylim(1e-12, 2)   
-        self.axs[1,1].text(0.4, 1e-10, '$HCN$'  , color='r')
+        self.axs[1,1].text(0.4, 1e-10, '$CS$'  , color='r')
         self.axs[1,1].text(0.4, 1e-9 , '$HNC$'  , color='g')
         self.axs[1,1].text(0.4, 1e-8 , '$HCO^+$', color='b')
         self.axs[1,1].set_xlabel('$A_V$')
@@ -503,7 +503,7 @@ class mesh( ):
 
         # subplot 1,1
         self.plt11Spec1Plt.set_xdata( data['state']['Av'] )
-        self.plt11Spec1Plt.set_ydata( data['state']['abun'][spcs['HCN'].num] )
+        self.plt11Spec1Plt.set_ydata( data['state']['abun'][spcs['CS'].num] )
         self.plt11Spec2Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec2Plt.set_ydata( data['state']['abun'][spcs['HNC'].num] )
         self.plt11Spec3Plt.set_xdata( data['state']['Av'] )

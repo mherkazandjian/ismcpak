@@ -157,7 +157,7 @@ class meshArxv():
              self.infoAllRadex[x]['parms'][4]  0.0  NOT USED
 
 
-           :note: the transitions are stored even if there are warnings when running radex. So 
+           .. note:: the transitions are stored even if there are warnings when running radex. So 
             take good care when analyzing the data. The info of this attribute is stored into 
             infoAllRadex.db.info.(specStr). Each specie will have its own .db.info.... file
             and a corresponding .db.(specStr) file which will hold all the data in self.meshesRadex.
@@ -482,15 +482,16 @@ class meshArxv():
         self.logger.debug('wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
 
     def readDbRadex(self, specStr, check = None):
-        """ reads the database suffixed by specStr (i.e meshesRadex.db.(specStr)and assigns the
-         appropritate attributes (document) and assigns the read data to self.meshesRadex and
-         self.infoAllRadex. 
+        """Reads the database suffixed by specStr (i.e meshesRadex.db.(specStr)and assigns the
+           appropritate attributes (document) and assigns the read data to self.meshesRadex and
+           self.infoAllRadex. 
             
-            :param bool check: if this is set (to any value) the self.checkIntegrity() is called.
-            :param string specStr: the string of the specie whose database is to be read.
-            :warning: the keyword specStr is not functional yet.
-            :note: before calling this mehtod, an instance of the radex class should be     
-              assigned to self.radexObj. 
+           :param bool check: if this is set (to any value) the self.checkIntegrity() is called.
+           :param string specStr: the string of the specie whose database is to be read.
+           
+           .. warning:: the keyword specStr is not functional yet.
+           .. note:: before calling this mehtod, an instance of the radex class should be     
+               assigned to self.radexObj. 
         """ 
         
         #reading the database only if it is not already read. If it is read, it would
@@ -825,42 +826,35 @@ class meshArxv():
         return values
         
     def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, values = None, data = None, *args, **kwargs):
-        """ returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
-             can be used to compute values determined by quantity give (nGas, G0, Gmech)
-             (in log_10). The value to be interpolated upon is determined by the parameter
-             quantity and the slab index determined by :data:`slabIdx`. For example, to construct an interpolation table for say surface
-             temperature, this method can be invoked as :
+        """Returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
+           can be used to compute values determined by quantity give (nGas, G0, Gmech)
+           (in log_10). The value to be interpolated upon is determined by the parameter
+           quantity and the slab index determined by :data:`slabIdx`. For example, to construct an interpolation table for say surface
+           temperature, this method can be invoked as :
              
-             .. code-block:: python
+           .. code-block:: python
 
                 f = arvx.construct3DInterpolationFunction( quantity = ['state', 'gasT'], slabIdx = 0 )
              
-             See :data:`computeInterpolated2DGrid` for an example on how to use this interpolation 
-             function. Upon returning, this method sets the values of the attributes
-             grid_x,y,z.
+           See :data:`computeInterpolated2DGrid` for an example on how to use this interpolation 
+           function. Upon returning, this method sets the values of the attributes
+           grid_x,y,z.
                 
-             :param list quantity: this is a list of strings which point to the data
-                 to be extracted from the dtype :data:`mesh`. (see example above)
-                 
-             :param int32 slabIdx: the index of the slab from which the value will be extracted.
-                 
-             :param int32 arrIdx: The first index in the 2D array (ONLY necessary if the quantity pointed
-               to is a 2D array, like ['state', 'abun']). In this case slabIdx is used as the seconds index. 
-                
-             :param bool log10: keyword which when passes as True, will generate the log10 of the quantity
-
-             :param numpy.ndarray values: a numpy 1D array whose size if the same as the number of meshes which
-               when passed as an argument, will be used as the value to be interpolated. In this case,
-               quantity, slabIdx, arrIdx are ignored. 
+           :param list quantity: this is a list of strings which point to the data
+            to be extracted from the dtype :data:`mesh`. (see example above)
+           :param int32 slabIdx: the index of the slab from which the value will be extracted.
+           :param int32 arrIdx: The first index in the 2D array (ONLY necessary if the quantity pointed
+            to is a 2D array, like ['state', 'abun']). In this case slabIdx is used as the seconds index. 
+           :param bool log10: keyword which when passes as True, will generate the log10 of the quantity
+           :param numpy.ndarray values: a numpy 1D array whose size if the same as the number of meshes which
+             when passed as an argument, will be used as the value to be interpolated. In this case,
+             quantity, slabIdx, arrIdx are ignored. 
+           :param numpy.ndarray data: 
              
-             :param numpy.ndarray data: 
-             
-             :todo: modify this to construct the table over a selected range of the 3D 
-                parameter space instead of using all the meshes. (optional)
+           .. todo:: modify this to construct the table over a selected range of the 3D 
+               parameter space instead of using all the meshes. (optional)
                 
-             :warning: this fails if all the entries in one of the dimensions have the exact
-               same value. in that case use :data:`construct2DInterpolationFunction`
-            
+           .. warning:: this fails if all the entries in one of the dimensions have the exact same value. in that case use :data:`construct2DInterpolationFunction`
         """
         
         # checking if the grid_x,y,z are set, if not, set them        
@@ -891,9 +885,10 @@ class meshArxv():
     def construct2DInterpolationFunction(self, quantity = None, slabIdx = None, *args, **kwargs):
         """ same as :data:`construct3DInterpolationFunction` but does it for n and G0
         
-            :warning: make sure that the G_mech for all the models is the same. Other
-              things will not make sense, bec the models would have diffrent G_mech
-            :warning: make sure that the interpolated points are at the centroids of the grid points
+            .. warning:: make sure that the G_mech for all the models is the same. Other
+               things will not make sense, bec the models would have diffrent G_mech
+               
+            .. warning:: make sure that the interpolated points are at the centroids of the grid points
         """
         
         x = np.log10( self.getQuantityFromAllMeshes( self.grid_qx ) )
@@ -912,13 +907,13 @@ class meshArxv():
 
     def computeInterpolated2DGrid(self, ranges = None, res = None, zSec = None, 
                                   fInterp = None, *args, **kwargs):
-        """ returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds
-             the interpolated vlaues of 'quantity' over the domain determined by ranges for a slab whose index is slabIdx for
-             a mechanical heating zSec (in log10). ( x is the horizontal direction of the mesh, and y is the vertical).
+        """Returns a 2D array ( a numpy ndarray ) of size res[0] and res[1] (check this if it is not the reverse) which holds
+           the interpolated vlaues of 'quantity' over the domain determined by ranges for a slab whose index is slabIdx for
+           a mechanical heating zSec (in log10). ( x is the horizontal direction of the mesh, and y is the vertical).
              
-             An example would be (assuming the archive is constructed already):
+           An example would be (assuming the archive is constructed already):
              
-             .. code-block:: python
+           .. code-block:: python
 
                 f   = arxv.construct3DInterpolationFunction(quantity = ['state', 'gasT'], 
                                                             slabIdx  = 0)
@@ -933,14 +928,11 @@ class meshArxv():
                 plt.imshow(grd, extent=(0,1,0,1), origin='lower')
                 plt.show()
 
-             :param list ranges: a 2d list holding the ranges of the grid [[xmin, xmax],[ymin, ymax]]
-
-             :param list res: the resolution in each dimension. [xResolution, yResolution]
-             
-             :param float zSec: the section in mechanical heating to be interpolated at.
-             
-             :param scipy.interpolate.LinearNDInterpolator fInterp: the interpolation function returned by
-                 :data:`construct2DInterpolationFunction` or it 3D counterpart.        
+           :param list ranges: a 2d list holding the ranges of the grid [[xmin, xmax],[ymin, ymax]]
+           :param list res: the resolution in each dimension. [xResolution, yResolution]
+           :param float zSec: the section in mechanical heating to be interpolated at.
+           :param scipy.interpolate.LinearNDInterpolator fInterp: the interpolation function returned by
+                   :data:`construct2DInterpolationFunction` or it 3D counterpart.        
         """
         
         # defining the points in the uniform 2D grid                                                                                                                                                                                                 
@@ -1120,11 +1112,11 @@ class meshArxv():
     def show_pdr_mesh_quantity_grid(self, ranges = None, res = None, *args, **kwargs):
         """shows the surface temperature grid
             
-           :todo: plot every other labeled contour as a tick in the colorbar
+           .. todo:: plot every other labeled contour as a tick in the colorbar
            
-           :warning: there would be a memeory leak if things are plotted over and over
-              the images, labels..etc..must be replaced and not new instance created
-              and overplotted...take care of that later... 
+           .. warning:: there would be a memeory leak if things are plotted over and over
+               the images, labels..etc..must be replaced and not new instance created
+               and overplotted...take care of that later... 
         """
         panel = self.gui['maps2d']['00']
         
@@ -1816,7 +1808,7 @@ class meshArxv():
     def plotGrids(self, *args, **kwargs):
         """Main method for exploring the meshes in the database.
         
-        :todo: change resGrids to a [res_x, res_y] insteads of it being just a scalar.
+           .. todo:: change resGrids to a [res_x, res_y] insteads of it being just a scalar.
         """
         
         self.set_attributes(**kwargs)
@@ -2082,8 +2074,15 @@ class meshArxv():
                 chemNet.compute_rxn_constants()
                 chemNet.compute_rxn_rates()
 
-                IDs_filtered = chemNet.filter_reactions(withReacts='CO', 
-                                                        fmt='id rxn trng cst rate', 
+                specStr = self.parms['gridsInfo']['10']['specStr']
+                self.logger.debug('dominat reactions destroyin %s' % specStr)
+                IDs_filtered = chemNet.filter_reactions(withReacts=specStr, 
+                                                        fmt='id type rxn trng cst rate', 
+                                                        show=10, 
+                                                        sort=True)
+                self.logger.debug('dominat reactions producing %s' % specStr)
+                IDs_filtered = chemNet.filter_reactions(withProds=specStr, 
+                                                        fmt='id type rxn trng cst rate', 
                                                         show=10, 
                                                         sort=True)
 
@@ -2233,7 +2232,8 @@ class meshArxv():
             be used as the absissa of the points. 
           :param list qy: same as qx but will be used as the ordinates.  
           :param list qz: a thrid quantity used to identity each curve (used in the legend)
-          :warning: check and test this methods and document it better.
+
+          .. warning:: check and test this methods and document it better.
         """
         
         fig = pyl.figure()  # make the figure
@@ -2333,28 +2333,27 @@ class meshArxv():
             self.set_grid_qz( ['hdr', 'gammaMech'] )
 
     def set_grid_axes_quantity_values(self, *args, **kwargs):
-        """assigns the values of self.grid_x,y,z from self.grid_qx,qy,qz. The values
-         are extracted from all the meshes in the database.
+        """Assigns the values of self.grid_x,y,z from self.grid_qx,qy,qz. The values
+           are extracted from all the meshes in the database.
         
-        :param bool relativeGmech: if this is set, the z quantity data is set as the
-          ratio of mechanicalHeating of the mesehs to the surface heating when the
-          mechanical heating is zero. If this is set, the keyword 'referenceDatabase'
-          sould be provided. It is assumed that the reference database has exact same
-          parameters as the current one. It is assumed that the minimum gmech in 
-          reference database is low enough to be assumed to be zero. An interpolation
-          function is constructed which picks the lowest gMech of the reference
-          database. This keyword cuases self.grid_qz to be set to 
-          'gMech/gSurface(gMech=0)'
+           :param bool relativeGmech: if this is set, the z quantity data is set as the
+            ratio of mechanicalHeating of the mesehs to the surface heating when the
+            mechanical heating is zero. If this is set, the keyword 'referenceDatabase'
+            sould be provided. It is assumed that the reference database has exact same
+            parameters as the current one. It is assumed that the minimum gmech in 
+            reference database is low enough to be assumed to be zero. An interpolation
+            function is constructed which picks the lowest gMech of the reference
+            database. This keyword cuases self.grid_qz to be set to 
+            'gMech/gSurface(gMech=0)'
 
-        :param string referenceDatabasePath: a string containing the path of the 
+           :param string referenceDatabasePath: a string containing the path of the 
              reference database.
-        
-        :param float64 min_gMech: If this is present, the gMech of the reference models
-          used would be this values instead of the minimum.
+           :param float64 min_gMech: If this is present, the gMech of the reference models
+             used would be this values instead of the minimum.
          
-        :note: by default, the log of the quantities from the meshes are used. Only
-          when the relative keyword is present, the value of the heating ratios is 
-          set, and NOT the log of the heating ratios. 
+           .. note:: by default, the log of the quantities from the meshes are used. Only
+              when the relative keyword is present, the value of the heating ratios is 
+              set, and NOT the log of the heating ratios. 
         """
         
         if 'relativeGmech' in kwargs and 'grid_qz' in kwargs:
@@ -2438,6 +2437,7 @@ class meshArxv():
     
     def setupLogger(self):
         """sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger."""
+        
         # setting up the logger                                                                                                                                                                                                              
         # create logger                                                                                                                                                                                                                      
         logger = logging.getLogger('simple_example')

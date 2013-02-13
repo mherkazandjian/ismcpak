@@ -19,7 +19,7 @@ lambdaPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~mold
 #reader = molData.reader(dirPath = lambdaPath)
 
 #retrieves only one specie
-reader = molData.reader(dirPath = lambdaPath, specie = 'NH3', type = 'p-')
+reader = molData.reader(dirPath = lambdaPath, species = 'NH3')
 
 Tkin_min    = 15.0
 Tkin_max    = 300.0
@@ -36,24 +36,20 @@ ev2erg = 1.602e-12   #erg
 #------------------------------
 
 #selecting the one holding the info for p-NH3
-for specDict in reader.speciesInfo:
-    if 'NH3' in specDict['specStr'] and 'p-' in specDict['info']:
-        pNH3 = specDict
-        print 'found p-NH3 info, filePath : %s' % pNH3['path']
-        break
+pNH3 = reader.get_specie(specStr='NH3', inInfo='p-')
 
 # converting the energy units to K 
-for idx, level in enumerate(pNH3['levels']):
+for idx, level in enumerate(pNH3.levels):
     level['E'] *= hPlank*cLight/kBoltz # energies in K
 
 #############################################################################
 # compute the matrix of transition rates
 def computeRateMatrix(pNH3, Tkin, nc):
-    n = pNH3['nlevels']
+    n = pNH3.nlevels
          
-    levels = pNH3['levels']
-    transRad = pNH3['transRad']
-    transColl = pNH3['transColl']['p-H2']['trans']
+    levels = pNH3.levels
+    transRad = pNH3.transRad
+    transColl = pNH3.transColl['p-H2']['trans']
       
     ###########################################################
     # constructing the matrix 
@@ -122,7 +118,7 @@ def computeRateMatrix(pNH3, Tkin, nc):
 #############################################################################
 # solve for the equlibrium population densities
 def solveEquilibrium(pNH3, full):
-    n = pNH3['nlevels']
+    n = pNH3.nlevels
 
     # solving directly
     #replacing the first row with the conservation equation
@@ -146,9 +142,9 @@ def solveEquilibrium(pNH3, full):
     return f    
 #############################################################################
 def computeLuminosity(pNH3):
-    n = pNH3['nlevels']
-    levels = pNH3['levels']
-    transRad = pNH3['transRad']
+    n = pNH3.nlevels
+    levels = pNH3.levels
+    transRad = pNH3.transRad
 
     ## computing the total luminosity##
     #----------------------------------
@@ -185,10 +181,10 @@ f    = solveEquilibrium(pNH3, full.copy())
 #-----------------------------------------------
 full2 = computeRateMatrix(pNH3, Tkin, nc)
 #generating the constraint equation and appending it to the Matrix
-cons  = numpy.ones(pNH3['nlevels'])
+cons  = numpy.ones(pNH3.nlevels)
 full2 = numpy.vstack((full2, cons))
 #generating the RHS
-rhs   = numpy.zeros(pNH3['nlevels'] + 1)
+rhs   = numpy.zeros(pNH3.nlevels + 1)
 rhs[-1] = 1
 # solving
 sol = numpy.linalg.lstsq(full2, rhs)
@@ -206,10 +202,10 @@ pyl.ylabel('population density')
 #-----------------------------
 #setting up the initial conditions to population densities
 # that would be attained at LTE
-f0 = numpy.zeros(pNH3['nlevels'])
+f0 = numpy.zeros(pNH3.nlevels)
 Z = numpy.float64(0.0)  # the partition function
-for i in numpy.arange(pNH3['nlevels']):
-    f0[i] = pNH3['levels'][i]['g']*numpy.exp(- pNH3['levels'][i]['E'] / Tkin)
+for i in numpy.arange(pNH3.nlevels):
+    f0[i] = pNH3.levels[i]['g']*numpy.exp(- pNH3.levels[i]['E'] / Tkin)
     Z += f0[i]
 f0 /= Z # the initial fractional population densities
 #f0 = f #using the eq sol as ICs
@@ -225,7 +221,7 @@ f0[5] = 1e-6
 
 t0 = 0.0 # the initial time
 dt = 2e3 # initial timestep in seconds 
-tf = 2e8 #final time
+tf = 2e6 #final time
 
 #defining the function which will be the rhs of df/dt
 def ode_rhs(t, y, args):

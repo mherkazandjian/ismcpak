@@ -8,10 +8,10 @@ class radex( ):
     and radexView.py for examples on using this class. Upon a successull executation, all the
     transitions are stored in self.transitions.
      
-    :todo: docment the order in which things must be called.
+    .. todo:: docment the order in which things must be called.
     
-    :warning: make sure that the lower and upper string names for the transitions are not longer than
-     10 character, or change the length accordinglt in self.generateTransitionDtype().
+    .. warning:: make sure that the lower and upper string names for the transitions are not longer than
+       10 character, or change the length accordinglt in self.generateTransitionDtype().
     
     :test: test_radex.py, radexView.py
     """
@@ -189,10 +189,8 @@ class radex( ):
     def setInFileParm(self, parm, value):
         """This method sets values to the parameters to be passed to radex.
 
-        :param parm: A key to be modified or added in the self.inFile dict.
-        :type name: str.
-        :param value: The value to be set to the key.
-        :type value: arbitrary [depends on the key to be modified, see :data:`inFile` documentation]
+        :param str parm: A key to be modified or added in the self.inFile dict.
+        :param arbitrary value: The value to be set to the key. [the type depends on the key to be modified, see :data:`inFile` documentation]
         """
         self.inFile[parm] = value
     def getInFileParm(self, parm):
@@ -261,9 +259,9 @@ class radex( ):
                 self.inFile['collisionPartners'].pop(i)
                  
     def genInputFileContentAsStr(self):
-        """generates the parameter file contents from self.inFile, which can be passed to the radex executable, as a string. 
+        """Generates the parameter file contents from self.inFile, which can be passed to the radex executable, as a string. 
         
-        :return: (str)
+           :return: (str)
         """
         
         self.nCollPart = len(self.inFile['collisionPartners'])
@@ -290,8 +288,8 @@ class radex( ):
     def checkParameters(self):
         """chech whether the contents of self.inFile are within the ranges where RADEX can work.
         
-        :raise:  exception NameException
-        :attention: This method sets the value of self.status. The flag 'PARMSOK' is set if the paramteres are ok, 'ERROR' is set otherwise.
+           :raise:  exception NameException
+           :attention: This method sets the value of self.status. The flag 'PARMSOK' is set if the paramteres are ok, 'ERROR' is set otherwise.
         """
         inFile = self.inFile
         
@@ -321,22 +319,23 @@ class radex( ):
             return self.FLAGS['PARMSOK']
 
     def run(self, checkInput = None, verbose = None ):
-        """run the radex executable.
+        """Run the radex executable.
         
-        :param bool checkInput: By default this is False. In this case, the input 
-          parameters are not checked and the flag 'PARMSOK' (see #FLAGS) is set to :data:`status`. Otherwise, set this to True to force a paremter input check.
-        :param bool verbose: By default this is False. Set it to True to to write 
-          the raw output to stdout.
-        :return: (int) :data:`status`. Upon a successful run, 'RUNOK' and 'SUCCESS' 
-          flags are set. If the number of iterations excceeds 10,000 'RUNOK',
-          'WARNING' and 'ITERWARN' flags are set. if the 'PARMSOK' is true 
-          :data:`rawOutput` and :data:`transitions` are set, otherwise they 
-          remaine None.
-        :todo: extract other warnings also, not just the one due to the max 
-          iterations.
-        :warning: when running the same radex instance multiple times, make sure 
-          to set the status to the default before calling :data:`run` using 
-          :data:`setDefaultStatus()`.
+           :param bool checkInput: By default this is False. In this case, the input 
+            parameters are not checked and the flag 'PARMSOK' (see #FLAGS) is set to :data:`status`. Otherwise, set this to True to force a paremter input check.
+           :param bool verbose: By default this is False. Set it to True to to write 
+            the raw output to stdout.
+           :return: (int) :data:`status`. Upon a successful run, 'RUNOK' and 'SUCCESS' 
+            flags are set. If the number of iterations excceeds 10,000 'RUNOK',
+            'WARNING' and 'ITERWARN' flags are set. if the 'PARMSOK' is true 
+            :data:`rawOutput` and :data:`transitions` are set, otherwise they 
+            remaine None.
+            
+           .. todo:: extract other warnings also, not just the one due to the max 
+              iterations.
+              
+           .. warning:: when running the same radex instance multiple times, make sure 
+              to set the status to the default before calling :data:`run` using :data:`setDefaultStatus()`.
         """
         
         self.warnings = []
@@ -407,21 +406,22 @@ class radex( ):
         
     def parseOutput(self):
         """Once radex exectues and dumps transition information, this method is used
-          to extract the line data.
+           to extract the line data.
          
-        :return: None. The instance variable self.transitions is set.
-        :note: in parsing the output, the transitions info is between the lines 
-         containing the units:
+           :return: None. The instance variable self.transitions is set.
+           
+           .. note:: in parsing the output, the transitions info is between the lines 
+             containing the units:
           
-             "(K)    (GHz) ..."
+               "(K)    (GHz) ..."
              
-         and
+             and
          
-             "Another calculation"
+               "Another calculation"
               
-         thisway, we can get the number of transitions (the number of new lines, 
-         the work on parsing the data without the need to append anythign to a 
-         list..just preallocate the dtype and fill in the values.
+            thisway, we can get the number of transitions (the number of new lines, 
+            the work on parsing the data without the need to append anythign to a 
+            list..just preallocate the dtype and fill in the values.
         """
         
         try:
@@ -652,13 +652,10 @@ class radex( ):
             xPlot[i] = thisTrans
     
             transition = self.getTransition( thisTrans )
-            yThis1 = transition['pop_up']
-            yThis2 = transition['pop_down'] 
-    
-            yPlot1[i] = yThis1
-            yPlot2[i] = yThis2
+            yThis1     = transition['pop_up']
+            yPlot1[i]  = yThis1
+            
         axes.semilogy(xPlot, yPlot1, 'b')
-        axes.semilogy(xPlot, yPlot2, 'r')
         axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-10, 1])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )

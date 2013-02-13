@@ -12,18 +12,17 @@ radexPath      = '/home/mher/ism/code/radex/Radex/bin/radex'
 molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 
 # parameters that will be passed to radex single partner
-"""
-inFile = { 'specStr'                : 'CO'                              ,
-           'freqRange'              : [0, 50000]                              ,
-           'tKin'                   : 10.0                                    ,
+inFile = { 'specStr'                : 'HCN'                              ,
+           'freqRange'              : [0, 0]                              ,
+           'tKin'                   : 100.0                                    ,
            'collisionPartners'      : ['H2']                              ,
            'nDensCollisionPartners' : [1e3]                                   ,
            'tBack'                  : 2.73                                    ,
            'molnDens'               : 1e14                                    ,
            'lineWidth'              : 1.0                                     ,
            'runAnother'             : 1                                       }
-"""
 
+"""
 # parameters that will be passed to radex multiple partners
 inFile = { 'specStr'                : 'CO'                                ,
            'freqRange'              : [0, 0]                              ,
@@ -34,6 +33,8 @@ inFile = { 'specStr'                : 'CO'                                ,
            'molnDens'               : 1e16                                    ,
            'lineWidth'              : 1.0                                     ,
            'runAnother'             : 1                                       }
+"""
+
 
 # creating the radex process instance
 radexObj = radex(radexPath, molDataDirPath)
@@ -72,3 +73,6 @@ else:
         print 'warnings'
         print '--------'
         print radexObj.warnings
+        
+pop_up = radexObj.transitions['pop_up'] 
+pop_down = radexObj.transitions['pop_down']

@@ -1,13 +1,8 @@
-import os, glob, sys, pickle
-import numpy as np
-import logging
+import os
+import glob
+import numpy
 import re
 
-from time  import *
-from ismUtils   import *
-from radex      import *
-from scipy      import interpolate
-import chemicalNetwork
 from scipy.interpolate import interp1d
 
 class reader():
@@ -166,52 +161,94 @@ class reader():
 
         self.ignoreList = ('co@neufeld-old.dat')
         """A list of strings holding the names of the files to be ignored. Those files
-        are old ones which are not combatible with the current parser of this class."""
+           are old ones which are not combatible with the current parser of this class.
+        """
 
+        self.specStrs = []
+        """A list which will hold all the names of the species extracted from the headers
+           of the files in self.datafiles
+        """
+        
         self.speciesInfo = ()
         """A tuple of dicts objects. Each dict object holds all the info 
-           read from a file."""
+           read from a file.
+        """
                 
         if 'dirPath' in kwargs:
             self.set_dirPath(kwargs['dirPath'])
             self.dataFiles = self.findFiles(**kwargs)
+            self.read_all_headers()
             self.collectAllFilesInfo(**kwargs) 
         else:
             self.dirPath = None
             """The path of the directory holding all the information about all the species"""
         
-    def loadSpeciesData(self, specie = None):
-        """Returns a numpy dtype holding all the information about the specie in the LMBDA database"""
-        pass
-
-    def collectAllFilesInfo(self, **kwargs):
-        """Loops over all the data files in self.dirPath and collects the basic information
-         
-          - name of the species
-          - file names containing info about that species
-          
-        The return values is a dict 'species' : [file1, file2,]   
-        """ 
-        
+    def read_all_headers(self, **kwargs):
+        """For each path in self.dataFiles read the header, the "!MOLECULE" section,
+           And return a list for those headers. This method is implemented mainly
+           to optimize not reading all the data of all the files. Thus just by reading 
+           the header and getting the name of the species, using the keyword 'specie'
+           while initializing the reader can be used to read the full data and parse
+           and clean the data of the spceis matching the onse in the headers.
+        """  
+             
         for fPath in self.dataFiles:
+
+            #read 128 bytes into a string        
+            strng = open(fPath, 'r').read(512)
+            
+            #regular expression which gets everything between a '!'
+            #and a new line followed by a '!'
+            tokens = re.findall(r"[\s]*!([\s\S]*?)\n\s*(?=[!]|$)", strng)
+            
+            #token : the molecule
+            #####################
+            tok = tokens.pop(0)
+            self.specStrs.append(self.get_specie_name(tok)[0])
+    
+        print 'read all the headers.'
+        
+    def collectAllFilesInfo(self, **kwargs):
+        """Retrieves parsed and cleaned data from the leiden lambda database file in self.dirPath.
+           The parsed data which are dicts (see output of self.cleanSpecDict) are appended to self.spceciesInfo.              
+
+         
+           :param list|string species: a string or a list of string which if set, only 
+            files whose species is in the list are parsed.  Otherwise all the files 
+            are parsed. 
+        """ 
+
+        #checking if a selectionf the files will be parsed, or all of them
+        if 'species' in kwargs:
+            if hasattr(kwargs['species'], '__iter__') == False:
+                select_species = [kwargs['species']]
+            else:
+                select_species = kwargs['species']
+        else:
+            select_species = None
+
+        for i, fPath in enumerate(self.dataFiles):
+            
+            specStr = self.specStrs[i]
+            specDict = None
             
             #ignoring proccessing file that can not be processed by default
             if fPath.split('/')[-1] in self.ignoreList:
                 continue
-
-            print 'reading file : %s' % fPath
-            #if 'test.dat' not in fPath:  #;;;rmove this later
-            #    continue                  #;;;remove this later
-            #input('press 1 to process the next file %s' % fPath)
-            specDict = self.parseDataFile(fPath)
-            print '       prased successfully'
             
-            if 'specie' in kwargs:
-                if kwargs['specie'] == specDict['specStr']:
+            if select_species != None:
+                
+                if specStr in select_species:
+                    specDict = self.parseDataFile(fPath)
                     specDict = self.cleanSpecDict(specDict)
                     print '       cleaned successfully'
-            self.speciesInfo += (specDict,)
-            
+            else:
+                specDict = self.parseDataFile(fPath)
+
+            if specDict != None:
+                self.speciesInfo += (species(specDict),)
+        
+        
     def cleanSpecDict(self, specDict):
         """takes the output item of :data:`parseDataFile` and defines dtypes which hold 
            the info about the levels and the transitions. This method does the following
@@ -229,20 +266,20 @@ class reader():
         #-----------------------------
         # extracting the energy levels
         #-----------------------------
-        #            level index       energy (ev)       stat weight      level j             level k        leve inv            
-        dt = np.dtype(
-              [ ('n', np.int32), ('E', np.float64), ('g', np.float64), ('j', np.int32), ('k', np.int32), ('i', np.int32)]
-             ) 
-        levels = np.ndarray( specDict['nlevels'], dtype = dt)
+        #                         level index       energy (ev)       stat weight      level j             level k        leve inv            
+        dt = numpy.dtype(
+                         [ ('n', numpy.int32), ('E', numpy.float64), ('g', numpy.float64), ('j', numpy.int32), ('k', numpy.int32), ('i', numpy.int32)]
+                         ) 
+        levels = numpy.ndarray( specDict['nlevels'], dtype = dt)
         for idx, levelStr in enumerate(specDict['levels']):
             levelStrParsed = re.split('\s+|_', levelStr.strip())
-            levels[idx]['n'] = np.int32(levelStrParsed[0]) - 1 
-            levels[idx]['E'] = np.float64(levelStrParsed[1]) #*hPlank*cLight/kBoltz # energies in K
-            levels[idx]['g'] = np.float64(levelStrParsed[2])
+            levels[idx]['n'] = numpy.int32(levelStrParsed[0]) - 1 
+            levels[idx]['E'] = numpy.float64(levelStrParsed[1]) #*hPlank*cLight/kBoltz # energies in K
+            levels[idx]['g'] = numpy.float64(levelStrParsed[2])
             """
-            levels[idx]['j'] = np.int32(levelStrParsed[3])
-            levels[idx]['k'] = np.int32(levelStrParsed[4])
-            levels[idx]['i'] = np.int32(levelStrParsed[5])
+            levels[idx]['j'] = numpy.int32(levelStrParsed[3])
+            levels[idx]['k'] = numpy.int32(levelStrParsed[4])
+            levels[idx]['i'] = numpy.int32(levelStrParsed[5])
             """
         #replacing the dict item with the numpy dtype array
         specDict.pop('levels')       
@@ -252,19 +289,19 @@ class reader():
         # extracting the radiative transitions information
         #-------------------------------------------------
         #                transition idx     upper           lower               frequency          energy      
-        dt = np.dtype(
-                      [ ('n', np.int32), ('u', np.int32), ('l', np.int32), ('A', np.float64), ('nu', np.float64), ('E', np.float64)]
+        dt = numpy.dtype(
+                      [ ('n', numpy.int32), ('u', numpy.int32), ('l', numpy.int32), ('A', numpy.float64), ('nu', numpy.float64), ('E', numpy.float64)]
                      ) 
-        transRad = np.ndarray( specDict['nTransRad'], dtype = dt)
+        transRad = numpy.ndarray( specDict['nTransRad'], dtype = dt)
         for idx, transStr in enumerate(specDict['transRad']):
             transRadStrParsed = re.split('\s+', transStr.strip())
         
-            transRad[idx]['n']  = np.int32(transRadStrParsed[0]) - 1 
-            transRad[idx]['u']  = np.int32(transRadStrParsed[1]) - 1 
-            transRad[idx]['l']  = np.int32(transRadStrParsed[2]) - 1
-            transRad[idx]['A']  = np.float64(transRadStrParsed[3])
-            transRad[idx]['nu'] = np.float64(transRadStrParsed[4])
-            transRad[idx]['E']  = np.float64(transRadStrParsed[5])
+            transRad[idx]['n']  = numpy.int32(transRadStrParsed[0]) - 1 
+            transRad[idx]['u']  = numpy.int32(transRadStrParsed[1]) - 1 
+            transRad[idx]['l']  = numpy.int32(transRadStrParsed[2]) - 1
+            transRad[idx]['A']  = numpy.float64(transRadStrParsed[3])
+            transRad[idx]['nu'] = numpy.float64(transRadStrParsed[4])
+            transRad[idx]['E']  = numpy.float64(transRadStrParsed[5])
             
         specDict.pop('transRad')       
         specDict['transRad'] = transRad
@@ -277,7 +314,7 @@ class reader():
         ev2erg = 1.602e-12   #erg
 
         totalRelErr = 0.0
-        minRelErr = np.inf
+        minRelErr = numpy.inf
         maxRelErr = 0.0
         for trans in transRad:
             lw =  trans['l']; up = trans['u'];
@@ -286,8 +323,8 @@ class reader():
             # transition frequency in GHz 
             nu = dE*kBoltz/hPlank * 1e-9
             relErr = (1.0 - trans['nu']/nu)
-            minRelErr = np.minimum(abs(relErr), abs(minRelErr))
-            maxRelErr = np.maximum(abs(relErr), abs(maxRelErr))
+            minRelErr = numpy.minimum(abs(relErr), abs(minRelErr))
+            maxRelErr = numpy.maximum(abs(relErr), abs(maxRelErr))
             totalRelErr += relErr
             #print relErr
         #print 'avertage relative error = %e (min,max)=[%e,%e]' % (totalRelErr/specDict['nTransRad'], minRelErr, maxRelErr)  
@@ -297,20 +334,20 @@ class reader():
         # extracting the collisional transitions information (for the zeroth partner)
         #-----------------------------------------------------------------------------
         #                transition idx     upper           lower               frequency          energy      
-        dt = np.dtype(
-                      [ ('n', np.int32), ('u', np.int32), ('l', np.int32), ('rc', object) ]
+        dt = numpy.dtype(
+                      [ ('n', numpy.int32), ('u', numpy.int32), ('l', numpy.int32), ('rc', object) ]
                      )
 
         for partner in specDict['transColl']['partnersList']:
-            transColl = np.ndarray(specDict['transColl'][partner]['nTrans'], dtype = dt)
+            transColl = numpy.ndarray(specDict['transColl'][partner]['nTrans'], dtype = dt)
             tKin =  specDict['transColl'][partner]['temps']
             for idx, transCollStr in enumerate(specDict['transColl'][partner]['table']):
                 transCollStrParsed = re.split('\s+', transCollStr.strip())
-                transColl[idx]['n']  = np.int32(transCollStrParsed[0]) - 1 
-                transColl[idx]['u']  = np.int32(transCollStrParsed[1]) - 1
-                transColl[idx]['l']  = np.int32(transCollStrParsed[2]) - 1
+                transColl[idx]['n']  = numpy.int32(transCollStrParsed[0]) - 1 
+                transColl[idx]['u']  = numpy.int32(transCollStrParsed[1]) - 1
+                transColl[idx]['l']  = numpy.int32(transCollStrParsed[2]) - 1
                 # getting the interpolation function
-                rc = np.array(transCollStrParsed[3:])
+                rc = numpy.array(transCollStrParsed[3:])
                 
                 if len(rc) == 1:
                     f_rc = lambda x: rc if x == tKin else -1.0
@@ -356,6 +393,8 @@ class reader():
                                                    etc
         """
         
+        print 'reading file : %s' % fPath
+        
         strng = open(fPath, 'r').read()
         
         #the dictonary object which will hold all the info about the specie
@@ -375,7 +414,7 @@ class reader():
         #token : the molecular weight
         tok = tokens.pop(0)
         if 'MOLECULAR WEIGHT' in tok.upper() or 'MASS' in tok:
-            specDict['weight'] = np.float64((tok.split('\n'))[-1])
+            specDict['weight'] = numpy.float64((tok.split('\n'))[-1])
         else:
             raise ValueError('expected the MOLECULE WEIGHT section of the file, got *%s* instead'  % tok)
 
@@ -386,7 +425,7 @@ class reader():
             tok = (tok.split('\n'))[-1]
             tok = re.findall(r"\w+", tok) #splitting to words 
             tok = tok[0] # picking the first (assuming it is the number we need)
-            specDict['nlevels'] = np.int32(tok)
+            specDict['nlevels'] = numpy.int32(tok)
         else:
             raise ValueError('expected the the NUMBER OF ENERGY LEVELS section file, got *%s* instead' % tok)
 
@@ -412,7 +451,7 @@ class reader():
         ############################################
         tok = tokens.pop(0)
         if 'NUMBER OF RADIATIVE TRANSITIONS' in tok.upper():
-            specDict['nTransRad'] = np.int32((tok.split('\n'))[-1])
+            specDict['nTransRad'] = numpy.int32((tok.split('\n'))[-1])
         else:
             raise ValueError('expected the the NUMBER OF RADIATIVE TRANSITIONS section file, got *%s* instead' % tok)
         
@@ -433,13 +472,13 @@ class reader():
         #token : the number of collisional partners
         tok = tokens.pop(0)
         if 'NUMBER OF COLL PARTNERS' in tok.upper() or 'NUMBER OF COLLISION PARTNERS' in tok.upper():
-            specDict['transColl']['nPartners'] = np.int32((tok.split('\n'))[-1])
+            specDict['transColl']['nPartners'] = numpy.int32((tok.split('\n'))[-1])
         else:
             raise ValueError('expected the NUMBER OF COLL PARTNERS section file, got *%s* instead' % tok)
 
         #parsing the collisional information for each partner
         partnerTypeDict = {'1': 'H2', '2': 'p-H2', '3': 'o-H2', '4': 'e-', '5':'H', '6':'He', '7':'H+'}
-        for i in np.arange(specDict['transColl']['nPartners']):
+        for i in numpy.arange(specDict['transColl']['nPartners']):
             #token : the collisional partner
             tok = tokens.pop(0)
 
@@ -463,13 +502,13 @@ class reader():
                 tok = (tok.split('\n'))[-1]
                 tok = re.findall(r"\w+", tok) #splitting to words     
                 tok = tok[0] # picking the first (assuming it is the number we need)
-                specDict['transColl'][partnerSpecStr]['nTrans'] = np.int32(tok)
+                specDict['transColl'][partnerSpecStr]['nTrans'] = numpy.int32(tok)
             else:
                 raise ValueError('expected the NUMBER OF COLL TRANS section file, got *%s* instead' % tok)
             #token : number of temperatures at which the rates are tabulated
             tok = tokens.pop(0)
             if 'NUMBER OF' in tok.upper() and 'TEMP' in tok.upper():
-                specDict['transColl'][partnerSpecStr]['nTemps'] = np.int32((tok.split('\n'))[-1])
+                specDict['transColl'][partnerSpecStr]['nTemps'] = numpy.int32((tok.split('\n'))[-1])
             else:
                 raise ValueError('expected the NUMBER OF COLL TEMPS section file, got *%s* instead' % tok)
             #token : the temperature at which the rates are tabulated
@@ -477,7 +516,7 @@ class reader():
             if 'TEMP' in tok.upper():
                 temps = re.split('\n', tok, maxsplit=1)[1] # discaring the header
                 temps = re.sub('\n', ' ', temps)           # replacing the newline (if any) with a whitespace char
-                specDict['transColl'][partnerSpecStr]['temps'] = np.float64(temps.split())
+                specDict['transColl'][partnerSpecStr]['temps'] = numpy.float64(temps.split())
             else:
                 raise ValueError('expected the COLL TEMPS section file, got *%s* instead' % tok)
             #token : the collision rates data table
@@ -557,19 +596,19 @@ class reader():
             
             consider = True
             
-            if specStr in spec['specStr']:
+            if specStr in spec.specStr:
                 pass
             else:
                 consider *= False
                 
             if inPath != None:
-                if inPath in spec['path'].split('/')[-1]:
+                if inPath in spec.path.split('/')[-1]:
                     pass
                 else:
                     consider *= False
                     
             if inInfo != None:
-                if inInfo in spec['info']:
+                if inInfo in spec.info:
                     pass
                 else:
                     consider *= False
@@ -578,7 +617,7 @@ class reader():
                 returnList += (spec,)
     
         if len(returnList) == 1:
-            print 'returning data from the file :\n     %s' % returnList[0]['path']
+            print 'returning data from the file :\n     %s' % returnList[0].path
             return returnList[0]
         else:
             print 'data returned matches content of %d files' % len(returnList)
@@ -589,33 +628,55 @@ class reader():
     def get_dirPath(self):
         return self.dirPath
     
-def critical_density( specInfo = None, upper = None, lower = None, T_kin = None, collider = None):
-    """computes the cricical density (n_crit = A/K) of a transition given the cleaned output
-       of :data:`reader` (see also :data:`reader.get_specie`). The inputs are the
-       upper and lower levels corresponding to specInfo['levels'] and the kinetic
-       temperature at which the collisional coefficient will be computed. Also
-       it is required to specify the collider specie as a string. See documentation
-       of reader for the supported colliders. 
+    
+#----------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------
+class species():
+    """A class which has all the keys and numpy dtype of the specInfo parsed by 
+      molData.reader.cleanSpecDict as attributes. Takes as an argument the specInfo 
+      specDict and returns a class which has the main keys as attributes. Also defines
+      some utility methods which compute things related to the species.
     """
+    def __init__(self, specDict):
+        
+        self.path = specDict['path']
+        self.specStr = specDict['specStr']
+        self.info = specDict['info']
+        self.weight = specDict['weight']
+        self.nlevels = specDict['nlevels']
+        self.levels = specDict['levels']
+        self.nTransRad = specDict['nTransRad']
+        self.transRad = specDict['transRad']
+        self.transColl = specDict['transColl']
+        
+    def critical_density(self, upper = None, lower = None, T_kin = None, collider = None):
+        """computes the cricical density (n_crit = A/K) of a transition given the cleaned output
+           of :data:`reader` (see also :data:`reader.get_specie`). The inputs are the
+           upper and lower levels corresponding to specInfo['levels'] and the kinetic
+           temperature at which the collisional coefficient will be computed. Also
+           it is required to specify the collider specie as a string. See documentation
+           of reader for the supported colliders. 
+        """
     
-    eins_A = None    
-    k_coll = None
+        eins_A = None    
+        k_coll = None
+        
+        #getting the einstein A coefficient
+        for trans in self.transRad:
+            if trans['u'] == upper and trans['l'] == lower:
+                eins_A = trans['A']
+        
+        if eins_A == None:
+            raise ValueError("transition not found upper = %d, lower = %d" % (upper, lower))
+        
+        #gettnig the collisional coefficient for the input temperature
+        for trans in self.transColl[collider]['trans']:
+            if trans['u'] == upper and trans['l'] == lower:
+                k_coll = trans['rc'](T_kin)
+        
+        if k_coll == None:
+            raise ValueError("collisional transition not found upper = %d, lower = %d" % (upper, lower))
     
-    #getting the einstein A coefficient
-    for trans in specInfo['transRad']:
-        if trans['u'] == upper and trans['l'] == lower:
-            eins_A = trans['A']
-    
-    if eins_A == None:
-        raise ValueError("transition not found upper = %d, lower = %d" % (upper, lower))
-    
-    #gettnig the collisional coefficient for the input temperature
-    for trans in specInfo['transColl'][collider]['trans']:
-        if trans['u'] == upper and trans['l'] == lower:
-            k_coll = trans['rc'](T_kin)
-    
-    if k_coll == None:
-        raise ValueError("collisional transition not found upper = %d, lower = %d" % (upper, lower))
-
-    return eins_A / k_coll
-    
+        return eins_A / k_coll

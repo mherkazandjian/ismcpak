@@ -13,44 +13,39 @@ from ismUtils import planckOccupation as ng
 ####-----------------------------------------------------------------
 
 #parameters
-Tkin  = 15.0 # kinetic temperature of the gas (K)
-Tcmb  = 2.0  # temperature of background radiation (K)
-nc    = 1.5  # collider number density cm^-2
+Tkin  = 100.0    # kinetic temperature of the gas (K)
+Tcmb  = 2.73     # temperature of background radiation (K)
+nc    = 1000.0   # collider number density cm^-2
 # some constants
 #------------------------------
-hPlank = 2.0 #arbitrary unit  
-cLight = 1.5 #arbitrary unit
-kBoltz = 1.0 #arbitrary unit
+hPlank = 6.63e-27       # erg.s 
+cLight = 29979245800.0  # cm.s^-1
+kBoltz = 1.38e-16       # erg.K^-1 
+ev2erg = 1.602e-12      #erg
 #------------------------------
 
-restore = True
 #reading the whole database of line info of species from LAMBDA
 lambdaPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
-reader = molData.reader(dirPath = lambdaPath)
+reader = molData.reader(dirPath = lambdaPath, species = 'HCN')
 
-#selecting the one holding the info for p-NH3
-for specDict in reader.speciesInfo:
-    print 'asdad'
-    if 'Xx' in specDict['specStr']:
-        xx = specDict
-        print 'found %s info, filePath : %s' % ('Xx', xx['path'])
-        break
+spec = reader.get_specie(specStr='HCN', inPath='hcn.dat')
+
 
 #number of energy levels
-n     = xx['nlevels']
+n     = spec.nlevels
     
 # converting the energy units to K 
-for idx, level in enumerate(xx['levels']):
+for idx, level in enumerate(spec.levels):
     level['E'] *= hPlank*cLight/kBoltz # energies in K
-levels = xx['levels']
-transRad = xx['transRad']
-transColl = xx['transColl']['partner0']['trans']
+levels = spec.levels
+transRad = spec.transRad
+transColl = spec.transColl['H2']['trans']
 
 print '----------------------------levels----------------------------'
-print 'idx       E      g      j,k,i'
+print 'idx         E      g'
 print '--------------------------------------------------------------'
 for l in levels:
-    print '%d     %.2e   %d     (%d,%d,%d)' % (l['n'], l['E'], l['g'], l['j'], l['k'], l['i'])  
+    print '%03d     %.2e   %d ' % (l['n'], l['E'], l['g'])  
 
 print '------------------radiative transitions--------------------------'
 print 'idx   u    l    A          nu        E'
@@ -59,11 +54,11 @@ for t in transRad:
     print '%d     %d    %d  %.2e  %.2e %.2e' % (t['n'], t['u'], t['l'], t['A'], t['nu'], t['E'])
       
 print '------------------collisional transitions-----------------------'
-print 'idx   u    l  rc(T=10) rc(T=15) rc(T=20)'
+print 'idx       u      l    rc(T=10) rc(T=15) rc(T=20)'
 print '-----------------------------------------------------------------'
 for t in transColl:
-    print '%d     %d    %d  %.2e %.2e %.2e' % (t['n'], t['u'], t['l'], t['rc'](10.0), t['rc'](15.0), t['rc'](20.0))  
- 
+    print '%05d     %03d    %03d  %.2e %.2e %.2e' % (t['n'], t['u'], t['l'], t['rc'](10.0), t['rc'](15.0), t['rc'](20.0))  
+
 ###########################################################
 # constructing the matrix 
 ###########################################################
