@@ -1,0 +1,765 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>leidenLambda.molData &mdash; ismcpak 0.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="ismcpak 0.0.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">ismcpak 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for leidenLambda.molData</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+
+<div class="viewcode-block" id="reader"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.reader">[docs]</a><span class="k">class</span> <span class="nc">reader</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;This is a class which provides an interface to the LAMDA database. </span>
+<span class="sd">    The files in the LAMBDA database are parsed into a dictioary of strings</span>
+<span class="sd">    (for the names of the species) and numpy dtypes for the numerical values</span>
+<span class="sd">    such as the rates coefficients.  The parsing is done based on the fields</span>
+<span class="sd">    which specify the content of the following data. For example, first we</span>
+<span class="sd">    look for the string &#39;MOLECULE&#39; and extract its name form the following line</span>
+<span class="sd">    since that is how the files are constructed.  It is not such a straight </span>
+<span class="sd">    forward task since sonetimes feilds which contain information also contain</span>
+<span class="sd">    descriptive texts. For example the feild holding the name of the H20</span>
+<span class="sd">    molecule also has :</span>
+<span class="sd">    </span>
+<span class="sd">           p-H2O spectroscopy from JPL ...</span>
+<span class="sd">           </span>
+<span class="sd">    The input units of the energy levels in the levels section is assumed to</span>
+<span class="sd">    be in cm^-1 (which is the case in all  the files of the current version </span>
+<span class="sd">    of the database).</span>
+<span class="sd">    </span>
+<span class="sd">    It is assumed that the energy units read in the transitions (both radiative</span>
+<span class="sd">    and collisional are in K.</span>
+<span class="sd">    </span>
+<span class="sd">    Creating an instance in the following way :</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+<span class="sd">    </span>
+<span class="sd">        reader = molData.reader(dirPath = &#39;/home/mher/lambdaPath/&#39;)</span>
+<span class="sd">        </span>
+<span class="sd">    reads all the files with a .dat extention, parses them and stores the </span>
+<span class="sd">    parsed data in the attribute :data:`speciesInfo`.</span>
+<span class="sd">    </span>
+<span class="sd">    The method :data:`get_specie` can be used get the info for a cartain specie.</span>
+<span class="sd">    Each files is parsed into a dictionary with the following keys:</span>
+<span class="sd">    </span>
+<span class="sd">    :warning: the quantum number reading is ignored for now.</span>
+<span class="sd">    :test: Below are a few file which can be used as templates to read and use</span>
+<span class="sd">       the data:</span>
+<span class="sd">       </span>
+<span class="sd">        - :file:`test_parsing_datafile.py`</span>
+<span class="sd">        - :file:`test_leidenLambda.py`</span>
+
+<span class="sd">    .. code-block:: python</span>
+<span class="sd">            </span>
+<span class="sd">              specDict = [&#39;path&#39;]       #full path of the file</span>
+<span class="sd">                         [&#39;specStr&#39;]    #the string of the specie</span>
+<span class="sd">                         [&#39;info&#39;]       #the raw content of the string name feild (useful for extra checks)</span>
+<span class="sd">                         [&#39;weight&#39;]     #atomic weight</span>
+<span class="sd">                         [&#39;nlevels&#39;]    #number of levels </span>
+<span class="sd">                         [&#39;levels&#39;][0]  #an ndarray of dtypes holding info for each level</span>
+<span class="sd">                                   [1]  #see the method *cleanSpecDict* for details of each key in the dtyp</span>
+<span class="sd">                                    .   #the keys of the dtype are : &#39;n&#39;, &#39;E&#39;, &#39;g&#39;, &#39;qn&#39;  </span>
+<span class="sd">                                    . </span>
+<span class="sd">                                   [nlevels-1] </span>
+<span class="sd">                         [&#39;nTransRad&#39;]         # number of radiative transitions</span>
+<span class="sd">                         [&#39;transRad&#39;][0]       # an ndarray of dtypes holding the info of all the</span>
+<span class="sd">                                     [1]       # radiative transitions. see the method *cleanSpecDict*</span>
+<span class="sd">                                      .        # for details of each key in the dtyp </span>
+<span class="sd">                                      .        # the keys of the dtype are : &#39;n&#39;, &#39;u&#39;, &#39;l&#39;, &#39;A&#39;, &#39;nu&#39;, &#39;E&#39;</span>
+<span class="sd">                                     [nTransRad-1] </span>
+<span class="sd">                         [&#39;transColl&#39;][&#39;nPartners&#39;] # number of collisional partners</span>
+<span class="sd">                                      [&#39;partnersList&#39;][0] # a list of the collision partners (the raw content</span>
+<span class="sd">                                                      [1] # of the collsion partner list, same as &#39;info&#39;</span>
+<span class="sd">                                                       .  # for each below)</span>
+<span class="sd">                                                      [nPartners-1]  </span>
+<span class="sd">                                      [&#39;partner0&#39;][&#39;nTrans&#39;] # number of collisional transitions</span>
+<span class="sd">                                           .      [&#39;info&#39;]   # the raw content of the collion partner feild (useful for extra checks)</span>
+<span class="sd">                                           .      [&#39;nTemps&#39;] # number of temperatures in the collisions table </span>
+<span class="sd">                                           .      [&#39;temps&#39;]  # the temperatures values for which the rate coefficient are tabulated</span>
+<span class="sd">                                           .      [&#39;table&#39;][0] #each line is the (split) raw data (as strings) of each transition read  </span>
+<span class="sd">                                           .               [1] #  from the file</span>
+<span class="sd">                                           .                .  </span>
+<span class="sd">                                           .                .  </span>
+<span class="sd">                                           .               [nTrans-1]</span>
+<span class="sd">                                           .      [&#39;trans&#39;][0] #an ndarray holding the info of the collisional transitions with this  </span>
+<span class="sd">                                           .               [1] #partner. The keys of the dtype are : &#39;n&#39;, &#39;u&#39;, &#39;l&#39;, &#39;rc&#39;</span>
+<span class="sd">                                           .                .  #&#39;rc&#39; is an interpolation function which given a temperature returns</span>
+<span class="sd">                                           .                .  #the rate coefficient.</span>
+<span class="sd">                                           .               [nTrans-1]   </span>
+<span class="sd">   </span>
+<span class="sd">                                      [&#39;partner1&#39;][&#39;nTrans&#39;]</span>
+<span class="sd">                                           .      [&#39;info&#39;]</span>
+<span class="sd">                                           .      [&#39;nTemps&#39;]</span>
+<span class="sd">                                           .      [&#39;temps&#39;]</span>
+<span class="sd">                                           .      [&#39;table&#39;][0]</span>
+<span class="sd">                                           .               [1] </span>
+<span class="sd">                                           .                .</span>
+<span class="sd">                                           .                .</span>
+<span class="sd">                                           .               [nTrans-1]</span>
+<span class="sd">                                           .          </span>
+<span class="sd">                                           .          </span>
+<span class="sd">                                      [&#39;partner(nPartners-1)&#39;]</span>
+
+<span class="sd">    The collision partners in the data files are the same as those mentioned in the</span>
+<span class="sd">    documentation of Radex (mention the link to Floris&#39;s page)</span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python </span>
+<span class="sd">    </span>
+<span class="sd">            partnerTypeDict = {&#39;1&#39;: &#39;H2&#39;, </span>
+<span class="sd">                               &#39;2&#39;: &#39;p-H2&#39;, </span>
+<span class="sd">                               &#39;3&#39;: &#39;o-H2&#39;, </span>
+<span class="sd">                               &#39;4&#39;: &#39;e-&#39;, </span>
+<span class="sd">                               &#39;5&#39;:&#39;H&#39;, </span>
+<span class="sd">                               &#39;6&#39;:&#39;He&#39;, </span>
+<span class="sd">                               &#39;7&#39;:&#39;H+&#39;}</span>
+<span class="sd">                               </span>
+<span class="sd">    .. todo:: use a literal include to include this from the method self.parseDtaFile(). </span>
+<span class="sd">     </span>
+<span class="sd">    An example for getting a rate coefficient. Once the reader has been invoked, we</span>
+<span class="sd">    can use the :data:`get_specie` method to extract a certain specie info. Lets say </span>
+<span class="sd">    we want the rate coefficient for the para-H2O molecule. </span>
+<span class="sd">    </span>
+<span class="sd">    .. code-block:: python</span>
+<span class="sd">            </span>
+<span class="sd">        pNH3 = reader.get_specie(specStr = &#39;NH3&#39;, inInfo = &#39;p-&#39;)</span>
+<span class="sd">        </span>
+<span class="sd">    this retuns the species infor for para NH3. For H2O for example, it is better</span>
+<span class="sd">    to provide the inPath parameter to decide which information to return</span>
+<span class="sd">    based on the filename holding the data, since there are may o- and p- files</span>
+<span class="sd">    in the current database.  </span>
+
+<span class="sd">    .. note:: see  www.sron.rug.nl/~vdtak/radex/index.shtml#moldata for the format of the data ascii files.</span>
+<span class="sd">    .. todo:: add a method to return the index of a level given the quantum numbers</span>
+<span class="sd">    .. todo:: add another method which feches the transition info give the upper and lower levels (all transitions -rad-col..etc..)</span>
+<span class="sd">    .. todo:: add a method which dumps the graphvis stuff for the transitions (radiative, coll...)</span>
+<span class="sd">    .. todo:: add a method which clears memory and check for memory leaks</span>
+<span class="sd">    .. todo:: see what it is about the differences in the computed and tabulated deltaEs and energy levels</span>
+<span class="sd">    .. todo:: collect the filenames only by doing one pass over all the files and compiling a dictionary</span>
+<span class="sd">      for the species and different versions of the files. Also write a routine which writes all the info</span>
+<span class="sd">      of the read files.</span>
+<span class="sd">    .. warning:: in the online data there are few mistakes (not sure if they were corrected):</span>
+<span class="sd">               </span>
+<span class="sd">         - in hcl@hfs.dat : the number of collisional transitions should be 378</span>
+<span class="sd">         - the files : c-h2.dat, c+-h2.dat, hcl.dat, old-hc3n.dat, o-h2.dat, old-hnco.dat are missing</span>
+<span class="sd">           the numerical code of the colliders. For example :</span>
+<span class="sd">            </span>
+<span class="sd">              C + o-H2  !  K. Schroeder et al. 1991, J. Phys. B, 24, 2487</span>
+<span class="sd">           </span>
+<span class="sd">           should be replaced by :</span>
+<span class="sd">           </span>
+<span class="sd">              3 C + o-H2  !  K. Schroeder et al. 1991, J. Phys. B, 24, 2487</span>
+<span class="sd">           </span>
+<span class="sd">         - in p-nh3.dat : the code for the collision partner for p-H2 is set as 1, it should be 2</span>
+<span class="sd">         </span>
+<span class="sd">              1 p-NH3 on p-H2: Danby et al 1988, MNRAS 235, 229</span>
+<span class="sd">              </span>
+<span class="sd">           should be:</span>
+<span class="sd">              </span>
+<span class="sd">              2 p-NH3 on p-H2: Danby et al 1988, MNRAS 235, 229</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">dataFiles</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;A list containing all the names of the files in :data:`dirPath`&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignoreList</span> <span class="o">=</span> <span class="p">(</span><span class="s">&#39;co@neufeld-old.dat&#39;</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;A list of strings holding the names of the files to be ignored. Those files</span>
+<span class="sd">           are old ones which are not combatible with the current parser of this class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">specStrs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="sd">&quot;&quot;&quot;A list which will hold all the names of the species extracted from the headers</span>
+<span class="sd">           of the files in self.datafiles</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">speciesInfo</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="sd">&quot;&quot;&quot;A tuple of dicts objects. Each dict object holds all the info </span>
+<span class="sd">           read from a file.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+                
+        <span class="k">if</span> <span class="s">&#39;dirPath&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_dirPath</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;dirPath&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dataFiles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">findFiles</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_all_headers</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">collectAllFilesInfo</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dirPath</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="sd">&quot;&quot;&quot;The path of the directory holding all the information about all the species&quot;&quot;&quot;</span>
+        
+<div class="viewcode-block" id="reader.read_all_headers"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.reader.read_all_headers">[docs]</a>    <span class="k">def</span> <span class="nf">read_all_headers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;For each path in self.dataFiles read the header, the &quot;!MOLECULE&quot; section,</span>
+<span class="sd">           And return a list for those headers. This method is implemented mainly</span>
+<span class="sd">           to optimize not reading all the data of all the files. Thus just by reading </span>
+<span class="sd">           the header and getting the name of the species, using the keyword &#39;specie&#39;</span>
+<span class="sd">           while initializing the reader can be used to read the full data and parse</span>
+<span class="sd">           and clean the data of the spceis matching the onse in the headers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>  
+             
+        <span class="k">for</span> <span class="n">fPath</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataFiles</span><span class="p">:</span>
+
+            <span class="c">#read 128 bytes into a string        </span>
+            <span class="n">strng</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fPath</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">512</span><span class="p">)</span>
+            
+            <span class="c">#regular expression which gets everything between a &#39;!&#39;</span>
+            <span class="c">#and a new line followed by a &#39;!&#39;</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&quot;[\s]*!([\s\S]*?)\n\s*(?=[!]|$)&quot;</span><span class="p">,</span> <span class="n">strng</span><span class="p">)</span>
+            
+            <span class="c">#token : the molecule</span>
+            <span class="c">#####################</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">specStrs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_specie_name</span><span class="p">(</span><span class="n">tok</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    
+        <span class="k">print</span> <span class="s">&#39;read all the headers.&#39;</span>
+        </div>
+<div class="viewcode-block" id="reader.collectAllFilesInfo"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.reader.collectAllFilesInfo">[docs]</a>    <span class="k">def</span> <span class="nf">collectAllFilesInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Retrieves parsed and cleaned data from the leiden lambda database file in self.dirPath.</span>
+<span class="sd">           The parsed data which are dicts (see output of self.cleanSpecDict) are appended to self.spceciesInfo.              </span>
+
+<span class="sd">         </span>
+<span class="sd">           :param string specie: if this keyword is set, only file whose specie matches it are parsed.  Otherwise all the files are parsed. </span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">fPath</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataFiles</span><span class="p">):</span>
+            
+            <span class="n">specStr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">specStrs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">specDict</span> <span class="o">=</span> <span class="bp">None</span>
+            
+            <span class="c">#ignoring proccessing file that can not be processed by default</span>
+            <span class="k">if</span> <span class="n">fPath</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignoreList</span><span class="p">:</span>
+                <span class="k">continue</span>
+            
+            <span class="k">if</span> <span class="s">&#39;specie&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                
+                <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;specie&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">specStr</span><span class="p">:</span>
+                    <span class="n">specDict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parseDataFile</span><span class="p">(</span><span class="n">fPath</span><span class="p">)</span>
+                    <span class="n">specDict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleanSpecDict</span><span class="p">(</span><span class="n">specDict</span><span class="p">)</span>
+                    <span class="k">print</span> <span class="s">&#39;       cleaned successfully&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">specDict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parseDataFile</span><span class="p">(</span><span class="n">fPath</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">specDict</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">speciesInfo</span> <span class="o">+=</span> <span class="p">(</span><span class="n">species</span><span class="p">(</span><span class="n">specDict</span><span class="p">),)</span>
+        
+        </div>
+<div class="viewcode-block" id="reader.cleanSpecDict"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.reader.cleanSpecDict">[docs]</a>    <span class="k">def</span> <span class="nf">cleanSpecDict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">specDict</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;takes the output item of :data:`parseDataFile` and defines dtypes which hold </span>
+<span class="sd">           the info about the levels and the transitions. This method does the following</span>
+<span class="sd">           modification to specDict:</span>
+<span class="sd">           </span>
+<span class="sd">             - specDict[&#39;levels&#39;] : is replaced by a numpy dtype : &#39;n&#39;, &#39;E&#39;, &#39;g&#39;, &#39;qn&#39;. </span>
+<span class="sd">             - specDict[&#39;transRad&#39;] : is replaced by a numpy dtype : &#39;n&#39;, &#39;u&#39;, &#39;l&#39;, &#39;A&#39;, &#39;nu&#39;, &#39;E&#39;. </span>
+<span class="sd">             - specDict[&#39;transColl&#39;][&#39;partnerX&#39;] : each collision partner X will have a new dict key [&#39;trans&#39;]</span>
+<span class="sd">               which is a dtype with keys &#39;n&#39;, &#39;u&#39;, &#39;l&#39;, &#39;rc&#39;. &#39;rc&#39; is an interpolation function which take </span>
+<span class="sd">               temperature as an argument and returns the rate coefficient for that temperature.</span>
+<span class="sd">             - in the above : &#39;n&#39; is a transition index.</span>
+<span class="sd">             - [&#39;levels&#39;], [&#39;transRad&#39;], [&#39;transColl&#39;][&#39;partnerX&#39;][&#39;dtype&#39;] are ndarrays one entry for each level/transition.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c">#-----------------------------</span>
+        <span class="c"># extracting the energy levels</span>
+        <span class="c">#-----------------------------</span>
+        <span class="c">#                         level index       energy (ev)       stat weight      level j             level k        leve inv            </span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span>
+                         <span class="p">[</span> <span class="p">(</span><span class="s">&#39;n&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;g&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;j&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;i&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">)]</span>
+                         <span class="p">)</span> 
+        <span class="n">levels</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;nlevels&#39;</span><span class="p">],</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">dt</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">levelStr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">specDict</span><span class="p">[</span><span class="s">&#39;levels&#39;</span><span class="p">]):</span>
+            <span class="n">levelStrParsed</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;\s+|_&#39;</span><span class="p">,</span> <span class="n">levelStr</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">levels</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;n&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">levelStrParsed</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span> 
+            <span class="n">levels</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;E&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">levelStrParsed</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="c">#*hPlank*cLight/kBoltz # energies in K</span>
+            <span class="n">levels</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;g&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">levelStrParsed</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            levels[idx][&#39;j&#39;] = numpy.int32(levelStrParsed[3])</span>
+<span class="sd">            levels[idx][&#39;k&#39;] = numpy.int32(levelStrParsed[4])</span>
+<span class="sd">            levels[idx][&#39;i&#39;] = numpy.int32(levelStrParsed[5])</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="c">#replacing the dict item with the numpy dtype array</span>
+        <span class="n">specDict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;levels&#39;</span><span class="p">)</span>       
+        <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;levels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">levels</span>
+
+        <span class="c">#-------------------------------------------------</span>
+        <span class="c"># extracting the radiative transitions information</span>
+        <span class="c">#-------------------------------------------------</span>
+        <span class="c">#                transition idx     upper           lower               frequency          energy      </span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span>
+                      <span class="p">[</span> <span class="p">(</span><span class="s">&#39;n&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;l&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;A&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;nu&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;E&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)]</span>
+                     <span class="p">)</span> 
+        <span class="n">transRad</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;nTransRad&#39;</span><span class="p">],</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">dt</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">transStr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transRad&#39;</span><span class="p">]):</span>
+            <span class="n">transRadStrParsed</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;\s+&#39;</span><span class="p">,</span> <span class="n">transStr</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+        
+            <span class="n">transRad</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;n&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">transRadStrParsed</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span> 
+            <span class="n">transRad</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;u&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">transRadStrParsed</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span> 
+            <span class="n">transRad</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;l&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">transRadStrParsed</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="n">transRad</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;A&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">transRadStrParsed</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+            <span class="n">transRad</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;nu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">transRadStrParsed</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+            <span class="n">transRad</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;E&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">transRadStrParsed</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+            
+        <span class="n">specDict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;transRad&#39;</span><span class="p">)</span>       
+        <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transRad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">transRad</span>
+
+        <span class="c">#--------------------------------------------------------------------------</span>
+        <span class="c">#checking the read frequencies versus the computed ones from the transitions</span>
+        <span class="n">hPlank</span> <span class="o">=</span> <span class="mf">6.63e-27</span>    <span class="c"># erg.s </span>
+        <span class="n">cLight</span> <span class="o">=</span> <span class="mf">29979245800.0</span> <span class="c"># cm.s^-1</span>
+        <span class="n">kBoltz</span> <span class="o">=</span> <span class="mf">1.38e-16</span>    <span class="c"># erg.K^-1 </span>
+        <span class="n">ev2erg</span> <span class="o">=</span> <span class="mf">1.602e-12</span>   <span class="c">#erg</span>
+
+        <span class="n">totalRelErr</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">minRelErr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">inf</span>
+        <span class="n">maxRelErr</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">for</span> <span class="n">trans</span> <span class="ow">in</span> <span class="n">transRad</span><span class="p">:</span>
+            <span class="n">lw</span> <span class="o">=</span>  <span class="n">trans</span><span class="p">[</span><span class="s">&#39;l&#39;</span><span class="p">];</span> <span class="n">up</span> <span class="o">=</span> <span class="n">trans</span><span class="p">[</span><span class="s">&#39;u&#39;</span><span class="p">];</span>
+            <span class="c"># energy difference (converting from cm^-1 to K)</span>
+            <span class="n">dE</span> <span class="o">=</span> <span class="p">(</span><span class="n">levels</span><span class="p">[</span><span class="n">up</span><span class="p">][</span><span class="s">&#39;E&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">levels</span><span class="p">[</span><span class="n">lw</span><span class="p">][</span><span class="s">&#39;E&#39;</span><span class="p">])</span><span class="o">*</span><span class="n">hPlank</span><span class="o">*</span><span class="n">cLight</span><span class="o">/</span><span class="n">kBoltz</span>
+            <span class="c"># transition frequency in GHz </span>
+            <span class="n">nu</span> <span class="o">=</span> <span class="n">dE</span><span class="o">*</span><span class="n">kBoltz</span><span class="o">/</span><span class="n">hPlank</span> <span class="o">*</span> <span class="mf">1e-9</span>
+            <span class="n">relErr</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">trans</span><span class="p">[</span><span class="s">&#39;nu&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">nu</span><span class="p">)</span>
+            <span class="n">minRelErr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">relErr</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">minRelErr</span><span class="p">))</span>
+            <span class="n">maxRelErr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">relErr</span><span class="p">),</span> <span class="nb">abs</span><span class="p">(</span><span class="n">maxRelErr</span><span class="p">))</span>
+            <span class="n">totalRelErr</span> <span class="o">+=</span> <span class="n">relErr</span>
+            <span class="c">#print relErr</span>
+        <span class="c">#print &#39;avertage relative error = %e (min,max)=[%e,%e]&#39; % (totalRelErr/specDict[&#39;nTransRad&#39;], minRelErr, maxRelErr)  </span>
+        <span class="c">#--------------------------------------------------------------------------</span>
+
+        <span class="c">#-----------------------------------------------------------------------------</span>
+        <span class="c"># extracting the collisional transitions information (for the zeroth partner)</span>
+        <span class="c">#-----------------------------------------------------------------------------</span>
+        <span class="c">#                transition idx     upper           lower               frequency          energy      </span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span>
+                      <span class="p">[</span> <span class="p">(</span><span class="s">&#39;n&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;u&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;l&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">),</span> <span class="p">(</span><span class="s">&#39;rc&#39;</span><span class="p">,</span> <span class="nb">object</span><span class="p">)</span> <span class="p">]</span>
+                     <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">partner</span> <span class="ow">in</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="s">&#39;partnersList&#39;</span><span class="p">]:</span>
+            <span class="n">transColl</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partner</span><span class="p">][</span><span class="s">&#39;nTrans&#39;</span><span class="p">],</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">dt</span><span class="p">)</span>
+            <span class="n">tKin</span> <span class="o">=</span>  <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partner</span><span class="p">][</span><span class="s">&#39;temps&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">transCollStr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partner</span><span class="p">][</span><span class="s">&#39;table&#39;</span><span class="p">]):</span>
+                <span class="n">transCollStrParsed</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;\s+&#39;</span><span class="p">,</span> <span class="n">transCollStr</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+                <span class="n">transColl</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;n&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">transCollStrParsed</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span> 
+                <span class="n">transColl</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;u&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">transCollStrParsed</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="n">transColl</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;l&#39;</span><span class="p">]</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">transCollStrParsed</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="c"># getting the interpolation function</span>
+                <span class="n">rc</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">transCollStrParsed</span><span class="p">[</span><span class="mi">3</span><span class="p">:])</span>
+                
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rc</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">f_rc</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">rc</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="n">tKin</span> <span class="k">else</span> <span class="o">-</span><span class="mf">1.0</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">f_rc</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">tKin</span><span class="p">,</span> <span class="n">rc</span><span class="p">)</span>
+                <span class="n">transColl</span><span class="p">[</span><span class="n">idx</span><span class="p">][</span><span class="s">&#39;rc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_rc</span>
+                
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partner</span><span class="p">][</span><span class="s">&#39;trans&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">transColl</span>  
+
+        <span class="k">return</span> <span class="n">specDict</span>
+    </div>
+<div class="viewcode-block" id="reader.parseDataFile"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.reader.parseDataFile">[docs]</a>    <span class="k">def</span> <span class="nf">parseDataFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fPath</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parses the data file into its components and returns them as a nested dict object.</span>
+<span class="sd">           The keys of the dict are :</span>
+<span class="sd">           </span>
+<span class="sd">           :return: (dict) specDict </span>
+<span class="sd"> </span>
+<span class="sd">           .. code-block:: python</span>
+<span class="sd">            </span>
+<span class="sd">              specDict = [&#39;path&#39;]</span>
+<span class="sd">                         [&#39;specStr&#39;]</span>
+<span class="sd">                         [&#39;specInfo&#39;]</span>
+<span class="sd">                         [&#39;weight&#39;]</span>
+<span class="sd">                         [&#39;nlevels&#39;]</span>
+<span class="sd">                         [&#39;levels&#39;]</span>
+<span class="sd">                         [&#39;nTransRad&#39;]</span>
+<span class="sd">                         [&#39;transRad&#39;]</span>
+<span class="sd">                         [&#39;transColl&#39;][&#39;nPartners&#39;]</span>
+<span class="sd">                                      [&#39;partnersList&#39;]</span>
+<span class="sd">                                      [&#39;first&#39;][&#39;nTrans&#39;]</span>
+<span class="sd">                                               [&#39;info&#39;]   #todo: not implemented</span>
+<span class="sd">                                               [&#39;nTemps&#39;]</span>
+<span class="sd">                                               [&#39;temps&#39;]</span>
+<span class="sd">                                               [&#39;table&#39;]</span>
+<span class="sd">                                      [&#39;second&#39;][&#39;nTrans&#39;] </span>
+<span class="sd">                                                [&#39;info&#39;]   #todo: not implemented</span>
+<span class="sd">                                                [&#39;nTemps&#39;]</span>
+<span class="sd">                                                [&#39;temps&#39;]</span>
+<span class="sd">                                                [&#39;table&#39;]</span>
+<span class="sd">                                                    .</span>
+<span class="sd">                                                    .</span>
+<span class="sd">                                                    .</span>
+<span class="sd">                                                   etc</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">print</span> <span class="s">&#39;reading file : </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">fPath</span>
+        
+        <span class="n">strng</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fPath</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        
+        <span class="c">#the dictonary object which will hold all the info about the specie</span>
+        <span class="n">specDict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fPath</span>
+        
+        <span class="c">#regular expression which gets everything between a &#39;!&#39;</span>
+        <span class="c">#and a new line followed by a &#39;!&#39;</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&quot;[\s]*!([\s\S]*?)\n\s*(?=[!]|$)&quot;</span><span class="p">,</span> <span class="n">strng</span><span class="p">)</span>
+        <span class="c">#for t in tokens:</span>
+        <span class="c">#    print (t.split(&#39;\n&#39;))[0:1]</span>
+        
+        <span class="c">#token : the molecule</span>
+        <span class="c">#####################</span>
+        <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;specStr&#39;</span><span class="p">],</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;info&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_specie_name</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span>
+        <span class="c">#token : the molecular weight</span>
+        <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;MOLECULAR WEIGHT&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">or</span> <span class="s">&#39;MASS&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="p">:</span>
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;weight&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">((</span><span class="n">tok</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the MOLECULE WEIGHT section of the file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span>  <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+
+        <span class="c">#token : n levels</span>
+        <span class="c">#####################</span>
+        <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;NUMBER OF ENERGY LEVELS&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="p">(</span><span class="n">tok</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&quot;\w+&quot;</span><span class="p">,</span> <span class="n">tok</span><span class="p">)</span> <span class="c">#splitting to words </span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">tok</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># picking the first (assuming it is the number we need)</span>
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;nlevels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the the NUMBER OF ENERGY LEVELS section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+
+        <span class="c">#token : the levels</span>
+        <span class="c">####################</span>
+        <span class="n">tok</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span>  <span class="o">=</span> <span class="n">tok</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">tok</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        
+        <span class="c">#checking the units of the energy levels</span>
+        <span class="n">hdrEnenrgy</span> <span class="o">=</span> <span class="n">hdr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;+&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s">&#39;CM&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">hdrEnenrgy</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Energy unit is not in CM^-1&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;energyUnit&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s">&#39;cm^-1&#39;</span>
+            
+        <span class="k">if</span> <span class="s">&#39;LEVEL&#39;</span> <span class="ow">in</span> <span class="n">hdr</span> <span class="ow">and</span> <span class="s">&#39;ENERG&#39;</span> <span class="ow">in</span> <span class="n">hdr</span> <span class="ow">and</span> <span class="s">&#39;WEIGHT&#39;</span> <span class="ow">in</span> <span class="n">hdr</span><span class="p">:</span> 
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;levels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the the LEVELs section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+
+        <span class="c">#token : the number of radiative transitions</span>
+        <span class="c">############################################</span>
+        <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;NUMBER OF RADIATIVE TRANSITIONS&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;nTransRad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">((</span><span class="n">tok</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the the NUMBER OF RADIATIVE TRANSITIONS section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+        
+        <span class="c">#token : the radiative transitions</span>
+        <span class="c">##################################</span>
+        <span class="n">tok</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="n">hdr</span>  <span class="o">=</span> <span class="n">tok</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">tok</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">if</span> <span class="s">&#39;TRANS&#39;</span> <span class="ow">in</span> <span class="n">hdr</span> <span class="ow">and</span> <span class="s">&#39;U&#39;</span> <span class="ow">in</span> <span class="n">hdr</span> <span class="ow">and</span> <span class="s">&#39;L&#39;</span> <span class="ow">in</span> <span class="n">hdr</span> <span class="ow">and</span> <span class="s">&#39;FREQ&#39;</span> <span class="ow">in</span> <span class="n">hdr</span><span class="p">:</span>
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transRad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the TRANS + UP + LOW + EINSTEINA(s^-1) + FREQ(GHz) + E_u(K) section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">hdr</span><span class="p">)</span>
+
+        <span class="c"># collisional transitions</span>
+        <span class="c">##########################</span>
+        <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="s">&#39;partnersList&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c">#token : the number of collisional partners</span>
+        <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;NUMBER OF COLL PARTNERS&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">or</span> <span class="s">&#39;NUMBER OF COLLISION PARTNERS&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="s">&#39;nPartners&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">((</span><span class="n">tok</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the NUMBER OF COLL PARTNERS section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+
+        <span class="c">#parsing the collisional information for each partner</span>
+        <span class="n">partnerTypeDict</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;1&#39;</span><span class="p">:</span> <span class="s">&#39;H2&#39;</span><span class="p">,</span> <span class="s">&#39;2&#39;</span><span class="p">:</span> <span class="s">&#39;p-H2&#39;</span><span class="p">,</span> <span class="s">&#39;3&#39;</span><span class="p">:</span> <span class="s">&#39;o-H2&#39;</span><span class="p">,</span> <span class="s">&#39;4&#39;</span><span class="p">:</span> <span class="s">&#39;e-&#39;</span><span class="p">,</span> <span class="s">&#39;5&#39;</span><span class="p">:</span><span class="s">&#39;H&#39;</span><span class="p">,</span> <span class="s">&#39;6&#39;</span><span class="p">:</span><span class="s">&#39;He&#39;</span><span class="p">,</span> <span class="s">&#39;7&#39;</span><span class="p">:</span><span class="s">&#39;H+&#39;</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="s">&#39;nPartners&#39;</span><span class="p">]):</span>
+            <span class="c">#token : the collisional partner</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="s">&#39;COLLISION&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">or</span> <span class="s">&#39;PARTNER&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+                <span class="n">tokSplt</span> <span class="o">=</span> <span class="n">tok</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span> <span class="c">#splitting the token to extract the 2nd line which holds the coll info</span>
+                <span class="n">tokSplt</span> <span class="o">=</span> <span class="n">tokSplt</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span> <span class="c">#splitting the 2nd line to extract the numerical code of the collider</span>
+                <span class="n">tokSplt</span> <span class="o">=</span> <span class="n">tokSplt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c"># the first number indicating the type of the collider</span>
+                <span class="n">partnerNumCode</span> <span class="o">=</span> <span class="n">tokSplt</span>
+                <span class="n">partnerSpecStr</span> <span class="o">=</span> <span class="n">partnerTypeDict</span><span class="p">[</span><span class="n">partnerNumCode</span><span class="p">]</span>
+                <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="s">&#39;partnersList&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">partnerSpecStr</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the COLLISIONS BETWEEN section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partnerSpecStr</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            
+            <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partnerSpecStr</span><span class="p">][</span><span class="s">&#39;info&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tok</span>
+            
+            <span class="c">#token : number of collisional transitions</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;NUMBER OF&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">and</span> <span class="s">&#39;COLL&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">and</span> <span class="s">&#39;TRANS&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+                <span class="n">tok</span> <span class="o">=</span> <span class="p">(</span><span class="n">tok</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">tok</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s">r&quot;\w+&quot;</span><span class="p">,</span> <span class="n">tok</span><span class="p">)</span> <span class="c">#splitting to words     </span>
+                <span class="n">tok</span> <span class="o">=</span> <span class="n">tok</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="c"># picking the first (assuming it is the number we need)</span>
+                <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partnerSpecStr</span><span class="p">][</span><span class="s">&#39;nTrans&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the NUMBER OF COLL TRANS section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+            <span class="c">#token : number of temperatures at which the rates are tabulated</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;NUMBER OF&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">and</span> <span class="s">&#39;TEMP&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+                <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partnerSpecStr</span><span class="p">][</span><span class="s">&#39;nTemps&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">((</span><span class="n">tok</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the NUMBER OF COLL TEMPS section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+            <span class="c">#token : the temperature at which the rates are tabulated</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;TEMP&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+                <span class="n">temps</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="n">tok</span><span class="p">,</span> <span class="n">maxsplit</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="c"># discaring the header</span>
+                <span class="n">temps</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">,</span> <span class="s">&#39; &#39;</span><span class="p">,</span> <span class="n">temps</span><span class="p">)</span>           <span class="c"># replacing the newline (if any) with a whitespace char</span>
+                <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partnerSpecStr</span><span class="p">][</span><span class="s">&#39;temps&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">temps</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the COLL TEMPS section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+            <span class="c">#token : the collision rates data table</span>
+            <span class="n">tok</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;TRANS&#39;</span> <span class="ow">in</span> <span class="n">tok</span> <span class="ow">or</span> <span class="s">&#39;RATE&#39;</span> <span class="ow">in</span> <span class="n">tok</span> <span class="ow">or</span> <span class="s">&#39;cm^3 s^-1&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="p">:</span>
+                <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">][</span><span class="n">partnerSpecStr</span><span class="p">][</span><span class="s">&#39;table&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">tok</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">))[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the TRANS + UP + LOW + COLLRATES section file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">specDict</span> 
+         </div>
+<div class="viewcode-block" id="reader.findFiles"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.reader.findFiles">[docs]</a>    <span class="k">def</span> <span class="nf">findFiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns a list of all the files ending with a .dat in :data:`dirPath`&quot;&quot;&quot;</span>
+        <span class="c"># getting the names of the meshes in that dir</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">infile</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dirPath</span><span class="p">,</span> <span class="s">&#39;*.dat&#39;</span><span class="p">)</span> <span class="p">):</span>
+            <span class="n">files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">infile</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">files</span>
+    </div>
+<div class="viewcode-block" id="reader.get_specie_name"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.reader.get_specie_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_specie_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tok</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extracts the name of the specie from the token. In the current version</span>
+<span class="sd">        of the database, the specie names also contain some text sometime like references</span>
+<span class="sd">        and details about the specie. The specie name is in most cases the first item on</span>
+<span class="sd">        the line after !MOLECULE, except for H20 where whenever H20 is found in the string</span>
+<span class="sd">        the specie name is taken to be the second word in the string.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: (specieName, info). Where info is some description in the string feild if any.</span>
+<span class="sd">        :TODO: add a method which converts the string name to one which is compatible with the </span>
+<span class="sd">            specie class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="s">&#39;MOLECULE&#39;</span> <span class="ow">in</span> <span class="n">tok</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+            <span class="n">fieldName</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="n">tok</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+            <span class="n">splt</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39; &#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s">&#39;H2O&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">content</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span> <span class="c">#only H2O has extra stuff in the name of the string feild</span>
+                <span class="n">specStr</span> <span class="o">=</span> <span class="n">splt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">splt</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="s">&#39;H2O&#39;</span> <span class="ow">in</span> <span class="n">word</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+                        <span class="n">specStr</span> <span class="o">=</span> <span class="n">word</span>
+                        <span class="k">break</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">specStr</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">content</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;expected the MOLECULE section of the file, got *</span><span class="si">%s</span><span class="s">* instead&#39;</span> <span class="o">%</span> <span class="n">tok</span><span class="p">)</span>
+        
+        <span class="c">#removing the p-, o-, E- from the species names</span>
+        <span class="n">specStr</span> <span class="o">=</span> <span class="n">specStr</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;o-&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;p-&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s">&#39;E-&#39;</span><span class="p">,</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">specStr</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="reader.get_specie"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.reader.get_specie">[docs]</a>    <span class="k">def</span> <span class="nf">get_specie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">specStr</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">inPath</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">inInfo</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method can be used to return the data for a certain specie one</span>
+<span class="sd">         the data has been read.  None of the keywords are mandatory. But</span>
+<span class="sd">         at least one should be present. The checks are done using the &#39;AND&#39;</span>
+<span class="sd">         logic. Note that all the matches are returned. So a tuple of matches</span>
+<span class="sd">         might be returned.</span>
+<span class="sd">         </span>
+<span class="sd">         .. code-block:: python</span>
+<span class="sd">            </span>
+<span class="sd">              co_data = reader.get_specie( specStr = &#39;CO&#39;, inPath = &#39;xpol_new&#39; )</span>
+<span class="sd">         </span>
+<span class="sd">         this call returns the data about CO which is in the file co@xpol_new.dat</span>
+<span class="sd">         </span>
+<span class="sd">         :param string specStr: the specie to be returned (not that if multiple </span>
+<span class="sd">           files contain info about the same specie, multiple species info</span>
+<span class="sd">           will be returned. </span>
+<span class="sd">         :param string inPath: If this string is in the filename from which the</span>
+<span class="sd">           species data was read, then the specie will be consider (assuming the</span>
+<span class="sd">           remaining keyword checks restuls True).  </span>
+<span class="sd">         :param string inInfo: if this string is in the MOLECULE feild, the check</span>
+<span class="sd">           results as True.               </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">returnList</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">speciesInfo</span><span class="p">:</span>
+            
+            <span class="n">consider</span> <span class="o">=</span> <span class="bp">True</span>
+            
+            <span class="k">if</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">specStr</span><span class="p">:</span>
+                <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">consider</span> <span class="o">*=</span> <span class="bp">False</span>
+                
+            <span class="k">if</span> <span class="n">inPath</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">inPath</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">consider</span> <span class="o">*=</span> <span class="bp">False</span>
+                    
+            <span class="k">if</span> <span class="n">inInfo</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">inInfo</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">info</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">consider</span> <span class="o">*=</span> <span class="bp">False</span>
+            
+            <span class="k">if</span> <span class="n">consider</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">returnList</span> <span class="o">+=</span> <span class="p">(</span><span class="n">spec</span><span class="p">,)</span>
+    
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">returnList</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;returning data from the file :</span><span class="se">\n</span><span class="s">     </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">returnList</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">path</span>
+            <span class="k">return</span> <span class="n">returnList</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;data returned matches content of </span><span class="si">%d</span><span class="s"> files&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">returnList</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">returnList</span>
+    </div>
+    <span class="k">def</span> <span class="nf">set_dirPath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dirPath</span> <span class="o">=</span> <span class="n">path</span>
+    <span class="k">def</span> <span class="nf">get_dirPath</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dirPath</span>
+    
+    
+<span class="c">#----------------------------------------------------------------------------------</span>
+<span class="c">#----------------------------------------------------------------------------------</span>
+<span class="c">#----------------------------------------------------------------------------------</span>
+<span class="c">#----------------------------------------------------------------------------------</span></div>
+<div class="viewcode-block" id="species"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.species">[docs]</a><span class="k">class</span> <span class="nc">species</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;A class which has all the keys and numpy dtype of the specInfo parsed by </span>
+<span class="sd">      molData.reader.cleanSpecDict as attributes. Takes as an argument the specInfo </span>
+<span class="sd">      specDict and returns a class which has the main keys as attributes. Also defines</span>
+<span class="sd">      some utility methods which compute things related to the species.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">specDict</span><span class="p">):</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">specStr</span> <span class="o">=</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;specStr&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;info&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;weight&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nlevels</span> <span class="o">=</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;nlevels&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">levels</span> <span class="o">=</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;levels&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nTransRad</span> <span class="o">=</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;nTransRad&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transRad</span> <span class="o">=</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transRad&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transColl</span> <span class="o">=</span> <span class="n">specDict</span><span class="p">[</span><span class="s">&#39;transColl&#39;</span><span class="p">]</span>
+        
+<div class="viewcode-block" id="species.critical_density"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.species.critical_density">[docs]</a>    <span class="k">def</span> <span class="nf">critical_density</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">upper</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">lower</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">T_kin</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">collider</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;computes the cricical density (n_crit = A/K) of a transition given the cleaned output</span>
+<span class="sd">           of :data:`reader` (see also :data:`reader.get_specie`). The inputs are the</span>
+<span class="sd">           upper and lower levels corresponding to specInfo[&#39;levels&#39;] and the kinetic</span>
+<span class="sd">           temperature at which the collisional coefficient will be computed. Also</span>
+<span class="sd">           it is required to specify the collider specie as a string. See documentation</span>
+<span class="sd">           of reader for the supported colliders. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+    
+        <span class="n">eins_A</span> <span class="o">=</span> <span class="bp">None</span>    
+        <span class="n">k_coll</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="c">#getting the einstein A coefficient</span>
+        <span class="k">for</span> <span class="n">trans</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transRad</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">trans</span><span class="p">[</span><span class="s">&#39;u&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">upper</span> <span class="ow">and</span> <span class="n">trans</span><span class="p">[</span><span class="s">&#39;l&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">lower</span><span class="p">:</span>
+                <span class="n">eins_A</span> <span class="o">=</span> <span class="n">trans</span><span class="p">[</span><span class="s">&#39;A&#39;</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="n">eins_A</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;transition not found upper = </span><span class="si">%d</span><span class="s">, lower = </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">upper</span><span class="p">,</span> <span class="n">lower</span><span class="p">))</span>
+        
+        <span class="c">#gettnig the collisional coefficient for the input temperature</span>
+        <span class="k">for</span> <span class="n">trans</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">transColl</span><span class="p">[</span><span class="n">collider</span><span class="p">][</span><span class="s">&#39;trans&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">trans</span><span class="p">[</span><span class="s">&#39;u&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">upper</span> <span class="ow">and</span> <span class="n">trans</span><span class="p">[</span><span class="s">&#39;l&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">lower</span><span class="p">:</span>
+                <span class="n">k_coll</span> <span class="o">=</span> <span class="n">trans</span><span class="p">[</span><span class="s">&#39;rc&#39;</span><span class="p">](</span><span class="n">T_kin</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">k_coll</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;collisional transition not found upper = </span><span class="si">%d</span><span class="s">, lower = </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">upper</span><span class="p">,</span> <span class="n">lower</span><span class="p">))</span>
+    
+        <span class="k">return</span> <span class="n">eins_A</span> <span class="o">/</span> <span class="n">k_coll</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../../index.html">ismcpak 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Mher Kazandjian.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

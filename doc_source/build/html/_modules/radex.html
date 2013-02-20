@@ -1,0 +1,863 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>radex &mdash; ismcpak 0.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="ismcpak 0.0.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">ismcpak 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for radex</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">import</span> <span class="nn">pylab</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">logging</span><span class="o">,</span> <span class="nn">sys</span>
+
+<div class="viewcode-block" id="radex"><a class="viewcode-back" href="../index.html#radex.radex">[docs]</a><span class="k">class</span> <span class="nc">radex</span><span class="p">(</span> <span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A wrapper class which runs radex parses its output into objects. see test_radex.py</span>
+<span class="sd">    and radexView.py for examples on using this class. Upon a successull executation, all the</span>
+<span class="sd">    transitions are stored in self.transitions.</span>
+<span class="sd">     </span>
+<span class="sd">    .. todo:: docment the order in which things must be called.</span>
+<span class="sd">    </span>
+<span class="sd">    .. warning:: make sure that the lower and upper string names for the transitions are not longer than</span>
+<span class="sd">       10 character, or change the length accordinglt in self.generateTransitionDtype().</span>
+<span class="sd">    </span>
+<span class="sd">    :test: test_radex.py, radexView.py</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">execPath</span><span class="p">,</span> <span class="n">molDataDir</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes some of the instance variables needed to run radex.&quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">execPath</span>     <span class="o">=</span> <span class="n">execPath</span>   <span class="c">#: string : The path to the radex executable </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">molDataDir</span>   <span class="o">=</span> <span class="n">molDataDir</span> <span class="c">#: string : Path to the directory containing the transition data for the species</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">molDataFiles</span> <span class="o">=</span>  <span class="p">{</span> <span class="s">&#39;CO&#39;</span>   <span class="p">:</span> <span class="s">&#39;co.dat&#39;</span>       <span class="p">,</span>
+                               <span class="s">&#39;13CO&#39;</span> <span class="p">:</span> <span class="s">&#39;13co.dat&#39;</span>     <span class="p">,</span>
+                               <span class="s">&#39;HCO+&#39;</span> <span class="p">:</span> <span class="s">&#39;hco+@xpol.dat&#39;</span><span class="p">,</span>
+                               <span class="s">&#39;HCN&#39;</span>  <span class="p">:</span> <span class="s">&#39;hcn.dat&#39;</span>      <span class="p">,</span>
+                               <span class="s">&#39;HNC&#39;</span>  <span class="p">:</span> <span class="s">&#39;hnc.dat&#39;</span>      <span class="p">,</span>
+                               <span class="s">&#39;CS&#39;</span>   <span class="p">:</span> <span class="s">&#39;cs@xpol.dat&#39;</span>  <span class="p">,</span>
+                               <span class="s">&#39;C&#39;</span>    <span class="p">:</span> <span class="s">&#39;catom.dat&#39;</span>    <span class="p">,</span>
+                               <span class="s">&#39;C+&#39;</span>   <span class="p">:</span> <span class="s">&#39;c+.dat&#39;</span>       <span class="p">,</span>
+                               <span class="s">&#39;O&#39;</span>    <span class="p">:</span> <span class="s">&#39;oatom.dat&#39;</span>    <span class="p">,</span>
+                               <span class="s">&#39;SiO&#39;</span>  <span class="p">:</span> <span class="s">&#39;sio.dat&#39;</span>      <span class="p">,</span>
+                               <span class="s">&#39;CN&#39;</span>   <span class="p">:</span> <span class="s">&#39;cn.dat&#39;</span>       <span class="p">}</span>
+        <span class="sd">&quot;&quot;&quot; dict : dictonary for the species files, the keys of this dict are as follows </span>
+<span class="sd">          (see radex.py for an example) :</span>
+<span class="sd">          </span>
+<span class="sd">          SPECIE_STRING : FILENAME</span>
+
+<span class="sd">        .. literalinclude:: radex.py</span>
+<span class="sd">           :lines: 24-34</span>
+<span class="sd">           :linenos:</span>
+
+<span class="sd">        .. todo:: implement a method to generate this dict automatically from all the files</span>
+<span class="sd">                  in the directory :data:`molDataFiles`.</span>
+
+<span class="sd">        .. todo:: also implement a dict for the collision partners like &#39;e-&#39; : &#39;e&#39;, but it might not</span>
+<span class="sd">                  be necessary since RADEX takes both &#39;e&#39; and &#39;e-&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span> <span class="o">=</span> <span class="bp">None</span>     
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        dict : dictionary holding all the input parameters. It is used to construct the input parameter file that is piped to the radex executable. It should be of the form.</span>
+<span class="sd">          </span>
+<span class="sd">          .. code-block:: python</span>
+<span class="sd">             :linenos:</span>
+
+<span class="sd">             inFile = { &#39;specStr&#39;                : &#39;CO&#39;        ,  </span>
+<span class="sd">                        &#39;freqRange&#39;              : [0, 50000]  ,</span>
+<span class="sd">                        &#39;tKin&#39;                   : 10.0        ,</span>
+<span class="sd">                        &#39;collisionPartners&#39;      : [&#39;H2&#39;]      ,</span>
+<span class="sd">                        &#39;nDensCollisionPartners&#39; : [1e3]       ,</span>
+<span class="sd">                        &#39;tBack&#39;                  : 2.73        ,</span>
+<span class="sd">                        &#39;molnDens&#39;               : 1e14        , # column density of the species &#39;specStr&#39;</span>
+<span class="sd">                        &#39;lineWidth&#39;              : 1.0         ,</span>
+<span class="sd">                        &#39;runAnother&#39;             : 1           }</span>
+<span class="sd">             </span>
+<span class="sd">             </span>
+<span class="sd">        All of the items in this dict correspond to the same parameters in radex except:</span>
+<span class="sd">        &#39;collisionPartners&#39; and &#39;nDensCollisionPartners&#39;, &#39;molDataDir&#39; and &#39;specStr&#39;. </span>
+<span class="sd">        &#39;collisionPartners&#39; is a list of strings of species such as &#39;H2&#39;, or &#39;H&#39; :</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           &#39;collisionPartners&#39; : [&#39;H2&#39;] </span>
+
+<span class="sd">        or</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">           &#39;collisionPartners&#39; : [&#39;H2&#39;,&#39;H+&#39;,&#39;e-&#39;]</span>
+
+<span class="sd">        &#39;nDensCollisionPartners&#39; should be a list of the same length holding the </span>
+<span class="sd">        number density of each collision partner respectively. For example :</span>
+<span class="sd">        </span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">          </span>
+<span class="sd">           &#39;nDensCollisionPartners&#39; : [1e3]</span>
+
+<span class="sd">        or</span>
+<span class="sd">           </span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">        </span>
+<span class="sd">           &#39;nDensCollisionPartners&#39; : [1e3, 1e1, 1e-2]</span>
+<span class="sd">           </span>
+<span class="sd">        the parameter molData in the input parameter file is constructed by appending</span>
+<span class="sd">        the value of &#39;specStr&#39; to self.molDataDir </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nCollPart</span>    <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;integer : number of collision partners. This is the length of the list self.inFile[&#39;collisionPartners&#39;]&quot;&quot;&quot;</span>
+     
+        <span class="bp">self</span><span class="o">.</span><span class="n">proccess</span>     <span class="o">=</span> <span class="bp">None</span>     
+        <span class="sd">&quot;&quot;&quot;subproccess.popen object : Object used to communicate with the executable&quot;&quot;&quot;</span>
+         
+        <span class="bp">self</span><span class="o">.</span><span class="n">rawOutput</span>    <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;string : the output of the run which would be dumped by RADEX when ran standalone&quot;&quot;&quot;</span>
+         
+        <span class="bp">self</span><span class="o">.</span><span class="n">warnings</span>     <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;list of strings : A list of strings containing the dumped by radex, if any. If there are</span>
+<span class="sd">        any warnings, the appropriate flag is set in self.#FLAGS</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nIter</span>        <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;integer : number of iterations used when the run finishes.&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">outputHdr</span>    <span class="o">=</span> <span class="bp">None</span>  
+        <span class="sd">&quot;&quot;&quot;string : the header of the raw output. This is useful for inspecting wheather the </span>
+<span class="sd">        input parameters were constructed properly.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+         
+        <span class="bp">self</span><span class="o">.</span><span class="n">nTransitions</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;the number of transitions&quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">transitions</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;an ndarray of dtype self.transitionFormat holding all the info of the transitions. The dtype</span>
+<span class="sd">           has the following keys :</span>
+<span class="sd">        </span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">            </span>
+<span class="sd">                 &#39;upper&#39;    : string          # the upper level of the transition     </span>
+<span class="sd">                 &#39;lower&#39;    : string          # the lower level of the transition </span>
+<span class="sd">                 &#39;E_up&#39;     : numpy.float64   # Enery of the upper level </span>
+<span class="sd">                 &#39;Tex&#39;      : numpy.float64   # computed excitation temperatur</span>
+<span class="sd">                 &#39;tau&#39;      : numpy.float64   # computed optical depth</span>
+<span class="sd">                 &#39;T_R&#39;      : numpy.float64   # computed rotational temperature</span>
+<span class="sd">                 &#39;pop_up&#39;   : numpy.float64   # computed population density in the upper level</span>
+<span class="sd">                 &#39;pop_down&#39; : numpy.float64   # computed population density in the lower level</span>
+<span class="sd">                 &#39;fluxKkms&#39; : numpy.float64   # computed flux in $K.km^{-1}.s^{-1}$</span>
+<span class="sd">                 &#39;fluxcgs&#39;  : numpy.float64   # computed flux in cgs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">transitionDtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generateTransitionDtype</span><span class="p">()</span>
+        <span class="sd">&quot;&quot;&quot;holds the numpy.dtype of the transitions. See self.generateTransitionDtype().</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span>       <span class="o">=</span> <span class="p">{</span><span class="s">&#39;DEFAULT&#39;</span><span class="p">:</span> <span class="mh">0x000</span><span class="p">,</span> <span class="s">&#39;ERROR&#39;</span>  <span class="p">:</span> <span class="mh">0x001</span><span class="p">,</span> <span class="s">&#39;PARMSOK&#39;</span> <span class="p">:</span> <span class="mh">0x002</span><span class="p">,</span> <span class="s">&#39;RUNOK&#39;</span><span class="p">:</span> <span class="mh">0x004</span><span class="p">,</span>   
+                            <span class="s">&#39;SUCCESS&#39;</span><span class="p">:</span> <span class="mh">0x008</span><span class="p">,</span> <span class="s">&#39;WARNING&#39;</span><span class="p">:</span> <span class="mh">0x010</span><span class="p">,</span> <span class="s">&#39;ITERWARN&#39;</span><span class="p">:</span> <span class="mh">0x020</span><span class="p">}</span>   
+        <span class="sd">&quot;&quot;&quot;dict : Flags set when running radex which can be used to examing the output. The flags are :</span>
+<span class="sd">         </span>
+<span class="sd">           .. code-block:: python</span>
+<span class="sd">           </span>
+<span class="sd">             &#39;DEFAULT&#39;  : Default status, should be called before each run </span>
+<span class="sd">             &#39;ERROR&#39;    : failed </span>
+<span class="sd">             &#39;PARMSOK&#39;  : parameters are ok </span>
+<span class="sd">             &#39;RUNOK&#39;    : radex did all the iterations (but not NECCESARILY converged)</span>
+<span class="sd">             &#39;SUCCESS&#39;  : succeeded with no major warning (output should make sense)</span>
+<span class="sd">             &#39;WARNING&#39;  : success with warnings, warning are assigned to self.warnings.  </span>
+<span class="sd">             &#39;ITERWARN&#39; : number of iterations warning</span>
+<span class="sd">             </span>
+<span class="sd">        See the source for the value of each flag</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+                            
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;DEFAULT&#39;</span><span class="p">]</span>
+        <span class="sd">&quot;&quot;&quot;intger : the default stauts set from self.FLAGS. The flags are set in a bitwise fashion.</span>
+<span class="sd">        To check if a flag is set, it can be done in the following way :</span>
+<span class="sd">        </span>
+<span class="sd">        .. code-block:: python</span>
+<span class="sd">        </span>
+<span class="sd">           stt = self.getStatus() &amp; self.FLAGS[&#39;FLAG&#39;]</span>
+<span class="sd">           </span>
+<span class="sd">        if the flag is set stt would be a number greater than 0, zero otherwise</span>
+<span class="sd">        (for more details on the values of the flags, see radex.py)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="c"># plotting attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;matplotlib.figure object : when set, the output is plotted in this figure&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">axs</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;nump.ndarry matplotlib.axes object : run output are plotted in these axes objects</span>
+<span class="sd">        for a single model self.axs has the shape (4,). When nx is larger than 1, the shape</span>
+<span class="sd">        of self.#axs is  (4,nx). In other words, self.#axs is the object returned by</span>
+<span class="sd">        self.fig, self.axs = pylab.subplots(4, nx )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nx</span>  <span class="o">=</span> <span class="bp">None</span>
+        <span class="sd">&quot;&quot;&quot;integer : number of models to run and plot&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ny</span>  <span class="o">=</span> <span class="mi">4</span>
+        <span class="sd">&quot;&quot;&quot;integer : number of horizontal division in the figure (default)&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="bp">None</span>
+        
+<div class="viewcode-block" id="radex.setInFileParm"><a class="viewcode-back" href="../index.html#radex.radex.setInFileParm">[docs]</a>    <span class="k">def</span> <span class="nf">setInFileParm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parm</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method sets values to the parameters to be passed to radex.</span>
+
+<span class="sd">        :param str parm: A key to be modified or added in the self.inFile dict.</span>
+<span class="sd">        :param arbitrary value: The value to be set to the key. [the type depends on the key to be modified, see :data:`inFile` documentation]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="n">parm</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span></div>
+<div class="viewcode-block" id="radex.getInFileParm"><a class="viewcode-back" href="../index.html#radex.radex.getInFileParm">[docs]</a>    <span class="k">def</span> <span class="nf">getInFileParm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parm</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns a parameter from self.inFile given the key in the dict as the argument &#39;parm&#39;</span>
+<span class="sd">           which is a string used to extract the vlaue from the dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="n">parm</span><span class="p">]</span></div>
+    <span class="k">def</span> <span class="nf">setInFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">inFile</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span> <span class="o">=</span> <span class="n">inFile</span>
+    <span class="k">def</span> <span class="nf">getInFile</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span>
+    <span class="k">def</span> <span class="nf">getStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span>
+    <span class="k">def</span> <span class="nf">getRawOutput</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rawOutput</span>
+    <span class="k">def</span> <span class="nf">setStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span>
+    <span class="k">def</span> <span class="nf">set_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">logger</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+        
+<div class="viewcode-block" id="radex.setDefaultStatus"><a class="viewcode-back" href="../index.html#radex.radex.setDefaultStatus">[docs]</a>    <span class="k">def</span> <span class="nf">setDefaultStatus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;sets the default status and self.transitions, self.rawOutput and self.nTransitions to None&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;DEFAULT&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transitions</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nTransitions</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rawOutput</span> <span class="o">=</span> <span class="bp">None</span>
+        </div>
+<div class="viewcode-block" id="radex.getTransition"><a class="viewcode-back" href="../index.html#radex.radex.getTransition">[docs]</a>    <span class="k">def</span> <span class="nf">getTransition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method can be used to extract individual transition information from the self.#transitions </span>
+<span class="sd">        list. For example, for CO, getTransition(0) would return the transition info for the 1-0 </span>
+<span class="sd">        transition</span>
+<span class="sd">        </span>
+<span class="sd">        :param int32 idx: The index of the transition in the transition list. must be between 0 and len(self.#transitions) </span>
+<span class="sd">        :return: dict :data:`transitions` item</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transitions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+    </div>
+    <span class="k">def</span> <span class="nf">getWarnings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">warnings</span>
+    <span class="k">def</span> <span class="nf">getNIter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nIter</span>
+<div class="viewcode-block" id="radex.printSetFlags"><a class="viewcode-back" href="../index.html#radex.radex.printSetFlags">[docs]</a>    <span class="k">def</span> <span class="nf">printSetFlags</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;prints in a pretty way all the flags (whether they are set or not) in self.status&quot;&quot;&quot;</span>
+        <span class="k">print</span> <span class="s">&#39;FLAG_NAME     SET&#39;</span>
+        <span class="k">print</span> <span class="s">&#39;------------------&#39;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&#39;</span><span class="si">%-9s</span><span class="s">  </span><span class="si">%r</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">getStatus</span><span class="p">()</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)</span>
+        
+        </div>
+<div class="viewcode-block" id="radex.setAxes"><a class="viewcode-back" href="../index.html#radex.radex.setAxes">[docs]</a>    <span class="k">def</span> <span class="nf">setAxes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set the axes and figure objects&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">axs</span> <span class="o">=</span> <span class="n">axs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span> <span class="o">=</span> <span class="n">fig</span>
+</div>
+<div class="viewcode-block" id="radex.filterColliders"><a class="viewcode-back" href="../index.html#radex.radex.filterColliders">[docs]</a>    <span class="k">def</span> <span class="nf">filterColliders</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;removes colliders from the dictionary of the self.#inFile if their density </span>
+<span class="sd">           is less than the minimum accepted value by RADEX (for now, this ie 1e-3 cm^{-3} )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c"># removing the colliders which have abundances less than the one range </span>
+        <span class="c"># that radex accepts</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">nDense</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">nDense</span> <span class="o">&lt;=</span> <span class="mf">1e-3</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;poped &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                 </div>
+<div class="viewcode-block" id="radex.genInputFileContentAsStr"><a class="viewcode-back" href="../index.html#radex.radex.genInputFileContentAsStr">[docs]</a>    <span class="k">def</span> <span class="nf">genInputFileContentAsStr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generates the parameter file contents from self.inFile, which can be passed to the radex executable, as a string. </span>
+<span class="sd">        </span>
+<span class="sd">           :return: (str)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nCollPart</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">])</span>
+        
+        <span class="n">strng</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+
+        <span class="n">strng</span>  <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">/</span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">molDataDir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">molDataFiles</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;specStr&#39;</span><span class="p">]</span> <span class="p">])</span>
+        <span class="n">strng</span>  <span class="o">+=</span> <span class="s">&#39;foo</span><span class="se">\n</span><span class="s">&#39;</span>
+        <span class="n">strng</span>  <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s"> </span><span class="si">%d</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;freqRange&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;freqRange&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">strng</span>  <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%f</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;tKin&#39;</span><span class="p">])</span>
+        <span class="n">strng</span>  <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%d</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">nCollPart</span>
+        
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">nCollPart</span> <span class="p">):</span>
+            <span class="n">strng</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">strng</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%e</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="n">strng</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%f</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;tBack&#39;</span><span class="p">]</span>
+        <span class="n">strng</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%e</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;molnDens&#39;</span><span class="p">]</span>
+        <span class="n">strng</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%f</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;lineWidth&#39;</span><span class="p">]</span>
+        <span class="n">strng</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%d</span><span class="s">&#39;</span>   <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;runAnother&#39;</span><span class="p">]</span>
+        <span class="c">#print &#39;------------\n%s\n-----------------\n&#39; % strng</span>
+        <span class="k">return</span> <span class="n">strng</span>
+</div>
+<div class="viewcode-block" id="radex.checkParameters"><a class="viewcode-back" href="../index.html#radex.radex.checkParameters">[docs]</a>    <span class="k">def</span> <span class="nf">checkParameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;chech whether the contents of self.inFile are within the ranges where RADEX can work.</span>
+<span class="sd">        </span>
+<span class="sd">           :raise:  exception NameException</span>
+<span class="sd">           :attention: This method sets the value of self.status. The flag &#39;PARMSOK&#39; is set if the paramteres are ok, &#39;ERROR&#39; is set otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">inFile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span>
+        
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">inFile</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">inFile</span><span class="p">[</span><span class="n">item</span><span class="p">]</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">strng</span> <span class="o">=</span> <span class="s">&#39;Error : missing input parameter </span><span class="si">%s</span><span class="s"> &#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="n">strng</span><span class="p">)</span>
+            
+        <span class="c"># checking for correct range for the kinetic temperature</span>
+        <span class="k">if</span> <span class="n">inFile</span><span class="p">[</span><span class="s">&#39;tKin&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="mf">0.1</span> <span class="ow">or</span> <span class="n">inFile</span><span class="p">[</span><span class="s">&#39;tKin&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">1e4</span> <span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;ERROR&#39;</span><span class="p">]</span>
+            
+        <span class="c"># checking for correct range for the densities of the collion partners</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">collPartner</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">]):</span>
+            <span class="n">nDens</span> <span class="o">=</span> <span class="n">inFile</span><span class="p">[</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">nDens</span> <span class="o">&lt;</span> <span class="mf">1e-3</span> <span class="ow">or</span> <span class="n">nDens</span> <span class="o">&gt;</span> <span class="mf">1e12</span> <span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;ERROR&#39;</span><span class="p">]</span>
+                
+        <span class="c"># checking for correct range for the species column density</span>
+        <span class="k">if</span> <span class="n">inFile</span><span class="p">[</span><span class="s">&#39;molnDens&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e5</span> <span class="ow">or</span> <span class="n">inFile</span><span class="p">[</span><span class="s">&#39;molnDens&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">1e25</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;ERROR&#39;</span><span class="p">]</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;ERROR&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;ERROR&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;PARMSOK&#39;</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;PARMSOK&#39;</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="radex.run"><a class="viewcode-back" href="../index.html#radex.radex.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkInput</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="bp">None</span> <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Run the radex executable.</span>
+<span class="sd">        </span>
+<span class="sd">           :param bool checkInput: By default this is False. In this case, the input </span>
+<span class="sd">            parameters are not checked and the flag &#39;PARMSOK&#39; (see #FLAGS) is set to :data:`status`. Otherwise, set this to True to force a paremter input check.</span>
+<span class="sd">           :param bool verbose: By default this is False. Set it to True to to write </span>
+<span class="sd">            the raw output to stdout.</span>
+<span class="sd">           :return: (int) :data:`status`. Upon a successful run, &#39;RUNOK&#39; and &#39;SUCCESS&#39; </span>
+<span class="sd">            flags are set. If the number of iterations excceeds 10,000 &#39;RUNOK&#39;,</span>
+<span class="sd">            &#39;WARNING&#39; and &#39;ITERWARN&#39; flags are set. if the &#39;PARMSOK&#39; is true </span>
+<span class="sd">            :data:`rawOutput` and :data:`transitions` are set, otherwise they </span>
+<span class="sd">            remaine None.</span>
+<span class="sd">            </span>
+<span class="sd">           .. todo:: extract other warnings also, not just the one due to the max </span>
+<span class="sd">              iterations.</span>
+<span class="sd">              </span>
+<span class="sd">           .. warning:: when running the same radex instance multiple times, make sure </span>
+<span class="sd">              to set the status to the default before calling :data:`run` using :data:`setDefaultStatus()`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">warnings</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">checkInput</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">checkParameters</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;PARMSOK&#39;</span><span class="p">]</span>    
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">&amp;</span>  <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;PARMSOK&#39;</span><span class="p">]:</span>
+        
+            <span class="n">radexInput</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">genInputFileContentAsStr</span><span class="p">()</span>
+            
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;---------------------------------------------------------------------------------------&#39;</span>
+                <span class="k">print</span> <span class="s">&#39;----------------radex input parameters passed to the executable------------------------&#39;</span>
+                <span class="k">print</span> <span class="s">&#39;---------------------------------------------------------------------------------------&#39;</span>
+                <span class="k">print</span> <span class="n">radexInput</span>
+                <span class="k">print</span> <span class="s">&#39;---------------------------------------------------------------------------------------&#39;</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">proccess</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">execPath</span>           <span class="p">,</span> 
+                                             <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>   <span class="p">,</span>  
+                                             <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>  <span class="p">,</span>  
+                                             <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>  <span class="p">)</span>
+            <span class="n">radexOutput</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">proccess</span><span class="o">.</span><span class="n">communicate</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">radexInput</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">rawOutput</span> <span class="o">=</span> <span class="n">radexOutput</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parseOutput</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;RUNOK&#39;</span><span class="p">]</span>
+        
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nIter</span> <span class="o">==</span> <span class="mi">10000</span><span class="p">:</span>  <span class="c"># ;;; get this from radex.inc</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;WARNING&#39;</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;ITERWARN&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;SUCCESS&#39;</span><span class="p">]</span>
+            
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;-------------raw output of Radex stdout------------------&#39;</span>
+                <span class="k">print</span> <span class="n">radexOutput</span>
+                <span class="k">print</span> <span class="s">&#39;---------------------------------------------------------------------&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">verbose</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">print</span> <span class="s">&#39;radex.py : parameters NOT ok. radex.status = &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> 
+            
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span>
+        </div>
+<div class="viewcode-block" id="radex.generateTransitionDtype"><a class="viewcode-back" href="../index.html#radex.radex.generateTransitionDtype">[docs]</a>    <span class="k">def</span> <span class="nf">generateTransitionDtype</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;generates the trasition dtype which will be used in assigning the transition info in self.transitionsNdArry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="p">[</span>
+               <span class="p">(</span><span class="s">&#39;upper&#39;</span>   <span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">str_</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>   
+               <span class="p">(</span><span class="s">&#39;lower&#39;</span>   <span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">str_</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>   
+               <span class="p">(</span><span class="s">&#39;E_up&#39;</span>    <span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+               <span class="p">(</span><span class="s">&#39;Tex&#39;</span>     <span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+               <span class="p">(</span><span class="s">&#39;tau&#39;</span>     <span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+               <span class="p">(</span><span class="s">&#39;T_R&#39;</span>     <span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+               <span class="p">(</span><span class="s">&#39;pop_up&#39;</span>  <span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+               <span class="p">(</span><span class="s">&#39;pop_down&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+               <span class="p">(</span><span class="s">&#39;fluxKkms&#39;</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+               <span class="p">(</span><span class="s">&#39;fluxcgs&#39;</span> <span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span> 
+              <span class="p">]</span> <span class="c"># 2 * 10b + 8 * 8b = 84b per transition </span>
+       
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span>
+    </div>
+<div class="viewcode-block" id="radex.flagSet"><a class="viewcode-back" href="../index.html#radex.radex.flagSet">[docs]</a>    <span class="k">def</span> <span class="nf">flagSet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flag</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns True &#39;flag&#39; is set, false otherwise&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="n">flag</span><span class="p">]</span>
+        </div>
+<div class="viewcode-block" id="radex.parseOutput"><a class="viewcode-back" href="../index.html#radex.radex.parseOutput">[docs]</a>    <span class="k">def</span> <span class="nf">parseOutput</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Once radex exectues and dumps transition information, this method is used</span>
+<span class="sd">           to extract the line data.</span>
+<span class="sd">         </span>
+<span class="sd">           :return: None. The instance variable self.transitions is set.</span>
+<span class="sd">           </span>
+<span class="sd">           .. note:: in parsing the output, the transitions info is between the lines </span>
+<span class="sd">             containing the units:</span>
+<span class="sd">          </span>
+<span class="sd">               &quot;(K)    (GHz) ...&quot;</span>
+<span class="sd">             </span>
+<span class="sd">             and</span>
+<span class="sd">         </span>
+<span class="sd">               &quot;Another calculation&quot;</span>
+<span class="sd">              </span>
+<span class="sd">            thisway, we can get the number of transitions (the number of new lines, </span>
+<span class="sd">            the work on parsing the data without the need to append anythign to a </span>
+<span class="sd">            list..just preallocate the dtype and fill in the values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c">#print self.rawOutput</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rawOutput</span>
+            <span class="n">lines</span>  <span class="o">=</span>  <span class="n">output</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+            <span class="n">nLines</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+            
+            <span class="c"># looking for the part of the output after the warning</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">4</span> <span class="c"># 5th line (skipping into)</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;*&#39;</span> <span class="ow">and</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;*&#39;</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">warnings</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="n">i</span><span class="p">]</span>  <span class="c"># extracting the warning</span>
+            <span class="c">#print self.warnings</span>
+            
+            <span class="c"># collecting the header</span>
+            <span class="n">lineNumHdrStart</span> <span class="o">=</span> <span class="n">i</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s">&#39;*&#39;</span> <span class="ow">and</span> <span class="n">lines</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s">&#39;*&#39;</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">lineNumHdrEnd</span> <span class="o">=</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">outputHdr</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">lineNumHdrStart</span><span class="p">:</span><span class="n">lineNumHdrEnd</span><span class="p">]</span>
+            <span class="c">#print  self.outputHdr</span>
+    
+            <span class="n">lineNum</span> <span class="o">=</span> <span class="n">lineNumHdrEnd</span>
+            <span class="n">lineSplt</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">lineNum</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nIter</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">lineSplt</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>          
+            
+            <span class="n">transitions</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="c">#--------------------------------------------------------------------------</span>
+            <span class="c"># parses a line containing the info of a transition line and returns a dict</span>
+            <span class="c"># of the into</span>
+            <span class="k">def</span> <span class="nf">parseLineData</span><span class="p">(</span> <span class="n">line</span> <span class="p">):</span>
+                <span class="n">info</span> <span class="o">=</span> <span class="p">{}</span>
+                
+                <span class="c">#print self.rawOutput</span>
+                <span class="n">lineSplt</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="c">#print lineSplt</span>
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;upper&#39;</span>   <span class="p">]</span> <span class="o">=</span> <span class="n">lineSplt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;lower&#39;</span>   <span class="p">]</span> <span class="o">=</span> <span class="n">lineSplt</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;E_up&#39;</span>    <span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">lineSplt</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span> 
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;Tex&#39;</span>     <span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">lineSplt</span><span class="p">[</span><span class="mi">5</span><span class="p">])</span> 
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;tau&#39;</span>     <span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">lineSplt</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span> 
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;T_R&#39;</span>     <span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">lineSplt</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span> 
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;pop_up&#39;</span>  <span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">lineSplt</span><span class="p">[</span><span class="mi">8</span><span class="p">])</span> 
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;pop_down&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">lineSplt</span><span class="p">[</span><span class="mi">9</span><span class="p">])</span> 
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;fluxKkms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">lineSplt</span><span class="p">[</span><span class="mi">10</span><span class="p">])</span> 
+                <span class="n">info</span><span class="p">[</span><span class="s">&#39;fluxcgs&#39;</span> <span class="p">]</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">(</span><span class="n">lineSplt</span><span class="p">[</span><span class="mi">11</span><span class="p">])</span> 
+                
+                <span class="k">return</span> <span class="n">info</span>
+            <span class="c">#--------------------------------------------------------------------------</span>
+    
+            <span class="n">lineNum</span> <span class="o">+=</span> <span class="mi">3</span>        
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="n">lineNum</span><span class="p">:</span><span class="n">nLines</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">transition</span> <span class="o">=</span> <span class="n">parseLineData</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="n">transitions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">transition</span><span class="p">)</span>
+                
+            <span class="c">#copying the content of self.transitions into self.transitionsNdarrya</span>
+            <span class="c">##:note: do this at one go without storing things first in self.transitiosn</span>
+            <span class="c">#******************************************************</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nTransitions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">transitions</span><span class="p">)</span>
+            <span class="n">transitionsNdarray</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">nTransitions</span><span class="p">),</span> <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transitionDtype</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">trans</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">transitions</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">trans</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">transitionsNdarray</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">trans</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transitions</span> <span class="o">=</span> <span class="n">transitionsNdarray</span>
+            <span class="c">#******************************************************</span>
+            
+            
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">):</span>
+            <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">rawOutput</span>
+            <span class="n">errStr</span> <span class="o">=</span> <span class="s">&#39;parsing the output failed&#39;</span>
+            <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="n">errStr</span><span class="p">)</span>
+    <span class="c"># -------------------------- Plotting Methods ---------------------------------</span>
+    <span class="c"># -----------------------------------------------------------------------------</span>
+    <span class="c"># -----------------------------------------------------------------------------</span>
+    
+    <span class="c">## sets up the object to plot the radex output </span>
+    <span class="c">#  @param nx (integer) the number of vertical columns to setup (one model per column)</span>
+    <span class="c">#  @param fig ( matplotlib.figure object ) Set this object to use a figure which</span>
+    <span class="c">#  is pre-defined, otherwise, a new figure object is created. If this is not set</span>
+    <span class="c">#  the axs keyword is igonored and a self.#axs object is created.  </span>
+    <span class="c">#  @param axs ( numpy.ndarray of matplotlib.axes object ) The axes where the models will</span>
+    <span class="c">#  be plotted. Should have dimensions nx x 4</span>
+    <span class="c">#  @return  (self.#fig, self.#axs)\n in this method, also self.nx is set to nx</span></div>
+    <span class="k">def</span> <span class="nf">setupPlot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">fig</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">=</span> <span class="n">nx</span>
+        
+        <span class="k">if</span> <span class="n">fig</span> <span class="o">==</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">axs</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">makeAxes</span><span class="p">(</span><span class="n">nx</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setAxes</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">axs</span><span class="p">)</span>
+            
+    <span class="c">## creates and assings the self.#fig and self.#axs attributes</span>
+    <span class="c">#  @param nx (see #setupPlot)  </span>
+    <span class="k">def</span> <span class="nf">makeAxes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nx</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">nx</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">nx</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="c"># axs[0,0] is the one in the top left corner</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axs</span> <span class="o">=</span> <span class="n">pylab</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">nx</span><span class="p">,</span> <span class="n">sharex</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">sharey</span> <span class="o">=</span> <span class="bp">False</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">8</span><span class="p">)</span> <span class="p">)</span>
+        <span class="n">pylab</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="mf">0.15</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="mf">0.95</span><span class="p">,</span> <span class="n">wspace</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setAxes</span><span class="p">(</span><span class="n">fig</span><span class="p">,</span> <span class="n">axs</span><span class="p">)</span>
+        
+    <span class="c">## plots the output of a certain model in a certain column in a predefined figure</span>
+    <span class="c">#  @param allTrans (integer list or numpy.int32) The indicies of the transitions in self.#transitions whose</span>
+    <span class="c">#  data should be plotted, ex : numpy. </span>
+    <span class="c">#  @param inAxes ( nump.ndarray matplorlib.axes ) The axes colomn in which the model info will</span>
+    <span class="c">#  be plotted. Fluxes are plotted in inAxes[0], T_ex, T_rot are plotted in inAxes[1], </span>
+    <span class="c">#  optical depth in inAxes[2] and population densiities in inAxes[3]</span>
+    <span class="c">#  @param title (string) The title to be written at the top of the axes column  </span>
+    <span class="k">def</span> <span class="nf">plotModelInFigureColumn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">allTrans</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">inAxes</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        
+        <span class="k">if</span> <span class="n">allTrans</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">allTrans</span> <span class="o">=</span>  <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transitions</span><span class="p">)</span> <span class="p">)</span>
+
+        <span class="n">nTrans</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">allTrans</span><span class="p">)</span>
+        <span class="c">#----------------flux-------------------------</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">inAxes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">xticksStrs</span> <span class="o">=</span> <span class="p">()</span>
+        
+        <span class="n">xPlot</span> <span class="o">=</span> <span class="n">allTrans</span>
+        <span class="n">yPlot</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">nTrans</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nTrans</span><span class="p">):</span>
+    
+            <span class="n">thisTrans</span> <span class="o">=</span> <span class="n">allTrans</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">xPlot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">thisTrans</span>
+
+            <span class="n">transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTransition</span><span class="p">(</span> <span class="n">thisTrans</span> <span class="p">)</span>
+            <span class="n">yThis</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s">&#39;fluxcgs&#39;</span><span class="p">]</span>
+             
+            <span class="n">yPlot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">yThis</span>
+            
+            <span class="c"># construncting the latex string of the transitions</span>
+            <span class="n">upperStr</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s">&#39;upper&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">upperStr</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">upperStr</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_{</span><span class="si">%s</span><span class="s">}&#39;</span><span class="o">%</span> <span class="p">(</span><span class="n">upperStr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">upperStr</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">upperStr</span> <span class="o">=</span> <span class="n">upperStr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">lowerStr</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s">&#39;lower&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;_&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lowerStr</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">lowerStr</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">_{</span><span class="si">%s</span><span class="s">}&#39;</span><span class="o">%</span> <span class="p">(</span><span class="n">lowerStr</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lowerStr</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">lowerStr</span> <span class="o">=</span> <span class="n">lowerStr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            
+            <span class="n">thisTickStr</span> <span class="o">=</span> <span class="s">&#39;$</span><span class="si">%s</span><span class="s">-</span><span class="si">%s</span><span class="s">$&#39;</span> <span class="o">%</span><span class="p">(</span> <span class="n">upperStr</span><span class="p">,</span> <span class="n">lowerStr</span> <span class="p">)</span>
+            <span class="n">xticksStrs</span> <span class="o">=</span> <span class="n">xticksStrs</span> <span class="o">+</span> <span class="p">(</span><span class="n">thisTickStr</span> <span class="p">,)</span>
+
+        <span class="c">#plotting the intensities    </span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">xPlot</span><span class="p">,</span> <span class="n">yPlot</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">axis</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">allTrans</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">allTrans</span><span class="p">),</span> <span class="mf">1e-10</span><span class="p">,</span> <span class="mf">1e-1</span><span class="p">])</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span> <span class="n">allTrans</span><span class="p">,</span> <span class="n">minor</span> <span class="o">=</span> <span class="bp">False</span> <span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span> <span class="n">xticksStrs</span><span class="p">,</span> <span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">45</span> <span class="p">)</span>
+        <span class="c">##numpy.savetxt(&#39;/home/mher/ism/tmp/intensities.out&#39;, numpy.array([xPlot, yPlot]).T, &#39;%e&#39;)</span>
+        <span class="c">##print &#39;-----------&gt; saved the file /home/mher/intensities.out&#39;</span>
+        
+        <span class="c">#---------------Tex and T_R--------------------------</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">inAxes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>        
+
+        <span class="n">xPlot</span> <span class="o">=</span> <span class="n">allTrans</span>
+        <span class="n">yPlot1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">nTrans</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">yPlot2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">nTrans</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nTrans</span><span class="p">):</span>
+    
+            <span class="n">thisTrans</span> <span class="o">=</span> <span class="n">allTrans</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    
+            <span class="n">xPlot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">thisTrans</span>
+    
+            <span class="n">transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTransition</span><span class="p">(</span> <span class="n">thisTrans</span> <span class="p">)</span>
+            <span class="n">yThis1</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s">&#39;Tex&#39;</span><span class="p">]</span>
+            <span class="n">yThis2</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s">&#39;T_R&#39;</span><span class="p">]</span> 
+    
+            <span class="n">yPlot1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">yThis1</span>
+            <span class="n">yPlot2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">yThis2</span>
+            
+        <span class="n">axes</span><span class="o">.</span><span class="n">semilogy</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1000</span><span class="p">],</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;tKin&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;tKin&#39;</span><span class="p">]],</span> <span class="s">&#39;k--&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">xPlot</span><span class="p">,</span> <span class="n">yPlot1</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">xPlot</span><span class="p">,</span> <span class="n">yPlot2</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">axis</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">allTrans</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">allTrans</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10000</span><span class="p">])</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span> <span class="n">allTrans</span><span class="p">,</span> <span class="n">minor</span> <span class="o">=</span> <span class="bp">False</span> <span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span> <span class="n">xticksStrs</span><span class="p">,</span> <span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">45</span> <span class="p">)</span>
+        
+        <span class="c">#------------------optical depth----------------------------------</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">inAxes</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>        
+
+        <span class="n">xPlot</span> <span class="o">=</span> <span class="n">allTrans</span>
+        <span class="n">yPlot</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">nTrans</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nTrans</span><span class="p">):</span>
+    
+            <span class="n">thisTrans</span> <span class="o">=</span> <span class="n">allTrans</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    
+            <span class="n">xPlot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">thisTrans</span>
+    
+            <span class="n">transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTransition</span><span class="p">(</span> <span class="n">thisTrans</span> <span class="p">)</span>
+            <span class="n">yThis</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s">&#39;tau&#39;</span><span class="p">]</span> 
+    
+            <span class="n">yPlot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">yThis</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xPlot</span><span class="p">,</span> <span class="n">yPlot</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">axis</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">allTrans</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">allTrans</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">yPlot</span><span class="p">)])</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span> <span class="n">allTrans</span><span class="p">,</span> <span class="n">minor</span> <span class="o">=</span> <span class="bp">False</span> <span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span> <span class="n">xticksStrs</span><span class="p">,</span> <span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">45</span> <span class="p">)</span>
+        <span class="c">##numpy.savetxt(&#39;/home/mher/ism/tmp/tau.out&#39;, numpy.array([xPlot, yPlot]).T, &#39;%f&#39;)</span>
+        <span class="c">##print &#39;-----------&gt; saved the file /home/mher/tau.out&#39;</span>
+        
+        <span class="c">#------------------population densities-----------------------------</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">inAxes</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>        
+
+        <span class="n">xPlot</span> <span class="o">=</span> <span class="n">allTrans</span>
+        <span class="n">yPlot1</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">nTrans</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">yPlot2</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">nTrans</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">nTrans</span><span class="p">):</span>
+    
+            <span class="n">thisTrans</span> <span class="o">=</span> <span class="n">allTrans</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    
+            <span class="n">xPlot</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">thisTrans</span>
+    
+            <span class="n">transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getTransition</span><span class="p">(</span> <span class="n">thisTrans</span> <span class="p">)</span>
+            <span class="n">yThis1</span>     <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s">&#39;pop_up&#39;</span><span class="p">]</span>
+            <span class="n">yPlot1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>  <span class="o">=</span> <span class="n">yThis1</span>
+            
+        <span class="n">axes</span><span class="o">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">xPlot</span><span class="p">,</span> <span class="n">yPlot1</span><span class="p">,</span> <span class="s">&#39;b&#39;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">axis</span><span class="p">([</span><span class="n">numpy</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">allTrans</span><span class="p">),</span> <span class="n">numpy</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">allTrans</span><span class="p">),</span> <span class="mf">1e-10</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span> <span class="n">allTrans</span><span class="p">,</span> <span class="n">minor</span> <span class="o">=</span> <span class="bp">False</span> <span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">set_xticklabels</span><span class="p">(</span> <span class="n">xticksStrs</span><span class="p">,</span> <span class="n">rotation</span> <span class="o">=</span> <span class="o">-</span><span class="mi">45</span> <span class="p">)</span>
+
+<div class="viewcode-block" id="radex.clearCurves"><a class="viewcode-back" href="../index.html#radex.radex.clearCurves">[docs]</a>    <span class="k">def</span> <span class="nf">clearCurves</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Clears the curves in an axes column. This is usually used when radex fails</span>
+<span class="sd">        and the data in a certain column need to be removed. Here it is assumes there</span>
+<span class="sd">        is one column.&quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axs</span><span class="p">:</span>            
+            <span class="n">ax</span><span class="o">.</span><span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        
+    <span class="c">## set the appropriate labels of all the axes</span></div>
+    <span class="k">def</span> <span class="nf">setLabels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        
+        <span class="n">axs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axs</span>
+        <span class="k">def</span> <span class="nf">removeAll_xLabels</span><span class="p">(</span><span class="n">ax</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tick</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">get_major_ticks</span><span class="p">():</span>
+                <span class="n">tick</span><span class="o">.</span><span class="n">label1On</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="k">def</span> <span class="nf">removeAll_yLabels</span><span class="p">(</span><span class="n">ax</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tick</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">get_major_ticks</span><span class="p">():</span>
+                <span class="n">tick</span><span class="o">.</span><span class="n">label1On</span> <span class="o">=</span> <span class="bp">False</span>
+                        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">axsLeft</span> <span class="o">=</span> <span class="n">axs</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="n">axsBotm</span> <span class="o">=</span> <span class="p">[</span><span class="n">axs</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">axsLeft</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="n">axsBotm</span> <span class="o">=</span> <span class="n">axs</span><span class="p">[</span><span class="mi">3</span><span class="p">,:]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+            <span class="c"># removing all x and y labels from axes to the left</span>
+            <span class="c"># of th zeroth column and above the bottom row</span>
+            <span class="k">for</span> <span class="n">axRow</span> <span class="ow">in</span> <span class="n">axs</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axRow</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                    <span class="n">removeAll_xLabels</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+                    <span class="n">removeAll_yLabels</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+        
+        <span class="c">#removing the x labeles of from axes on the zeroth column</span>
+        <span class="c">#excluding the one in the bottom one (lower-left corner)            </span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axsLeft</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">removeAll_xLabels</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+        
+        <span class="c">#removing the y labeles of from axes on the bottom row, to the right of the </span>
+        <span class="c">#one on the lower-left corner</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axsBotm</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">removeAll_yLabels</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+                    
+        <span class="c"># plotting the ylabels of the axes            </span>
+        <span class="n">axsLeft</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;Flux&#39;</span><span class="p">)</span>
+        <span class="n">axsLeft</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;Tex, Trot&#39;</span><span class="p">)</span>
+        <span class="n">axsLeft</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;tau&#39;</span><span class="p">)</span>
+        <span class="n">axsLeft</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;pop dens&#39;</span><span class="p">)</span>
+        <span class="c"># plotting the xlabels</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axsBotm</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Trans&#39;</span><span class="p">)</span> <span class="c">#;;; use the up-down string (rotated 90 deg) to plot the trans labele</span>
+
+        <span class="c"># removing the firt and last labels from the bottom and left axes</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axsBotm</span> <span class="o">+</span> <span class="n">axsLeft</span><span class="p">:</span>
+                <span class="n">xticks</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">get_major_ticks</span><span class="p">()</span>
+                <span class="n">yticks</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">get_major_ticks</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">tick</span> <span class="ow">in</span> <span class="p">[</span> <span class="n">xticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">yticks</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="p">]:</span>
+                    <span class="n">tick</span><span class="o">.</span><span class="n">label1On</span> <span class="o">=</span> <span class="bp">False</span>
+        
+        <span class="c">#removing all labels from axes with no lines (only for multiple models)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axsBotm</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">lines</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">removeAll_xLabels</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+    
+    <span class="c">## plotting a single model</span>
+    <span class="c">#  @todo allow for a choice of the number of transitions to be plotted</span>
+    <span class="k">def</span> <span class="nf">plotModel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setupPlot</span><span class="p">(</span><span class="n">nx</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plotModelInFigureColumn</span><span class="p">(</span> <span class="n">allTrans</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">inAxes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axs</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setLabels</span><span class="p">()</span>   
+        <span class="n">pylab</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nCollPart</span>    <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rawOutput</span>    <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warnings</span>     <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nIter</span>        <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outputHdr</span>    <span class="o">=</span> <span class="bp">None</span>  
+        <span class="bp">self</span><span class="o">.</span><span class="n">nTransitions</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transitions</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="bp">None</span>
+
+<div class="viewcode-block" id="radex.setupLogger"><a class="viewcode-back" href="../index.html#radex.radex.setupLogger">[docs]</a>    <span class="k">def</span> <span class="nf">setupLogger</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger.&quot;&quot;&quot;</span>
+        <span class="c"># setting up the logger                                                                                                                                                                                                              </span>
+        <span class="c"># create logger                                                                                                                                                                                                                      </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s">&#39;simple_example&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+        <span class="c"># create console handler and set level to debug                                                                                                                                                                                      </span>
+        <span class="n">ch</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span> <span class="p">)</span>  <span class="c"># setting the stream to stdout                                                                                                                                                             </span>
+        <span class="n">ch</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+        <span class="c"># create formatter                                                                                                                                                                                                                   </span>
+        <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s">&#39;[</span><span class="si">%(asctime)s</span><span class="s"> </span><span class="si">%(funcName)s</span><span class="s">() </span><span class="si">%(filename)s</span><span class="s">:</span><span class="si">%(lineno)s</span><span class="s">] </span><span class="si">%(message)s</span><span class="s">&#39;</span><span class="p">)</span> <span class="c"># this was the original in the example                                                                              </span>
+
+        <span class="c"># add formatter to ch                                                                                                                                                                                                                </span>
+        <span class="n">ch</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
+
+        <span class="c"># add ch to logger                                                                                                                                                                                                                   </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">ismcpak 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Mher Kazandjian.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

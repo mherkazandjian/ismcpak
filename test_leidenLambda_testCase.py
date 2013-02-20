@@ -13,9 +13,9 @@ from ismUtils import planckOccupation as ng
 ####-----------------------------------------------------------------
 
 #parameters
-Tkin  = 100.0    # kinetic temperature of the gas (K)
+Tkin  = 500.0    # kinetic temperature of the gas (K)
 Tcmb  = 2.73     # temperature of background radiation (K)
-nc    = 1000.0   # collider number density cm^-2
+nc    = 1e12   # collider number density cm^-2
 # some constants
 #------------------------------
 hPlank = 6.63e-27       # erg.s 
@@ -160,5 +160,7 @@ for i in np.arange(n):
     A[i,:] = A[i,:]/A[i,i]
 x = np.linalg.solve(A, b)
 
-print x
+for i, level in enumerate(levels):
+    print 'i = %02d, level = %02d, pop_dens = %e' % (i, level['n'], x[i]) 
+    
 print 'done'

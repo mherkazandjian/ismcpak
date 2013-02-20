@@ -1,0 +1,1348 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>chemicalNetwork &mdash; ismcpak 0.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="ismcpak 0.0.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">ismcpak 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for chemicalNetwork</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">specie</span> <span class="kn">import</span> <span class="n">specie</span>
+<span class="kn">from</span> <span class="nn">reaction</span> <span class="kn">import</span> <span class="n">reaction</span>
+
+<div class="viewcode-block" id="chemicalNetwork"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork">[docs]</a><span class="k">class</span> <span class="nc">chemicalNetwork</span><span class="p">(</span><span class="n">specie</span><span class="p">,</span> <span class="n">reaction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;If a specie &#39;XXX&#39; is not in self.speciesRemoved and self.species[&#39;XXX&#39;].num = None</span>
+<span class="sd">       then the reactions which have &#39;XXX&#39; as a specie are still in the network but they are</span>
+<span class="sd">       not used in computing the reaction, like for example PHOTON, it does not have an </span>
+<span class="sd">       abundance and we do not keep track of the number of photons, so it need not have a</span>
+<span class="sd">       number with which its abudnance can be tracked in self.abun[]   </span>
+<span class="sd">       </span>
+<span class="sd">       Reaction hash codes are set based on the original numbers assigned to species and it doesnt </span>
+<span class="sd">       depend on the order the reactnats or the products appear in the reaction input file. When </span>
+<span class="sd">       computing the hash code, the species are picked in the increasing order as they appeat in</span>
+<span class="sd">       the sorted string array (using the sorted function).</span>
+<span class="sd">       </span>
+<span class="sd">       The reaction types supported are those of UMIST2006. They are only used when computing the</span>
+<span class="sd">       reaction constants and rates. When a UMIST99 reaction network file is provided, they are </span>
+<span class="sd">       assigned types bases on the reaction ID. </span>
+<span class="sd">       </span>
+<span class="sd">       .. warning:: The user might need to check the method self.convert_rxn_line_from_U99_to_U06_format_str to</span>
+<span class="sd">        make sure it is done correctly in case the reaction file is customised.</span>
+<span class="sd">        </span>
+<span class="sd">        The types of reaction and their abbreviations are listed in Table-7 of the UMIST2006 paper.   </span>
+<span class="sd">        </span>
+<span class="sd">       .. todo::  Write a method which merges reactions with the same hashcode into one reaction </span>
+<span class="sd">        where in different temperature ranges different temperatures are set.</span>
+<span class="sd">        </span>
+<span class="sd">       .. todo::  Write a method which checks if the reactions are balanced or not.</span>
+<span class="sd">              </span>
+<span class="sd">       .. todo::  Write a method which reads the abundances and sets the abundance of each specie object </span>
+<span class="sd">        this can be implemented by appending a new abudance column to species.inp.</span>
+
+<span class="sd">       .. todo::  Write a method which takes as input the species file used and filters out all the</span>
+<span class="sd">        reaction which do not contain these species and re-numbers the species in the number representation of the chemical network.</span>
+<span class="sd">           </span>
+<span class="sd">       .. todo::  As a check, dump the remainders of the parsed strings to a file...it should</span>
+<span class="sd">        mainly be black other than commas...etc...otherwise, there are stuff not taken into account,</span>
+<span class="sd">        this can be done by erasing stuff from self.fileStr after the whole original network has </span>
+<span class="sd">        been worked out.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">baseSpecies</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">UMISTVER</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nReactions</span> <span class="o">=</span> <span class="bp">None</span>         <span class="c">#: number of reactions in the network.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span> <span class="o">=</span> <span class="p">[]</span>            <span class="c">#: reaction object list in the netowrk.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nReactionsRemoved</span> <span class="o">=</span> <span class="bp">None</span>  <span class="c">#: number of reactions removed from the originally read network.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reactionsRemoved</span> <span class="o">=</span> <span class="p">[]</span>     <span class="c">#: a list of the reaction removed from the originally read netowrk.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nMerged</span> <span class="o">=</span> <span class="bp">None</span>            <span class="c">#: number of reactions merged</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nSpecs</span> <span class="o">=</span> <span class="bp">None</span>             <span class="c">#: number of active species in the network.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">species</span> <span class="o">=</span> <span class="p">{}</span>              <span class="c">#: a dictionary of the active specie object list in the network.</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nSpecsRemoved</span> <span class="o">=</span> <span class="bp">None</span>    <span class="c">#: number of non active species in the network.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">speciesRemoved</span> <span class="o">=</span> <span class="p">{}</span>     <span class="c">#: a dictionary of the non active species object in the network.</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">fileName</span> <span class="o">=</span> <span class="n">fileName</span>       <span class="c">#: path of the ascii file from which the reactions of the network were read.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">baseSpecies</span> <span class="o">=</span> <span class="n">baseSpecies</span> <span class="c">#: a list of the species of the base objects.</span>
+        <span class="c">#gas state attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nDens</span> <span class="o">=</span> <span class="bp">None</span>              <span class="c">#: density of the ambient hydrogen gas.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="bp">None</span>                  <span class="c">#: gas temperature.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zeta</span> <span class="o">=</span> <span class="bp">None</span>               <span class="c">#: cosmic ray ionization rate.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">albedo</span> <span class="o">=</span> <span class="bp">None</span>             <span class="c">#: Albedo </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Av</span> <span class="o">=</span> <span class="bp">None</span>                 <span class="c">#: visual extinction</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">G0</span> <span class="o">=</span> <span class="bp">None</span>                 <span class="c">#: FUV fux in terms of G0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Tdust</span> <span class="o">=</span> <span class="bp">None</span>              <span class="c">#: temperature of the dust</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metallicity</span> <span class="o">=</span> <span class="bp">None</span>        <span class="c">#: metallcitiy of the gas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">PHI_PAH</span> <span class="o">=</span> <span class="bp">None</span>            <span class="c">#: constant related to PAH (check exactly what this is)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta_CO</span> <span class="o">=</span> <span class="bp">None</span>            <span class="c">#: CO self sheilding coefficient</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta_13CO</span> <span class="o">=</span> <span class="bp">None</span>          <span class="c">#: 13CO self sheilding coeffcieint</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">beta_H2</span> <span class="o">=</span> <span class="bp">None</span>            <span class="c">#: H2 self sheilding coefficient</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">abun</span> <span class="o">=</span> <span class="bp">None</span>               <span class="c">#: a numpy array of shape (nSpecies, 1), it is by default initialized to -1.</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">=</span> <span class="s">&#39;&#39;</span> <span class="c"># just for printintg purposes</span>
+        
+        <span class="k">if</span> <span class="n">UMISTVER</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">umistVer</span> <span class="o">=</span> <span class="n">UMISTVER</span>  
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">umistVer</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="sd">&quot;&quot;&quot;string of the version of UMIST used. The two supported values are &#39;umist06&#39;</span>
+<span class="sd">               and &#39;umist99&#39;.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fileName</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">baseSpecies</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span> <span class="n">baseSpecies</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="chemicalNetwork.setup"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">networkFname</span><span class="p">,</span> <span class="n">baseSpecies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Setup all the chemical network.&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_network_file</span><span class="p">(</span><span class="n">networkFname</span><span class="p">)</span>   <span class="c"># read the database into a buffer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parse_reactions</span><span class="p">()</span>                <span class="c"># parse the reaction lines from the database</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_unique_species</span><span class="p">(</span><span class="n">baseSpecies</span><span class="p">)</span>   <span class="c"># fileter the unique species and parse them in their components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assign_numbers_to_species</span><span class="p">()</span>        <span class="c"># assingns the index of the specie in the dictionary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_reaction_hash_codes</span><span class="p">()</span>          <span class="c"># compute the hashcodes of the reactions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_reactions_types</span><span class="p">()</span>          <span class="c"># make sure reaction types are correct</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_reactions_types</span><span class="p">()</span>           <span class="c"># make sure reaction types are correct</span>
+         </div>
+<div class="viewcode-block" id="chemicalNetwork.read_network_file"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.read_network_file">[docs]</a>    <span class="k">def</span> <span class="nf">read_network_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read and parses the UMIST 2006 or UMIST 99 reaction file (without the header) and assigns </span>
+<span class="sd">           the variable fileStr and counts the number of reactions in the file sets : self.fileStr</span>
+<span class="sd">           self.nRxn.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">fObj</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&#39;Opened chemical reaction network file : &#39;</span> <span class="o">+</span> <span class="n">fileName</span>
+
+        <span class="n">nRxn</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">fileStr</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>           <span class="c"># string that will contain the whole file</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fObj</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">line</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="s">&#39;#&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">fileStr</span> <span class="o">+=</span> <span class="n">line</span>
+            <span class="n">nRxn</span> <span class="o">+=</span> <span class="mi">1</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">fileStr</span> <span class="o">=</span> <span class="n">fileStr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nReactions</span> <span class="o">=</span> <span class="n">nRxn</span>
+        
+        <span class="n">fObj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">&#39;     Read &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nReactions</span><span class="p">,</span> <span class="s">&#39;reactions&#39;</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.parse_reactions"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.parse_reactions">[docs]</a>    <span class="k">def</span> <span class="nf">parse_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;define rxn object list for all the reaction from the ascii database lines</span>
+<span class="sd">           here the reactant and product objects are not set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">print</span> <span class="s">&#39;Parsing reactions...&#39;</span><span class="p">,</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">umistVer</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">strng</span>  <span class="o">=</span> <span class="s">&#39;Error : cannot parse network reaction, unknown database</span><span class="se">\n</span><span class="s">&#39;</span>
+            <span class="n">strng</span> <span class="o">+=</span> <span class="s">&#39;                   please set database version.&#39;</span>                 
+            <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="n">strng</span><span class="p">)</span>
+        
+        <span class="k">print</span> <span class="s">&#39;using &#39;</span><span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">umistVer</span> <span class="o">+</span> <span class="s">&#39; format...&#39;</span><span class="p">,</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fileStr</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="n">rxn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_rxn_attributes</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>    <span class="c"># create a new  rxn object from reaction line</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rxn</span><span class="p">)</span>           <span class="c"># append the new rxn to the reactions</span>
+            
+        <span class="k">print</span> <span class="s">&#39;complete&#39;</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.get_unique_species"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.get_unique_species">[docs]</a>    <span class="k">def</span> <span class="nf">get_unique_species</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">baseSpecies</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct the the speices dict for all the species in the network self.species</span>
+<span class="sd">           also here all the unique species in the network are put in that dictionary and</span>
+<span class="sd">           the components of the species are also extracted</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">print</span> <span class="s">&#39;Analyzing the checmical network.....&#39;</span><span class="p">,</span>
+        <span class="c"># put the base species in the dictionary</span>
+        <span class="k">for</span> <span class="n">baseSpec</span> <span class="ow">in</span> <span class="n">baseSpecies</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">baseSpec</span><span class="o">.</span><span class="n">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">baseSpec</span>
+
+        <span class="c"># getting the unique species from all the reactions </span>
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">rxn</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">str</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">:</span> 
+                    <span class="n">spec</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="mi">1</span>   <span class="c"># setting the object as a non-base specie</span>
+                    <span class="n">spec</span><span class="o">.</span><span class="n">get_components</span><span class="p">(</span><span class="n">baseSpecies</span><span class="p">)</span>      <span class="c"># parsing the specie</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">species</span> <span class="p">[</span><span class="n">spec</span><span class="o">.</span><span class="n">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span>
+                                        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nSpecs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">&#39;Found &#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nSpecs</span><span class="p">,</span> <span class="s">&#39; unique species in the network&#39;</span>
+
+        <span class="c"># assign the the species object in the reactions to pointer to those</span>
+        <span class="c"># in self.species. This saves memory and time, since only</span>
+        <span class="c"># modifying self.species would modify all the corresponding</span>
+        <span class="c"># species all the reactions whereever they occure </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mapReactionSpeciesToSpecieObjectList</span><span class="p">()</span>
+        
+        <span class="c"># defining the array where the abundances of the species are stored</span>
+        <span class="c"># and each entry is mapped to self.species[]._abun, such that</span>
+        <span class="c"># self.species[&#39;XXX&#39;]._abun == self.abun[ self.species[&#39;XXX&#39;].num ]</span>
+        <span class="c"># the abundances are intiialized to -1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initializeDefaultAbunBuffer</span><span class="p">()</span> 
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">nReactionsRemoved</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactionsRemoved</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nSpecsRemoved</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">speciesRemoved</span><span class="p">)</span>
+        
+</div>
+<div class="viewcode-block" id="chemicalNetwork.mapReactionSpeciesToSpecieObjectList"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.mapReactionSpeciesToSpecieObjectList">[docs]</a>    <span class="k">def</span> <span class="nf">mapReactionSpeciesToSpecieObjectList</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Mapping the species objects in all the reactions to the species object list in</span>
+<span class="sd">           the network object (this object)...this is useful since instead of having a copy </span>
+<span class="sd">           of a species which might occure in many reaction, it is just referenced to the</span>
+<span class="sd">           species in the species list it is also useful since changin an attirbute of a </span>
+<span class="sd">           species in the list would be visible to all the occurances in the network. such</span>
+<span class="sd">           as... setting the number_tag of the species objects in the reaction objects such</span>
+<span class="sd">           that it would be possible to construct the numeric representation of the reactions,</span>
+<span class="sd">           i.e instead of having :</span>
+<span class="sd">            </span>
+<span class="sd">                     HCN  +  H   -&gt;  HNC  +   H</span>
+<span class="sd">                     </span>
+<span class="sd">           we get    </span>
+<span class="sd">           </span>
+<span class="sd">                     &#39;56&#39; +  &#39;9&#39; -&gt;   27  +  &#39;9&#39;</span>
+<span class="sd">                     </span>
+<span class="sd">           assuming HCN, HNC and H have indicies 56, 27 and 9 respectively</span>
+<span class="sd">           and this number would be visible to all the instances where these</span>
+<span class="sd">           species occure.</span>
+<span class="sd">           </span>
+<span class="sd">           .. warning::  This should be called everytime an entry in self.species is replaced </span>
+<span class="sd">            (i.e it addrress changes) for ex by call.</span>
+<span class="sd">           </span>
+<span class="sd">           .. warning:: It is highly recommended to use the specie.abun(x) method to set the abun</span>
+<span class="sd">            of a species. Since it is easy to get confused and set the abundance via specie._abun = x</span>
+<span class="sd">            which would break the mapping with net.abun. The way to change the abundance without</span>
+<span class="sd">            breaking the mapping would be to use specie.abun[0] = x, since specie._abun is an ndarray</span>
+<span class="sd">            of shape (1,) and setting the value via specie._abun = x would assign a new object instead</span>
+<span class="sd">            of a new value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">print</span> <span class="s">&#39;constructing numeric represntation of the network....&#39;</span><span class="p">,</span>
+        
+        <span class="c"># setting self.reactions[i].species[:].num </span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">)</span> <span class="p">):</span>
+            <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reactants</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">products</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span>
+
+        <span class="k">print</span> <span class="s">&#39;compelte&#39;</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.remove_species"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.remove_species">[docs]</a>    <span class="k">def</span> <span class="nf">remove_species</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">species</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">underAbunFile</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove species from the network. All reactions containing those species are moved to </span>
+<span class="sd">           the self.reactionsRemoved list. Also those species are moved from self.species to </span>
+<span class="sd">           self.removedSpecies list.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">print</span> <span class="s">&#39;removing species from the network....&#39;</span><span class="p">,</span> 
+        
+        <span class="k">if</span> <span class="n">species</span> <span class="o">==</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">underAbunFile</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;using the list from the file </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">underAbunFile</span>
+            <span class="c"># reading the species to be removed from a file</span>
+            <span class="n">fObj</span> <span class="o">=</span>  <span class="nb">open</span><span class="p">(</span><span class="n">underAbunFile</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+            <span class="n">setAsInactive</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fObj</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                
+                <span class="n">specStr</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">setAsInactive</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">specStr</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">fObj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> 
+
+            <span class="k">print</span> <span class="s">&#39;species to be removed &#39;</span><span class="p">,</span> <span class="n">setAsInactive</span>
+            <span class="n">species</span> <span class="o">=</span> <span class="n">setAsInactive</span>
+            
+        <span class="k">if</span> <span class="n">species</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">specStrList</span> <span class="o">=</span> <span class="n">species</span>
+        
+            <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="n">specStrList</span><span class="p">:</span>
+                <span class="c"># moving the specie to be removed to self.speciesRemoved</span>
+                <span class="c"># and update the numbers of spceis and removed one</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">speciesRemoved</span><span class="p">[</span> <span class="n">specStr</span> <span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">specStr</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nSpecs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nSpecsRemoved</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">speciesRemoved</span><span class="p">)</span> 
+      
+                <span class="c"># moving the reactions containing the species to be removed to the</span>
+                <span class="c"># self.reactionsRemoved list and updating the numbers. Starting from</span>
+                <span class="c"># the last reaction and working backwards in the reaction list</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">species</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">reactionsRemoved</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                
+                <span class="bp">self</span><span class="o">.</span><span class="n">nReactions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nReactionsRemoved</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactionsRemoved</span><span class="p">)</span>
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">=</span> <span class="s">&#39;     &#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initializeDefaultAbunBuffer</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">assign_numbers_to_species</span><span class="p">()</span>
+        
+        <span class="k">print</span> <span class="s">&#39;complete&#39;</span>
+            </div>
+<div class="viewcode-block" id="chemicalNetwork.assign_numbers_to_species"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.assign_numbers_to_species">[docs]</a>    <span class="k">def</span> <span class="nf">assign_numbers_to_species</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Assing the self.species[:].num to their index in the dictionary and update</span>
+<span class="sd">           these indecis in the chemical network as well.</span>
+<span class="sd">           </span>
+<span class="sd">           .. warning::  it might happen that by mistake some species number is not specified</span>
+<span class="sd">             in the input file containing the new number, so it will be None. Or that the</span>
+<span class="sd">             file contains a species that is not in the chemical network, these will also</span>
+<span class="sd">             have None as numbers.</span>
+<span class="sd">             </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setSpeciesNumsToNone</span><span class="p">()</span>
+                
+        <span class="k">if</span> <span class="n">fileName</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">+</span> <span class="s">&#39;setting species number in the order they appear in self.species&#39;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">=</span> <span class="s">&#39;     &#39;</span>
+            <span class="c"># assign the number </span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span><span class="o">.</span><span class="n">num</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c"># it might be a good idea to put this in the mesh database thing or mesh object</span>
+            <span class="c"># as a new dictionary and pass the dictionary object to this instead of a file</span>
+            <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">+</span> <span class="s">&#39;setting species number in the order they appear in the file: &#39;</span> <span class="o">+</span> <span class="n">fileName</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">=</span> <span class="s">&#39;     &#39;</span>
+            
+            <span class="n">fObj</span> <span class="o">=</span>  <span class="nb">open</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fObj</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                
+                <span class="n">specStr</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span> <span class="n">specStr</span> <span class="p">]</span><span class="o">.</span><span class="n">num</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">+</span> <span class="s">&#39;</span><span class="si">%-12s</span><span class="s"> from the file is not a species in the current network&#39;</span> <span class="o">%</span> <span class="n">specStr</span> 
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">fObj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> 
+        
+        <span class="k">print</span>  <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">+</span> <span class="s">&#39;finished assigning the new species numbers&#39;</span>
+        
+        <span class="c"># getting the list species which did not get a number assigned to</span>
+        <span class="n">specsWithNoNum</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">num</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">specsWithNoNum</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">str</span><span class="p">)</span>
+                
+        <span class="c">#printing the species with no numbers (10 per line)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">specsWithNoNum</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">+</span> <span class="s">&#39;A total of </span><span class="si">%d</span><span class="s"> species will have no numbers&#39;</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">specsWithNoNum</span><span class="p">)</span>
+            
+            <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span><span class="p">,</span>
+            
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">specsWithNoNum</span><span class="p">):</span>
+                <span class="k">print</span> <span class="s">&#39; </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">specStr</span><span class="p">,</span>
+                <span class="k">if</span> <span class="p">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="mi">10</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&#39;</span><span class="se">\n</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span><span class="p">,</span>
+            
+            <span class="k">print</span> 
+                     
+        <span class="bp">self</span><span class="o">.</span><span class="n">map_species_abundances</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>        
+        
+        </div>
+<div class="viewcode-block" id="chemicalNetwork.map_species_abundances"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.map_species_abundances">[docs]</a>    <span class="k">def</span> <span class="nf">map_species_abundances</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Map self.species[]._abun to self.abun, so that changing the abundace of the element</span>
+<span class="sd">           &#39;X&#39; in self.species[] would change the value in self.abun[self.specie[&#39;X&#39;].num] and </span>
+<span class="sd">           vise versa.</span>
+<span class="sd">        </span>
+<span class="sd">           .. warning::  species which do not have a number, get their abundance set to None.</span>
+<span class="sd">             i.e they are not mapped. </span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">:</span>
+            <span class="n">specNum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span><span class="o">.</span><span class="n">num</span>
+            <span class="k">if</span> <span class="n">specNum</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span><span class="o">.</span><span class="n">_abun</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">abun</span><span class="p">[</span> <span class="n">specNum</span> <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span><span class="o">.</span><span class="n">_abun</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">+</span> <span class="s">&#39;mapped spcies abundances to the abundance array&#39;</span>
+        </div>
+<div class="viewcode-block" id="chemicalNetwork.set_reaction_hash_codes"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.set_reaction_hash_codes">[docs]</a>    <span class="k">def</span> <span class="nf">set_reaction_hash_codes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Each reaction has 7 species max involved (UMIST). In the UMIST2006 there are ~450</span>
+<span class="sd">           species. Each specie can be represented by a 9 bit integer ( we use an unsigned integer)</span>
+<span class="sd">           which can have a max value of 512. So each reaction can have a tag composed of 9*7=63 </span>
+<span class="sd">           bits, which is unique as one of the involved in the reactions is. For example, the </span>
+<span class="sd">           reaction :</span>
+<span class="sd">           </span>
+<span class="sd">                 (0)   (1)    (2)        (3)   (4)    (5)    (6)</span>
+<span class="sd">                 286 + 221          ---&gt; 249 + 369  + 56</span>
+<span class="sd">                 </span>
+<span class="sd">           would have a hash code :</span>
+<span class="sd">           </span>
+<span class="sd">                 (512^0)*221 + (512^1)*286 + (512^3)*56 + (512^4)*249 + (512^5)*369</span>
+<span class="sd">                    </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">print</span> <span class="s">&#39;setting reaction hashcodes....&#39;</span><span class="p">,</span>        
+        <span class="n">base</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">(</span><span class="mi">512</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">rxn</span><span class="o">.</span><span class="n">reactants</span><span class="p">):</span>
+                <span class="n">rxn</span><span class="o">.</span><span class="n">hash</span> <span class="o">+=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">((</span><span class="n">base</span><span class="o">**</span><span class="n">i</span><span class="p">))</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">(</span> <span class="n">rxn</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span><span class="o">.</span><span class="n">num</span> <span class="p">)</span> 
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">rxn</span><span class="o">.</span><span class="n">products</span><span class="p">):</span>
+                <span class="n">rxn</span><span class="o">.</span><span class="n">hash</span> <span class="o">+=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">(</span> <span class="n">base</span><span class="o">**</span><span class="p">(</span><span class="mi">3</span> <span class="o">+</span> <span class="n">i</span><span class="p">)</span> <span class="p">)</span><span class="o">*</span><span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span><span class="p">(</span> <span class="n">rxn</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span><span class="o">.</span><span class="n">num</span> <span class="p">)</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+        <span class="k">print</span> <span class="s">&#39;complete&#39;</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.update_reactions_types"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.update_reactions_types">[docs]</a>    <span class="k">def</span> <span class="nf">update_reactions_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Checks and updates the types of the reactions. Reactions whose types are not</span>
+<span class="sd">           within those of UMIST2006 and are custom types for example, get their types</span>
+<span class="sd">           set based on their reactants. This is done by calling the method </span>
+<span class="sd">           reaction.update_type() for each reaction.&quot;&quot;&quot;</span>
+        
+        <span class="c"># maybe it is better if the dictonary definig the reaction types</span>
+        <span class="c"># based on what is in the reactants here instead of in the reaction class</span>
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="n">rxn</span><span class="o">.</span><span class="n">update_type</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">&#39;updated reaction types&#39;</span>
+        </div>
+<div class="viewcode-block" id="chemicalNetwork.check_reactions_types"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.check_reactions_types">[docs]</a>    <span class="k">def</span> <span class="nf">check_reactions_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> 
+        <span class="sd">&quot;&quot;&quot;Checks the types of the reactions and raises an error if a reaction without </span>
+<span class="sd">           a type is detected. This should be called before trying to compute constants.&quot;&quot;&quot;</span>
+        
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span>
+                <span class="n">strng</span> <span class="o">=</span> <span class="s">&#39;reaction types, reaction :</span><span class="se">\n</span><span class="si">%s</span><span class="se">\n</span><span class="s"> has no type set&#39;</span> <span class="o">%</span> <span class="n">rxn</span><span class="o">.</span><span class="n">str</span>
+                <span class="k">raise</span> <span class="ne">NameError</span><span class="p">(</span><span class="n">strng</span><span class="p">)</span>
+        
+        <span class="k">print</span> <span class="s">&#39;reaction check completed...all passed.&#39;</span>
+                    </div>
+<div class="viewcode-block" id="chemicalNetwork.find_identical_reactions"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.find_identical_reactions">[docs]</a>    <span class="k">def</span> <span class="nf">find_identical_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Finds identical reactions which have the same reactants and the same products</span>
+<span class="sd">           and returns a tuple holding the reaction indecis ( (ind1,ind2), (ind1,ind2)...).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">sets</span> <span class="o">=</span> <span class="p">[]</span> <span class="c"># to be returned</span>
+        <span class="n">hashes</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nReactions</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint64</span> <span class="p">)</span>
+        <span class="n">IDs</span>    <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nReactions</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">uint32</span> <span class="p">)</span>
+        
+        <span class="c"># collect hashes numpy arrays</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">):</span>
+            <span class="n">hashes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">rxn</span><span class="o">.</span><span class="n">hash</span>
+            <span class="n">IDs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>    <span class="o">=</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span>
+            
+        <span class="c"># indices of sorted hashes in increasing order of the hashes</span>
+        <span class="n">indsSorted</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">hashes</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s">&#39;quicksort&#39;</span><span class="p">)</span>
+        <span class="n">hashes</span>     <span class="o">=</span> <span class="n">hashes</span><span class="p">[</span><span class="n">indsSorted</span><span class="p">]</span>
+        <span class="n">IDs</span>        <span class="o">=</span> <span class="n">IDs</span><span class="p">[</span><span class="n">indsSorted</span><span class="p">]</span>  
+
+        <span class="c"># looping over the sorted hashes array and storing into</span>
+        <span class="c"># tuple the indicies of the corresponding reactions with the same</span>
+        <span class="c"># hash</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">nReactions</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">hi</span> <span class="o">=</span> <span class="n">hashes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            
+            <span class="k">if</span> <span class="n">hashes</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">hi</span><span class="p">:</span>
+                
+                <span class="n">IDs_same_hash</span> <span class="o">=</span> <span class="p">[</span><span class="n">IDs</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+                <span class="c"># checking for the hashes of the reaction below it to see</span>
+                <span class="c"># if there is more than one wit hthe same hash</span>
+                <span class="n">j</span><span class="o">=</span><span class="mi">1</span>
+                <span class="k">while</span> <span class="n">hashes</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">hi</span><span class="p">:</span>
+                    <span class="n">IDs_same_hash</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">IDs</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">j</span><span class="p">])</span>
+                    <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span> 
+                
+                <span class="n">i</span> <span class="o">+=</span> <span class="n">j</span>
+                
+                <span class="n">sets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">IDs_same_hash</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                
+        <span class="k">return</span> <span class="n">sets</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.merge_identical_reactions"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.merge_identical_reactions">[docs]</a>    <span class="k">def</span> <span class="nf">merge_identical_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;All reactions with the same hash code are set as complements by filling in</span>
+<span class="sd">           the reaction IDs in reaction.complements and are popped from the </span>
+<span class="sd">           self.reactions list.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">identical_sets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_identical_reactions</span><span class="p">()</span>
+        <span class="c">#looping over the sets of identical reactions</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ID_set</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">identical_sets</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&#39;reactions with identical hashes &#39;</span><span class="p">,</span> <span class="n">ID_set</span>
+            <span class="c">#for each set, merge the others in the set with the first item in the set.</span>
+            <span class="c">#there is no preference for the order. What matters is that they are merged.</span>
+            <span class="n">rxns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reactions</span><span class="p">(</span><span class="n">IDs</span> <span class="o">=</span> <span class="n">ID_set</span><span class="p">)</span>   <span class="c"># rxn object with identical hash codes</span>
+            <span class="n">merged_rxn</span> <span class="o">=</span> <span class="n">rxns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">merged_rxn</span><span class="o">.</span><span class="n">complements</span> <span class="o">=</span> <span class="n">rxns</span><span class="p">[</span><span class="mi">1</span><span class="p">::]</span>        <span class="c"># setting the complements to the complements attribure of the base reaction</span>
+            <span class="n">merged_rxn</span><span class="o">.</span><span class="n">all_rxns</span> <span class="o">=</span> <span class="n">merged_rxn</span><span class="o">.</span><span class="n">complements</span><span class="p">[:]</span>
+            <span class="n">merged_rxn</span><span class="o">.</span><span class="n">all_rxns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">merged_rxn</span><span class="p">)</span>
+            
+            <span class="bp">self</span><span class="o">.</span><span class="n">pop_reactions</span><span class="p">(</span><span class="n">ID_set</span><span class="p">[</span><span class="mi">1</span><span class="p">::])</span>           <span class="c"># poping the complementns from self.complements</span>
+            
+            <span class="c">#assigning the new merged reaction to the the one in self.reactions</span>
+            <span class="c">#which was not popped</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace_reaction</span><span class="p">(</span><span class="n">ID</span> <span class="o">=</span> <span class="n">ID_set</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">new_rxn</span> <span class="o">=</span> <span class="n">rxns</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> 
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">nMerged</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> 
+</div>
+<div class="viewcode-block" id="chemicalNetwork.set_all_rxn_bounds"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.set_all_rxn_bounds">[docs]</a>    <span class="k">def</span> <span class="nf">set_all_rxn_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;calling the method set_bound_rxns for all the reactions in self.reactions.</span>
+<span class="sd">           This sets sets the function which will be used to compute the reaction</span>
+<span class="sd">           constants when the temperature range is not within the defined range</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="n">rxn</span><span class="o">.</span><span class="n">set_bound_rxns</span><span class="p">()</span>
+            </div>
+<div class="viewcode-block" id="chemicalNetwork.set_abundances"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.set_abundances">[docs]</a>    <span class="k">def</span> <span class="nf">set_abundances</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fromFile</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">fromArray</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the abundances of the species from an ascii input file or from a numpy array.</span>
+<span class="sd">        </span>
+<span class="sd">           :param string fromFile: The path of the file which contains one abundance which will be</span>
+<span class="sd">             assigned to the species. The file should have one abundance on each line. Each value </span>
+<span class="sd">             will be set to the corresponding vlaue in self.abun[] at the index corresponding to </span>
+<span class="sd">             the line number (staring with index 0). There should be as much lines as there are </span>
+<span class="sd">             species with assigned numbers. </span>
+<span class="sd">             </span>
+<span class="sd">           :param numpy.ndarray fromArray: A numpy array holding the abundances of the speceies. The </span>
+<span class="sd">             values of this array will be copies element-wise to self.abun[]. They must have the same</span>
+<span class="sd">             length. </span>
+<span class="sd">           </span>
+<span class="sd">           .. warning::  since self.specie[]._abun are mapped to self.abun, in chanfing all the values</span>
+<span class="sd">             of the array the method self.copy_abundances_from_array( array ) should be used, which</span>
+<span class="sd">             sets the values one by one, instead of replacing self.abun with another array when</span>
+<span class="sd">             self.abun = newAbun which removes the mapping.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">print</span> <span class="s">&#39;Setting the abundances of the species from:&#39;</span><span class="p">,</span>
+        
+        <span class="n">newAbunArr</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="k">if</span> <span class="n">fromFile</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;file : </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">fromFile</span>            
+            <span class="n">newAbunArr</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">fromfile</span><span class="p">(</span><span class="n">fromFile</span><span class="p">,</span> <span class="n">dtype</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">sep</span> <span class="o">=</span> <span class="s">&quot; &quot;</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="n">fromArray</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;array (id) : </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">id</span><span class="p">(</span><span class="n">fromArray</span><span class="p">)</span>            
+            <span class="n">newAbunArr</span> <span class="o">=</span> <span class="n">fromArray</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">copy_abundances_from_array</span><span class="p">(</span> <span class="n">newAbunArr</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span> <span class="p">)</span>
+</div>
+    <span class="k">def</span> <span class="nf">copy_abundances_from_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">):</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">abun</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">n</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">array</span><span class="p">[:]</span>
+
+<div class="viewcode-block" id="chemicalNetwork.printFile"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.printFile">[docs]</a>    <span class="k">def</span> <span class="nf">printFile</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;prints the reaction file without the header.&quot;&quot;&quot;</span>
+
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">fileStr</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.print_reactions"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.print_reactions">[docs]</a>    <span class="k">def</span> <span class="nf">print_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">IDs</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">fmt</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Prints reactions given their IDs [not their indicies i.e the position in the</span>
+<span class="sd">           self.reactions[] list). </span>
+<span class="sd">        </span>
+<span class="sd">        :param int IDs: an integer or an integer list (or numpy array) of reaction IDs to be printed.</span>
+<span class="sd">        </span>
+<span class="sd">        :param string fmt: a string for the format of the reactions (see reaction object doc). IF</span>
+<span class="sd">           this is not passed, a default format of &#39;type rxn&#39; is used. </span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="s">&#39;type rxn&#39;</span>
+            
+        <span class="k">if</span> <span class="n">IDs</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span> <span class="c"># print all the reactions</span>
+            <span class="k">print</span> <span class="s">&#39;total number of reactions = &#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+                <span class="n">rxn</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">fmt</span> <span class="o">=</span> <span class="n">fmt</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="c"># print reactions with specified ids</span>
+                        
+            <span class="c">#if IDs is just an interger, putting it into a list</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">IDs</span><span class="p">,</span> <span class="s">&#39;__iter__&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+                <span class="n">IDs</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">IDs</span><span class="p">])</span>
+            
+            <span class="k">for</span> <span class="n">rxnID</span> <span class="ow">in</span> <span class="n">IDs</span><span class="p">:</span>
+                
+                <span class="n">found</span> <span class="o">=</span> <span class="bp">False</span>
+
+                <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">has_ID</span><span class="p">(</span><span class="n">rxnID</span><span class="p">):</span>
+                        <span class="n">found</span> <span class="o">=</span> <span class="bp">True</span> 
+                        <span class="n">rxn</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">fmt</span> <span class="o">=</span> <span class="n">fmt</span><span class="p">)</span>
+                        <span class="k">break</span>
+            
+                <span class="k">if</span> <span class="n">found</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;No reaction found with ID = </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span><span class="n">rxnID</span><span class="p">)</span>
+                    </div>
+<div class="viewcode-block" id="chemicalNetwork.print_species"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.print_species">[docs]</a>    <span class="k">def</span> <span class="nf">print_species</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">removed</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;print all the species&quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="n">removed</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">specs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>          
+            <span class="n">specs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">speciesRemoved</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            
+        <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">specs</span><span class="p">:</span> 
+            <span class="n">spec</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+            </div>
+<div class="viewcode-block" id="chemicalNetwork.get_specie_index"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.get_specie_index">[docs]</a>    <span class="k">def</span> <span class="nf">get_specie_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">specStr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the index of the specie which matches the input string.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">:</span> <span class="c">#i = 0</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span><span class="o">.</span><span class="n">num</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&#39;Specie &#39;</span> <span class="o">+</span> <span class="n">specStr</span> <span class="o">+</span> <span class="s">&#39; not found&#39;</span>
+            <span class="k">return</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.set_rxn_attributes"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.set_rxn_attributes">[docs]</a>    <span class="k">def</span> <span class="nf">set_rxn_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lineStr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pasrse the UMIST reaction line and return the reaction object.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">umistVer</span> <span class="o">==</span> <span class="s">&#39;umist06&#39;</span><span class="p">:</span>
+            <span class="n">rxnStr06</span> <span class="o">=</span> <span class="n">lineStr</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">umistVer</span> <span class="o">==</span> <span class="s">&#39;umist99&#39;</span><span class="p">:</span>
+            <span class="n">rxnStr06</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert_rxn_line_from_U99_to_U06_format_str</span><span class="p">(</span><span class="n">lineStr</span><span class="p">)</span>
+        
+        <span class="n">rxn</span> <span class="o">=</span> <span class="n">reaction</span><span class="p">()</span>
+        <span class="n">rxn</span><span class="o">.</span><span class="n">set_all_attr_from_rxn_str</span><span class="p">(</span><span class="n">rxnStr06</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">rxn</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.convert_rxn_line_from_U99_to_U06_format_str"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.convert_rxn_line_from_U99_to_U06_format_str">[docs]</a>    <span class="k">def</span> <span class="nf">convert_rxn_line_from_U99_to_U06_format_str</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="n">line</span> <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Converts a umist99 reaction string line to one as it would be formatted in the umist06</span>
+<span class="sd">           database. Reactions withs IDs &gt;= 4108 and &lt;= 4113 are assigned the type SU short for  </span>
+<span class="sd">           Sundries.</span>
+<span class="sd">        &quot;&quot;&quot;</span>  
+        
+        <span class="c"># function which returns the type of the reaction based on its ID (table 5 in umist99 papper)</span>
+        <span class="k">def</span> <span class="nf">getReactionType</span><span class="p">(</span> <span class="n">rxnID</span> <span class="p">):</span>
+                        
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">433</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;NN&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">434</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">2606</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;IN&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">2607</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">3144</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;CE&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">3145</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">3175</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;II&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">3176</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">3606</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;DR&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">3607</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">3631</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;RR&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">3632</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">3678</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;AD&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">3679</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">3760</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;RA&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">3761</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">3916</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;PH&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">3917</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">3927</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;CP&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">3928</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">4059</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;CR&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">4060</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">4077</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;CL&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">4078</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">4107</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;TR&#39;</span>
+            <span class="k">if</span> <span class="n">rxnID</span> <span class="o">&gt;=</span> <span class="mi">4108</span> <span class="ow">and</span> <span class="n">rxnID</span> <span class="o">&lt;=</span> <span class="mi">4113</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s">&#39;SU&#39;</span>
+
+            <span class="k">return</span> <span class="s">&#39;&#39;</span>
+        
+        <span class="n">pos</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">newLine</span> <span class="o">=</span> <span class="s">&#39;&#39;</span>
+        
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span> 
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="mi">4</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c"># index</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span> <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        
+        <span class="n">rxnID</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">(</span><span class="n">cpmnt</span><span class="p">)</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">getReactionType</span><span class="p">(</span> <span class="n">rxnID</span> <span class="p">)</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>  
+
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="mi">10</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#r1</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>  <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#r2</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#r3</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#p1</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">9</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#p3</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">6</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#p4</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#alpha</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#beta</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">8</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#beta</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#gamma</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#kind of data</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#T_low</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#T_high</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#accuracy code</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+        <span class="n">cpmnt</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="n">pos</span><span class="p">:(</span><span class="n">pos</span><span class="o">+</span><span class="n">w</span><span class="p">)]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c">#refCode</span>
+        <span class="n">newLine</span> <span class="o">+=</span> <span class="n">cpmnt</span> <span class="o">+</span><span class="s">&#39;,&#39;</span><span class="p">;</span>   <span class="n">pos</span> <span class="o">+=</span> <span class="n">w</span>
+
+        <span class="k">return</span> <span class="n">newLine</span>
+    </div>
+<div class="viewcode-block" id="chemicalNetwork.filter_reactions"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.filter_reactions">[docs]</a>    <span class="k">def</span> <span class="nf">filter_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">withReacts</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">withProds</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">withType</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> 
+                               <span class="n">show</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">sort</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Method that returns the IDs [not the indicies] (as a numpy int32 array) of the </span>
+<span class="sd">           reactions containing certain reactants or products or both. Either one of those</span>
+<span class="sd">           two keywords should be provided. The matching is done using &amp;&amp;, so all the </span>
+<span class="sd">           entries must be present in the reaction.</span>
+<span class="sd">           </span>
+<span class="sd">           :param withReacts: a string or a list of strings holding the reactants to be used as a filter.</span>
+<span class="sd">           </span>
+<span class="sd">           :param withProds: a string or a list of strings holding the products to be used as a filter.</span>
+<span class="sd">           </span>
+<span class="sd">           :param int|bool show: if this is True, all filtered reactions are printed. If it is False|0|None </span>
+<span class="sd">              only the ids are returned. By default *kwargs* is passed to the function which prints the reactions,</span>
+<span class="sd">              so the format of the printed reactions can be determined by passing the format</span>
+<span class="sd">              argument which internallty is passed to self.print_reactions. If this is set to an integer X, only</span>
+<span class="sd">              X reactions are printed.  This is useful when the sorted keyword is passed, since only the top X</span>
+<span class="sd">              reactions with highest decreasing rates are displayed.</span>
+<span class="sd">           </span>
+<span class="sd">           :param string withType: the reaction type against which filtering will be done.           </span>
+<span class="sd">           </span>
+<span class="sd">           :param bool sort: if this is set to True, the reactions are printed in decreasnig </span>
+<span class="sd">             reaction rate order.</span>
+
+<span class="sd">           for example:</span>
+<span class="sd">           </span>
+<span class="sd">           .. code-block:: python</span>
+
+<span class="sd">               #filter with prodcuts only</span>
+<span class="sd">               inds = filter_reactions(withProds = &#39;H2&#39;)</span>
+<span class="sd">           </span>
+<span class="sd">               #filter with reactants only</span>
+<span class="sd">               inds = filter_reactions(withReacts = [&#39;H&#39;,&#39;CN-&#39;])</span>
+<span class="sd">           </span>
+<span class="sd">               #filter with some reactants and products</span>
+<span class="sd">               inds = filter_reactions(withReacts = [&#39;H&#39;,&#39;CN-&#39;], withProds = [&#39;HCN&#39;,&#39;e-&#39;])</span>
+
+<span class="sd">               #filter with some reactants and products</span>
+<span class="sd">               inds = filter_reactions(withReacts = [&#39;H&#39;,&#39;CN-&#39;], withProds = [&#39;HCN&#39;,&#39;e-&#39;], show = True)</span>
+
+<span class="sd">               #filter with some reactants and products</span>
+<span class="sd">               inds = filter_reactions(withReacts = [&#39;H&#39;,&#39;CN-&#39;], withProds = [&#39;HCN&#39;,&#39;e-&#39;], </span>
+<span class="sd">                                      show = True, format = &#39;type rxn&#39;)</span>
+<span class="sd">               </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">rxnIDsFound</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c">#checking if withType is of the correct type</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">withType</span><span class="p">,</span> <span class="s">&#39;__iter__&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;withType can not be a list or an iterable object, it must be a string.&#39;</span><span class="p">)</span>
+        
+        <span class="c">#checking for the type of the input parameter of the reactants</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">withReacts</span><span class="p">,</span> <span class="s">&#39;__iter__&#39;</span><span class="p">):</span>
+            <span class="n">lookForReacts</span> <span class="o">=</span> <span class="n">withReacts</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lookForReacts</span> <span class="o">=</span> <span class="p">[</span><span class="n">withReacts</span><span class="p">]</span> 
+
+        <span class="c">#checking for the type of the input parameter of the products</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">withProds</span><span class="p">,</span> <span class="s">&#39;__iter__&#39;</span><span class="p">):</span>
+            <span class="n">lookForProds</span> <span class="o">=</span> <span class="n">withProds</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">lookForProds</span> <span class="o">=</span> <span class="p">[</span><span class="n">withProds</span><span class="p">]</span> 
+                
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+
+            <span class="n">inReacts</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">inProds</span>  <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="c"># checking if the specie we are looking for is in the reactants</span>
+            <span class="k">if</span> <span class="n">withReacts</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="n">lookForReacts</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="n">rxn</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+                        <span class="n">inReacts</span> <span class="o">=</span> <span class="n">inReacts</span> <span class="ow">and</span> <span class="bp">True</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">inReacts</span> <span class="o">=</span> <span class="n">inReacts</span> <span class="ow">and</span> <span class="bp">False</span>
+
+            <span class="c"># checking if the specie we are looking for is in the reactants</span>
+            <span class="k">if</span> <span class="n">withProds</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="n">lookForProds</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="n">rxn</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+                        <span class="n">inProds</span> <span class="o">=</span> <span class="n">inProds</span> <span class="ow">and</span> <span class="bp">True</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">inProds</span> <span class="o">=</span> <span class="n">inProds</span> <span class="ow">and</span> <span class="bp">False</span>
+            
+            <span class="c">#checking for the type</span>
+            <span class="k">if</span> <span class="n">withType</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">withType</span><span class="p">:</span>
+                    <span class="n">hasType</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">hasType</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hasType</span> <span class="o">=</span> <span class="bp">True</span>
+                
+            <span class="c">#appending the reaction ID to a list</span>
+            <span class="k">if</span> <span class="n">inReacts</span> <span class="ow">and</span> <span class="n">inProds</span> <span class="ow">and</span> <span class="n">hasType</span><span class="p">:</span>
+                <span class="n">rxnIDsFound</span><span class="o">.</span><span class="n">append</span><span class="p">(</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">show</span> <span class="o">==</span> <span class="bp">True</span> <span class="ow">or</span> <span class="n">show</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            
+            <span class="k">if</span> <span class="n">sort</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="n">rxnIDsFound</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sort_rxns_decreasing_rates</span><span class="p">(</span><span class="n">rxnIDsFound</span><span class="p">)</span>
+    
+            <span class="c">#determining how many reactions will be printed</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">show</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">print_reactions</span><span class="p">(</span><span class="n">rxnIDsFound</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c">#assuming show is an integer</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">print_reactions</span><span class="p">(</span><span class="n">rxnIDsFound</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">show</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rxnIDsFound</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.set_rxn_cst_functions"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.set_rxn_cst_functions">[docs]</a>    <span class="k">def</span> <span class="nf">set_rxn_cst_functions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Method which sets the functions to all the reactions in self.reactions to the</span>
+<span class="sd">           attributes reaction.compute_rxn_cst_func. (cosntants formulae copied from</span>
+<span class="sd">           Meijerink and Spaans PDR code.</span>
+<span class="sd">           </span>
+<span class="sd">           Most of the reaction functions are set based on the reaction.type string (except</span>
+<span class="sd">           for some exceptions. such as the H2 formation on grains. In case a custom reaction</span>
+<span class="sd">           is added make sure to modify this method to compute the reaction constant correctly.</span>
+<span class="sd">           </span>
+<span class="sd">           The functions are defined at the end of chemicalNetwork.py</span>
+<span class="sd">           </span>
+<span class="sd">           .. warning:: this ignores reactions with complements. So make sure to call this</span>
+<span class="sd">            before calling self.merge_identical_reactions().</span>
+<span class="sd">            </span>
+<span class="sd">            .. note:: in computing rates and constants, it is advised to use reaction.rxn_in_trng</span>
+<span class="sd">               to avoid confusion with other reactions which might be defined over different temperature</span>
+<span class="sd">               ranges.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c">#a dictonary which sets the function for computing the reaction</span>
+        <span class="c">#constant based on the reaction type (see table-7 in umist06 paper</span>
+        <span class="c">#and table-5 in umist99)</span>
+        <span class="n">compute_cst</span> <span class="o">=</span> <span class="p">{</span>
+                       <span class="c">#two or three body reactions</span>
+                       <span class="s">&#39;IN&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;NN&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;CE&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;II&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;DR&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;RR&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;AD&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;RA&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;CD&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;CI&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;IM&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;CL&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="s">&#39;TR&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist99</span>
+                       <span class="s">&#39;SU&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#umist99 (Sundries)</span>
+                       <span class="s">&#39;NB&#39;</span><span class="p">:</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">,</span> <span class="c">#general type (NBODY reactions)</span>
+                       <span class="c">#photoprocess</span>
+                       <span class="s">&#39;PH&#39;</span><span class="p">:</span> <span class="n">compute_photo_rxn_cst</span><span class="p">,</span> <span class="c">#umist06</span>
+                       <span class="c">#cosmic ray photon (CRP)</span>
+                       <span class="s">&#39;CP&#39;</span><span class="p">:</span> <span class="n">compute_CP_rxn_cst</span><span class="p">,</span>    <span class="c">#umist06</span>
+                       <span class="c">#cosmic ray photon (CRPHOT)</span>
+                       <span class="s">&#39;CR&#39;</span><span class="p">:</span> <span class="n">compute_CR_rxn_cst</span><span class="p">,</span>    <span class="c">#umist06</span>
+                       <span class="p">}</span> 
+
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="n">rxn</span><span class="o">.</span><span class="n">compute_rxn_cst_func</span> <span class="o">=</span> <span class="n">compute_cst</span><span class="p">[</span><span class="n">rxn</span><span class="o">.</span><span class="n">type</span><span class="p">]</span>
+            
+            
+        <span class="c">#setting reaction types for manually to some reactions</span>
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&gt;=</span> <span class="mi">4078</span> <span class="ow">and</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&lt;=</span> <span class="mi">4107</span><span class="p">:</span> <span class="n">rxn</span><span class="o">.</span><span class="n">compute_rxn_cst_func</span> <span class="o">=</span> <span class="n">compute_rxn_cst_themonuclear</span>  
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span>  <span class="o">==</span> <span class="mi">4114</span><span class="p">:</span>                   <span class="n">rxn</span><span class="o">.</span><span class="n">compute_rxn_cst_func</span> <span class="o">=</span> <span class="n">compute_rxn_cst_H2_formation_on_dust</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&gt;=</span> <span class="mi">4115</span> <span class="ow">and</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&lt;=</span> <span class="mi">4117</span><span class="p">:</span> <span class="n">rxn</span><span class="o">.</span><span class="n">compute_rxn_cst_func</span> <span class="o">=</span> <span class="n">compute_photo_rxn_cst_no_scale</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&gt;=</span> <span class="mi">4267</span> <span class="ow">and</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&lt;=</span> <span class="mi">4268</span><span class="p">:</span> <span class="n">rxn</span><span class="o">.</span><span class="n">compute_rxn_cst_func</span> <span class="o">=</span> <span class="n">compute_photo_rxn_cst_no_scale</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&gt;=</span> <span class="mi">4118</span> <span class="ow">and</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&lt;=</span> <span class="mi">4143</span><span class="p">:</span> <span class="n">rxn</span><span class="o">.</span><span class="n">compute_rxn_cst_func</span> <span class="o">=</span> <span class="n">compute_PAH_rxn_cst</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&gt;=</span> <span class="mi">4439</span> <span class="ow">and</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">&lt;=</span> <span class="mi">4440</span><span class="p">:</span> <span class="n">rxn</span><span class="o">.</span><span class="n">compute_rxn_cst_func</span> <span class="o">=</span> <span class="n">compute_PAH_rxn_cst</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">==</span> <span class="mi">4264</span><span class="p">:</span>                    <span class="n">rxn</span><span class="o">.</span><span class="n">compute_rxn_cst_func</span> <span class="o">=</span> <span class="n">compute_rxn_cst_fmisc_1</span>
+        </div>
+<div class="viewcode-block" id="chemicalNetwork.compute_rxn_constants"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.compute_rxn_constants">[docs]</a>    <span class="k">def</span> <span class="nf">compute_rxn_constants</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;compute the reaction constant by passing the parameters to the assigned functions.</span>
+<span class="sd">        </span>
+<span class="sd">            .. note:: in computing rates and constants, it is advised to use reaction.rxn_in_trng</span>
+<span class="sd">               to avoid confusion with other reactions which might be defined over different temperature</span>
+<span class="sd">               ranges.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c">#the state of the environment (gas)</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;T&#39;</span>           <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                 <span class="s">&#39;Av&#39;</span>          <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">Av</span><span class="p">,</span>
+                 <span class="s">&#39;nDens&#39;</span>       <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nDens</span><span class="p">,</span>
+                 <span class="s">&#39;G0&#39;</span>          <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">G0</span><span class="p">,</span>
+                 <span class="s">&#39;zeta&#39;</span>        <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">zeta</span><span class="p">,</span>
+                 <span class="s">&#39;albedo&#39;</span>      <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">albedo</span><span class="p">,</span>
+                 <span class="s">&#39;Tdust&#39;</span>       <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">Tdust</span><span class="p">,</span>
+                 <span class="s">&#39;metallicity&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metallicity</span><span class="p">,</span>
+                 <span class="s">&#39;PHI_PAH&#39;</span>     <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">PHI_PAH</span><span class="p">,</span>
+                 <span class="s">&#39;beta_CO&#39;</span>     <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_CO</span><span class="p">,</span>
+                 <span class="s">&#39;beta_13CO&#39;</span>   <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_13CO</span><span class="p">,</span>
+                 <span class="s">&#39;beta_H2&#39;</span>     <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_H2</span><span class="p">}</span>
+        
+        <span class="c"># it might be a good idea to put a check if</span>
+        <span class="c"># temperature,A_v are set...         </span>
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="n">rxn</span><span class="o">.</span><span class="n">compute_reaction_constant</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+            
+        <span class="n">rxn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reactions</span><span class="p">(</span><span class="n">IDs</span><span class="o">=</span><span class="mi">3811</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rxn</span><span class="o">.</span><span class="n">rxn_in_trng</span><span class="o">.</span><span class="n">cst</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_CO</span>
+        
+        <span class="n">rxn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reactions</span><span class="p">(</span><span class="n">IDs</span><span class="o">=</span><span class="mi">4115</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rxn</span><span class="o">.</span><span class="n">rxn_in_trng</span><span class="o">.</span><span class="n">cst</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_H2</span>
+        
+        <span class="n">rxn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reactions</span><span class="p">(</span><span class="n">IDs</span><span class="o">=</span><span class="mi">4268</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rxn</span><span class="o">.</span><span class="n">rxn_in_trng</span><span class="o">.</span><span class="n">cst</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_H2</span>
+        
+        <span class="n">rxn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_reactions</span><span class="p">(</span><span class="n">IDs</span><span class="o">=</span><span class="mi">4426</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rxn</span><span class="o">.</span><span class="n">rxn_in_trng</span><span class="o">.</span><span class="n">cst</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_13CO</span>
+            </div>
+<div class="viewcode-block" id="chemicalNetwork.compute_rxn_rates"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.compute_rxn_rates">[docs]</a>    <span class="k">def</span> <span class="nf">compute_rxn_rates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute the reaction rates assuming all the abundances are set and the reaction                                                                                                                                                   </span>
+<span class="sd">           constants are already computed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="n">rxn</span><span class="o">.</span><span class="n">compute_reaction_rate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nDens</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="chemicalNetwork.sort_rxns_decreasing_rates"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.sort_rxns_decreasing_rates">[docs]</a>    <span class="k">def</span> <span class="nf">sort_rxns_decreasing_rates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rxnIDs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Sort the reactions with input IDs in decreasing absolute rates.&quot;&quot;&quot;</span>
+        
+        <span class="n">rates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">ids</span>   <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">rxnId</span> <span class="ow">in</span> <span class="n">rxnIDs</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">has_ID</span><span class="p">(</span><span class="n">rxnId</span><span class="p">)</span> <span class="ow">and</span> <span class="n">rxn</span><span class="o">.</span><span class="n">rxn_in_trng</span><span class="o">.</span><span class="n">rate</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">rates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rxn</span><span class="o">.</span><span class="n">rxn_in_trng</span><span class="o">.</span><span class="n">rate</span><span class="p">)</span>
+                    <span class="n">ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rxn</span><span class="o">.</span><span class="n">ID</span><span class="p">)</span>
+        
+        <span class="c">#sorting the reaction with decreasing rates</span>
+        <span class="n">rates</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rates</span><span class="p">))</span>
+        <span class="n">ids</span>   <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+        
+        <span class="n">inds</span>  <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span>
+        <span class="n">idsSorted</span> <span class="o">=</span> <span class="n">ids</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">idsSorted</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    </div>
+<div class="viewcode-block" id="chemicalNetwork.get_unique_rxn_types"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.get_unique_rxn_types">[docs]</a>    <span class="k">def</span> <span class="nf">get_unique_rxn_types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a dict holding the type and the counts of the available</span>
+<span class="sd">           reactions types in the network&quot;&quot;&quot;</span>
+        
+        <span class="n">rxnTypes</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">type</span> <span class="ow">in</span> <span class="n">rxnTypes</span><span class="p">:</span> 
+                <span class="n">rxnTypes</span><span class="p">[</span><span class="n">rxn</span><span class="o">.</span><span class="n">type</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rxnTypes</span><span class="p">[</span><span class="n">rxn</span><span class="o">.</span><span class="n">type</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            
+        <span class="k">return</span> <span class="n">rxnTypes</span>
+        </div>
+<div class="viewcode-block" id="chemicalNetwork.set_environment_state"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.set_environment_state">[docs]</a>    <span class="k">def</span> <span class="nf">set_environment_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">zeta</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">Av</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> 
+                                    <span class="n">albedo</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">nDens</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">G0</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span>
+                                    <span class="n">Tdust</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">metallicity</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">PHI_PAH</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> 
+                                    <span class="n">beta_CO</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">beta_13CO</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">beta_H2</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;This method is used to set the properties of the environment, mainly needed</span>
+<span class="sd">           to compute the reaction constants and rates.</span>
+<span class="sd">        &quot;&quot;&quot;</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_gasTemperature</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_cr_rate</span><span class="p">(</span><span class="n">zeta</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_albed</span><span class="p">(</span><span class="n">albedo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_Av</span><span class="p">(</span><span class="n">Av</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_G0</span><span class="p">(</span><span class="n">G0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_dens</span><span class="p">(</span><span class="n">nDens</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_Tdust</span><span class="p">(</span><span class="n">Tdust</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_metallicity</span><span class="p">(</span><span class="n">metallicity</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_phi_PAH</span><span class="p">(</span><span class="n">PHI_PAH</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_beta_CO</span><span class="p">(</span><span class="n">beta_CO</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_beta_13CO</span><span class="p">(</span><span class="n">beta_13CO</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_beta_H2</span><span class="p">(</span><span class="n">beta_H2</span><span class="p">)</span>
+
+        </div>
+    <span class="k">def</span> <span class="nf">initializeDefaultAbunBuffer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">abun</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pstr</span> <span class="o">+</span> <span class="s">&#39;Set abundances to default values of -1.&#39;</span>
+
+    <span class="c"># set all the numbers of the species self.species[].num to None</span>
+    <span class="k">def</span> <span class="nf">setSpeciesNumsToNone</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        
+        <span class="k">for</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">:</span>      
+            <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">specStr</span><span class="p">]</span><span class="o">.</span><span class="n">num</span> <span class="o">=</span> <span class="bp">None</span>
+            
+<div class="viewcode-block" id="chemicalNetwork.writeNetworkGephiCSV"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.writeNetworkGephiCSV">[docs]</a>    <span class="k">def</span> <span class="nf">writeNetworkGephiCSV</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fName</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Writes a CSV file where each in each reaction the all the specie/product </span>
+<span class="sd">           pairs combination is treated as a node-&gt;edge pairs. For example :</span>
+<span class="sd">           the nodes-&gt;edge pairs in the reaction :</span>
+<span class="sd">           </span>
+<span class="sd">                C6H7+ +   e-   ----&gt; C6H2 + H2   + H2  + H   (in ascii format  )</span>
+<span class="sd">                 354  +  144          82  + 369  + 369 + 221 (in numeric format)</span>
+<span class="sd">                 </span>
+<span class="sd">           node, edge (list written to the CSV file</span>
+<span class="sd">           </span>
+<span class="sd">              - 354,82</span>
+<span class="sd">              - 354,369</span>
+<span class="sd">              - 354,369</span>
+<span class="sd">              - 354,221</span>
+<span class="sd">              - 144,82</span>
+<span class="sd">              - 144,369</span>
+<span class="sd">              - 144,369</span>
+<span class="sd">              - 144,221</span>
+<span class="sd">              </span>
+<span class="sd">           :NOTE: species which have their number as None are not included, such as </span>
+<span class="sd">             PHOTON, CRP...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">fObj</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fName</span><span class="p">,</span> <span class="s">&quot;w&quot;</span><span class="p">)</span>
+        
+        <span class="n">fObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;source;target</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">reactStr</span> <span class="ow">in</span> <span class="n">rxn</span><span class="o">.</span><span class="n">reactants</span><span class="p">:</span>
+                <span class="n">reactNum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">reactStr</span><span class="p">]</span><span class="o">.</span><span class="n">num</span>
+                <span class="k">for</span> <span class="n">prodStr</span> <span class="ow">in</span> <span class="n">rxn</span><span class="o">.</span><span class="n">products</span><span class="p">:</span>
+                    <span class="n">prodNum</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">prodStr</span><span class="p">]</span><span class="o">.</span><span class="n">num</span>
+                    <span class="k">if</span> <span class="n">reactNum</span> <span class="o">==</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">prodNum</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">outStr</span> <span class="o">=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="s">;</span><span class="si">%s</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">reactStr</span><span class="p">,</span> <span class="n">prodStr</span><span class="p">)</span>
+                    <span class="n">fObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outStr</span><span class="p">)</span>
+                    
+        <span class="n">fObj</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">print</span> <span class="s">&#39;Wrote the Gephi readable CSV file.&#39;</span>
+    
+    <span class="c"># set the temp, zeta, albed, Av</span></div>
+    <span class="k">def</span> <span class="nf">set_gasTemperature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>   <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">T</span>
+    <span class="k">def</span> <span class="nf">set_cr_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zeta</span><span class="p">)</span>       <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">zeta</span> <span class="o">=</span> <span class="n">zeta</span>
+    <span class="k">def</span> <span class="nf">set_albed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">albedo</span><span class="p">)</span>       <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">albedo</span> <span class="o">=</span> <span class="n">albedo</span>
+    <span class="k">def</span> <span class="nf">set_Av</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Av</span><span class="p">)</span>              <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">Av</span> <span class="o">=</span> <span class="n">Av</span>
+    <span class="k">def</span> <span class="nf">set_G0</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">G0</span><span class="p">)</span>               <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">G0</span> <span class="o">=</span> <span class="n">G0</span>
+    <span class="k">def</span> <span class="nf">set_dens</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nDens</span><span class="p">)</span>          <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">nDens</span> <span class="o">=</span> <span class="n">nDens</span>
+    <span class="k">def</span> <span class="nf">set_Tdust</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>             <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">Tdust</span> <span class="o">=</span> <span class="n">T</span>
+    <span class="k">def</span> <span class="nf">set_metallicity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span>      <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metallicity</span> <span class="o">=</span> <span class="n">Z</span>
+    <span class="k">def</span> <span class="nf">set_phi_PAH</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phi_PAH</span><span class="p">)</span>    <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">PHI_PAH</span> <span class="o">=</span> <span class="n">phi_PAH</span>
+    <span class="k">def</span> <span class="nf">set_beta_CO</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beta_CO</span><span class="p">)</span>    <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_CO</span> <span class="o">=</span> <span class="n">beta_CO</span>
+    <span class="k">def</span> <span class="nf">set_beta_13CO</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beta_13CO</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_13CO</span> <span class="o">=</span> <span class="n">beta_13CO</span>
+    <span class="k">def</span> <span class="nf">set_beta_H2</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">beta_H2</span><span class="p">)</span>    <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta_H2</span> <span class="o">=</span> <span class="n">beta_H2</span>
+
+<div class="viewcode-block" id="chemicalNetwork.get_reactions"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.get_reactions">[docs]</a>    <span class="k">def</span> <span class="nf">get_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">IDs</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns a subset of the self.reactions give the IDs we want to retreive.</span>
+<span class="sd">        </span>
+<span class="sd">           :param int|list IDs: an integer or a list of integer of the IDs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">rxns_ret</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c">#checking if the IDs is just an inter get or a list of integers</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">IDs</span><span class="p">,</span> <span class="s">&#39;__iter__&#39;</span><span class="p">):</span>
+            <span class="n">IDs_find</span> <span class="o">=</span> <span class="n">IDs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">IDs_find</span> <span class="o">=</span> <span class="p">[</span><span class="n">IDs</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ID_find</span> <span class="ow">in</span> <span class="n">IDs_find</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">has_ID</span><span class="p">(</span> <span class="n">ID_find</span><span class="p">):</span>
+                    <span class="n">rxns_ret</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rxn</span><span class="p">)</span>
+                
+        <span class="k">return</span> <span class="n">rxns_ret</span>
+    </div>
+<div class="viewcode-block" id="chemicalNetwork.pop_reactions"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.pop_reactions">[docs]</a>    <span class="k">def</span> <span class="nf">pop_reactions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">IDs_pop</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;same as self.pop_reaction, but the argument can be a list of IDs. For each entry</span>
+<span class="sd">           in the argument list self.pop_reaction is called.</span>
+<span class="sd">           </span>
+<span class="sd">           :raise: Raise a value Error when a reaction is not ID is not found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">rxn_ret_list</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="k">for</span> <span class="n">ID_pop</span> <span class="ow">in</span> <span class="n">IDs_pop</span><span class="p">:</span>
+            <span class="n">rxn_ret_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pop_reaction</span><span class="p">(</span><span class="n">ID_pop</span><span class="p">))</span>
+        
+        <span class="k">print</span> <span class="s">&#39;     popped &#39;</span><span class="p">,</span> <span class="n">IDs_pop</span>
+        
+        <span class="k">return</span> <span class="n">rxn_ret_list</span>
+    </div>
+<div class="viewcode-block" id="chemicalNetwork.pop_reaction"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.pop_reaction">[docs]</a>    <span class="k">def</span> <span class="nf">pop_reaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ID_pop</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;pops and returns a reaction from self.reactions give the ID of the reaction</span>
+<span class="sd">           want to pop and retreive.</span>
+<span class="sd">           </span>
+<span class="sd">           :param int ID_pop: an integer or a list of integer of the IDs to be poped.</span>
+<span class="sd">           :raise: Raise a value Error when a reaction is not ID is not found.</span>
+<span class="sd">           </span>
+<span class="sd">           .. note:: this does not check for the complement reactions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">rxn_ret</span> <span class="o">=</span> <span class="bp">None</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">==</span> <span class="n">ID_pop</span><span class="p">:</span>
+                <span class="n">rxn_ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">nReactions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">)</span>
+                <span class="k">break</span>
+        
+        <span class="k">if</span> <span class="n">rxn_ret</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;reaction with ID </span><span class="si">%d</span><span class="s"> not found. Might be already poped&quot;</span> <span class="o">%</span> <span class="n">ID_pop</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">rxn_ret</span>
+        </div>
+<div class="viewcode-block" id="chemicalNetwork.setattr_rxn"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.setattr_rxn">[docs]</a>    <span class="k">def</span> <span class="nf">setattr_rxn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ID</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;this method can be used to set the attribute of a reaction give its ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">found</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">has_ID</span><span class="p">(</span><span class="n">ID</span><span class="p">):</span> <span class="c">#checking if one if the IDs (if a rxn with many components) has a matching in it</span>
+                <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">has_complements</span><span class="p">():</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">rxn</span><span class="o">.</span><span class="n">get_rxn_with_ID</span><span class="p">(</span><span class="n">ID</span><span class="p">),</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c">#rnx has 1 component, so we set its attribute</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+                <span class="n">found</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">found</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;rxn with ID </span><span class="si">%d</span><span class="s"> not found&quot;</span> <span class="o">%</span> <span class="n">ID</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="chemicalNetwork.getattr_rxn"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.getattr_rxn">[docs]</a>    <span class="k">def</span> <span class="nf">getattr_rxn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ID</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;this method can be used to get the attribute of a reaction give its ID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">has_ID</span><span class="p">(</span><span class="n">ID</span><span class="p">):</span> <span class="c">#checking if one if the IDs (if a rxn with many components) has a matching in it</span>
+                <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">has_complements</span><span class="p">():</span>
+                    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">rxn</span><span class="o">.</span><span class="n">get_rxn_with_ID</span><span class="p">(</span><span class="n">ID</span><span class="p">),</span> <span class="n">attr</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span> <span class="c">#rnx has 1 component, so we set its attribute</span>
+                    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;rxn with ID </span><span class="si">%d</span><span class="s"> not found&quot;</span> <span class="o">%</span> <span class="n">ID</span><span class="p">)</span>
+        </div>
+<div class="viewcode-block" id="chemicalNetwork.set_all_rxn_rates_and_cst_to_none"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.set_all_rxn_rates_and_cst_to_none">[docs]</a>    <span class="k">def</span> <span class="nf">set_all_rxn_rates_and_cst_to_none</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;sets all the reaction (and the sub complements) constants and rates to None.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">:</span>
+            <span class="n">rxn</span><span class="o">.</span><span class="n">cst_use</span> <span class="o">=</span> <span class="n">rxn</span><span class="o">.</span><span class="n">rate_use</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">complements</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span> 
+                <span class="k">for</span> <span class="n">sub_rxn</span> <span class="ow">in</span> <span class="n">rxn</span><span class="o">.</span><span class="n">complements</span><span class="p">:</span>
+                    <span class="n">sub_rxn</span><span class="o">.</span><span class="n">cst</span> <span class="o">=</span> <span class="n">sub_rxn</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="bp">None</span>
+            
+            </div>
+<div class="viewcode-block" id="chemicalNetwork.replace_reaction"><a class="viewcode-back" href="../index.html#chemicalNetwork.chemicalNetwork.replace_reaction">[docs]</a>    <span class="k">def</span> <span class="nf">replace_reaction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ID</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">new_rxn</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Replaces a reaction with ID in self.reactions with rxn&quot;&quot;&quot;</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">rxn</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">ID</span> <span class="o">==</span> <span class="n">ID</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reactions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_rxn</span>
+
+<span class="c">#-------------------------------------------------------------------------------------------</span>
+<span class="c">#-------------------------------------------------------------------------------------------</span>
+<span class="c">#-------------------------------------------------------------------------------------------</span>
+<span class="c">#-------------------------------------------------------------------------------------------</span>
+</div></div>
+<div class="viewcode-block" id="compute_nbody_rxn_cst"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_nbody_rxn_cst">[docs]</a><span class="k">def</span> <span class="nf">compute_nbody_rxn_cst</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns the reaction constant for a 2 or 3 body reaction of the form:</span>
+<span class="sd">    </span>
+<span class="sd">           alpha * (T / 300.0)**beta * exp( - gamma / T)</span>
+<span class="sd">       </span>
+<span class="sd">           T = state[&#39;T&#39;]</span>
+<span class="sd">       </span>
+<span class="sd">       if rxn.Tlb is set, the the T used in the computation is :</span>
+<span class="sd">       </span>
+<span class="sd">           T = max(state[&#39;T&#39;], rxn.Tlb)</span>
+<span class="sd">           </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">Tlb</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">],</span> <span class="n">rxn</span><span class="o">.</span><span class="n">Tlb</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">]</span>
+        
+    <span class="k">return</span> <span class="n">rxn</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">((</span><span class="n">T</span><span class="o">/</span><span class="mf">300.0</span><span class="p">)</span><span class="o">**</span><span class="n">rxn</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">rxn</span><span class="o">.</span><span class="n">gamma</span><span class="o">/</span><span class="n">T</span><span class="p">)</span> 
+</div>
+<div class="viewcode-block" id="compute_nbody_rxn_cst_no_scale"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_nbody_rxn_cst_no_scale">[docs]</a><span class="k">def</span> <span class="nf">compute_nbody_rxn_cst_no_scale</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Same as compute_nbody_rxn_cst but without the 300.0 scaling temperature.&quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">rxn</span><span class="o">.</span><span class="n">Tlb</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">],</span> <span class="n">rxn</span><span class="o">.</span><span class="n">Tlb</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">]</span>
+        
+    <span class="k">return</span> <span class="n">rxn</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">T</span><span class="o">**</span><span class="n">rxn</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">rxn</span><span class="o">.</span><span class="n">gamma</span><span class="o">/</span><span class="n">T</span><span class="p">)</span> 
+</div>
+<div class="viewcode-block" id="compute_photo_rxn_cst"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_photo_rxn_cst">[docs]</a><span class="k">def</span> <span class="nf">compute_photo_rxn_cst</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;computes the photo reaction rate using the equation :</span>
+<span class="sd">    </span>
+<span class="sd">            alpha * (G0/1.71) * exp(-gamma*Av)</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">G0</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;G0&#39;</span><span class="p">]</span>
+    <span class="n">Av</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;Av&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">rxn</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">G0</span><span class="o">/</span><span class="mf">1.71</span><span class="p">)</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">rxn</span><span class="o">.</span><span class="n">gamma</span><span class="o">*</span><span class="n">Av</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="compute_photo_rxn_cst_no_scale"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_photo_rxn_cst_no_scale">[docs]</a><span class="k">def</span> <span class="nf">compute_photo_rxn_cst_no_scale</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;same as compute_photo_rxn_cst but G0 is not devided by 1.71&quot;&quot;&quot;</span>
+    <span class="n">G0</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;G0&#39;</span><span class="p">]</span>
+    <span class="n">Av</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;Av&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">rxn</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">G0</span><span class="o">/</span><span class="mf">1.71</span><span class="p">)</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">rxn</span><span class="o">.</span><span class="n">gamma</span><span class="o">*</span><span class="n">Av</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="compute_CP_rxn_cst"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_CP_rxn_cst">[docs]</a><span class="k">def</span> <span class="nf">compute_CP_rxn_cst</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;compute the reaction rate due to direct cosmic rays ionization</span>
+<span class="sd">    </span>
+<span class="sd">           alpha * zeta / 1.3e-17 </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">rxn</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;zeta&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mf">1.3e-17</span>
+</div>
+<div class="viewcode-block" id="compute_CR_rxn_cst"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_CR_rxn_cst">[docs]</a><span class="k">def</span> <span class="nf">compute_CR_rxn_cst</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;compute the reaction rate due to cosmic ray induced photoreactions</span>
+<span class="sd">    </span>
+<span class="sd">       alpha * ((T/300.0)**beta) * (gamma / ( 1.0 - albedo )) * (zeta/1.3e-17)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">T</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">]</span>
+    <span class="n">albedo</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;albedo&#39;</span><span class="p">]</span>
+    <span class="n">zeta</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;zeta&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">rxn</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">((</span><span class="n">T</span><span class="o">/</span><span class="mf">300.0</span><span class="p">)</span><span class="o">**</span><span class="n">rxn</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">rxn</span><span class="o">.</span><span class="n">gamma</span> <span class="o">/</span> <span class="p">(</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">albedo</span> <span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">zeta</span><span class="o">/</span><span class="mf">1.3e-17</span><span class="p">)</span> 
+</div>
+<div class="viewcode-block" id="compute_PAH_rxn_cst"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_PAH_rxn_cst">[docs]</a><span class="k">def</span> <span class="nf">compute_PAH_rxn_cst</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;compute the reaction constant for reactions involving PAHs </span>
+<span class="sd">    </span>
+<span class="sd">       alpha * (T/100.0)**beta * PHI_PAH * gamma</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">T</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">]</span>
+    <span class="n">PHI_PAH</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;PHI_PAH&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">rxn</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="mf">100.0</span><span class="p">)</span><span class="o">**</span><span class="n">rxn</span><span class="o">.</span><span class="n">beta</span> <span class="o">*</span> <span class="n">PHI_PAH</span> <span class="o">*</span><span class="n">rxn</span><span class="o">.</span><span class="n">gamma</span>
+</div>
+<div class="viewcode-block" id="compute_rxn_cst_themonuclear"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_rxn_cst_themonuclear">[docs]</a><span class="k">def</span> <span class="nf">compute_rxn_cst_themonuclear</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;computes the reaction constants for reactions with type TR (thermonuclear)</span>
+<span class="sd">    </span>
+<span class="sd">           nGas * compute_nbody_rxn_cst(rxn, state)  </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">return</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;nDens&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">compute_nbody_rxn_cst</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="compute_rxn_cst_H2_formation_on_dust"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_rxn_cst_H2_formation_on_dust">[docs]</a><span class="k">def</span> <span class="nf">compute_rxn_cst_H2_formation_on_dust</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;computes the reaction rate of the formation of H2 on dust</span>
+<span class="sd">    </span>
+<span class="sd">       .. todo:: complete the functions below </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">H2_sticking_factor</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">Td</span><span class="p">):</span> 
+        <span class="k">return</span> <span class="mf">1.0</span>
+    
+    <span class="k">def</span> <span class="nf">H2_efficieny</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">Td</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">1.0</span>
+    
+    <span class="n">T</span><span class="p">,</span> <span class="n">Td</span><span class="p">,</span> <span class="n">Z</span>  <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;Tdust&#39;</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;metallicity&#39;</span><span class="p">]</span>
+    <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">rxn</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span> <span class="n">rxn</span><span class="o">.</span><span class="n">beta</span>
+    
+    <span class="k">return</span> <span class="n">alpha</span> <span class="o">*</span> <span class="p">((</span><span class="n">T</span><span class="o">/</span><span class="mf">300.0</span><span class="p">)</span><span class="o">**</span><span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">H2_sticking_factor</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">Td</span><span class="p">)</span> <span class="o">*</span> <span class="n">H2_efficieny</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">Td</span><span class="p">)</span> <span class="o">*</span> <span class="n">Z</span>  
+    </div>
+<div class="viewcode-block" id="compute_rxn_cst_fmisc_1"><a class="viewcode-back" href="../index.html#chemicalNetwork.compute_rxn_cst_fmisc_1">[docs]</a><span class="k">def</span> <span class="nf">compute_rxn_cst_fmisc_1</span><span class="p">(</span><span class="n">rxn</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;The reaction constant of equation 4265&quot;&quot;&quot;</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s">&#39;T&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">rxn</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="p">(</span><span class="n">T</span><span class="o">**</span><span class="n">rxn</span><span class="o">.</span><span class="n">beta</span><span class="p">)</span> <span class="o">*</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">18100.0</span><span class="o">/</span><span class="p">(</span><span class="n">T</span> <span class="o">+</span> <span class="mf">1200.0</span><span class="p">))</span>
+    </div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="../index.html">ismcpak 0.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Mher Kazandjian.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -25,5 +25,5 @@ reader = molData.reader(dirPath = lambdaPath, species = 'HCO+')
 
 reader = molData.reader(dirPath = lambdaPath, species = ['HCO+', 'CS', 'CN'])
 hcop = reader.get_specie(specStr='HCO+', inPath='hco+.dat')
-cs = reader.get_specie(specStr='CS', inPath='cs.dat')
-cn = reader.get_specie(specStr='CN', inPath='cn.dat')
+cs   = reader.get_specie(specStr='CS', inPath='cs.dat')
+cn   = reader.get_specie(specStr='CN', inPath='cn.dat')
