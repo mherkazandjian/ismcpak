@@ -1678,7 +1678,7 @@ class meshArxv():
         # defining the axes which will be used to select the transition index to be displayed in the emission panel
         transitionSelector = {}
         #----------------------------------------------------------------------
-        transitionSelector['axes'] = gui['figure'].add_axes( [0.05, 0.53, 0.2, 0.02] )
+        transitionSelector['axes'] = gui['figure'].add_axes( [0.05, 0.55, 0.2, 0.02] )
         transitionSelector['axes'].set_title('transition selector')
         transitionSelector['axes'].set_xlim( [0, 40] )
         transitionSelector['axes'].set_ylim( [0, 1] )
@@ -1772,8 +1772,8 @@ class meshArxv():
         # the axes to plot in the mesh stuff as a function of AV.
         AV = {}
         #-----------------------------------------------------------------------------------
-        left  = 0.07
-        bott  = 0.05
+        left  = 0.10
+        bott  = 0.035
         sz    = 0.20
         vSpace = 0.01
         hSpace = 0.01
@@ -1868,7 +1868,7 @@ class meshArxv():
         self.gui['widgets']['zSecSelector']['pointsUnique'].set_ydata(self.grid_z_unique*0.0 + 0.5)
 
         # attaching mouse click event to fig 1
-        cid = self.gui['figure'].canvas.mpl_connect('button_press_event', self.on_b1_down)
+        self.gui['figure'].canvas.mpl_connect('button_press_event', self.on_b1_down)
         
         self.plotThisSec()
         
@@ -1931,7 +1931,8 @@ class meshArxv():
             clickedInAxes = False
             
             # getting the value of the section in z to display
-            if event.inaxes is self.gui['widgets']['zSecSelector']['axes']:
+            #---------------------------------------------------------------
+            if self.gui['widgets']['zSecSelector']['axes'].contains(event)[0]:
                 clickedInAxes = True
                 # setting the section closest to the data available
                 inds = np.argmin(np.fabs( self.grid_z - xd ) )
@@ -1959,7 +1960,8 @@ class meshArxv():
                 pyl.draw()
 
             # getting the value of the transition to display in the emission panel
-            if event.inaxes is self.gui['widgets']['transitionSelector']['axes']:
+            #----------------------------------------------------------------------
+            if self.gui['widgets']['transitionSelector']['axes'].contains(event)[0]:
                 clickedInAxes = True
                 # setting the section closest to the data available
                 self.parms['gridsInfo']['11']['transitionIndx'] = np.round(xd)
@@ -1986,8 +1988,9 @@ class meshArxv():
                 pyl.draw()
 
             # getting the coordinates inthe grid to display as a single mesh as a function of Av
-            # and maybe display the radex calculations                
-            if event.inaxes is self.gui['ax2d']['axes']:
+            # and maybe display the radex calculations
+            #------------------------------------------------------------------------------------                
+            if self.gui['ax2d']['axes'].contains(event)[0]:
                 clickedInAxes = True
                 self.logger.debug('####################################button 1 clicked###########################################')
                 indMin = self.get_mesh_index(x = xd, y = yd, z = self.pltGmSec)
@@ -2020,7 +2023,9 @@ class meshArxv():
 
             # setting the Av of the position clicked on the plots of the current mesh
             # to the chemical netowrk object.
-            if event.inaxes is self.gui['AV']['00']['axes'] or event.inaxes is self.gui['AV']['01']['axes'] or event.inaxes is self.gui['AV']['10']['axes'] or event.inaxes is self.gui['AV']['11']['axes']:
+            #----------------------------------------------------------------------------
+
+            if self.gui['AV']['00']['axes'].contains(event)[0] or self.gui['AV']['01']['axes'].contains(event)[0] or self.gui['AV']['10']['axes'].contains(event)[0] or self.gui['AV']['11']['axes'].contains(event)[0]:
                 
                 clickedInAxes = True
                 Av_clicked = xd

@@ -1,7 +1,7 @@
 import numpy
 import pylab
 
-from ismUtils import getSlabThicknessFromAv
+from ismUtils import getSlabThicknessFromAv, AvToLength
 from mylib.utils.misc import fetchNestedDtypeValue
 
 class mesh( ):
@@ -356,8 +356,27 @@ class mesh( ):
             
         if self.figInit == 0:
             self.setFigureObjects()
+        
+        def add_NH_labels(axes):
+            #setting the labels in N(H) on the twin x-axis on top
+            twiny = axes.twiny()
+            twiny.set_xlim( axes.get_xlim() )
+            #removing the x ticks of both axes (original and the twin)
+            for tick in twiny.xaxis.get_major_ticks():
+                tick.label1On = False
+            for tick in axes.xaxis.get_major_ticks():
+                tick.label1On = False
+    
+            xticksloc = twiny.xaxis.get_majorticklocs()
+            xticksNH = AvToLength(xticksloc, 1.0, self.metallicity)
             
-        # subplot 0,0        
+            expnnt = 10.0**numpy.floor(numpy.log10(xticksNH[-1]))
+            twiny.set_xlabel('N(H) [x %.1e cm^-2]' % expnnt)
+            xticksNH_strs = ['%.2f' % (tickv/expnnt) for tickv in xticksNH]
+            twiny.set_xticklabels(xticksNH_strs, size = 'small', rotation = 45)
+
+        # subplot 0,0
+        #----------------------------------------------------------------        
         self.plt00tgasPlt,  = self.axs[0,0].semilogy([1],  [1], 'r' )
         self.plt00tdustPlt, = self.axs[0,0].semilogy([1],  [1], 'b' )
         self.plt00_v_line,  = self.axs[0,0].semilogy([1],  [1], 'k--' )
@@ -366,12 +385,16 @@ class mesh( ):
         self.axs[0,0].set_ylabel('$T(K)$')
         self.axs[0,0].text(0.4, 1e3, '$T_{gas}$' , color='r')
         self.axs[0,0].text(0.4, 1e4, '$T_{dust}$', color='b')
-        self.plt00Ttl = self.axs[0,0].text(0.8, 5e5,'$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (0, 0, 0 ) )
+        self.plt00Ttl = self.axs[0,0].text(-2.0, 4e6,'$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (0, 0, 0 ) )
         # enabling y ticks on the second axis
         for tick in self.axs[0,0].xaxis.get_major_ticks():
             tick.label1On = False
+
+        #setting the labels in N(H) on the twin x-axis on top
+        add_NH_labels(self.axs[0,0])
         
         # subplot 0,1
+        #----------------------------------------------------------------
         self.plt01Spec1Plt, = self.axs[0,1].semilogy([1],  [1], 'r' )
         self.plt01Spec2Plt, = self.axs[0,1].semilogy([1],  [1], 'g' )
         self.plt01Spec3Plt, = self.axs[0,1].semilogy([1],  [1], 'b' )
@@ -384,30 +407,36 @@ class mesh( ):
         self.axs[0,1].text(0.4, 1e-8 , '$H_2$' , color='b')
         self.axs[0,1].text(0.4, 1e-11 ,'$e^-$' , color='c')
         self.axs[0,1].text(0.4, 1e-12 ,'$He$'  , color='y')
-        self.plt01ax1 = self.axs[0,1]
-        for tick in self.plt01ax1.xaxis.get_major_ticks():
-            tick.label1On = False
-        self.plt01ax2 = self.axs[0,1].twinx()
 
-        # redundant, but we do it just to get the right ticks on the y axis
+        #setting ranges of the original axis 
+        self.plt01ax1 = self.axs[0,1]
+        self.plt01ax1.set_xlim(plot_x_range[0], plot_x_range[1])
+        self.plt01ax1.set_ylim(1e-12, 2)
+        
+        #setting ranges of the twin axis 
+        self.plt01ax2 = self.axs[0,1].twinx()
+        self.plt01ax2.set_xlim(plot_x_range[0], plot_x_range[1])
+        self.plt01ax2.set_ylim(1e-12, 2)
+        
         self.plt01ax2.semilogy([1],  [1], 'g' )
         self.plt01ax2.semilogy([1],  [1], 'b' )
         self.plt01ax2.semilogy([1],  [1], 'c' )
-
-        # deleting all the ticks on the first axis
-        for tick in self.plt01ax1.yaxis.get_major_ticks():
-            tick.label1On = False
-            tick.label2On = False
-        # enabling y ticks on the second axis
-        for tick in self.plt01ax2.yaxis.get_major_ticks():
-            tick.label1On = False
-            tick.label2On = True
         self.plt01ax2.set_ylabel('abun')
 
-        self.axs[0,1].set_xlim(plot_x_range[0], plot_x_range[1])
-        self.axs[0,1].set_ylim(1e-12, 2)
+        #removing the x ticks of both axes (original and the twin)
+        for tick in self.plt01ax1.xaxis.get_major_ticks():
+            tick.label1On = False
+        for tick in self.plt01ax2.xaxis.get_major_ticks():
+            tick.label1On = False
+        #removing the y labels of the original axis
+        for tick in self.plt01ax1.yaxis.get_major_ticks():
+            tick.label1On = False
+
+        #setting the labels in N(H) on the twin x-axis on top
+        add_NH_labels(self.axs[0,1])
 
         # subplot 1,0
+        #-------------------------------------------------------------------
         self.plt10Spec1Plt, = self.axs[1,0].semilogy([1],  [1], 'r' )
         self.plt10Spec2Plt, = self.axs[1,0].semilogy([1],  [1], 'g' )
         self.plt10Spec3Plt, = self.axs[1,0].semilogy([1],  [1], 'b' )
@@ -421,8 +450,9 @@ class mesh( ):
         self.axs[1,0].text(0.4, 1e-8 , '$CO$'  , color='b')
         self.axs[1,0].set_xlabel('$A_V$')
         self.axs[1,0].set_ylabel('abun')
-        
+
         #subplot 1,1
+        #------------------------------------------------------------------
         self.plt11Spec1Plt, = self.axs[1,1].semilogy([1],  [1], 'r' )
         self.plt11Spec2Plt, = self.axs[1,1].semilogy([1],  [1], 'g' )
         self.plt11Spec3Plt, = self.axs[1,1].semilogy([1],  [1], 'b' )
@@ -435,8 +465,7 @@ class mesh( ):
         self.axs[1,1].set_xlabel('$A_V$')
         for tick in self.axs[1,1].yaxis.get_major_ticks():
             tick.label1On = False
-        pylab.setp(pylab.gca(), yticks=[])
-    
+        
     def plot_v_lines_used_in_chemnet(self):
         """plotting the vertical lines on the gui indicating the positions
            in the slab used for the chemistry.
@@ -478,7 +507,7 @@ class mesh( ):
         self.plt00tdustPlt.set_xdata( data['state']['Av'] )
         self.plt00tdustPlt.set_ydata( data['state']['dustT'] )
         self.plt00Ttl.set_text('$\log_{10} G_0 = $ %4.2f $\log_{10} n_{gas} = $ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f\n ' % (numpy.log10(data['hdr']['G0']), numpy.log10(data['hdr']['nGas']), numpy.log10(data['hdr']['gammaMech']) ) )
-        
+
         # subplot 0,1
         self.plt01Spec1Plt.set_xdata( data['state']['Av'] )
         self.plt01Spec1Plt.set_ydata( data['state']['abun'][spcs['H+'].num] )
@@ -508,7 +537,6 @@ class mesh( ):
         self.plt11Spec2Plt.set_ydata( data['state']['abun'][spcs['HNC'].num] )
         self.plt11Spec3Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec3Plt.set_ydata( data['state']['abun'][spcs['HCO+'].num] )
-        
         
         """;;;remove those later;;;"""
         """

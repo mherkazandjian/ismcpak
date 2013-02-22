@@ -23,7 +23,7 @@ reader = molData.reader(dirPath = lambdaPath, species = 'HCO+')
 #print CO_13['transRad'][4][3], CO['transRad'][4][3]
 
 
-reader = molData.reader(dirPath = lambdaPath, species = ['HCO+', 'CS', 'CN'])
+reader = molData.reader(dirPath = lambdaPath, species = ['CO', 'HCO+', 'CS', 'CN'])
 hcop = reader.get_specie(specStr='HCO+', inPath='hco+.dat')
 cs   = reader.get_specie(specStr='CS', inPath='cs.dat')
 cn   = reader.get_specie(specStr='CN', inPath='cn.dat')

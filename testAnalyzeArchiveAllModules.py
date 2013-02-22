@@ -45,14 +45,14 @@ parms = {
                              '10' : { # column density
                                     'show'     : True,
                                     'maxAv'    : 30,
-                                    'specStr'  : 'HCN',
+                                    'specStr'  : 'CO',
                                     },
                              '11' : { # line intensitities
                                      'show'           : True,
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
                                      'type'           : 'radex',
-                                     'specStr'        : 'HCN',     # database to be restored/computed
+                                     'specStr'        : 'CO',     # database to be restored/computed
                                      'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
@@ -67,7 +67,7 @@ parms = {
                              'writeDb'              : False, #if true, writes the computed stuff to a db
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                             'specStr'              : 'HCN',
+                             'specStr'              : 'CO',
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
