@@ -1,3 +1,6 @@
+# test with a 2 and 3 level system
+
+
 #this is a test file for leidenLambda.py.
 import sys, os
 if 'particle3' in os.uname():
@@ -15,7 +18,7 @@ from ismUtils import planckOccupation as ng
 #parameters
 Tkin  = 500.0    # kinetic temperature of the gas (K)
 Tcmb  = 2.73     # temperature of background radiation (K)
-nc    = 1e12   # collider number density cm^-2
+nc    = 1e12     # collider number density cm^-3
 # some constants
 #------------------------------
 hPlank = 6.63e-27       # erg.s 
@@ -149,7 +152,7 @@ dndt = np.zeros((n,1))
 # solving directly
 #replacing the first row with the conservation equation
 full[0,:] = 1.0
-dndt[0] = 1.0
+dndt[0]   = 1.0
 
 A = full
 b = dndt

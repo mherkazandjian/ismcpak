@@ -1,7 +1,5 @@
 from leidenLambda import molData 
-import numpy as np
-import re
-from ismUtils import planckOccupation as ng
+import numpy
 
 #reading the whole database of line info of species from LAMBDA
 lambdaPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
@@ -27,3 +25,6 @@ reader = molData.reader(dirPath = lambdaPath, species = ['CO', 'HCO+', 'CS', 'CN
 hcop = reader.get_specie(specStr='HCO+', inPath='hco+.dat')
 cs   = reader.get_specie(specStr='CS', inPath='cs.dat')
 cn   = reader.get_specie(specStr='CN', inPath='cn.dat')
+
+
+kb_cgs = numpy.float64(1.38e-16) #boltzmann constant in cgs

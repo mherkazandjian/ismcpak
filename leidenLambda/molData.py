@@ -680,3 +680,40 @@ class species():
             raise ValueError("collisional transition not found upper = %d, lower = %d" % (upper, lower))
     
         return eins_A / k_coll
+    
+    def partition_function(self, T):
+        """Computes the partition function given a temperature.  The partition function
+           is defined as :
+           
+               Z(T) = \sum_{i} \exp[ -E_i / (k_b T) ]
+           
+           where i is the number of states and E_i is the energy of each state.
+           
+           .. warning:: The state energies are assumed to be in K, i.e E_i / K_b  
+           
+        """
+        
+        Z = numpy.float64()
+        
+        for en in self.levels['E']:
+            Z += numpy.exp( -en / T )
+            
+        return Z
+        
+    def boltzmann_weights(self, T):
+        """Computes the bolzman weight at a certain temperature for all the enrgy levels.
+           Those are defined as :
+           
+               w_i = \exp[ -E_i / (k_b T) ] / Z
+               
+           where Z is the partition function which is computed from the method self.partition_function 
+
+           .. warning:: The state energies are assumed to be in K, i.e E_i / K_b  
+           
+        """
+        
+        E = self.levels['E']
+        Z = self.partition_function(T)
+        
+        return numpy.exp( - E / T ) / Z
+    
