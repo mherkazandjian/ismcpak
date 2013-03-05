@@ -567,7 +567,7 @@ class mesh( ):
     #  slab. Only slabs which have abundances greater than XX_threshold are taken
     #  into account in computing N(XX) and the average collider densities and the 
     #  average temepratures.
-    def getRadexParameters(self, speciesStr = None, threshold = None):
+    def getRadexParameters(self, speciesStr = None, threshold = None, Av_range = None):
         """Returns a list (TMean, nDenseColl, N_specLVG which are 
         the weighted averaged temperature, number density of the collider species and the
         column density of speciesStr. 
@@ -577,7 +577,7 @@ class mesh( ):
         :param float threshold: only slabs with an abundance bigger than threshold are considered
           in computing the column density anf the Tmean. Set this to a negative number to make sure
           all the slabs are considered.
-        :return: (TMean, nDenseColl, N_specLVG)\n  
+        :return: (TMean, nDenseColl, N_specLVG, Av_range)\n  
           TMean (flaot)\n
           nDenseColl (dict) : the number density of the colliders e-, H+, H, He, H2 which are the keys
             of the dict holding the corresponding number densities.\n
@@ -598,26 +598,34 @@ class mesh( ):
         
         nGas = m.data['hdr']['nGas']
         Av   = m.data['state']['Av']
-        gasT = m.data['state']['gasT']
+
+        # assigning/computing the thickness of the last slab to the one before the last one
+        dx    = getSlabThicknessFromAv(Av, nGas, Z)
+        dxNew = numpy.ndarray( len(dx)+1, dtype = numpy.float64 )
+        dxNew[0:-1] = dx
+        dxNew[-1]   = dx[-1]
+        dx = dxNew
+                
+        if Av_range == None:
+            Av_range = [0, Av.max()]
+
+        inds_in_Av_range = numpy.where( (Av >= Av_range[0])*(Av <= Av_range[1]) )  
+        
+        gasT = m.data['state']['gasT'][inds_in_Av_range]
+        dx = dx[inds_in_Av_range]
         #abundances of species to be used later in getting the input needed by radex
-        xSpec   = m.data['state']['abun'][ net.species[spec].num ]
-        xColle  = m.data['state']['abun'][ net.species['e-'].num ]
-        xCollHP = m.data['state']['abun'][ net.species['H+'].num ]
-        xCollH  = m.data['state']['abun'][ net.species['H'].num ]
-        xCollHe = m.data['state']['abun'][ net.species['He'].num ]
-        xCollH2 = m.data['state']['abun'][ net.species['H2'].num ]
+        xSpec   = m.data['state']['abun'][ net.species[spec].num ][inds_in_Av_range]
+        xColle  = m.data['state']['abun'][ net.species['e-'].num ][inds_in_Av_range]
+        xCollHP = m.data['state']['abun'][ net.species['H+'].num ][inds_in_Av_range]
+        xCollH  = m.data['state']['abun'][ net.species['H'].num ][inds_in_Av_range]
+        xCollHe = m.data['state']['abun'][ net.species['He'].num ][inds_in_Av_range]
+        xCollH2 = m.data['state']['abun'][ net.species['H2'].num ][inds_in_Av_range]
 
         #getting the indicies of the slab which have xH2 greater than xMin
         inds = numpy.nonzero( xCollH2  > xMin  )
         if len(inds[0]) == 0:                
             return (None, None, None)
         
-        # assigning the thickness of the last slab to the one before the last one
-        dx    = getSlabThicknessFromAv(Av, nGas, Z)
-        dxNew = numpy.ndarray( len(dx)+1, dtype = numpy.float64 )
-        dxNew[0:-1] = dx
-        dxNew[-1]   = dx[-1]
-        dx = dxNew
         
         # selecting the slabs which are usefull
         Av    = Av[inds]
@@ -652,12 +660,14 @@ class mesh( ):
                       'H+': nCollHPMean,
                       'H' : nCollHMean ,
                       'He': nCollHeMean,
-                      'H2': nCollH2Mean}
+                      'H2': nCollH2Mean,
+                     }
         
         return (
                 TMean, 
                 nDenseColl,
-                N_specLVG
+                N_specLVG,
+                Av_range,
                 )
 
     def plotMeshGeometry(self):

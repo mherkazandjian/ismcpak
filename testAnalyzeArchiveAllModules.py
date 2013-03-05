@@ -1,7 +1,7 @@
 from numpy import *
 from time import *
 import sys, os
-if 'particle3' in os.uname():
+if os.uname()[1] in ['ruineraa', 'particle3']:
     import matplotlib
     matplotlib.use('Qt4Agg')
 import pylab as pyl
@@ -71,20 +71,20 @@ parms = {
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
-                             'collisionPartners'    : ['H2','H+','H','e-','He'],
+                             #'collisionPartners'    : ['H2','H+','H','e-','He'],
                              #'collisionPartners'    : ['H2','H','H+','e-'],
-                             #'collisionPartners'    : ['H2'],
+                             'collisionPartners'    : ['H2'],
                              'tBack'                : 2.73,
                              'lineWidth'            : 1.0,
                              'verbose'              : True, 
                              'maxDisplayTranistion' : 20,
                              ###----------extra convergence params-----------------------
-                             'checkOutputIntegrity' : False,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
+                             'checkOutputIntegrity' : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'   : 1.0, 
                              'popDensSumTol'        : 1e-2,
                              #'popDensSumTol'        : 10,
                              'changeFracTrial'      : 0.001,
-                             'nMaxTrial'            : 100,
+                             'nMaxTrial'            : 10,
                             },
         }
 #############################################################################################################

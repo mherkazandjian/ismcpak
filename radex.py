@@ -382,6 +382,80 @@ class radex( ):
             
         return self.status
         
+    def run_mutiple_trials(self, expected_sum_pop_dens = None,
+                                 rel_pop_dens_tol = None, 
+                                 change_frac_trial = None, 
+                                 max_trials = None):
+        """Runs the same parameters set a few times by doing minor random steps around the
+        input original parameters (since although radex sometimes fails for a certain
+        parameter set, it does converge for the same set with tiny variations around them).
+        
+        :param float64 expected_sum_pop_dens: ideally sum pop dens lower should be
+          1, for values less than tol the parameters are changed by 'changeFac' and 
+          another attempt is done until the sum of pop dens is close to 1 up to tol.
+        :param float64 pop_dens_tol: the absolute tolerence for which the solution is accepted to be
+          close enough to expected_sum_pop_dens (otherwise we iterate until this is satisfied).
+        :param float64 change_frac_trial: the relative amount by which the input 
+          parameters to radex are changed.
+        :param int max_trials: number of time random changes are done before giving up
+        
+        """
+        radexOutputMakesSense = False
+        
+        inFileOrig = self.inFile.copy() # original parameters
+
+        nTried     = 0
+        while not radexOutputMakesSense:
+            self.setDefaultStatus()
+            self.run(checkInput = True, verbose = False)
+
+            # checking the integrity of the solution in case it converged
+            if self.getStatus() & self.FLAGS['SUCCESS']:
+                                    
+                totalPopDensLower = numpy.sum(self.transitions[:]['pop_down'])
+                diff = numpy.fabs(expected_sum_pop_dens - totalPopDensLower) 
+                if  diff > rel_pop_dens_tol:
+                    
+                    self.logger.warn('====> pop dens does NOT make sense, trial %d' % nTried)
+                    self.logger.warn('====> total pop dense lower = %18.15f' % totalPopDensLower)
+                    self.logger.warn('====> absolute difference = %.2e\n' % diff)
+
+                    #change in input parameters by a tiny amount and run again
+                    #(this is a numerical bug in radex which fails sometimes)
+                    self.inFile['tKin']     = inFileOrig['tKin']*(1.0 + numpy.random.rand()*change_frac_trial)
+                    self.inFile['molnDens'] = inFileOrig['molnDens']*(1.0 + numpy.random.rand()*change_frac_trial)
+                    for i, dens in enumerate(self.inFile['nDensCollisionPartners']):
+                        self.inFile['nDensCollisionPartners'][i] = inFileOrig['nDensCollisionPartners'][i]*(1.0 + numpy.random.rand()*change_frac_trial)
+                        
+                else:
+                    radexOutputMakesSense = True
+                    print '====>', 'pop dense make sense, trial %d' % nTried
+                    
+            else: # radex did not succeed
+                self.logger.debug('radex failed')
+                self.logger.debug('---------------------------------------------------------')
+                self.logger.debug('------------------------radex raw output-----------------')
+                self.logger.debug('---------------------------------------------------------')
+                print self.rawOutput
+                self.logger.debug('---------------------------------------------------------')
+                break  # here radexOutputMakesSense woulbe be False
+            
+            nTried += 1
+            
+            if nTried >= max_trials: #no meaningful output after nTried trials
+                break # here radexOutputMakesSense woulbe be False
+                
+        return self.status, radexOutputMakesSense
+        
+    
+    def print_warnings(self):
+        """prints the warning strings dumped by Radex"""
+        self.logger.debug('--------------warnings---------------')
+        for warning in self.warnings:
+            print warning
+            self.logger.debug('--------------warnings---------------')
+
+        
     def generateTransitionDtype(self):
         """generates the trasition dtype which will be used in assigning the transition info in self.transitionsNdArry.
         """
@@ -500,19 +574,22 @@ class radex( ):
             print self.rawOutput
             errStr = 'parsing the output failed'
             raise NameError(errStr)
+        
     # -------------------------- Plotting Methods ---------------------------------
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
     
-    ## sets up the object to plot the radex output 
-    #  @param nx (integer) the number of vertical columns to setup (one model per column)
-    #  @param fig ( matplotlib.figure object ) Set this object to use a figure which
-    #  is pre-defined, otherwise, a new figure object is created. If this is not set
-    #  the axs keyword is igonored and a self.#axs object is created.  
-    #  @param axs ( numpy.ndarray of matplotlib.axes object ) The axes where the models will
-    #  be plotted. Should have dimensions nx x 4
-    #  @return  (self.#fig, self.#axs)\n in this method, also self.nx is set to nx
     def setupPlot(self, nx = None, fig = None, axs = None):
+        """Sets up the object to plot the radex output
+             
+           :param integer nx: The number of vertical columns to setup (one model per column)
+           :param matplotlib.figure fig: Set this object to use a figure which
+              is pre-defined, otherwise, a new figure object is created. If this is not set
+              the axs keyword is igonored and a self.#axs object is created.  
+           :param numpy.ndarray of matplotlib.axes object : The axes where the models will
+              be plotted. Should have dimensions nx x 4
+           :return  self.#fig, self.#axs: in this method, also self.nx is set to nx
+        """
         
         self.nx = nx
         
@@ -523,10 +600,12 @@ class radex( ):
             
         return (self.fig, self.axs)
             
-    ## creates and assings the self.#fig and self.#axs attributes
-    #  @param nx (see #setupPlot)  
     def makeAxes(self, nx = None):
-
+        """creates and assings the self.#fig and self.#axs attributes
+        
+           :param nx: see self.setupPlot()
+        """  
+ 
         if nx == None:
             nx = 1
 
@@ -535,14 +614,16 @@ class radex( ):
         pylab.subplots_adjust(left=0.1, bottom=0.15, right=0.95, top=0.95, wspace=0.0, hspace=0.0)
         self.setAxes(fig, axs)
         
-    ## plots the output of a certain model in a certain column in a predefined figure
-    #  @param allTrans (integer list or numpy.int32) The indicies of the transitions in self.#transitions whose
-    #  data should be plotted, ex : numpy. 
-    #  @param inAxes ( nump.ndarray matplorlib.axes ) The axes colomn in which the model info will
-    #  be plotted. Fluxes are plotted in inAxes[0], T_ex, T_rot are plotted in inAxes[1], 
-    #  optical depth in inAxes[2] and population densiities in inAxes[3]
-    #  @param title (string) The title to be written at the top of the axes column  
     def plotModelInFigureColumn(self, allTrans = None, inAxes = None, title = None):
+        """Plots the output of a certain model in a certain column in a predefined figure
+        
+          :param allTrans (integer list or numpy.int32): The indicies of the transitions in self.#transitions whose
+             data should be plotted, ex : numpy. 
+          :param inAxes ( nump.ndarray matplorlib.axes ): The axes colomn in which the model info will
+             be plotted. Fluxes are plotted in inAxes[0], T_ex, T_rot are plotted in inAxes[1], 
+             optical depth in inAxes[2] and population densiities in inAxes[3]
+          :param title (string): The title to be written at the top of the axes column. 
+        """
         
         if allTrans == None:
             allTrans =  numpy.arange( len(self.transitions) )
@@ -667,11 +748,10 @@ class radex( ):
 
         for ax in self.axs:            
             ax.lines = []
-        
-        
-    ## set the appropriate labels of all the axes
+                
     def setLabels(self):
-        
+        """Set the appropriate labels of all the axes"""
+
         axs = self.axs
         def removeAll_xLabels(ax):
             for tick in ax.axes.xaxis.get_major_ticks():
@@ -728,9 +808,11 @@ class radex( ):
                     removeAll_xLabels(ax)
                     ax.set_xlabel('')
     
-    ## plotting a single model
-    #  @todo allow for a choice of the number of transitions to be plotted
     def plotModel(self):
+        """plotting a single model
+           todo allow for a choice of the number of transitions to be plotted
+        """
+
         self.setupPlot(nx = 1)
         self.plotModelInFigureColumn( allTrans = None, inAxes = self.axs, title='')
         self.setLabels()   
@@ -748,6 +830,7 @@ class radex( ):
 
     def setupLogger(self):
         """sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger."""
+        
         # setting up the logger                                                                                                                                                                                                              
         # create logger                                                                                                                                                                                                                      
         self.logger = logging.getLogger('simple_example')
