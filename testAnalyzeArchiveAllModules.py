@@ -74,6 +74,7 @@ parms = {
                              #'collisionPartners'    : ['H2','H+','H','e-','He'],
                              #'collisionPartners'    : ['H2','H','H+','e-'],
                              'collisionPartners'    : ['H2'],
+                             'use_pdr_gas_den_H2'   : True,
                              'tBack'                : 2.73,
                              'lineWidth'            : 1.0,
                              'verbose'              : True, 

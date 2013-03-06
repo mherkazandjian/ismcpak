@@ -264,9 +264,20 @@
 <span class="sd">           The parsed data which are dicts (see output of self.cleanSpecDict) are appended to self.spceciesInfo.              </span>
 
 <span class="sd">         </span>
-<span class="sd">           :param string specie: if this keyword is set, only file whose specie matches it are parsed.  Otherwise all the files are parsed. </span>
+<span class="sd">           :param list|string species: a string or a list of string which if set, only </span>
+<span class="sd">            files whose species is in the list are parsed.  Otherwise all the files </span>
+<span class="sd">            are parsed. </span>
 <span class="sd">        &quot;&quot;&quot;</span> 
-        
+
+        <span class="c">#checking if a selectionf the files will be parsed, or all of them</span>
+        <span class="k">if</span> <span class="s">&#39;species&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;species&#39;</span><span class="p">],</span> <span class="s">&#39;__iter__&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
+                <span class="n">select_species</span> <span class="o">=</span> <span class="p">[</span><span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;species&#39;</span><span class="p">]]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">select_species</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;species&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">select_species</span> <span class="o">=</span> <span class="bp">None</span>
+
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">fPath</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dataFiles</span><span class="p">):</span>
             
             <span class="n">specStr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">specStrs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
@@ -276,9 +287,9 @@
             <span class="k">if</span> <span class="n">fPath</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignoreList</span><span class="p">:</span>
                 <span class="k">continue</span>
             
-            <span class="k">if</span> <span class="s">&#39;specie&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">select_species</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
                 
-                <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;specie&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">specStr</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">specStr</span> <span class="ow">in</span> <span class="n">select_species</span><span class="p">:</span>
                     <span class="n">specDict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parseDataFile</span><span class="p">(</span><span class="n">fPath</span><span class="p">)</span>
                     <span class="n">specDict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleanSpecDict</span><span class="p">(</span><span class="n">specDict</span><span class="p">)</span>
                     <span class="k">print</span> <span class="s">&#39;       cleaned successfully&#39;</span>
@@ -719,7 +730,44 @@
         <span class="k">if</span> <span class="n">k_coll</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;collisional transition not found upper = </span><span class="si">%d</span><span class="s">, lower = </span><span class="si">%d</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">upper</span><span class="p">,</span> <span class="n">lower</span><span class="p">))</span>
     
-        <span class="k">return</span> <span class="n">eins_A</span> <span class="o">/</span> <span class="n">k_coll</span></div></div>
+        <span class="k">return</span> <span class="n">eins_A</span> <span class="o">/</span> <span class="n">k_coll</span>
+    </div>
+<div class="viewcode-block" id="species.partition_function"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.species.partition_function">[docs]</a>    <span class="k">def</span> <span class="nf">partition_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Computes the partition function given a temperature.  The partition function</span>
+<span class="sd">           is defined as :</span>
+<span class="sd">           </span>
+<span class="sd">               Z(T) = \sum_{i} \exp[ -E_i / (k_b T) ]</span>
+<span class="sd">           </span>
+<span class="sd">           where i is the number of states and E_i is the energy of each state.</span>
+<span class="sd">           </span>
+<span class="sd">           .. warning:: The state energies are assumed to be in K, i.e E_i / K_b  </span>
+<span class="sd">           </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">()</span>
+        
+        <span class="k">for</span> <span class="n">en</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">[</span><span class="s">&#39;E&#39;</span><span class="p">]:</span>
+            <span class="n">Z</span> <span class="o">+=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="o">-</span><span class="n">en</span> <span class="o">/</span> <span class="n">T</span> <span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">Z</span>
+        </div>
+<div class="viewcode-block" id="species.boltzmann_weights"><a class="viewcode-back" href="../../index.html#leidenLambda.molData.species.boltzmann_weights">[docs]</a>    <span class="k">def</span> <span class="nf">boltzmann_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Computes the bolzman weight at a certain temperature for all the enrgy levels.</span>
+<span class="sd">           Those are defined as :</span>
+<span class="sd">           </span>
+<span class="sd">               w_i = \exp[ -E_i / (k_b T) ] / Z</span>
+<span class="sd">               </span>
+<span class="sd">           where Z is the partition function which is computed from the method self.partition_function </span>
+
+<span class="sd">           .. warning:: The state energies are assumed to be in K, i.e E_i / K_b  </span>
+<span class="sd">           </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">E</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">[</span><span class="s">&#39;E&#39;</span><span class="p">]</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">partition_function</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">numpy</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span> <span class="o">-</span> <span class="n">E</span> <span class="o">/</span> <span class="n">T</span> <span class="p">)</span> <span class="o">/</span> <span class="n">Z</span>
+    </div></div>
 </pre></div>
 
           </div>

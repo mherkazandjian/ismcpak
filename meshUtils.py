@@ -2124,12 +2124,28 @@ class meshArxv():
             self.radexObj.set_logger(self.logger)
             #clearing them in case there was anything
             self.radexObj.clearCurves()
-                            
-        # getting the collider densities in the same order of the supplied input spcie string list 
-        nDensColls = [ nColls[collSpecStr] for collSpecStr in radex_parms['collisionPartners'] ]
-        collsStr   = list(radex_parms['collisionPartners'])
-        #print 'input coll species', self.radexParms['collisionPartners'] 
-        #print 'nColls after putting them in the right order = ', nDensColls
+
+        #determining what gas density to use for the collider for H2
+        if radex_parms['use_pdr_gas_den_H2']:
+            #using nGas/2 as the density of H2 (allowed when the only collider is H2)
+            nDensColls = [meshObj.data['hdr']['nGas']/2.0]
+            collsStr   = list(radex_parms['collisionPartners'])
+            
+            if len(radex_parms['collisionPartners']) > 1:
+                raise ValueError("""collisionsPartners can be only H2 when setting the density 
+                of the collider H2 to the full gas density""")
+        else:
+            #using the weighted densities extracted from the PDR
+            
+            # getting the collider densities in the same order of the supplied input spcie string list 
+            nDensColls = [ nColls[collSpecStr] for collSpecStr in radex_parms['collisionPartners'] ]
+            collsStr   = list(radex_parms['collisionPartners'])
+            #print 'input coll species', self.radexParms['collisionPartners'] 
+            #print 'nColls after putting them in the right order = ', nDensColls
+
+        print '================='
+        print collsStr
+        print nDensColls
         
         self.radexObj.setInFileParm('specStr', radex_parms['specStr'])
         self.radexObj.setInFileParm('tKin', gasTRadex)

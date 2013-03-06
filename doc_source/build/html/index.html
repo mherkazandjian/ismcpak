@@ -1542,7 +1542,7 @@ is used (assuming it is set).</li>
 
 <dl class="method">
 <dt id="mesh.mesh.getRadexParameters">
-<tt class="descname">getRadexParameters</tt><big>(</big><em>speciesStr=None</em>, <em>threshold=None</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.getRadexParameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.getRadexParameters" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">getRadexParameters</tt><big>(</big><em>speciesStr=None</em>, <em>threshold=None</em>, <em>Av_range=None</em><big>)</big><a class="reference internal" href="_modules/mesh.html#mesh.getRadexParameters"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mesh.mesh.getRadexParameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a list (TMean, nDenseColl, N_specLVG which are 
 the weighted averaged temperature, number density of the collider species and the
 column density of speciesStr.</p>
@@ -1559,7 +1559,7 @@ all the slabs are considered.</li>
 </ul>
 </td>
 </tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>(TMean, nDenseColl, N_specLVG)</p>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><p>(TMean, nDenseColl, N_specLVG, Av_range)</p>
 <p>TMean (flaot)</p>
 <dl class="docutils">
 <dt>nDenseColl (dict) <span class="classifier-delimiter">:</span> <span class="classifier">the number density of the colliders e-, H+, H, He, H2 which are the keys</span></dt>
@@ -1838,10 +1838,14 @@ sets the attributes : self.grdInterp_f, self.abunGridInterp_f, self.colDensGridI
 
 <dl class="method">
 <dt id="meshUtils.meshArxv.computeAndSetRadexCurves">
-<tt class="descname">computeAndSetRadexCurves</tt><big>(</big><em>meshObj=None</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.computeAndSetRadexCurves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.computeAndSetRadexCurves" title="Permalink to this definition">¶</a></dt>
+<tt class="descname">computeAndSetRadexCurves</tt><big>(</big><em>meshObj=None</em>, <em>radex_parms=None</em>, <em>Av_range=None</em>, <em>compute_only=None</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.computeAndSetRadexCurves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.computeAndSetRadexCurves" title="Permalink to this definition">¶</a></dt>
 <dd><p>This is a utilty method (make it a private method), for populating the radex axes
 with the plots for the specie passed in the global parameter self.parms[&#8216;radex&#8217;][&#8216;specStr&#8217;].
 It takes as a paremeter the <a class="reference internal" href="#module-mesh" title="mesh"><tt class="xref py py-data docutils literal"><span class="pre">mesh</span></tt></a> which will be used for doing the radex computations.</p>
+<p>if meshObj is not passed, self.mshTmp is used as the pdr mesh object.
+if Av_range is not passed, the maximum Av is used.
+if compute_only is passed, nothing is plotted, only the emissions are computed and set
+to self.radexObj</p>
 </dd></dl>
 
 <dl class="method">
@@ -2476,6 +2480,14 @@ use of self.parms</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="meshUtils.meshArxv.setup_default_radex_instance">
+<tt class="descname">setup_default_radex_instance</tt><big>(</big><em>radex_parms</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.setup_default_radex_instance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.setup_default_radex_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>sets up an instance of the object &#8216;radex&#8217; to after using
+the parameters from radex_parms and setting &#8216;tKin&#8217;, &#8216;nDensCollisionPartners&#8217;
+and &#8216;molnDens&#8217; as None. Also sets the attribute self.radexObj</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="meshUtils.meshArxv.showAbundancesGrid">
 <tt class="descname">showAbundancesGrid</tt><big>(</big><em>ranges=None</em>, <em>res=None</em>, <em>*args</em>, <em>**kwargs</em><big>)</big><a class="reference internal" href="_modules/meshUtils.html#meshArxv.showAbundancesGrid"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#meshUtils.meshArxv.showAbundancesGrid" title="Permalink to this definition">¶</a></dt>
 <dd><p>shows the abundances grid</p>
@@ -2804,6 +2816,20 @@ number density of each collision partner respectively. For example :</p>
 the value of &#8216;specStr&#8217; to self.molDataDir</p>
 </dd></dl>
 
+<dl class="method">
+<dt id="radex.radex.makeAxes">
+<tt class="descname">makeAxes</tt><big>(</big><em>nx=None</em><big>)</big><a class="reference internal" href="_modules/radex.html#radex.makeAxes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.makeAxes" title="Permalink to this definition">¶</a></dt>
+<dd><p>creates and assings the self.#fig and self.#axs attributes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nx</strong> &#8211; see self.setupPlot()</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="attribute">
 <dt id="radex.radex.molDataDir">
 <tt class="descname">molDataDir</tt><em class="property"> = None</em><a class="headerlink" href="#radex.radex.molDataDir" title="Permalink to this definition">¶</a></dt>
@@ -2923,9 +2949,44 @@ list..just preallocate the dtype and fill in the values.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="radex.radex.plotModel">
+<tt class="descname">plotModel</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/radex.html#radex.plotModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.plotModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>plotting a single model
+todo allow for a choice of the number of transitions to be plotted</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="radex.radex.plotModelInFigureColumn">
+<tt class="descname">plotModelInFigureColumn</tt><big>(</big><em>allTrans=None</em>, <em>inAxes=None</em>, <em>title=None</em><big>)</big><a class="reference internal" href="_modules/radex.html#radex.plotModelInFigureColumn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.plotModelInFigureColumn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the output of a certain model in a certain column in a predefined figure</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>(integer list or numpy.int32)</strong> (<em>allTrans</em>) &#8211; The indicies of the transitions in self.#transitions whose
+data should be plotted, ex : numpy.</li>
+<li><strong>( nump.ndarray matplorlib.axes )</strong> (<em>inAxes</em>) &#8211; The axes colomn in which the model info will
+be plotted. Fluxes are plotted in inAxes[0], T_ex, T_rot are plotted in inAxes[1], 
+optical depth in inAxes[2] and population densiities in inAxes[3]</li>
+<li><strong>(string)</strong> (<em>title</em>) &#8211; The title to be written at the top of the axes column.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="radex.radex.printSetFlags">
 <tt class="descname">printSetFlags</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/radex.html#radex.printSetFlags"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.printSetFlags" title="Permalink to this definition">¶</a></dt>
 <dd><p>prints in a pretty way all the flags (whether they are set or not) in self.status</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="radex.radex.print_warnings">
+<tt class="descname">print_warnings</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/radex.html#radex.print_warnings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.print_warnings" title="Permalink to this definition">¶</a></dt>
+<dd><p>prints the warning strings dumped by Radex</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -2978,6 +3039,32 @@ to set the status to the default before calling <a class="reference internal" hr
 </dd></dl>
 
 <dl class="method">
+<dt id="radex.radex.run_mutiple_trials">
+<tt class="descname">run_mutiple_trials</tt><big>(</big><em>expected_sum_pop_dens=None</em>, <em>rel_pop_dens_tol=None</em>, <em>change_frac_trial=None</em>, <em>max_trials=None</em><big>)</big><a class="reference internal" href="_modules/radex.html#radex.run_mutiple_trials"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.run_mutiple_trials" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the same parameters set a few times by doing minor random steps around the
+input original parameters (since although radex sometimes fails for a certain
+parameter set, it does converge for the same set with tiny variations around them).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>expected_sum_pop_dens</strong> (<em>float64</em>) &#8211; ideally sum pop dens lower should be
+1, for values less than tol the parameters are changed by &#8216;changeFac&#8217; and 
+another attempt is done until the sum of pop dens is close to 1 up to tol.</li>
+<li><strong>pop_dens_tol</strong> (<em>float64</em>) &#8211; the absolute tolerence for which the solution is accepted to be
+close enough to expected_sum_pop_dens (otherwise we iterate until this is satisfied).</li>
+<li><strong>change_frac_trial</strong> (<em>float64</em>) &#8211; the relative amount by which the input 
+parameters to radex are changed.</li>
+<li><strong>max_trials</strong> (<a class="reference external" href="http://docs.python.org/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; number of time random changes are done before giving up</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="radex.radex.setAxes">
 <tt class="descname">setAxes</tt><big>(</big><em>fig</em>, <em>axs</em><big>)</big><a class="reference internal" href="_modules/radex.html#radex.setAxes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.setAxes" title="Permalink to this definition">¶</a></dt>
 <dd><p>set the axes and figure objects</p>
@@ -3008,9 +3095,48 @@ to set the status to the default before calling <a class="reference internal" hr
 </dd></dl>
 
 <dl class="method">
+<dt id="radex.radex.setLabels">
+<tt class="descname">setLabels</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/radex.html#radex.setLabels"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.setLabels" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the appropriate labels of all the axes</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="radex.radex.setupLogger">
 <tt class="descname">setupLogger</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/radex.html#radex.setupLogger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.setupLogger" title="Permalink to this definition">¶</a></dt>
 <dd><p>sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="radex.radex.setupPlot">
+<tt class="descname">setupPlot</tt><big>(</big><em>nx=None</em>, <em>fig=None</em>, <em>axs=None</em><big>)</big><a class="reference internal" href="_modules/radex.html#radex.setupPlot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#radex.radex.setupPlot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets up the object to plot the radex output</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>nx</strong> (<em>integer</em>) &#8211; The number of vertical columns to setup (one model per column)</li>
+<li><strong>fig</strong> (<em>matplotlib.figure</em>) &#8211; Set this object to use a figure which
+is pre-defined, otherwise, a new figure object is created. If this is not set
+the axs keyword is igonored and a self.#axs object is created.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>:param numpy.ndarray of matplotlib.axes object <span class="classifier-delimiter">:</span> <span class="classifier">The axes where the models will</span></dt>
+<dd>be plotted. Should have dimensions nx x 4</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Return self.#fig, self.#axs:</th></tr>
+<tr class="field-odd field"><td>&nbsp;</td><td class="field-body">in this method, also self.nx is set to nx</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -3269,7 +3395,9 @@ The parsed data which are dicts (see output of self.cleanSpecDict) are appended 
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>specie</strong> (<a class="reference external" href="http://docs.python.org/library/string.html#string" title="(in Python v2.7)"><em>string</em></a>) &#8211; if this keyword is set, only file whose specie matches it are parsed.  Otherwise all the files are parsed.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>species</strong> (<em>list|string</em>) &#8211; a string or a list of string which if set, only 
+files whose species is in the list are parsed.  Otherwise all the files 
+are parsed.</td>
 </tr>
 </tbody>
 </table>
@@ -3429,6 +3557,20 @@ molData.reader.cleanSpecDict as attributes. Takes as an argument the specInfo
 specDict and returns a class which has the main keys as attributes. Also defines
 some utility methods which compute things related to the species.</p>
 <dl class="method">
+<dt id="leidenLambda.molData.species.boltzmann_weights">
+<tt class="descname">boltzmann_weights</tt><big>(</big><em>T</em><big>)</big><a class="reference internal" href="_modules/leidenLambda/molData.html#species.boltzmann_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#leidenLambda.molData.species.boltzmann_weights" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the bolzman weight at a certain temperature for all the enrgy levels.
+Those are defined as :</p>
+<blockquote>
+<div>w_i = exp[ -E_i / (k_b T) ] / Z</div></blockquote>
+<p>where Z is the partition function which is computed from the method self.partition_function</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">The state energies are assumed to be in K, i.e E_i / K_b</p>
+</div>
+</dd></dl>
+
+<dl class="method">
 <dt id="leidenLambda.molData.species.critical_density">
 <tt class="descname">critical_density</tt><big>(</big><em>upper=None</em>, <em>lower=None</em>, <em>T_kin=None</em>, <em>collider=None</em><big>)</big><a class="reference internal" href="_modules/leidenLambda/molData.html#species.critical_density"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#leidenLambda.molData.species.critical_density" title="Permalink to this definition">¶</a></dt>
 <dd><p>computes the cricical density (n_crit = A/K) of a transition given the cleaned output
@@ -3437,6 +3579,20 @@ upper and lower levels corresponding to specInfo[&#8216;levels&#8217;] and the k
 temperature at which the collisional coefficient will be computed. Also
 it is required to specify the collider specie as a string. See documentation
 of reader for the supported colliders.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="leidenLambda.molData.species.partition_function">
+<tt class="descname">partition_function</tt><big>(</big><em>T</em><big>)</big><a class="reference internal" href="_modules/leidenLambda/molData.html#species.partition_function"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#leidenLambda.molData.species.partition_function" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the partition function given a temperature.  The partition function
+is defined as :</p>
+<blockquote>
+<div>Z(T) = sum_{i} exp[ -E_i / (k_b T) ]</div></blockquote>
+<p>where i is the number of states and E_i is the energy of each state.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">The state energies are assumed to be in K, i.e E_i / K_b</p>
+</div>
 </dd></dl>
 
 </dd></dl>

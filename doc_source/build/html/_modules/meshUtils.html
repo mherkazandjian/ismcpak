@@ -135,6 +135,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setupLogger</span><span class="p">()</span>
+        <span class="sd">&quot;&quot;&quot;The logging object which will be used to output stuff to stdout&quot;&quot;&quot;</span>
+
         <span class="c"># attributes</span>
         <span class="k">if</span> <span class="s">&#39;dirPath&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">dirPath</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s">&#39;dirPath&#39;</span><span class="p">]</span>
@@ -293,26 +296,11 @@
         <span class="k">if</span> <span class="s">&#39;radex&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;use&#39;</span><span class="p">]:</span>
                 <span class="c">#making the instance            </span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span> <span class="o">=</span> <span class="n">radex</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;path&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;molDataDirPath&#39;</span><span class="p">])</span>
-                <span class="c">#setting some default radex paraemeters</span>
-                <span class="n">inFile</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;specStr&#39;</span>                <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;specStr&#39;</span><span class="p">],</span>
-                          <span class="s">&#39;outPath&#39;</span>                <span class="p">:</span> <span class="s">&#39;foo&#39;</span> <span class="p">,</span>
-                          <span class="s">&#39;freqRange&#39;</span>              <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;freqRange&#39;</span><span class="p">],</span>
-                          <span class="s">&#39;tKin&#39;</span>                   <span class="p">:</span> <span class="bp">None</span>  <span class="p">,</span>  <span class="c"># depending on the model</span>
-                          <span class="s">&#39;collisionPartners&#39;</span>      <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">],</span>
-                          <span class="s">&#39;nDensCollisionPartners&#39;</span> <span class="p">:</span> <span class="bp">None</span>  <span class="p">,</span>  <span class="c"># depending on the model</span>
-                          <span class="s">&#39;tBack&#39;</span>                  <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;tBack&#39;</span><span class="p">],</span>  <span class="c"># fixed</span>
-                          <span class="s">&#39;molnDens&#39;</span>               <span class="p">:</span> <span class="bp">None</span>  <span class="p">,</span>  <span class="c"># depending on the model</span>
-                          <span class="s">&#39;lineWidth&#39;</span>              <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;lineWidth&#39;</span><span class="p">],</span>  <span class="c"># fixed</span>
-                          <span class="s">&#39;runAnother&#39;</span>             <span class="p">:</span> <span class="mi">1</span>     <span class="p">}</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setInFile</span><span class="p">(</span> <span class="n">inFile</span> <span class="p">)</span>
-
+                <span class="bp">self</span><span class="o">.</span><span class="n">setup_default_radex_instance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">])</span>
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">mshTmp</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="sd">&quot;&quot;&quot;a mesh object which is used to store single mesh data just for plotting purposes&quot;&quot;&quot;</span>
-        
-        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setupLogger</span><span class="p">()</span>
-        <span class="sd">&quot;&quot;&quot;The logging object which will be used to output stuff to stdout&quot;&quot;&quot;</span>
-        
+                
         <span class="bp">self</span><span class="o">.</span><span class="n">gui</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parms_used_in_PDR_models</span> <span class="o">=</span> <span class="bp">None</span>
         <span class="sd">&quot;&quot;&quot;a dictionary holding the parameters used in modeling the PDRs.  This is read</span>
@@ -330,7 +318,12 @@
             <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;set_defaults&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_default_attributes</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">set_grid_axes_quantity_values</span><span class="p">()</span>
-
+        
+        <span class="c">#setting up the auxiliary attributes if the parms are available</span>
+        <span class="c">#self.mshTmp and self.radexObj</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">chemNet</span> <span class="o">!=</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">metallicity</span> <span class="o">!=</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mshTmp</span> <span class="o">=</span> <span class="n">mesh</span><span class="p">(</span><span class="n">chemNet</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chemNet</span><span class="p">,</span> <span class="n">metallicity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metallicity</span><span class="p">)</span>
+        
     <span class="k">def</span> <span class="nf">read_used_parms_used_in_PDR_models</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">fpath_parms_used</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dirPath</span><span class="p">,</span><span class="s">&#39;used_parms.pkl&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">fpath_parms_used</span><span class="p">):</span>
@@ -1729,7 +1722,7 @@
         <span class="c"># defining the axes which will be used to select the transition index to be displayed in the emission panel</span>
         <span class="n">transitionSelector</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="c">#----------------------------------------------------------------------</span>
-        <span class="n">transitionSelector</span><span class="p">[</span><span class="s">&#39;axes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gui</span><span class="p">[</span><span class="s">&#39;figure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.53</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">]</span> <span class="p">)</span>
+        <span class="n">transitionSelector</span><span class="p">[</span><span class="s">&#39;axes&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gui</span><span class="p">[</span><span class="s">&#39;figure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">add_axes</span><span class="p">(</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.02</span><span class="p">]</span> <span class="p">)</span>
         <span class="n">transitionSelector</span><span class="p">[</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">&#39;transition selector&#39;</span><span class="p">)</span>
         <span class="n">transitionSelector</span><span class="p">[</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">]</span> <span class="p">)</span>
         <span class="n">transitionSelector</span><span class="p">[</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="p">)</span>
@@ -1823,8 +1816,8 @@
         <span class="c"># the axes to plot in the mesh stuff as a function of AV.</span>
         <span class="n">AV</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="c">#-----------------------------------------------------------------------------------</span>
-        <span class="n">left</span>  <span class="o">=</span> <span class="mf">0.07</span>
-        <span class="n">bott</span>  <span class="o">=</span> <span class="mf">0.05</span>
+        <span class="n">left</span>  <span class="o">=</span> <span class="mf">0.10</span>
+        <span class="n">bott</span>  <span class="o">=</span> <span class="mf">0.035</span>
         <span class="n">sz</span>    <span class="o">=</span> <span class="mf">0.20</span>
         <span class="n">vSpace</span> <span class="o">=</span> <span class="mf">0.01</span>
         <span class="n">hSpace</span> <span class="o">=</span> <span class="mf">0.01</span>
@@ -1919,7 +1912,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;widgets&#39;</span><span class="p">][</span><span class="s">&#39;zSecSelector&#39;</span><span class="p">][</span><span class="s">&#39;pointsUnique&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_ydata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid_z_unique</span><span class="o">*</span><span class="mf">0.0</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span>
 
         <span class="c"># attaching mouse click event to fig 1</span>
-        <span class="n">cid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;figure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s">&#39;button_press_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_b1_down</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;figure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">mpl_connect</span><span class="p">(</span><span class="s">&#39;button_press_event&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_b1_down</span><span class="p">)</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">plotThisSec</span><span class="p">()</span>
         
@@ -1982,7 +1975,8 @@
             <span class="n">clickedInAxes</span> <span class="o">=</span> <span class="bp">False</span>
             
             <span class="c"># getting the value of the section in z to display</span>
-            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;widgets&#39;</span><span class="p">][</span><span class="s">&#39;zSecSelector&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]:</span>
+            <span class="c">#---------------------------------------------------------------</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;widgets&#39;</span><span class="p">][</span><span class="s">&#39;zSecSelector&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">event</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="n">clickedInAxes</span> <span class="o">=</span> <span class="bp">True</span>
                 <span class="c"># setting the section closest to the data available</span>
                 <span class="n">inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid_z</span> <span class="o">-</span> <span class="n">xd</span> <span class="p">)</span> <span class="p">)</span>
@@ -2010,7 +2004,8 @@
                 <span class="n">pyl</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
 
             <span class="c"># getting the value of the transition to display in the emission panel</span>
-            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;widgets&#39;</span><span class="p">][</span><span class="s">&#39;transitionSelector&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]:</span>
+            <span class="c">#----------------------------------------------------------------------</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;widgets&#39;</span><span class="p">][</span><span class="s">&#39;transitionSelector&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">event</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="n">clickedInAxes</span> <span class="o">=</span> <span class="bp">True</span>
                 <span class="c"># setting the section closest to the data available</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;gridsInfo&#39;</span><span class="p">][</span><span class="s">&#39;11&#39;</span><span class="p">][</span><span class="s">&#39;transitionIndx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">xd</span><span class="p">)</span>
@@ -2037,8 +2032,9 @@
                 <span class="n">pyl</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
 
             <span class="c"># getting the coordinates inthe grid to display as a single mesh as a function of Av</span>
-            <span class="c"># and maybe display the radex calculations                </span>
-            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;ax2d&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]:</span>
+            <span class="c"># and maybe display the radex calculations</span>
+            <span class="c">#------------------------------------------------------------------------------------                </span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;ax2d&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">event</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="n">clickedInAxes</span> <span class="o">=</span> <span class="bp">True</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;####################################button 1 clicked###########################################&#39;</span><span class="p">)</span>
                 <span class="n">indMin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mesh_index</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="n">xd</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">yd</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pltGmSec</span><span class="p">)</span>
@@ -2071,7 +2067,9 @@
 
             <span class="c"># setting the Av of the position clicked on the plots of the current mesh</span>
             <span class="c"># to the chemical netowrk object.</span>
-            <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;AV&#39;</span><span class="p">][</span><span class="s">&#39;00&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;AV&#39;</span><span class="p">][</span><span class="s">&#39;01&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;AV&#39;</span><span class="p">][</span><span class="s">&#39;10&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">inaxes</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;AV&#39;</span><span class="p">][</span><span class="s">&#39;11&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]:</span>
+            <span class="c">#----------------------------------------------------------------------------</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;AV&#39;</span><span class="p">][</span><span class="s">&#39;00&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">event</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;AV&#39;</span><span class="p">][</span><span class="s">&#39;01&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">event</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;AV&#39;</span><span class="p">][</span><span class="s">&#39;10&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">event</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;AV&#39;</span><span class="p">][</span><span class="s">&#39;11&#39;</span><span class="p">][</span><span class="s">&#39;axes&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">event</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
                 
                 <span class="n">clickedInAxes</span> <span class="o">=</span> <span class="bp">True</span>
                 <span class="n">Av_clicked</span> <span class="o">=</span> <span class="n">xd</span>
@@ -2115,7 +2113,6 @@
                 <span class="c">#plotting the vertical lines on the gui indicating the positions</span>
                 <span class="c">#in the slab used for the chemistry</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">mshTmp</span><span class="o">.</span><span class="n">plot_v_lines_used_in_chemnet</span><span class="p">()</span>
-                <span class="n">pyl</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
                 
                 <span class="c">#cleaning previously computerd rxn rates and constants (if they were computed)</span>
                 <span class="n">chemNet</span><span class="o">.</span><span class="n">set_all_rxn_rates_and_cst_to_none</span><span class="p">()</span>
@@ -2139,44 +2136,65 @@
 
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;set the environment variable to the chemical netowrk of the mesh.&#39;</span><span class="p">)</span>
             
+            
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;use&#39;</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">computeAndSetRadexCurves</span><span class="p">(</span><span class="n">meshObj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mshTmp</span><span class="p">,</span>
+                                                  <span class="n">Av_range</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">Av_use</span><span class="p">])</span>
+
+                <span class="n">pyl</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
             <span class="k">if</span> <span class="n">clickedInAxes</span> <span class="o">==</span> <span class="bp">True</span><span class="p">:</span>
                 <span class="n">tf</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;time elapased after click : </span><span class="si">%f</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tf</span> <span class="o">-</span> <span class="n">ti</span><span class="p">))</span>
-        </div>
-<div class="viewcode-block" id="meshArxv.computeAndSetRadexCurves"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.computeAndSetRadexCurves">[docs]</a>    <span class="k">def</span> <span class="nf">computeAndSetRadexCurves</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshObj</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
+                </div>
+<div class="viewcode-block" id="meshArxv.computeAndSetRadexCurves"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.computeAndSetRadexCurves">[docs]</a>    <span class="k">def</span> <span class="nf">computeAndSetRadexCurves</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">meshObj</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">radex_parms</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">Av_range</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">compute_only</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;This is a utilty method (make it a private method), for populating the radex axes</span>
 <span class="sd">          with the plots for the specie passed in the global parameter self.parms[&#39;radex&#39;][&#39;specStr&#39;].</span>
 <span class="sd">          It takes as a paremeter the :data:`mesh` which will be used for doing the radex computations.</span>
+<span class="sd">          </span>
+<span class="sd">          if meshObj is not passed, self.mshTmp is used as the pdr mesh object.</span>
+<span class="sd">          if Av_range is not passed, the maximum Av is used.</span>
+<span class="sd">          if compute_only is passed, nothing is plotted, only the emissions are computed and set</span>
+<span class="sd">          to self.radexObj</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">meshObj</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">meshObj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mshTmp</span>
+            
+        <span class="k">if</span> <span class="n">radex_parms</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">radex_parms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">]</span>
+
+        <span class="c">#getthing the stuff radex needs from the PDR mesh</span>
+        <span class="p">(</span><span class="n">gasTRadex</span><span class="p">,</span> <span class="n">nColls</span><span class="p">,</span> <span class="n">colDensThisSpec</span><span class="p">,</span> <span class="n">Av_range_used</span><span class="p">,)</span> <span class="o">=</span> <span class="n">meshObj</span><span class="o">.</span><span class="n">getRadexParameters</span><span class="p">(</span><span class="n">speciesStr</span> <span class="o">=</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;specStr&#39;</span><span class="p">],</span> 
+                                                                                          <span class="n">threshold</span>  <span class="o">=</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;xH2_Min&#39;</span><span class="p">],</span>
+                                                                                          <span class="n">Av_range</span>   <span class="o">=</span> <span class="n">Av_range</span><span class="p">)</span>
         
-        <span class="n">msh</span> <span class="o">=</span> <span class="n">meshObj</span>
-        <span class="c">#assigning the axes in which the radex curves will be plotted</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setupPlot</span><span class="p">(</span><span class="n">nx</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;figure&#39;</span><span class="p">],</span> <span class="n">axs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pltRadex</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">set_logger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
-
-        <span class="p">(</span><span class="n">gasTRadex</span><span class="p">,</span> <span class="n">nColls</span><span class="p">,</span> <span class="n">colDensThisSpec</span><span class="p">,)</span> <span class="o">=</span> <span class="n">msh</span><span class="o">.</span><span class="n">getRadexParameters</span><span class="p">(</span><span class="n">speciesStr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;specStr&#39;</span><span class="p">],</span> 
-                                                                       <span class="n">threshold</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;xH2_Min&#39;</span><span class="p">])</span>
-
+        <span class="k">if</span> <span class="n">compute_only</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c">#setting the axes</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setupPlot</span><span class="p">(</span><span class="n">nx</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;figure&#39;</span><span class="p">],</span> <span class="n">axs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pltRadex</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">set_logger</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="p">)</span>
+            <span class="c">#clearing them in case there was anything</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">clearCurves</span><span class="p">()</span>
+                            
         <span class="c"># getting the collider densities in the same order of the supplied input spcie string list </span>
-        <span class="n">nDensColls</span> <span class="o">=</span> <span class="p">[</span> <span class="n">nColls</span><span class="p">[</span><span class="n">collSpecStr</span><span class="p">]</span> <span class="k">for</span> <span class="n">collSpecStr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">]</span> <span class="p">]</span>
-        <span class="n">collsStr</span>   <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">])</span>
+        <span class="n">nDensColls</span> <span class="o">=</span> <span class="p">[</span> <span class="n">nColls</span><span class="p">[</span><span class="n">collSpecStr</span><span class="p">]</span> <span class="k">for</span> <span class="n">collSpecStr</span> <span class="ow">in</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">]</span> <span class="p">]</span>
+        <span class="n">collsStr</span>   <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">])</span>
         <span class="c">#print &#39;input coll species&#39;, self.radexParms[&#39;collisionPartners&#39;] </span>
         <span class="c">#print &#39;nColls after putting them in the right order = &#39;, nDensColls</span>
         
-        <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setInFileParm</span><span class="p">(</span><span class="s">&#39;specStr&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;specStr&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setInFileParm</span><span class="p">(</span><span class="s">&#39;specStr&#39;</span><span class="p">,</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;specStr&#39;</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setInFileParm</span><span class="p">(</span><span class="s">&#39;tKin&#39;</span><span class="p">,</span> <span class="n">gasTRadex</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setInFileParm</span><span class="p">(</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">,</span> <span class="n">collsStr</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setInFileParm</span><span class="p">(</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">,</span> <span class="n">nDensColls</span> <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setInFileParm</span><span class="p">(</span><span class="s">&#39;molnDens&#39;</span><span class="p">,</span> <span class="n">colDensThisSpec</span><span class="p">)</span>
         
         <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">filterColliders</span><span class="p">()</span>
-            
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;not enough colliders&#39;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
+        
+        <span class="k">if</span> <span class="n">compute_only</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="c">#updating the display strings on the gui related to Radex</span>
             <span class="c">#updating the [&#39;radex&#39;][&#39;title1&#39;] and [&#39;radex&#39;][&#39;title2&#39;]</span>
             <span class="c">#title1</span>
-            <span class="n">strng</span> <span class="o">=</span> <span class="s">&#39;radex LVG data for species </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>  <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;specStr&#39;</span><span class="p">]</span>
+            <span class="n">strng</span> <span class="o">=</span> <span class="s">&#39;radex LVG data for species </span><span class="si">%s</span><span class="s">, Av = [</span><span class="si">%.2f</span><span class="s">, </span><span class="si">%.2f</span><span class="s">]&#39;</span> <span class="o">%</span>  <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;specStr&#39;</span><span class="p">],</span> <span class="n">Av_range_used</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Av_range_used</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;title1&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="n">strng</span><span class="p">)</span>
             <span class="c">#title2</span>
             <span class="n">strng</span> <span class="o">=</span> <span class="s">&#39;gasT</span><span class="se">\n</span><span class="si">%f</span><span class="se">\n</span><span class="s">N(specie)</span><span class="se">\n</span><span class="si">%e</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">gasTRadex</span><span class="p">,</span> <span class="n">colDensThisSpec</span><span class="p">)</span>
@@ -2184,6 +2202,10 @@
                 <span class="n">strng</span> <span class="o">+=</span> <span class="s">&#39;</span><span class="si">%s</span><span class="se">\n</span><span class="si">%e</span><span class="se">\n</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">specStr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>                
             <span class="bp">self</span><span class="o">.</span><span class="n">gui</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;title2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="n">strng</span><span class="p">)</span>
 
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;not enough colliders&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="c"># writing the parameters to a file (for debugging purposes)</span>
             <span class="c"># this file can be used to re-run radex as standalone</span>
             <span class="n">fName</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;path&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="s">&#39;-debug.inp&#39;</span>
@@ -2191,76 +2213,31 @@
             <span class="n">fObj</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">genInputFileContentAsStr</span><span class="p">()</span> <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;input radex file written to </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">fName</span><span class="p">)</span>
             
-            <span class="c">#----------------------------------running radex---------------------------------</span>
-            <span class="n">radexOutputMakesSense</span> <span class="o">=</span> <span class="bp">False</span>
-            
-            <span class="c">#parameters used for attempting to get radex to converge and vlaues make sense</span>
-            <span class="n">inFileOrig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">inFile</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="c"># original parameters</span>
-            <span class="n">popDensTol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;popDensSumTol&#39;</span><span class="p">]</span>  <span class="c"># ideally sum pop dens lower should be 1, for values less than tol</span>
-                                                              <span class="c"># the parameters are changed by &#39;changeFac&#39; and another attempt is done</span>
-                                                              <span class="c"># until the sum of pop dens is close to 1 up to tol. </span>
-            <span class="n">changeFac</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;changeFracTrial&#39;</span><span class="p">]</span>  <span class="c"># the relative amount by which the input parameters to radex are changed</span>
-            <span class="n">nMaxTrial</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;nMaxTrial&#39;</span><span class="p">]</span>     <span class="c"># number of time random changes are done before giving up</span>
-
-            <span class="n">nTried</span>     <span class="o">=</span> <span class="mi">0</span>
-            <span class="k">while</span> <span class="ow">not</span> <span class="n">radexOutputMakesSense</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;checkOutputIntegrity&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">False</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setDefaultStatus</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">run</span><span class="p">(</span> <span class="n">checkInput</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="bp">True</span> <span class="p">)</span>
-
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;checkOutputIntegrity&#39;</span><span class="p">]:</span>
-                    <span class="c"># checking the integrity of the solution in case it converged</span>
-                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">getStatus</span><span class="p">()</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;SUCCESS&#39;</span><span class="p">]:</span>
-                                            
-                        <span class="n">totalPopDensLower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">transitions</span><span class="p">[:][</span><span class="s">&#39;pop_down&#39;</span><span class="p">])</span>
-                        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">fabs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;popDensSumExpected&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">totalPopDensLower</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">popDensTol</span><span class="p">:</span>
-                            
-                            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s">&#39;====&gt; pop dens does NOT make sense, trial </span><span class="si">%d</span><span class="se">\n</span><span class="s">====&gt; total pop dense lower = </span><span class="si">%20.10f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">nTried</span><span class="p">,</span> <span class="n">totalPopDensLower</span><span class="p">)</span> <span class="p">)</span>
-    
-                            <span class="c">#change in input parameters by a tiny amount 0.1% and run again</span>
-                            <span class="c">#(this is a numerical bug in radex which fails sometimes)</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;tKin&#39;</span><span class="p">]</span>     <span class="o">=</span> <span class="n">inFileOrig</span><span class="p">[</span><span class="s">&#39;tKin&#39;</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span><span class="o">*</span><span class="n">changeFac</span><span class="p">)</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;molnDens&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inFileOrig</span><span class="p">[</span><span class="s">&#39;molnDens&#39;</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span><span class="o">*</span><span class="n">changeFac</span><span class="p">)</span>
-                            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dens</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">]):</span>
-                                <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">inFile</span><span class="p">[</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">inFileOrig</span><span class="p">[</span><span class="s">&#39;nDensCollisionPartners&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">()</span><span class="o">*</span><span class="n">changeFac</span><span class="p">)</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="n">radexOutputMakesSense</span> <span class="o">=</span> <span class="bp">True</span>
-                            <span class="k">print</span> <span class="s">&#39;====&gt;&#39;</span><span class="p">,</span> <span class="s">&#39;pop dense make sense, trial </span><span class="si">%d</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">nTried</span>
-                    <span class="k">else</span><span class="p">:</span> <span class="c"># radex did not succeed</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;radex failed&#39;</span><span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;---------------------------------------------------------&#39;</span><span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;------------------------radex raw output-----------------&#39;</span><span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;---------------------------------------------------------&#39;</span><span class="p">)</span>
-                        <span class="k">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">rawOutput</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;---------------------------------------------------------&#39;</span><span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">clearCurves</span><span class="p">()</span>
-                        <span class="k">break</span>  <span class="c"># here radexOutputMakesSense woulbe be False</span>
-                    
-                    <span class="n">nTried</span> <span class="o">+=</span> <span class="mi">1</span>
-                    
-                    <span class="k">if</span> <span class="n">nTried</span> <span class="o">&gt;=</span> <span class="n">nMaxTrial</span><span class="p">:</span> <span class="c">#no meaningful output after nTried trials</span>
-                        <span class="k">break</span> <span class="c"># here radexOutputMakesSense woulbe be False</span>
-                        
-                <span class="k">else</span><span class="p">:</span> <span class="c">#no need to check for validity of the radex pop densities</span>
-                    <span class="n">radexOutputMakesSense</span> <span class="o">=</span> <span class="bp">True</span>
-                    <span class="k">break</span>
-            <span class="c">#------------------------------done running radex----------------------------------------</span>
-        
-            <span class="c"># plotting the data</span>
-            <span class="c"># ----------------</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">getStatus</span><span class="p">()</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;SUCCESS&#39;</span><span class="p">]:</span>
-                
-                <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">plotModelInFigureColumn</span><span class="p">(</span><span class="n">allTrans</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;maxDisplayTranistion&#39;</span><span class="p">]),</span>
-                                                      <span class="n">inAxes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pltRadex</span><span class="p">,</span> 
-                                                      <span class="n">title</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setLabels</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">checkInput</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="n">verbose</span> <span class="o">=</span> <span class="bp">True</span><span class="p">)</span>
+                <span class="n">radexOutputMakesSense</span> <span class="o">=</span> <span class="bp">True</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;--------------warnings---------------&#39;</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">warning</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">warnings</span><span class="p">:</span>
-                    <span class="k">print</span> <span class="n">warning</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s">&#39;--------------warnings---------------&#39;</span><span class="p">)</span>
-                    
-
-        </div>
+                <span class="c">#running radex (multiple times if necessary) for it to converge for this set of parms     </span>
+                <span class="n">status</span><span class="p">,</span> <span class="n">radexOutputMakesSense</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">run_mutiple_trials</span><span class="p">(</span><span class="n">expected_sum_pop_dens</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;popDensSumExpected&#39;</span><span class="p">],</span>
+                                                                                 <span class="n">rel_pop_dens_tol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;popDensSumTol&#39;</span><span class="p">],</span> 
+                                                                                 <span class="n">change_frac_trial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;changeFracTrial&#39;</span><span class="p">],</span>    
+                                                                                 <span class="n">max_trials</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;nMaxTrial&#39;</span><span class="p">])</span>
+            
+            <span class="c">#plotting only when the radex solution makes sense (pop dens dont add up to </span>
+            <span class="c">#what they should be up to a certain tolerence)</span>
+            <span class="k">if</span> <span class="n">radexOutputMakesSense</span><span class="p">:</span>
+                
+                <span class="k">if</span> <span class="n">compute_only</span> <span class="o">==</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="c"># plotting the data (even if it does not converge)</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">getStatus</span><span class="p">()</span> <span class="o">&amp;</span> <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">FLAGS</span><span class="p">[</span><span class="s">&#39;SUCCESS&#39;</span><span class="p">]:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">plotModelInFigureColumn</span><span class="p">(</span><span class="n">allTrans</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parms</span><span class="p">[</span><span class="s">&#39;radex&#39;</span><span class="p">][</span><span class="s">&#39;maxDisplayTranistion&#39;</span><span class="p">]),</span>
+                                                              <span class="n">inAxes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pltRadex</span><span class="p">,</span>     
+                                                              <span class="n">title</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>                             
+                    <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">setLabels</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span><span class="o">.</span><span class="n">print_warnings</span><span class="p">()</span> <span class="c">#printing the warnings</span>
+</div>
 <div class="viewcode-block" id="meshArxv.clear"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;clears all the bufferes allocated in the instance&quot;&quot;&quot;</span>
         
@@ -2657,7 +2634,8 @@
 <span class="sd">        coordinate lests self.grid_x, self.grid_y, self.grid_z which are closest to the input x,y,z.&quot;&quot;&quot;</span>
         
         <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mesh_index</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">meshes</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">mshTmp</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meshes</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> 
+        <span class="k">return</span>  <span class="bp">self</span><span class="o">.</span><span class="n">mshTmp</span>
     </div>
 <div class="viewcode-block" id="meshArxv.grid_interpolator"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.grid_interpolator">[docs]</a>    <span class="k">def</span> <span class="nf">grid_interpolator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_gas</span><span class="p">,</span> <span class="n">fuv_heating</span><span class="p">,</span> <span class="n">g_mech</span><span class="p">,</span>
                           <span class="n">quantity</span> <span class="o">=</span> <span class="bp">None</span><span class="p">,</span> <span class="n">slabIdx</span> <span class="o">=</span> <span class="bp">None</span><span class="p">):</span>
@@ -2708,7 +2686,30 @@
         <span class="n">dataNew</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span> <span class="p">[</span><span class="n">lx</span><span class="p">,</span> <span class="n">ly</span><span class="p">,</span> <span class="n">lz</span><span class="p">]</span> <span class="p">)</span><span class="o">.</span><span class="n">T</span>
         <span class="n">qInterp</span> <span class="o">=</span> <span class="n">fInterp</span><span class="p">(</span><span class="n">dataNew</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">qInterp</span></div></div>
+        <span class="k">return</span> <span class="n">qInterp</span>
+    </div>
+<div class="viewcode-block" id="meshArxv.setup_default_radex_instance"><a class="viewcode-back" href="../index.html#meshUtils.meshArxv.setup_default_radex_instance">[docs]</a>    <span class="k">def</span> <span class="nf">setup_default_radex_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radex_parms</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;sets up an instance of the object &#39;radex&#39; to after using</span>
+<span class="sd">           the parameters from radex_parms and setting &#39;tKin&#39;, &#39;nDensCollisionPartners&#39;</span>
+<span class="sd">           and &#39;molnDens&#39; as None. Also sets the attribute self.radexObj</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c">#making the instance            </span>
+        <span class="n">radexObj</span> <span class="o">=</span> <span class="n">radex</span><span class="p">(</span><span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;path&#39;</span><span class="p">],</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;molDataDirPath&#39;</span><span class="p">])</span>
+        <span class="c">#setting some default radex paraemeters</span>
+        <span class="n">inFile</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;specStr&#39;</span>                <span class="p">:</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;specStr&#39;</span><span class="p">],</span>
+                  <span class="s">&#39;outPath&#39;</span>                <span class="p">:</span> <span class="s">&#39;foo&#39;</span> <span class="p">,</span>
+                  <span class="s">&#39;freqRange&#39;</span>              <span class="p">:</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;freqRange&#39;</span><span class="p">],</span>
+                  <span class="s">&#39;tKin&#39;</span>                   <span class="p">:</span> <span class="bp">None</span>  <span class="p">,</span>  <span class="c"># depending on the model</span>
+                  <span class="s">&#39;collisionPartners&#39;</span>      <span class="p">:</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;collisionPartners&#39;</span><span class="p">],</span>
+                  <span class="s">&#39;nDensCollisionPartners&#39;</span> <span class="p">:</span> <span class="bp">None</span>  <span class="p">,</span>  <span class="c"># depending on the model</span>
+                  <span class="s">&#39;tBack&#39;</span>                  <span class="p">:</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;tBack&#39;</span><span class="p">],</span>  <span class="c"># fixed</span>
+                  <span class="s">&#39;molnDens&#39;</span>               <span class="p">:</span> <span class="bp">None</span>  <span class="p">,</span>  <span class="c"># depending on the model</span>
+                  <span class="s">&#39;lineWidth&#39;</span>              <span class="p">:</span> <span class="n">radex_parms</span><span class="p">[</span><span class="s">&#39;lineWidth&#39;</span><span class="p">],</span>  <span class="c"># fixed</span>
+                  <span class="s">&#39;runAnother&#39;</span>             <span class="p">:</span> <span class="mi">1</span>     <span class="p">}</span>
+        <span class="n">radexObj</span><span class="o">.</span><span class="n">setInFile</span><span class="p">(</span> <span class="n">inFile</span> <span class="p">)</span>
+        <span class="n">radexObj</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">radexObj</span> <span class="o">=</span> <span class="n">radexObj</span></div></div>
 </pre></div>
 
           </div>
