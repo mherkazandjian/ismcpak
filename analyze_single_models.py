@@ -14,7 +14,7 @@ specStr = 'CS'
 
 parms = {
          #path to the database files
-         'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-1.0/',
+         'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-1.0-tmp/',
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
          'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech
@@ -47,6 +47,7 @@ parms = {
                                      'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
+                                     'Av_max'         : 30.0,
                                     },
                            },
          'gridsRes'      : 100,
@@ -56,15 +57,18 @@ parms = {
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
+                             'Av_range'             : [0.0, 30.0],  #range which will be used in extracting data needed by radex from the PDR models
+                                                                    #(only relevent to constructing databases)
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : specStr,
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
-                             'collisionPartners'    : ['H2','H+','H','e-','He'],
+                             #'collisionPartners'    : ['H2','H+','H','e-','He'],
                              #'collisionPartners'    : ['H2','H','H+','e-'],
-                             #'collisionPartners'    : ['H2'],
+                             'collisionPartners'    : ['H2'],
+                             'use_pdr_gas_den_H2'   : True,   #<----------
                              'tBack'                : 2.73,
                              'lineWidth'            : 1.0,
                              'verbose'              : True, 
@@ -88,13 +92,6 @@ print 'time reading data %f' % (time() - t0)
 
 # setting the x,y,z quantities to be used for ploting
 arxv.set_grid_axes_quantity_values(relativeGmech = parms['relativeGmech']) 
-
-if parms['radex']['use'] or (parms['gridsInfo']['11']['show'] and parms['gridsInfo']['11']['type'] == 'radex'):
-    if parms['radex']['compute']:
-        arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
-    else:
-        arxv.readDbsRadex(species = parms['radex']['specStr'])
-
 
 if parms['plot']:
     # plotting stuff

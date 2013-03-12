@@ -1,9 +1,14 @@
 from numpy import *
 from time import *
 import sys, os
-if os.uname()[1] in ['ruineraa', 'particle3']:
-    import matplotlib
-    matplotlib.use('Qt4Agg')
+import matplotlib
+
+#if os.uname()[1] in ['ruineraa', 'particle3']:
+#    import matplotlib
+#    matplotlib.use('Qt4Agg')
+
+matplotlib.use('Qt4Agg')
+
 import pylab as pyl
 from meshUtils import *
 
@@ -18,9 +23,10 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-2/',         
          #'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-2.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-1.0-high-res-no-gmech/',
+         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
          'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
-        
+         
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
          'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
@@ -56,15 +62,19 @@ parms = {
                                      'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
                                      'showContours'   : True,
+                                     'Av_max'         : 10.0,  #the maximum Av to be used  
                                     },
                            },
          'gridsRes'      : 100,
          
-         'meshPltAvRng'  : [0, 30.0],
+         'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
+          
          'radex'         : { 'use'                  : True,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
+                             'Av_range'             : [0.0, 10.0],  #range which will be used in extracting data needed by radex from the PDR models
+                                                                    #(only relevent to constructing databases)
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : 'CO',
@@ -74,10 +84,10 @@ parms = {
                              #'collisionPartners'    : ['H2','H+','H','e-','He'],
                              #'collisionPartners'    : ['H2','H','H+','e-'],
                              'collisionPartners'    : ['H2'],
-                             'use_pdr_gas_den_H2'   : True,
+                             'use_pdr_gas_den_H2'   : True,   #<----------
                              'tBack'                : 2.73,
                              'lineWidth'            : 1.0,
-                             'verbose'              : True, 
+                             'verbose'              : True,
                              'maxDisplayTranistion' : 20,
                              ###----------extra convergence params-----------------------
                              'checkOutputIntegrity' : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
@@ -95,16 +105,6 @@ print 'setting up the archive'
 t0 = time()
 arxv = meshArxv(readDb = True, **parms)
 print 'time reading data %f' % (time() - t0)
-
-# setting the x,y,z quantities to be used for ploting
-arxv.set_grid_axes_quantity_values(relativeGmech = parms['relativeGmech']) 
-
-if parms['radex']['use'] or (parms['gridsInfo']['11']['show'] and parms['gridsInfo']['11']['type'] == 'radex'):
-    if parms['radex']['compute']:
-        arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
-    else:
-        arxv.readDbsRadex(species = parms['radex']['specStr'])
-
 
 if parms['plot']:
     # plotting stuff

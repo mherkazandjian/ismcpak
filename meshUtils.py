@@ -137,8 +137,11 @@ class meshArxv():
         """a 3 element np.int32 array holding the version of the radex database currently in use."""
         
         self.currentRadexDb = None
-        """A string which holds the species name of the current radex database being used."""
-        
+        """A dict which holds the name of the species self.currenRadexDb['specStr'] whose radex 
+        db is in the attributes self.meshesRadex and self.infoAllRadexspecies name of the current 
+        radex database being used and the Av depth upto which the data was computed
+        self.currenRadexDb['Av']""" 
+
         self.infoAllRadex = None
         """A numpy ndarray of length self.nMeshes of dtype returned by self.arxvRadexHdrFormat which
            holds the number of transitions computed for the mesh it corresponds to in self.meshes and
@@ -174,19 +177,44 @@ class meshArxv():
         
         self.radexDbs = {}
         """A dictionary holding the radex databases read so far. Each entry in the
-        dictionary is a dictionary of two keys : 'infoAll' and 'meshes'. For example, 
-        this could hold the databases for CO, HCN and HNC. Those can be mannualy
-        to self.meshesRadex and self.infoAllRadex via :
+        dictionary is a dictionary holding the Dbs of the species for different Avs.
+        For example :
+    
+        .. code-block:: python
+        
+            Dbs_Av10 = self.radexDbs['10.00']
+               
+        in this case Dbs_Av10 is a dict holding the databases for the species at Av=10
+
+        .. warning:: the resolution in storing Av is %.2f.
+        
+        The keys of Dbs_Av10 are species string. For example:
+
+        .. code-block:: python
+        
+            Db_CO_Av10 = self.radexDbs['10.00']['CO']
+        
+        Db_CO_sAv10 is a dict of two keys : 'infoAll' and 'meshes'. As a full example 
+        for accessing the Dbs for CO and HCN for Av=10 and Av=30 could be set manually 
+        to self.meshesRadex and self.infoAllRadex via:
         
         .. code-block:: python
         
-            #setting the CO radex database
-            self.meshesRadex  = self.radexDbs['CO']['meshes']
-            self.infoAllRadex = self.radexDbs['CO']['infoAll']
+            #setting the CO radex database for Av=10
+            self.meshesRadex = self.radexDbs['10.00']['CO']['meshes']
+            self.infoAllRadex = self.radexDbs['10.00']['CO']['infoAll']
+            #this is equiveletly done using
+            self.use_radexDb(Av=10, specStr=CO)
             
-            #setting the HCN radex database
-            self.meshesRadex  = self.radexDbs['HCN']['meshes']
-            self.infoAllRadex = self.radexDbs['HCN']['infoAll']
+            #setting the CO radex database for Av=30
+            self.meshesRadex = self.radexDbs['30.00']['CO']['meshes']
+            self.infoAllRadex = self.radexDbs['30.00']['CO']['infoAll']
+            #this is equiveletly done using
+            self.use_radexDb(Av=30, specStr=CO)
+    
+            #similarly for other species and Avs
+        
+        This could be achived also using the method 
         """
         #-------------------------------------------------------------------------------------
         
@@ -222,7 +250,7 @@ class meshArxv():
         self.grds        = None #: 2x2 ndmesh array object
         self.pltRadex    = None
         self.resPltGrids = None
-        
+ 
         #attributes used for storing the interpolation functions from which 
         #the 2D grids to be displayed
         self.grdInterp_f           = None
@@ -234,19 +262,18 @@ class meshArxv():
         """all the keywords used in setting up the database and running it."""
         
         """resolution of the interpolated grids"""
-        
+
         if 'metallicity' in kwargs:
             self.set_metallicity( kwargs['metallicity'] )
         else:
             self.metallicity = None
 
-        self.radexObj   = None
-        #--------------------------GEN AND PLOT RADEX CURVES---------------------------------
-        if 'radex' in self.parms:
+        self.radexObj = None
+        if 'radex' in self.parms and  self.parms['radex']['use'] == True:
             if self.parms['radex']['use']:
                 #making the instance            
                 self.setup_default_radex_instance(self.parms['radex'])
-        
+
         self.mshTmp = None
         """a mesh object which is used to store single mesh data just for plotting purposes"""
                 
@@ -262,6 +289,20 @@ class meshArxv():
         if 'readDb' in kwargs:
             kwargs.pop('readDb')
             self.readDb( check = True)
+
+        #reading|computing radex emission databases
+        if self.parms['radex']['use']: 
+            if self.parms['gridsInfo']['11']['show'] and self.parms['gridsInfo']['11']['type'] == 'radex':
+                if self.parms['radex']['compute']:
+                    self.constructRadexDatabase(writeDb = self.parms['radex']['writeDb'])
+                else:
+                    self.readDbsRadex(Av = self.parms['gridsInfo']['11']['Av_max'], 
+                                      species = self.parms['gridsInfo']['11']['specStr']
+                                     )
+
+        if 'relativeGmech' in self.parms:
+            # setting the x,y,z quantities to be used for ploting
+            self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech']) 
 
         if 'set_defaults' in kwargs:
             kwargs.pop('set_defaults')
@@ -425,7 +466,21 @@ class meshArxv():
         
         if check:
             self.checkIntegrity()
-            
+    
+    def getRadexDbPath(self, Av, specStr):
+        """Give the Av and the species string, returns the paths string pointing to the file (see self.radexDbs).
+        The path to the .db and to the .info.db files
+        """
+
+        dirName = self.parms['dirPath']
+        radexDbsPath_thisAv = dirName + 'radexDbs/Av_%.2f/' % Av
+        
+        dbFname = radexDbsPath_thisAv + 'meshesRadex.db.%s' % specStr
+        dbInfoFname = radexDbsPath_thisAv + 'meshesRadex.db.info.%s' % specStr
+        
+        return (dbFname, dbInfoFname)
+
+ 
     def writeDbRadex(self, dirName = None):
         """ writes the radex meshesRadex.db and meshesRadex.db.info files.  By default the files are
         written to the directorey self.dirName. , unless a diffrent path is specified via
@@ -440,9 +495,18 @@ class meshArxv():
     
         if dirName == None:
             dirName = self.dirPath
-        
-        # writing the mesh to the database file
-        dbDataFObj = file(dirName + 'meshesRadex.db.' + self.parms['radex']['specStr'], 'wb')
+
+        Av_end, specStr = self.parms['radex']['Av_range'][1], self.parms['radex']['specStr']
+        dbFname, dbInfoFname = self.getRadexDbPath(Av_end, specStr) 
+         
+        #creating the Av_XX.XX dir is neccessary
+        dirPath_this_db = dbFname.replace(dbFname.split('/')[-1],'')
+        if os.path.exists(dirPath_this_db) == False:
+            os.mkdir(dirPath_this_db)
+            self.logger.debug('created directory : %s' % dirPath_this_db)
+             
+        #---------------------writing the mesh to the database file------------------
+        dbDataFObj = file(dbFname, 'wb')
         
         for i in np.arange( self.nMeshes ):
             
@@ -465,20 +529,35 @@ class meshArxv():
             np.array( self.infoAllRadex[i]['info'][2] ).tofile(dbDataFObj)
 
         dbDataFObj.close()
-
-        # writing the db info into a file
-        dbInfoFObj = file(self.parms['dirPath'] + 'meshesRadex.db.info.' + self.parms['radex']['specStr'], 'wb')
+        #----------------------done writing the meshes data---------------------------------
+        
+        #-------------------------writing the db info into a file---------------------------
+        dbInfoFObj = file(dbInfoFname, 'wb')
         self.verRadex.tofile( dbInfoFObj)
         self.nMeshes.tofile( dbInfoFObj )
         self.infoAllRadex.tofile( dbInfoFObj )
         dbInfoFObj.close()
         self.logger.debug('wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
 
-    def readDbRadex(self, specStr, check = None):
+    def radex_db_has_been_read(self, Av, specStr):
+        """defining a function which checks if the specified Db has been
+           already read. If found returns True, Flase otherwise
+        """
+
+        if '%.2f' % Av in self.radexDbs.keys():
+            if specStr in self.radexDbs['%.2f' % Av].keys():
+                return True
+            else:
+                return False #specie with this Av is not present
+        else:
+            return False  #no db with this Av is present
+
+    def readDbRadex(self, Av, specStr, check = None):
         """Reads the database suffixed by specStr (i.e meshesRadex.db.(specStr)and assigns the
            appropritate attributes (document) and assigns the read data to self.meshesRadex and
            self.infoAllRadex. 
             
+           :param float Av: this is the Av for the corresponding database at which the emissions were computed 
            :param bool check: if this is set (to any value) the self.checkIntegrity() is called.
            :param string specStr: the string of the specie whose database is to be read.
            
@@ -486,13 +565,18 @@ class meshArxv():
            .. note:: before calling this mehtod, an instance of the radex class should be     
                assigned to self.radexObj. 
         """ 
-        
+                
         #reading the database only if it is not already read. If it is read, it would
         #have a key in radexDbs
-        if specStr not in self.radexDbs.keys():
-            dbInfoFObj = file(self.dirPath + 'meshesRadex.db.info.' + specStr, 'rb')
-            dbDataFObj = file(self.dirPath + 'meshesRadex.db.' + specStr, 'rb')
+        if self.radex_db_has_been_read(Av, specStr) == False:
+            
+            #paths of the files of this db
+            dbFname, dbInfoFname = self.getRadexDbPath(Av, specStr)
+            
+            #file object of this db
+            dbDataFObj, dbInfoFObj = file(dbFname, 'rb'), file(dbInfoFname, 'rb')
     
+            #reading the db info
             self.verRadex = np.fromfile( dbInfoFObj, dtype = (np.int32, 3), count = 1)
             self.verRadex = self.verRadex[0]
     
@@ -544,37 +628,70 @@ class meshArxv():
             
             if check:
                 self.checkIntegrityRadex()            
-        
-            #storing the read Db into a dict
-            self.currentRadexDb = specStr   
+
+            #storing the read Db into a nested dict
+            self.currentRadexDb = {'Av' : Av, 'specStr':specStr}   
             radexDb = { 'meshes' : self.meshesRadex, 'infoAll' : self.infoAllRadex}
-            self.radexDbs[specStr] = radexDb
+            
+            if '%.2f' % Av not in self.radexDbs:
+                self.radexDbs['%.2f' % Av] = {}
+                
+            self.radexDbs['%.2f' % Av][specStr] = radexDb
             self.logger.debug('added %s radex database to memory' % specStr)
         else:
             self.logger.debug('%s radex database already read...skipping' % specStr)
 
-    def readDbsRadex(self, species = None):
+    def readDbsRadex(self, Av = None, species = None):
         """Loads radex database files from disk to a dictionary. The last database loaded is
         the one being used.
         
-           :param species: A string or a list of strings holding the names of the species files to be loaded. 
+        The structure of the dir where the Dbs are present should be as follows:
+        
+            - dirPath/radexDbs/AvXX.XX/meshRadex.db.CO
+            - dirPath/radexDbs/AvXX.XX/meshRadex.db.infoCO
+            
+              and so on for each specie
+
+            - dirPath/radexDbs/AvYY.YY/meshRadex.db.CO
+            - dirPath/radexDbs/AvYY.YY/meshRadex.db.infoCO
+
+        where XX.XX and YY.YY are the Av's for which the Dbs have been computed. For example :
+         
+            - dirPath/radexDbs/Av10.00/meshRadex.db.CO
+            - dirPath/radexDbs/Av10.0/meshRadex.db.infoCO
+        
+        
+        :param species: A string or a list of strings holding the names of the species files to be loaded. 
+        :param Av: A float or a list floats holding the Avs to be restored (if they are present). It
+         the floats are formatted into %.2f when they are included in the database path for each path. For
+         example if Av = 12.5433 and the species = 'CO', this is formatted to :
+           
+             dirPath/radexDbs/Av12.54/meshRadex.db.CO
+         
         """
   
-        if species == None:
-            raise ValueError('keyword species is None, must be a list of strings.')
-
+        if species == None or Av == None:
+            raise ValueError('both keywords species and Av must be provided.')
+        
         if hasattr(species, '__iter__') == False:
             species = [species]      
-            
-        for specStr in species:
-            self.readDbRadex(specStr, check = True)
+        if hasattr(Av, '__iter__') == False:
+            Av = [Av]      
+        
+        for AvThis in Av:   
+            for specStr in species:
+                self.readDbRadex(AvThis, specStr, check = True)
 
-    def use_radexDb(self, specStr):
+    def use_radexDb(self, Av = None, specStr = None):
         """A method which sets a radex database from the databases available in self.radexDbs."""
-        self.meshesRadex    = self.radexDbs[specStr]['meshes']
-        self.infoAllRadex   = self.radexDbs[specStr]['infoAll']
-        self.currentRadexDb = specStr
-        self.logger.debug('swithced to %s radex database' % specStr)
+        
+        if self.radex_db_has_been_read(Av, specStr):
+            self.meshesRadex    = self.radexDbs['%.2f' % Av][specStr]['meshes']
+            self.infoAllRadex   = self.radexDbs['%.2f' % Av][specStr]['infoAll']
+            self.currentRadexDb = {'Av' : Av, 'specStr' :specStr}
+            self.logger.debug('swithced to %s radex database at Av = %f' % (specStr, Av))
+        else:
+            raise ValueError('radex Db for Av %.2f for the specie %s is not present' % (Av, specStr))
         
     def mergeDbs(self, newDbRunDirPath, outDirPath = None):
         """ merges two databases into one and write the resulting db and its info file
@@ -1178,7 +1295,8 @@ class meshArxv():
     def showLineIntensityGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the line intensity grid"""            
         panel = self.gui['maps2d']['11']
-
+        pltParms = self.parms['gridsInfo']['11']
+        
         grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
                                                          res      = res,  
                                                          zSec     = self.pltGmSec, 
@@ -1194,16 +1312,20 @@ class meshArxv():
         levels = np.arange( mn, mx, dl )
         
         # computing and displaying the contour levels to be plotted
-        if self.parms['gridsInfo']['11']['showContours'] == True:
+        if pltParms['showContours'] == True:
             panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
             panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im11, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
         
-        if self.parms['gridsInfo']['11']['type'] == 'radex':
-            panel['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['specStr'],self.parms['gridsInfo']['11']['transitionIndx'])  )
-        elif self.parms['gridsInfo']['11']['type'] == 'pdr':
-            panel['axesCbar'].set_title('Intensity %s-%s' % (self.parms['gridsInfo']['11']['quantity'][1], self.parms['gridsInfo']['11']['quantity'][3]) )
+        if pltParms['type'] == 'radex':
+            titleStr  = 'Intensity '
+            titleStr += '%s-%s' % (pltParms['specStr'], pltParms['transitionIndx']) 
+            titleStr += ' Av = [0,%2.f]' % self.currentRadexDb['Av']
+            panel['axesCbar'].set_title(titleStr)
+        elif pltParms['type'] == 'pdr':
+            titleStr = 'Intensity %s-%s' % (pltParms['quantity'][1], pltParms['quantity'][3])
+            panel['axesCbar'].set_title(titleStr)
         
     def constructRadexDatabase(self, writeDb = None):
         """runs radex on all the models in self.meshes, and computes the line info 
@@ -1222,29 +1344,51 @@ class meshArxv():
         #initiliizing to zero
         infoAllRadex[:] = 0
         meshesRadex = []
-        
+
+        #utility object used to get info from the PDR and feeding them to Radex to get emissions        
         radexObj = self.radexObj
-        # mesh object which will be used as a utility to compute the stuff needed 
-        # by radex to run, as in m.getRadexParameters() to get tKin, nDensCollisionPartners, molnDens
-        m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+        radex_parms = self.parms['radex']
         
-        specStr  = self.parms['radex']['specStr']
-        xH2_Min  = self.parms['radex']['xH2_Min']
+        meshObj = self.mshTmp
+
+        specStr  = radex_parms['specStr']
+        xH2_Min  = radex_parms['xH2_Min']
+        Av_range = radex_parms['Av_range']
         
         for i in np.arange(self.nMeshes):
             
             self.logger.debug('pdr mesh index =  %d : ' % i)
             
-            m.setData( self.meshes[i] )
-            (gasTRadex, nColls, colDensThisSpec,) = m.getRadexParameters(speciesStr = specStr,
-                                                                         threshold  = xH2_Min)
-            # getting the collider densities in the same order of the supplied input spcie string list 
-            nDensColls = [ nColls[collSpecStr] for collSpecStr in self.parms['radex']['collisionPartners'] ]
-            collsStr   = list(self.parms['radex']['collisionPartners'])
+            meshObj.setData( self.meshes[i] )
+            
 
+            #getthing the stuff radex needs from the PDR mesh
+            (gasTRadex, nColls, colDensThisSpec, Av_range_used,) = meshObj.getRadexParameters(speciesStr = specStr, 
+                                                                                              threshold  = xH2_Min,
+                                                                                              Av_range   = Av_range,)
+            
+            #determining what gas density to use for the collider for H2
+            if radex_parms['use_pdr_gas_den_H2']:
+                #using nGas/2 as the density of H2 (allowed when the only collider is H2)
+                nDensColls = [meshObj.data['hdr']['nGas']/2.0]
+                collsStr   = list(radex_parms['collisionPartners'])
+                
+                if len(radex_parms['collisionPartners']) > 1:
+                    raise ValueError("""collisionsPartners can be only H2 when setting the density 
+                    of the collider H2 to the full gas density""")
+            else:
+                #using the weighted densities extracted from the PDR
+                
+                # getting the collider densities in the same order of the supplied input spcie string list 
+                nDensColls = [ nColls[collSpecStr] for collSpecStr in radex_parms['collisionPartners'] ]
+                collsStr   = list(radex_parms['collisionPartners'])
+                #print 'input coll species', radexParms['collisionPartners'] 
+                #print 'nColls after putting them in the right order = ', nDensColls
+
+            radexObj.setInFileParm('specStr', radex_parms['specStr'])
             radexObj.setInFileParm('tKin', gasTRadex)
-            radexObj.setInFileParm('collisionPartners', collsStr )
-            radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
+            radexObj.setInFileParm('collisionPartners', collsStr)
+            radexObj.setInFileParm('nDensCollisionPartners', nDensColls)
             radexObj.setInFileParm('molnDens', colDensThisSpec)
 
             #remove colliders which are underabundant (below radex limits)
@@ -1257,55 +1401,26 @@ class meshArxv():
                 meshesRadex.append(None)
                 radexObj.printSetFlags()
                 continue
-            
-            #----------------------------------running radex---------------------------------
-            radexOutputMakesSense = False
-            
-            #parameters used for attempting to get radex to converge and vlaues make sense
-            inFileOrig = radexObj.inFile.copy() # original parameters
-            popDensTol = self.parms['radex']['popDensSumTol']  # ideally sum pop dens lower should be 1, for values less than tol
-                                                              # the parameters are changed by 'changeFac' and another attempt is done
-                                                              # until the sum of pop dens is close to 1 up to tol. 
-            changeFac  = self.parms['radex']['changeFracTrial']  # the relative amount by which the input parameters to radex are changed
-            nMaxTrial  = self.parms['radex']['nMaxTrial']     # number of time random changes are done before giving up
-            
-            nTried     = 0
-            while not radexOutputMakesSense:
-                self.logger.debug('radex trial %d' % nTried)
-                radexObj.setDefaultStatus()
-                status = radexObj.run( checkInput = True, verbose = False )
-
-                if self.parms['radex']['checkOutputIntegrity']:
-                    # checking the integrity of the solution in case it converged
-                    if radexObj.getStatus() & radexObj.FLAGS['SUCCESS']:
-                        
-                        totalPopDensLower = np.sum(radexObj.transitions[:]['pop_down'])
-                        if np.fabs(self.parms['radex']['popDensSumExpected'] - totalPopDensLower) > popDensTol:
-                            
-                            self.logger.warn('====> pop dens does NOT make sense, trial %d\n====> total pop dense lower = %20.10f' % (nTried, totalPopDensLower) )
-    
-                            #change in input parameters by a tiny amount 0.1% and run again
-                            #(this is a numerical bug in radex which fails sometimes)
-                            radexObj.inFile['tKin']     = inFileOrig['tKin']*(1.0 + np.random.rand()*changeFac)
-                            radexObj.inFile['molnDens'] = inFileOrig['molnDens']*(1.0 + np.random.rand()*changeFac)
-                            for j, dens in enumerate(radexObj.inFile['nDensCollisionPartners']):
-                                radexObj.inFile['nDensCollisionPartners'][j] = inFileOrig['nDensCollisionPartners'][j]*(1.0 + np.random.rand()*changeFac)
-                        else:
-                            radexOutputMakesSense = True
-                            print '====>', 'pop dense make sense, trial %d' % nTried
-                    else: # radex did not succeed
-                        break  # here radexOutputMakesSense woulbe be False
-                    
-                    nTried += 1
-                    
-                    if nTried >= nMaxTrial: #no meaningful output after nTried trials
-                        break # here radexOutputMakesSense woulbe be False
-                        
-                else: #no need to check for validity of the radex pop densities
+            else:
+                # writing the parameters to a file (for debugging purposes)
+                # this file can be used to re-run radex as standalone
+                fName = radex_parms['path'] + '-debug.inp'
+                fObj = open(fName, 'w')
+                fObj.write(radexObj.genInputFileContentAsStr() )
+                self.logger.debug('input radex file written to %s' % fName)
+                
+                if radex_parms['checkOutputIntegrity'] == False:
+                    radexObj.setDefaultStatus()
+                    radexObj.run(checkInput = True, verbose = True)
                     radexOutputMakesSense = True
-                    break
-            #------------------------------done running radex----------------------------------------
-            
+                    status = radexObj.status
+                else:
+                    #running radex (multiple times if necessary) for it to converge for this set of parms     
+                    status, radexOutputMakesSense = radexObj.run_mutiple_trials(expected_sum_pop_dens = radex_parms['popDensSumExpected'],
+                                                                                rel_pop_dens_tol = radex_parms['popDensSumTol'], 
+                                                                                change_frac_trial = radex_parms['changeFracTrial'],    
+                                                                                max_trials = radex_parms['nMaxTrial'])
+                
             #setting the basic radex run info into the attribute
             #-----------------------------------------------------------
             #saving the number of transitions into radex info attribute
@@ -2109,7 +2224,10 @@ class meshArxv():
 
         if meshObj == None:
             meshObj = self.mshTmp
-            
+          
+        radexObj = self.radexObj
+        radex_parms = self.parms['radex']
+          
         if radex_parms == None:
             radex_parms = self.parms['radex']
 
@@ -2120,10 +2238,10 @@ class meshArxv():
         
         if compute_only == None:
             #setting the axes
-            self.radexObj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
-            self.radexObj.set_logger(self.logger)
+            radexObj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
+            radexObj.set_logger(self.logger)
             #clearing them in case there was anything
-            self.radexObj.clearCurves()
+            radexObj.clearCurves()
 
         #determining what gas density to use for the collider for H2
         if radex_parms['use_pdr_gas_den_H2']:
@@ -2147,47 +2265,48 @@ class meshArxv():
         print collsStr
         print nDensColls
         
-        self.radexObj.setInFileParm('specStr', radex_parms['specStr'])
-        self.radexObj.setInFileParm('tKin', gasTRadex)
-        self.radexObj.setInFileParm('collisionPartners', collsStr )
-        self.radexObj.setInFileParm('nDensCollisionPartners', nDensColls )
-        self.radexObj.setInFileParm('molnDens', colDensThisSpec)
+        radexObj.setInFileParm('specStr', radex_parms['specStr'])
+        radexObj.setInFileParm('tKin', gasTRadex)
+        radexObj.setInFileParm('collisionPartners', collsStr)
+        radexObj.setInFileParm('nDensCollisionPartners', nDensColls)
+        radexObj.setInFileParm('molnDens', colDensThisSpec)
         
-        self.radexObj.filterColliders()
+        #remove colliders which are underabundant (below radex limits)
+        radexObj.filterColliders()
         
         if compute_only == None:
             #updating the display strings on the gui related to Radex
             #updating the ['radex']['title1'] and ['radex']['title2']
             #title1
-            strng = 'radex LVG data for species %s, Av = [%.2f, %.2f]' %  (self.parms['radex']['specStr'], Av_range_used[0], Av_range_used[1])
+            strng = 'radex LVG data for species %s, Av = [%.2f, %.2f]' %  (radex_parms['specStr'], Av_range_used[0], Av_range_used[1])
             self.gui['radex']['title1'].set_text(strng)
             #title2
             strng = 'gasT\n%f\nN(specie)\n%e\n' % (gasTRadex, colDensThisSpec)
-            for i, specStr in enumerate(self.radexObj.inFile['collisionPartners']):
-                strng += '%s\n%e\n' % (specStr, self.radexObj.inFile['nDensCollisionPartners'][i])                
+            for i, specStr in enumerate(radexObj.inFile['collisionPartners']):
+                strng += '%s\n%e\n' % (specStr, radexObj.inFile['nDensCollisionPartners'][i])                
             self.gui['radex']['title2'].set_text(strng)
 
 
-        if len(self.radexObj.inFile['collisionPartners']) == 0:
+        if len(radexObj.inFile['collisionPartners']) == 0:
             self.logger.debug('not enough colliders')
         else:
             # writing the parameters to a file (for debugging purposes)
             # this file can be used to re-run radex as standalone
-            fName = self.parms['radex']['path'] + '-debug.inp'
+            fName = radex_parms['path'] + '-debug.inp'
             fObj = open(fName, 'w')
-            fObj.write(self.radexObj.genInputFileContentAsStr() )
+            fObj.write(radexObj.genInputFileContentAsStr() )
             self.logger.debug('input radex file written to %s' % fName)
             
-            if self.parms['radex']['checkOutputIntegrity'] == False:
-                self.radexObj.setDefaultStatus()
-                self.radexObj.run(checkInput = True, verbose = True)
+            if radex_parms['checkOutputIntegrity'] == False:
+                radexObj.setDefaultStatus()
+                radexObj.run(checkInput = True, verbose = True)
                 radexOutputMakesSense = True
             else:
                 #running radex (multiple times if necessary) for it to converge for this set of parms     
-                status, radexOutputMakesSense = self.radexObj.run_mutiple_trials(expected_sum_pop_dens = self.parms['radex']['popDensSumExpected'],
-                                                                                 rel_pop_dens_tol = self.parms['radex']['popDensSumTol'], 
-                                                                                 change_frac_trial = self.parms['radex']['changeFracTrial'],    
-                                                                                 max_trials = self.parms['radex']['nMaxTrial'])
+                status, radexOutputMakesSense = radexObj.run_mutiple_trials(expected_sum_pop_dens = radex_parms['popDensSumExpected'],
+                                                                                 rel_pop_dens_tol = radex_parms['popDensSumTol'], 
+                                                                                 change_frac_trial = radex_parms['changeFracTrial'],    
+                                                                                 max_trials = radex_parms['nMaxTrial'])
             
             #plotting only when the radex solution makes sense (pop dens dont add up to 
             #what they should be up to a certain tolerence)
@@ -2195,13 +2314,13 @@ class meshArxv():
                 
                 if compute_only == None:
                     # plotting the data (even if it does not converge)
-                    if self.radexObj.getStatus() & self.radexObj.FLAGS['SUCCESS']:
-                        self.radexObj.plotModelInFigureColumn(allTrans = np.arange(self.parms['radex']['maxDisplayTranistion']),
-                                                              inAxes = self.pltRadex,     
-                                                              title='')                             
-                    self.radexObj.setLabels()
+                    if radexObj.getStatus() & radexObj.FLAGS['SUCCESS']:
+                        radexObj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
+                                                         inAxes = self.pltRadex,     
+                                                         title = '')                             
+                    radexObj.setLabels()
                 else:
-                    self.radexObj.print_warnings() #printing the warnings
+                    radexObj.print_warnings() #printing the warnings
 
     def clear(self):
         """clears all the bufferes allocated in the instance"""
@@ -2390,7 +2509,8 @@ class meshArxv():
                 # reading the reference archive
                 self.logger.debug('setting up the reference archive')
                 t0 = time()
-                arxvRef = meshArxv(dirPath = referenceDbDirPath, readDb = True )
+                parms_ref_grid = {'radex': {'use': False}, }
+                arxvRef = meshArxv(readDb = True, dirPath = referenceDbDirPath, **parms_ref_grid)
                 self.logger.debug('time reading %f' % (time() - t0))
                 
                 #finding the minimum gMech of the reference database, and constructing
