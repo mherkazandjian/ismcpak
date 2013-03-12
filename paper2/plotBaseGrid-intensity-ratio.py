@@ -36,12 +36,27 @@ parmsFile2     = dirname2 + 'parms.out'
 fileInfoFile2  = dirname2 + 'filesInfo.out'
 
 colormap      = cm.jet
-imageSavePath = '/home/mher/ism/docs/paper02/src/figs/lineRatio-%s-%s-%s-%s-base.eps' % (specStr1, transition1, specStr2, transition2)
-#====================================================================================== 
+#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/lineRatio-%s-%s-%s-%s-base.eps' % (specStr1, transition1, specStr2, transition2)
+imageSavePath = '/home/mher/foo.eps'
+#======================================================================================
+ 
+width  = 6    #figure width (non normalized) 
+height = 6.8  #figure heigh (non normalized)
+as_rat = width/height #aspect ratio of the figure
 
-fig    = pyl.figure(0, figsize = (6, 6) )
-ax1    = fig.add_axes( [0.25, 0.2 , 0.55, 0.55])
-axCbar = fig.add_axes( [0.2, 0.8, 0.65, 0.02])
+ax_xs  = 0.09 #axses x start (normalized)
+ax_ys  = 0.09 #axses y start (normalized)
+ax_sz  = 0.90 #axses size (normalized)
+
+cbar_xs = ax_xs        #colorbar x start
+cbar_ys = ax_sz + 0.03 #colorbar x start
+cbar_sc = 0.9          #scale of the width of the cbar (relative to the width of ax)
+cbar_w  = 0.02         #width of the cbar (normalized)
+
+fig    = pyl.figure(0, figsize = (width, height) )
+fig.set_facecolor('white')
+ax1    = fig.add_axes([ax_xs, ax_ys*as_rat, ax_sz, ax_sz*as_rat])
+axCbar = fig.add_axes([cbar_xs + (0.5*(1.0-cbar_sc))*ax_sz, cbar_ys, cbar_sc*ax_sz - (0.5*(1.0-cbar_sc))*ax_sz, cbar_w])
 
 #==========================getting grid1 data and information======================================
 grd1 = fetchRadexGrid( dirname  = dirname1, specStr = specStr1, 
