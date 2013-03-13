@@ -291,10 +291,11 @@ class meshArxv():
             self.readDb( check = True)
 
         #reading|computing radex emission databases
-        if self.parms['radex']['use']: 
-            if self.parms['gridsInfo']['11']['show'] and self.parms['gridsInfo']['11']['type'] == 'radex':
-                if self.parms['radex']['compute']:
-                    self.constructRadexDatabase(writeDb = self.parms['radex']['writeDb'])
+        if 'radex' in self.parms:
+            if self.parms['radex']['use']: 
+                if self.parms['gridsInfo']['11']['show'] and self.parms['gridsInfo']['11']['type'] == 'radex':
+                    if self.parms['radex']['compute']:
+                        self.constructRadexDatabase(writeDb = self.parms['radex']['writeDb'])
                 else:
                     self.readDbsRadex(Av = self.parms['gridsInfo']['11']['Av_max'], 
                                       species = self.parms['gridsInfo']['11']['specStr']
@@ -2443,7 +2444,7 @@ class meshArxv():
             self.set_grid_qy( ['hdr', 'G0'] )
         if self.grid_qz == None:
             self.set_grid_qz( ['hdr', 'gammaMech'] )
-
+            
     def set_grid_axes_quantity_values(self, *args, **kwargs):
         """Assigns the values of self.grid_x,y,z from self.grid_qx,qy,qz. The values
            are extracted from all the meshes in the database.
