@@ -1,6 +1,16 @@
 # utility function useful for ISM stuff
 import numpy as np
 
+def Av2NH(Av, Z):
+    """Computes the column density of hydrogen nuclei given an Av using the formula
+    in paper1 (add ref)
+    """
+    return (Av*1.87e21)/Z
+def NH2Av(NH, Z):
+    """The inverse of :data:`Av2NH`"""
+    return NH*(1.0/1.87e21)*Z
+
+    
 def AvToLength(Av, nGas, Z):
     """ convert the input visual extinction value to the length in cm (L) of the the NH 
         column (not the actual column density) this is the inverse of Eq-4 

@@ -1,15 +1,11 @@
 # looks up and restors a 2D grided of data from a file name
 #------------------------------------------------------------------------------------
-import numpy as np
-import pickle, os
-if 'particle3' in os.uname():
-    import matplotlib
-    matplotlib.use('Qt4Agg')
-import pylab as pyl
-import matplotlib.cm as cm
+import numpy
+import pickle
+import os
 
-
-def fetchRadexGrid( dirname = None, specStr = None, gmechSec = None, transition = None, verbose = None):
+def fetchRadexGrid( dirname = None, specStr = None, gmechSec = None, 
+                    transition = None, Av_max = None, verbose = None):
 
     dirname       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr
     parmsFile     = dirname + 'parms.out'
@@ -17,6 +13,7 @@ def fetchRadexGrid( dirname = None, specStr = None, gmechSec = None, transition 
 
     #parameters dictionary used by ismcpak to produce each grid 
     parms = pickle.load(open(parmsFile))
+    
     #loading the picke file holding the information of the file (a list of dicts)
     filesInfo = pickle.load(open(fileInfoFile))
     
@@ -29,12 +26,20 @@ def fetchRadexGrid( dirname = None, specStr = None, gmechSec = None, transition 
     
     #looking for the reference grid (zero gmech) for this transition
     for fileInfo in filesInfo:
-        if (np.fabs(10.0**fileInfo['zSec'] - gmechSec) < 1e-14) and fileInfo['transition'] == transition:
+        
+        cond1 = numpy.fabs(10.0**fileInfo['zSec'] - gmechSec) < 1e-14
+        cond2 = fileInfo['transition'] == transition
+        cond3 = numpy.fabs(fileInfo['Av_max'] - Av_max) < 1e-10
+         
+        if cond1 and cond2 and cond3:
+            
             print 'found the following grid file:',
-            print 10.0**fileInfo['zSec'], fileInfo['transition'], fileInfo['filename']
+            print 10.0**fileInfo['zSec'], fileInfo['transition'], fileInfo['filename'], fileInfo['Av_max'] 
             fname = fileInfo['filename']
-            grd = np.loadtxt(fname, dtype = np.float64)
-            return grd
+            #if os.path.isfile(fname+'-cleaned'):
+            #    fname = fname+'-cleaned'
+            grd = numpy.loadtxt(fname, dtype = numpy.float64)
+            return grd, fname
                
     #no grid found with matching specs
     print 'could not find : '

@@ -6,9 +6,8 @@
 
 import numpy
 import sys, os
-if 'particle3' in os.uname():
-    import matplotlib
-    matplotlib.use('Qt4Agg')
+import matplotlib
+matplotlib.use('Qt4Agg')
 import pylab
 import meshUtils
 import mesh
@@ -18,7 +17,8 @@ import collections
 #########################################parameters##########################################################
 home = '/home/mher'
 
-metallicity = 1.0
+metallicity = 0.1
+Av_max      = 10.0
 
 imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-HCO+-CN-CS-z-%.1f.eps' % (metallicity)
 #imageSavePath = '/home/mher/foo.eps'
@@ -32,9 +32,11 @@ parms = {
          
          'plotGrids'     : False,
          'radex'         : { 'use'                  : True,
+                             'loadAllDbs'           : False,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
+                             'Av_range'             : [0.0, 10.0],  
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : 'CO',
@@ -64,7 +66,7 @@ arxv = meshUtils.meshArxv(readDb = True, **parms)
 arxv.set_grid_axes_quantity_values(relativeGmech = parms['relativeGmech']) 
 
 #reading all the available precomputed radex databases
-arxv.readDbsRadex(species = ['CO','13CO','HCN','HNC','HCO+','CS','CN'])
+arxv.readDbsRadex(species = ['CO','13CO','HCN','HNC','HCO+','CS','CN'], Av = Av_max)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 def get_intensities_and_ratios(idx):
@@ -78,7 +80,7 @@ def get_intensities_and_ratios(idx):
     flux = collections.OrderedDict()
 
     specStr = 'HCO+'
-    transitions = arxv.radexDbs[specStr]['meshes'][idx]
+    transitions = arxv.radexDbs['%.2f' % Av_max][specStr]['meshes'][idx]
     if transitions == None:
         return (None, None)
     else:    
@@ -86,7 +88,7 @@ def get_intensities_and_ratios(idx):
         flux[specStr + '(4-3)']  = transitions[3]['fluxcgs'] 
 
     specStr = 'CN'
-    transitions = arxv.radexDbs[specStr]['meshes'][idx]
+    transitions = arxv.radexDbs['%.2f' % Av_max][specStr]['meshes'][idx]
     if transitions == None:
         return (None, None)
     else:
@@ -94,7 +96,7 @@ def get_intensities_and_ratios(idx):
         flux[specStr + '(3-2)']  = transitions[2]['fluxcgs'] 
 
     specStr = 'CS'
-    transitions = arxv.radexDbs[specStr]['meshes'][idx]
+    transitions = arxv.radexDbs['%.2f' % Av_max][specStr]['meshes'][idx]
     if transitions == None:
         return (None, None)
     else:
@@ -146,8 +148,9 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#fig, axs = pylab.figure(figsize = (6,12))
 fig, axs = pylab.subplots(6, 1, sharex = True, sharey = False, figsize = (6,12))
+pylab.subplots_adjust(left = 0.15, bottom = 0.1, right = 0.98, top = 0.9,
+                     wspace = 0.0, hspace = 0.0)
 pylab.subplot(616) 
 barWidth = 0.1
 
@@ -181,7 +184,7 @@ axisUtils.removeAll_xLabels(pylab.gca())
 info = plot_ratios_bars(arxv, [-2.0, 1.0], 'M4', log_n = 5.5, log_G0 = 5.0)
 
 legen = pylab.legend(info['rects'], info['strings'], 
-                   bbox_to_anchor = (-0.1, 1.1, 1.2, .102), loc = 3,  
+                   bbox_to_anchor = (-0.1, 1.1, 1.1, .102), loc = 3, 
                    ncol=5, mode = 'expand', borderaxespad=0.0,
                    title = r"$\alpha$")
 

@@ -385,7 +385,8 @@ class radex( ):
     def run_mutiple_trials(self, expected_sum_pop_dens = None,
                                  rel_pop_dens_tol = None, 
                                  change_frac_trial = None, 
-                                 max_trials = None):
+                                 max_trials = None,
+                                 verbose = None):
         """Runs the same parameters set a few times by doing minor random steps around the
         input original parameters (since although radex sometimes fails for a certain
         parameter set, it does converge for the same set with tiny variations around them).
@@ -407,7 +408,7 @@ class radex( ):
         nTried     = 0
         while not radexOutputMakesSense:
             self.setDefaultStatus()
-            self.run(checkInput = True, verbose = False)
+            self.run(checkInput = True, verbose = verbose)
 
             # checking the integrity of the solution in case it converged
             if self.getStatus() & self.FLAGS['SUCCESS']:

@@ -13,7 +13,7 @@ from fetchGridData import fetchRadexGrid
 
 #-----------------------------------
 #grid 1
-specStr1       = 'C+'
+specStr1       = 'O'
 transition1    = '1-0'
 #grid 2
 specStr2       = 'C'
@@ -35,6 +35,7 @@ dirname2       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % 
 parmsFile2     = dirname2 + 'parms.out'
 fileInfoFile2  = dirname2 + 'filesInfo.out'
 
+Av_max         = 10.0
 colormap      = cm.jet
 #imageSavePath = '/home/mher/ism/docs/paper02/src/figs/lineRatio-%s-%s-%s-%s-base.eps' % (specStr1, transition1, specStr2, transition2)
 imageSavePath = '/home/mher/foo.eps'
@@ -59,11 +60,11 @@ ax1    = fig.add_axes([ax_xs, ax_ys*as_rat, ax_sz, ax_sz*as_rat])
 axCbar = fig.add_axes([cbar_xs + (0.5*(1.0-cbar_sc))*ax_sz, cbar_ys, cbar_sc*ax_sz - (0.5*(1.0-cbar_sc))*ax_sz, cbar_w])
 
 #==========================getting grid1 data and information======================================
-grd1 = fetchRadexGrid( dirname  = dirname1, specStr = specStr1, 
-                      gmechSec = 1e-10, transition = transition1)
+grd1, filename1 = fetchRadexGrid(dirname  = dirname1, specStr = specStr1, Av_max = Av_max,
+                                 gmechSec = 1e-10, transition = transition1)
 #==========================getting grid2 data and information======================================
-grd2 = fetchRadexGrid(dirname  = dirname2, specStr = specStr2, 
-                      gmechSec = 1e-10, transition = transition2)
+grd2, filename2 = fetchRadexGrid(dirname  = dirname2, specStr = specStr2,  Av_max = Av_max,
+                                 gmechSec = 1e-10, transition = transition2)
 
 parms = pickle.load(open(parmsFile1))
 ranges = parms['plotRanges']

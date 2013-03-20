@@ -6,9 +6,8 @@
 
 import numpy
 import sys, os
-if 'particle3' in os.uname():
-    import matplotlib
-    matplotlib.use('Qt4Agg')
+import matplotlib
+matplotlib.use('Qt4Agg')
 import pylab
 import meshUtils
 import mesh
@@ -19,9 +18,10 @@ import collections
 home = '/home/mher'
 
 metallicity = 0.5
+Av_max      = 10.0
 
-imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-atomic-z-%.1f.eps' % metallicity
-#imageSavePath = '/home/mher/foo.eps'
+#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-atomic-z-%.1f.eps' % metallicity
+imageSavePath = '/home/mher/foo.eps'
 
 parms = {
          #path to the database files
@@ -31,7 +31,7 @@ parms = {
          #'plotRanges'     : [[0,6],[0,6],[-51, -15]],  # uniform gmech
          
          'plotGrids'     : False,
-         'radex'         : { 'use'                  : True,
+         'radex'         : { 'use'                  : False,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
@@ -78,13 +78,13 @@ def get_intensities_and_ratios(pdrMeshObj):
     flux = collections.OrderedDict()
     
     quantity = ['fineStructureCoolingComponents','O','rate','1-0'] #OI 63um
-    flux['O63'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity)
+    flux['O63'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
     quantity = ['fineStructureCoolingComponents','C','rate','1-0'] # CI 609um
-    flux['C609'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity)
+    flux['C609'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
     quantity = ['fineStructureCoolingComponents','C','rate','2-1'] # CI 369um
-    flux['C369'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity)
+    flux['C369'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
     quantity = ['fineStructureCoolingComponents','C+','rate','1-0'] # CII 158um
-    flux['C+158'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity)
+    flux['C+158'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
     
     ratios = collections.OrderedDict()
     
@@ -107,8 +107,7 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
     
     for i, gm in enumerate(gm_v):
         
-        data = arxv.get_mesh_data(x = log_n, y = log_G0, z = numpy.log10(gm) )
-        pdrMeshObj.setData( data )
+        pdrMeshObj = arxv.get_mesh_data(x = log_n, y = log_G0, z = numpy.log10(gm) )
         fluxes, ratios = get_intensities_and_ratios(pdrMeshObj)
         
         inds   = numpy.arange(len(ratios))
@@ -128,6 +127,9 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
 
 #fig, axs = pylab.figure(figsize = (6,12))
 fig, axs = pylab.subplots(6, 1, sharex = True, sharey = False, figsize = (6,12))
+pylab.subplots_adjust(left = 0.15, bottom = 0.08, right = 0.98, top = 0.9,
+                     wspace = 0.0, hspace = 0.0)
+
 #ax = fig.add_subplot(616)
 pylab.subplot(616) 
 #ax.set_position([0.1, 0.2, 0.8, 0.7])
@@ -137,7 +139,7 @@ gm_v   = numpy.array([0.1, 1.0, 5.0, 10.0, 50.0])/100.0
 colors = [                  'k',  'g', 'b', 'c', 'y',   'r']
 
 #####################################################################################
-info = plot_ratios_bars(arxv, [-1.0, 1.0], 'MA1', log_n = 1.0, log_G0 = 1.0)
+info = plot_ratios_bars(arxv, [-1.0, 2.0], 'MA1', log_n = 1.0, log_G0 = 1.0)
 pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 10)
 
 pylab.subplot(615)
@@ -150,11 +152,11 @@ info = plot_ratios_bars(arxv, [-0.5, 2.5], 'M1', log_n = 3.0, log_G0 = 3.0)
 
 pylab.subplot(613)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 3.0], 'M2', log_n = 3.0, log_G0 = 5.0)
+info = plot_ratios_bars(arxv, [-0.0, 3.0], 'M2', log_n = 3.0, log_G0 = 5.0)
 
 pylab.subplot(612)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [0.0, 4.0], 'M3', log_n = 5.5, log_G0 = 3.0)
+info = plot_ratios_bars(arxv, [-0.0, 4.0], 'M3', log_n = 5.5, log_G0 = 3.0)
 
 pylab.subplot(611)
 axisUtils.removeAll_xLabels(pylab.gca())

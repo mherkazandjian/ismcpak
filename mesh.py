@@ -747,11 +747,23 @@ class mesh( ):
 
         return dx
         
-    def compute_integrated_quantity(self, quantity):
+    def compute_integrated_quantity(self, quantity, Av_range = None):
         """does the integral \sum_0^{N-1} f_i dx_i, where f_i is the quantity
-        to be integrated upon and dx is the thickness of each slab"""
+        to be integrated upon and dx is the thickness of each slab.
         
+        If Av_range = [Av_1, Av_2] is provided, the integration is done over that range, 
+        otherwise, a range [0, Av_max] is used, where Av_max is the maximum
+        Av of the PDR model.
+        """
+
         q = fetchNestedDtypeValue(self.data, quantity)
         dxSlabs = self.compute_dx()
-        
-        return numpy.sum(q*dxSlabs)        
+
+        if Av_range == None:
+            integrated_quantity = numpy.sum(q*dxSlabs)
+        else:
+            Av = self.data['state']['Av']
+            inds =  numpy.where((Av >= Av_range[0])*(Av < Av_range[1]))
+            integrated_quantity = numpy.sum(q[inds]*dxSlabs[inds])
+            
+        return integrated_quantity

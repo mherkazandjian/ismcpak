@@ -264,19 +264,11 @@ class meshArxv():
         """resolution of the interpolated grids"""
 
         if 'metallicity' in kwargs:
-            self.set_metallicity( kwargs['metallicity'] )
+            self.set_metallicity(kwargs['metallicity'])
         else:
             self.metallicity = None
-
-        self.radexObj = None
-        if 'radex' in self.parms and  self.parms['radex']['use'] == True:
-            if self.parms['radex']['use']:
-                #making the instance            
-                self.setup_default_radex_instance(self.parms['radex'])
-
-        self.mshTmp = None
-        """a mesh object which is used to store single mesh data just for plotting purposes"""
-                
+        
+        
         self.gui = None
         self.parms_used_in_PDR_models = None
         """a dictionary holding the parameters used in modeling the PDRs.  This is read
@@ -286,21 +278,50 @@ class meshArxv():
         if 'no_init_from_run_parms' not in kwargs:
             self.read_used_parms_used_in_PDR_models()
 
+        #setting up the auxiliary attributes if the parms are available
+        #self.mshTmp and self.radexObj
+        self.radexObj = None
+        if 'radex' in self.parms and  self.parms['radex']['use'] == True:
+            if self.parms['radex']['use']:
+                #making the instance            
+                self.setup_default_radex_instance(self.parms['radex'])
+
+        self.mshTmp = None
+        """a mesh object which is used to store single mesh data just for plotting purposes"""
+        if self.chemNet != None and self.metallicity != None:
+            self.mshTmp = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+
         if 'readDb' in kwargs:
             kwargs.pop('readDb')
             self.readDb( check = True)
 
         #reading|computing radex emission databases
+        #-------------------------------------------
         if 'radex' in self.parms:
-            if self.parms['radex']['use']: 
-                if self.parms['gridsInfo']['11']['show'] and self.parms['gridsInfo']['11']['type'] == 'radex':
-                    if self.parms['radex']['compute']:
-                        self.constructRadexDatabase(writeDb = self.parms['radex']['writeDb'])
-                else:
-                    self.readDbsRadex(Av = self.parms['gridsInfo']['11']['Av_max'], 
-                                      species = self.parms['gridsInfo']['11']['specStr']
-                                     )
-
+            if self.parms['radex']['use']:
+                if 'gridsInfo' in self.parms and 'show' in self.parms['gridsInfo']['11'] and self.parms['gridsInfo']['11']['show'] == True:
+                    #----
+                    if self.parms['gridsInfo']['11']['type'] == 'radex':
+                        if self.parms['radex']['compute']:
+                            self.constructRadexDatabase(writeDb = self.parms['radex']['writeDb'])
+                        else:
+                            self.readDbsRadex(Av = self.parms['gridsInfo']['11']['Av_max'], 
+                                              species = self.parms['gridsInfo']['11']['specStr']
+                                              )
+                    #----
+                    else:
+                        self.logger.debug('pdr emissions will be computed on the spot')
+                #----
+                if self.parms['radex']['loadAllDbs']:
+                    #reading all the databases
+                    self.readDbsRadex(allDbs = True)
+                    #set the current Db to the one specieified in the input parms
+                    if self.parms['gridsInfo']['11']['type'] == 'radex': 
+                        self.use_radexDb(self.parms['gridsInfo']['11']['Av_max'], 
+                                         self.parms['gridsInfo']['11']['specStr'])
+            #----
+        #-------------------------------------------
+        
         if 'relativeGmech' in self.parms:
             # setting the x,y,z quantities to be used for ploting
             self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech']) 
@@ -310,10 +331,6 @@ class meshArxv():
             self.set_default_attributes()
             self.set_grid_axes_quantity_values()
         
-        #setting up the auxiliary attributes if the parms are available
-        #self.mshTmp and self.radexObj
-        if self.chemNet != None and self.metallicity != None:
-            self.mshTmp = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
         
     def read_used_parms_used_in_PDR_models(self):
         fpath_parms_used = os.path.join(self.dirPath,'used_parms.pkl')
@@ -499,7 +516,7 @@ class meshArxv():
 
         Av_end, specStr = self.parms['radex']['Av_range'][1], self.parms['radex']['specStr']
         dbFname, dbInfoFname = self.getRadexDbPath(Av_end, specStr) 
-         
+
         #creating the Av_XX.XX dir is neccessary
         dirPath_this_db = dbFname.replace(dbFname.split('/')[-1],'')
         if os.path.exists(dirPath_this_db) == False:
@@ -642,7 +659,7 @@ class meshArxv():
         else:
             self.logger.debug('%s radex database already read...skipping' % specStr)
 
-    def readDbsRadex(self, Av = None, species = None):
+    def readDbsRadex(self, Av = None, species = None, allDbs = None):
         """Loads radex database files from disk to a dictionary. The last database loaded is
         the one being used.
         
@@ -668,29 +685,71 @@ class meshArxv():
          example if Av = 12.5433 and the species = 'CO', this is formatted to :
            
              dirPath/radexDbs/Av12.54/meshRadex.db.CO
-         
+        :param bool all: if this is set, the directory radexDbs is read recursively and
+         all the radex Dbs in it are loaded into self.radexDbs. If this is passed, the
+         parameters Av and species are ignored 
         """
   
-        if species == None or Av == None:
-            raise ValueError('both keywords species and Av must be provided.')
-        
-        if hasattr(species, '__iter__') == False:
-            species = [species]      
-        if hasattr(Av, '__iter__') == False:
-            Av = [Av]      
-        
-        for AvThis in Av:   
-            for specStr in species:
-                self.readDbRadex(AvThis, specStr, check = True)
+        if allDbs == None:
+            #loading the specified radex Dbs
+            if species == None or Av == None:
+                raise ValueError('both keywords species and Av must be provided.')
+            
+            if hasattr(species, '__iter__') == False:
+                species = [species]      
+            if hasattr(Av, '__iter__') == False:
+                Av = [Av]      
+            
+            for AvThis in Av:   
+                for specStr in species:
+                    self.readDbRadex(AvThis, specStr, check = True)
+        else:
+            #loading all the Dbs in radexDs/
 
+            dirPath = self.parms['dirPath'] + 'radexDbs'
+            pAv = subprocess.Popen(['ls', dirPath], stdout=subprocess.PIPE)
+            Avlsout = pAv.stdout.read()
+            
+            print 'directores which might contain Dbs : ', Avlsout
+            
+            #getting the Avs in the radexDbs dir
+            Avs = []
+            for Avline in Avlsout.split('\n'):
+                Avline = Avline.replace('Av_','').strip()
+                if Avline != '':
+                    Av = float(Avline)
+                    Avs.append(Av)
+                    
+                    print 'looking for Dbs in the dir whose Av is %.2f' % Av
+                    
+                    #getting the species names
+                    subDirName = dirPath + '/Av_%.2f' % Av
+                    print subDirName
+                    pSpcs = subprocess.Popen(['ls', subDirName], stdout=subprocess.PIPE)
+                    speclsout = pSpcs.stdout.read()
+                    
+                    print 'Db files found ', speclsout
+                    
+                    for specline in speclsout.split('\n'):
+                        if 'info' in specline:
+                            continue
+                        else:
+                            if specline != '':
+                                specStr = specline.replace('meshesRadex.db.', '').strip()
+                                
+                                self.readDbRadex(Av, specStr, check = True)#read the Db
+                                
     def use_radexDb(self, Av = None, specStr = None):
         """A method which sets a radex database from the databases available in self.radexDbs."""
         
         if self.radex_db_has_been_read(Av, specStr):
-            self.meshesRadex    = self.radexDbs['%.2f' % Av][specStr]['meshes']
-            self.infoAllRadex   = self.radexDbs['%.2f' % Av][specStr]['infoAll']
-            self.currentRadexDb = {'Av' : Av, 'specStr' :specStr}
-            self.logger.debug('swithced to %s radex database at Av = %f' % (specStr, Av))
+
+            if self.currentRadexDb['Av'] != Av or self.currentRadexDb['specStr'] != specStr:
+                #setting the new Db only if it is different from the specified one 
+                self.meshesRadex    = self.radexDbs['%.2f' % Av][specStr]['meshes']
+                self.infoAllRadex   = self.radexDbs['%.2f' % Av][specStr]['infoAll']
+                self.currentRadexDb = {'Av':Av, 'specStr':specStr}
+                self.logger.debug('swithced to %s radex database at Av = %f' % (specStr, Av))
         else:
             raise ValueError('radex Db for Av %.2f for the specie %s is not present' % (Av, specStr))
         
@@ -1160,14 +1219,14 @@ class meshArxv():
         if self.parms['gridsInfo']['11']['show']:
              
             radiativeCodeType = self.parms['gridsInfo']['11']['type']
-            
+            quantity = self.parms['gridsInfo']['11']['quantity']
+
             #----------------------------emissions using radex---------------------------------------
             if radiativeCodeType == 'radex':
 
                 values, grid_x, grid_y, grid_z = [], [], [], []
 
                 transitionIdx = self.parms['gridsInfo']['11']['transitionIndx']
-                quantity      = self.parms['gridsInfo']['11']['quantity']
             
                 #looping over all the radex info of all the mesehes and getting the
                 #transition data to be displayed
@@ -1186,9 +1245,11 @@ class meshArxv():
                             grid_y.append( y )
                             grid_z.append( z )
                             
+                            
                 # getting the data in the shape that is accepted by the interpolation construction        
                 data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
-                values = np.array( values, dtype = np.float64)
+                values = np.array(values, dtype = np.float64)
+                
                 self.intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
                                                                                    values = values,
                                                                                    log10  = True,
@@ -1197,6 +1258,8 @@ class meshArxv():
             #----------------------------emissions from the PDR slabs---------------------------------------
             if radiativeCodeType == 'pdr':
 
+                Av_max = self.parms['gridsInfo']['11']['Av_max']
+
                 #getting the column densities for all the models
                 values  = np.ndarray(self.nMeshes, dtype = np.float64)
                 #a temporary object used to calculate stuff from a pdr mesh object
@@ -1204,10 +1267,8 @@ class meshArxv():
                 
                 for i, data in enumerate(self.meshes):
                     
-                    m.setData( data )
-                    
-                    quantity = self.parms['gridsInfo']['11']['quantity']
-                    v = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity)
+                    m.setData(data)
+                    v = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
 
                     if v < 0:
                         self.logger.warning('negative intensitiy detected - setting it to 0')
@@ -1318,15 +1379,17 @@ class meshArxv():
             panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im11, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
+
+        #formatting the string of the title of the emission panel
+        titleStr  = 'Intensity '
         
         if pltParms['type'] == 'radex':
-            titleStr  = 'Intensity '
-            titleStr += '%s-%s' % (pltParms['specStr'], pltParms['transitionIndx']) 
-            titleStr += ' Av = [0,%2.f]' % self.currentRadexDb['Av']
-            panel['axesCbar'].set_title(titleStr)
+            titleStr += '%s-%s' % (self.currentRadexDb['specStr'], pltParms['transitionIndx']) 
         elif pltParms['type'] == 'pdr':
-            titleStr = 'Intensity %s-%s' % (pltParms['quantity'][1], pltParms['quantity'][3])
-            panel['axesCbar'].set_title(titleStr)
+            titleStr += '%s-%s' % (pltParms['quantity'][1], pltParms['quantity'][3])
+
+        titleStr += ' Av = [0,%2.f]' % self.parms['gridsInfo']['11']['Av_max']
+        panel['axesCbar'].set_title(titleStr)
         
     def constructRadexDatabase(self, writeDb = None):
         """runs radex on all the models in self.meshes, and computes the line info 
@@ -1351,7 +1414,7 @@ class meshArxv():
         radex_parms = self.parms['radex']
         
         meshObj = self.mshTmp
-
+        
         specStr  = radex_parms['specStr']
         xH2_Min  = radex_parms['xH2_Min']
         Av_range = radex_parms['Av_range']
@@ -1476,8 +1539,9 @@ class meshArxv():
             (x_i, y_i, v_i) are written on each line.  
         """
         
-        ranges          = self.parms['plotRanges'] 
-        res             = self.resPltGrids 
+        ranges  = self.parms['plotRanges'] 
+        res     = self.resPltGrids 
+        Av_max  = self.parms['gridsInfo']['11']['Av_max']
 
         #self.set_default_attributes()
         #self.set_grid_axes_quantity_values()
@@ -1547,6 +1611,7 @@ class meshArxv():
     
                     filename  = self.dirPath + relativeDirPath + basename
                     filename += '-' + quantity + '-' + transStrng
+                    filename += '-' + 'Av=%.2f' % Av_max
                     filename += '-log10zSec=%f' % zSec
                     filename += '.txt'
                     
@@ -1565,6 +1630,7 @@ class meshArxv():
                     thisFileInfo = {'zSec'       : zSec,
                                     'transition' : transStrng,
                                     'filename'   : filename,
+                                    'Av_max'     : Av_max,
                                     }
                     filesInfo += (thisFileInfo,)
                 else:
@@ -1576,7 +1642,8 @@ class meshArxv():
         pickle.dump(filesInfo, fileInfoFobj)
         fileInfoFobj.close()
 
-    def save_PDR_emission_grids(self, relativeDirPath = None, basename = None, transitions = None, quantity = None, *args, **kwargs):
+    def save_PDR_emission_grids(self, relativeDirPath = None, basename = None, transitions = None, 
+                                quantity = None, Av_max = None, *args, **kwargs):
         """method that saves the emission grids computed from the PDR models (emission grids) for now into files"""
         
         ranges = self.parms['plotRanges'] 
@@ -1592,6 +1659,7 @@ class meshArxv():
         filesInfo = ()
 
         specStr = self.parms['gridsInfo']['11']['quantity'][1]
+        Av_max = self.parms['gridsInfo']['11']['Av_max']
         quantity_PDR_em = ['fineStructureCoolingComponents', specStr, quantity, '']
         
         #a temporary object used to calculate stuff from a pdr mesh object
@@ -1613,10 +1681,10 @@ class meshArxv():
                 for i, data in enumerate(self.meshes):
                     
                     m.setData(data)
-                    dxSlabs = m.compute_dx()
-                    
-                    q = fetchNestedDtypeValue(data, quantity_PDR_em )
-                    v = np.sum( q*dxSlabs ) / (2.0 * np.pi)
+                    v = m.compute_integrated_quantity(quantity_PDR_em, 
+                                                      Av_range = [0.0, Av_max]
+                                                     )
+                    v /= (2.0*np.pi)
 
                     if v < 0:
                         self.logger.warning('negative intensitiy detected - setting it to 0')
@@ -1650,6 +1718,8 @@ class meshArxv():
                     filename += '-' + 'fluxcgs' + '-' + transStrng
                 else:
                     filename += '-' + quantity + '-' + transStrng
+                    
+                filename += '-' + 'Av=%.2f' % Av_max
                 filename += '-log10zSec=%f' % zSec
                 filename += '.txt'
                     
@@ -1658,6 +1728,7 @@ class meshArxv():
                     
                 thisFileInfo = {'zSec'       : zSec,
                                 'transition' : transStrng,
+                                'Av_max'     : Av_max,
                                 'filename'   : filename,
                                }
                 filesInfo += (thisFileInfo,)
@@ -1977,7 +2048,7 @@ class meshArxv():
         self.gui['widgets']['zSecSelector']['pointsUnique'].set_ydata(self.grid_z_unique*0.0 + 0.5)
 
         # attaching mouse click event to fig 1
-        self.gui['figure'].canvas.mpl_connect('button_press_event', self.on_b1_down)
+        self.gui['figure'].canvas.mpl_connect('button_press_event', self.on_button_down)
         
         self.plotThisSec()
         
@@ -1997,7 +2068,7 @@ class meshArxv():
         self.gui['ax2d']['pts1'].set_ydata( self.grid_y[indsThisSec] )
         
         #overplotting the radex points available for this section
-        if self.parms['gridsInfo']['11']['show']:
+        if self.parms['gridsInfo']['11']['type'] == 'radex' and self.parms['gridsInfo']['11']['show']:
             cond1 = np.fabs(self.grid_z - self.pltGmSec) < 1e-13
             for i in np.arange(cond1.size): 
                 c0 = (self.infoAllRadex[i]['info'][2] == -1)
@@ -2024,8 +2095,8 @@ class meshArxv():
             # line intensity (bottom right grid)
             if self.parms['gridsInfo']['11']['show']:
                 self.showLineIntensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
-        
-    def on_b1_down(self, event):
+    
+    def on_button_down(self, event):
         """method called on the event of a mouse button down in self.fig. See self.setupGui()
            for the layout of the window.
         """
@@ -2046,7 +2117,7 @@ class meshArxv():
                 # setting the section closest to the data available
                 inds = np.argmin(np.fabs( self.grid_z - xd ) )
                 self.pltGmSec = self.grid_z[inds]
-                self.gui['widgets']['zSecSelector']['point'].set_xdata( self.pltGmSec )
+                self.gui['widgets']['zSecSelector']['point'].set_xdata(self.pltGmSec)
                 # updating the title
                 newTitle = 'z section selector : %f (%e)' % (self.pltGmSec, 10**self.pltGmSec)
                 self.gui['widgets']['zSecSelector']['axes'].set_title(newTitle)
@@ -2065,10 +2136,10 @@ class meshArxv():
                         #deleting the images
                         del panel['axes'].images[:]
                     
-                self.plotThisSec() #;;; rename this to update 2D grids
+                self.plotThisSec() #TODO:: rename this to update 2D grids
                 pyl.draw()
 
-            # getting the value of the transition to display in the emission panel
+            # radex curves to be displayed in each panel
             #----------------------------------------------------------------------
             if self.gui['widgets']['transitionSelector']['axes'].contains(event)[0]:
                 clickedInAxes = True
@@ -2096,8 +2167,8 @@ class meshArxv():
                 self.plotThisSec() #;;; rename this to update 2D grids
                 pyl.draw()
 
-            # getting the coordinates inthe grid to display as a single mesh as a function of Av
-            # and maybe display the radex calculations
+            # selecting a mesh from points: getting the coordinates inthe grid to display 
+            # as a single mesh as a function of Av and maybe display the radex calculations
             #------------------------------------------------------------------------------------                
             if self.gui['ax2d']['axes'].contains(event)[0]:
                 clickedInAxes = True
@@ -2114,20 +2185,11 @@ class meshArxv():
                 self.gui['ax2d']['pts2'].set_ydata( self.grid_y[indMin] )
                 self.gui['ax2d']['pts2'].set_color('r')
                                     
-                self.mshTmp.plot() #plotting the PDR mesh curves in the panels
+                self.mshTmp.plot() #plotting the PDR mesh curves in the panels (vs Av)
                                     
                 if self.parms['radex']['use']:
                     self.computeAndSetRadexCurves(meshObj = self.mshTmp)
                 
-                #;;;remove later (to plot the emissions along the grid)
-                """
-                pyl.figure(figsize=(6,6))
-                pyl.plot(self.mshTmp.data['state']['Av'],
-                         self.mshTmp.data['fineStructureCoolingComponents']['C']['rate']['1-0'],'r')
-                pyl.plot(self.mshTmp.data['state']['Av'],
-                         self.mshTmp.data['fineStructureCoolingComponents']['C']['rate']['2-1'],'b')
-                """
-                #;;;end remove later
                 pyl.draw()
 
             # setting the Av of the position clicked on the plots of the current mesh
@@ -2148,6 +2210,10 @@ class meshArxv():
                 #chemical netowrk of the mesh
                 mshAv = self.mshTmp.data['state']['Av']
                 indAv = np.argmin( np.fabs(mshAv - Av_clicked) )
+
+                #plotting the vertical lines on the gui indicating the positions
+                #in the slab used for the chemistry
+                self.mshTmp.plot_v_lines_used_in_chemnet()
                 
                 #the values to be assigned to the chemical network
                 Av_use = self.mshTmp.data['state']['Av'][indAv]
@@ -2174,11 +2240,7 @@ class meshArxv():
                                               beta_CO     = beta_CO,
                                               beta_13CO   = beta_13CO,
                                               beta_H2     = beta_H2)
-                
-                #plotting the vertical lines on the gui indicating the positions
-                #in the slab used for the chemistry
-                self.mshTmp.plot_v_lines_used_in_chemnet()
-                
+                                
                 #cleaning previously computerd rxn rates and constants (if they were computed)
                 chemNet.set_all_rxn_rates_and_cst_to_none()
                  
@@ -2188,6 +2250,7 @@ class meshArxv():
                 chemNet.compute_rxn_rates()
 
                 specStr = self.parms['gridsInfo']['10']['specStr']
+
                 self.logger.debug('dominat reactions destroyin %s' % specStr)
                 IDs_filtered = chemNet.filter_reactions(withReacts=specStr, 
                                                         fmt='id type rxn trng cst rate', 
@@ -2198,7 +2261,7 @@ class meshArxv():
                                                         fmt='id type rxn trng cst rate', 
                                                         show=10, 
                                                         sort=True)
-
+                
                 self.logger.debug('set the environment variable to the chemical netowrk of the mesh.')
             
             
@@ -2211,6 +2274,11 @@ class meshArxv():
             if clickedInAxes == True:
                 tf = time()
                 self.logger.debug('time elapased after click : %f\n' % (tf - ti))
+
+        if event.button == 3:
+            print 'button 3 pressed'
+
+            self.plot_integrated_emissions()
                 
     def computeAndSetRadexCurves(self, meshObj = None, radex_parms = None, Av_range = None, compute_only = None):
         """This is a utilty method (make it a private method), for populating the radex axes
@@ -2262,9 +2330,9 @@ class meshArxv():
             #print 'input coll species', self.radexParms['collisionPartners'] 
             #print 'nColls after putting them in the right order = ', nDensColls
 
-        print '================='
-        print collsStr
-        print nDensColls
+        #print '================='
+        #print collsStr
+        #print nDensColls
         
         radexObj.setInFileParm('specStr', radex_parms['specStr'])
         radexObj.setInFileParm('tKin', gasTRadex)
@@ -2300,14 +2368,15 @@ class meshArxv():
             
             if radex_parms['checkOutputIntegrity'] == False:
                 radexObj.setDefaultStatus()
-                radexObj.run(checkInput = True, verbose = True)
+                radexObj.run(checkInput = True, verbose = radex_parms['verbose'])
                 radexOutputMakesSense = True
             else:
                 #running radex (multiple times if necessary) for it to converge for this set of parms     
                 status, radexOutputMakesSense = radexObj.run_mutiple_trials(expected_sum_pop_dens = radex_parms['popDensSumExpected'],
-                                                                                 rel_pop_dens_tol = radex_parms['popDensSumTol'], 
-                                                                                 change_frac_trial = radex_parms['changeFracTrial'],    
-                                                                                 max_trials = radex_parms['nMaxTrial'])
+                                                                            rel_pop_dens_tol = radex_parms['popDensSumTol'], 
+                                                                            change_frac_trial = radex_parms['changeFracTrial'],    
+                                                                            max_trials = radex_parms['nMaxTrial'],
+                                                                            verbose = radex_parms['verbose'])
             
             #plotting only when the radex solution makes sense (pop dens dont add up to 
             #what they should be up to a certain tolerence)
@@ -2796,3 +2865,119 @@ class meshArxv():
         radexObj.logger = self.logger
         
         self.radexObj = radexObj
+        
+    def plot_integrated_emissions(self):
+        """plots quantities of a PDR mesh as a function of Av, also some
+        quantites from the radexDbs (self.radexDbs)
+        """
+
+        fig22 = pylab.figure(figsize=(6,6))
+        ax = fig22.add_subplot(111)
+        
+        m = self.mshTmp
+
+        lG0 = numpy.log10(m.data['hdr']['G0'])
+        lnGas = numpy.log10(m.data['hdr']['nGas'])
+        lGmech = numpy.log10(m.data['hdr']['gammaMech'])
+        plotTitle =  '$\log_{10} n_{gas} = $ %4.2f  $\log_{10} G_0 =$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f' %  (lnGas, lG0, lGmech)
+        mesh_indx = self.get_mesh_index(x=lnGas, y=lG0, z=self.pltGmSec)
+        
+        titles = []  #will store legend entries of the plots 
+        plots = []   #will store the line object of each plot
+        symbols = [] #the symbols to be used in plotting the lines
+        #-------------------computing stuff from the PDR meshes--------------        
+        quantities = []
+    
+        quantities.append(['therm','cooling'])
+        titles.append(r'$\Lambda_{total}$'); symbols.append('-x')
+        quantities.append(['cooling','metaStable'])
+        titles.append(r'$\Lambda_{MS}$');  symbols.append('-')
+        quantities.append(['cooling','fineStructure'])
+        titles.append(r'$\Lambda_{FS}$');  symbols.append('-')
+        quantities.append(['cooling','roVib'])
+        titles.append(r'$\Lambda_{RV}$');  symbols.append('-')
+        quantities.append(['cooling','lymanAlpha'])
+        titles.append(r'$\Lambda_{LyA}$');  symbols.append('-')
+
+        #quantities.append(['fineStructureCoolingComponents','C+','rate','1-0'])
+        #titles.append(r'C+');  symbols.append('-')
+        
+        Avs = m.data['state']['Av']
+                
+        for i, quantity in enumerate(quantities):
+            
+            vs = []
+            for Av in Avs: 
+                v1 = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, Av])
+                vs.append(v1)
+                
+            vs = numpy.array(vs)
+            
+            #plt, = ax.semilogy(Avs, vs)
+            plt, = ax.plot(Avs, vs, symbols[i])
+            plots.append(plt)
+
+        ttl = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 10.0])
+        rng1 = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 5.0])
+        rng2 = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [5.0, 10.0])
+        print 'contributions from 0  up to Av10 = %e' % (rng1/ttl)
+        print 'contributions from 10 up to Av30 = %e' % (rng2/ttl)
+        #-------------------done computing stuff from the PDR meshes--------------        
+
+
+        #-------------------extracting and plotting stuff from the radex Dbs------
+        specStrs    = ['CO' , 'CO'  , 'HCN' , 'HNC', 'CS']
+        transitions = [0    ,   0   ,   0   ,   0  ,  0  ]
+        titleStrs   = ['1-0',  '1-0', '1-0', '1-0' , '1-0']
+        quantity    = 'fluxcgs'
+                
+        for i,specStr in enumerate(specStrs):
+            Avs, vs = self.get_quantity_from_radex_meshes_vs_Av(mesh_indx,
+                                                                specStr, 
+                                                                quantity,
+                                                                transitions[i])
+            print Avs, vs
+            plots.append(ax.semilogy(Avs, vs,'--o')[0])
+            titles.append(specStr + titleStrs[i])
+        #-------------done extracting and plotting stuff from the radex Dbs-------
+
+
+        pylab.legend(plots, titles)
+        pylab.xlabel('Av')
+        pylab.ylabel('cooling')
+        pylab.title(plotTitle)
+        pylab.ylim([1e-10, 1.0])
+        pylab.draw()
+        pylab.show()
+        self.logger.debug('exitting auxiliaray method')
+        
+    def get_quantity_from_radex_meshes_vs_Av(self, mesh_indx, specStr, quantity, transition_idx):
+        """returns a quantity vs Av from a certain mesh indicated by 'mesh_indx'
+        from readeDbs. A tuple is reutured (Avs, quantity) where Avs is the
+        visual extinction at which the quantities returned. Both are numpy arrays.
+        This was primarily written to get the flux as a function of Av from the 
+        radex meshes. """
+        
+        #making a copy of the current Db to be reset to it upon exitting this method
+        currRadexDb = self.currentRadexDb.copy() 
+
+        Avs = []
+        vs = [] 
+        
+        for AvKey in self.radexDbs.keys():
+            Av = float(AvKey)
+            #setting the radexDb to use
+            self.use_radexDb(Av=Av, specStr=specStr)
+            #getting the value we need and appending it
+            if self.meshesRadex[mesh_indx] != None:
+                vs.append(self.meshesRadex[mesh_indx][quantity][transition_idx])
+                Avs.append(Av)
+            print 'gMech radex = ', mesh_indx, numpy.log10(self.infoAllRadex[mesh_indx]['parms'][2])
+        
+        Avs = numpy.array(Avs)    
+        vs = numpy.array(vs)
+
+        self.use_radexDb(Av=currRadexDb['Av'], specStr=currRadexDb['specStr'])
+        
+        indsSorted = Avs.argsort()
+        return (Avs[indsSorted], vs[indsSorted])        

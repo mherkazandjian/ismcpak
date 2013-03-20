@@ -6,9 +6,8 @@
 
 import numpy
 import sys, os
-if 'particle3' in os.uname():
-    import matplotlib
-    matplotlib.use('Qt4Agg')
+import matplotlib
+matplotlib.use('Qt4Agg')
 import pylab
 import meshUtils
 import mesh
@@ -18,7 +17,8 @@ import collections
 #########################################parameters##########################################################
 home = '/home/mher'
 
-metallicity = 1.0
+metallicity = 2.0
+Av_max      = 10.0
 
 specStr = 'CO'
 imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-%s-z-%.1f.eps' % (specStr,metallicity)
@@ -33,9 +33,11 @@ parms = {
          
          'plotGrids'     : False,
          'radex'         : { 'use'                  : True,
+                             'loadAllDbs'           : False,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
+                             'Av_range'             : [0.0, 10.0],  
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : 'CO',
@@ -65,7 +67,7 @@ arxv = meshUtils.meshArxv(readDb = True, **parms)
 arxv.set_grid_axes_quantity_values(relativeGmech = parms['relativeGmech']) 
 
 #reading all the available precomputed radex databases
-arxv.readDbsRadex(species = specStr)
+arxv.readDbsRadex(species = specStr, Av = Av_max)
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 def get_intensities_and_ratios(transitions):
@@ -113,7 +115,7 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
         legendStrs.append(gm)
     
     #pylab.yscale('log')
-    pylab.text(0.8, ylim[1]*0.8, modelName)        
+    pylab.text(0.8, ylim[1]*0.8, modelName, size='large')        
     pylab.ylabel(r"$log_{10}$[line ratio]")
     pylab.grid(True)
     
@@ -123,6 +125,9 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
 
 #fig, axs = pylab.figure(figsize = (6,12))
 fig, axs = pylab.subplots(6, 1, sharex = True, sharey = False, figsize = (6,12))
+pylab.subplots_adjust(left = 0.15, bottom = 0.1, right = 0.98, top = 0.9,
+                     wspace = 0.0, hspace = 0.0)
+
 #ax = fig.add_subplot(616)
 pylab.subplot(616) 
 #ax.set_position([0.1, 0.2, 0.8, 0.7])
@@ -133,7 +138,7 @@ colors = [            'k', 'g', 'b', 'c' , 'y',   'r']
 
 #####################################################################################
 info = plot_ratios_bars(arxv, [-3.0, 2.0], 'MA1', log_n = 1.0, log_G0 = 1.0)
-pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 6)
+pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 10)
 
 pylab.subplot(615)
 axisUtils.removeAll_xLabels(pylab.gca())
@@ -157,7 +162,7 @@ info = plot_ratios_bars(arxv, [-1.0, 4.0], 'M4', log_n = 5.5, log_G0 = 5.0)
 
 
 legen = pylab.legend(info['rects'], info['strings'], 
-                   bbox_to_anchor = (-0.1, 1.1, 1.2, .102), loc = 3,  
+                   bbox_to_anchor = (-0.1, 1.1, 1.1, .102), loc = 3,  
                    ncol=5, mode = 'expand', borderaxespad=0.0,
                    title = r"$\alpha$")
 

@@ -1,19 +1,16 @@
-from numpy import *
-from time import *
-import sys, os
+import numpy
+import time
+import sys
+import os
 import matplotlib
-
-#if os.uname()[1] in ['ruineraa', 'particle3']:
-#    import matplotlib
-#    matplotlib.use('Qt4Agg')
-
 matplotlib.use('Qt4Agg')
 
-import pylab as pyl
-from meshUtils import *
-
+import pylab
+import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
+
+specStr = 'CN'
 
 parms = {
          #path to the database files
@@ -31,7 +28,7 @@ parms = {
                                   # False => 3rd dim is gMech 
          'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
-         'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
+         'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
          #'plotRanges'     : [[-3,7],[-3,7],[-51, -15]],  # uniform gmech
          
          'plot'          : True, 
@@ -46,21 +43,25 @@ parms = {
                                     'show'     : True, 
                                     'quantity' : ['state', 'abun'],
                                     'slabIdx'  : 0,
-                                    'specStr'  : 'H+',
+                                    'specStr'  : specStr,
                                     },
                              '10' : { # column density
                                     'show'     : True,
-                                    'maxAv'    : 30,
-                                    'specStr'  : 'CO',
+                                    'maxAv'    : 10,
+                                    'specStr'  : specStr,
                                     },
                              '11' : { # line intensitities
                                      'show'           : True,
+                                     #------------------comment those if radex parms is 'pdr' is selected below this------------                                    
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
-                                     #'quantity'      : ['fineStructureCoolingComponents','O','rate','1-0'], # for use with 'pdr'
+                                     #'quantity'      : ['fineStructureCoolingComponents','C','rate','1-0'], # for use with 'pdr'
+                                     #'specStr'        : 'C',     # database to be restored/computed
+                                     #-----------comment those radex parms if 'pdr' is selected above this--------------
                                      'type'           : 'radex',
-                                     'specStr'        : 'CO',     # database to be restored/computed
+                                     'specStr'        : specStr,     # database to be restored/computed
                                      'transitionIndx' : 0,
                                      'quantity'       : 'fluxcgs',
+                                     #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
                                      'Av_max'         : 10.0,  #the maximum Av to be used  
                                     },
@@ -70,6 +71,7 @@ parms = {
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
          'radex'         : { 'use'                  : True,
+                             'loadAllDbs'           : False,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
@@ -77,7 +79,7 @@ parms = {
                                                                     #(only relevent to constructing databases)
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                             'specStr'              : 'CO',
+                             'specStr'              : specStr,
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
@@ -87,10 +89,10 @@ parms = {
                              'use_pdr_gas_den_H2'   : True,   #<----------
                              'tBack'                : 2.73,
                              'lineWidth'            : 1.0,
-                             'verbose'              : True,
+                             'verbose'              : False,
                              'maxDisplayTranistion' : 20,
                              ###----------extra convergence params-----------------------
-                             'checkOutputIntegrity' : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
+                             'checkOutputIntegrity' : False,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'   : 1.0, 
                              'popDensSumTol'        : 1e-2,
                              #'popDensSumTol'        : 10,
@@ -102,29 +104,30 @@ parms = {
 
 # reading the archive
 print 'setting up the archive'
-t0 = time()
-arxv = meshArxv(readDb = True, **parms)
-print 'time reading data %f' % (time() - t0)
+t0 = time.time()
+arxv = meshUtils.meshArxv(readDb = True, **parms)
+print 'time reading data %f' % (time.time() - t0)
 
 if parms['plot']:
     # plotting stuff
-    pyl.ioff()
+    pylab.ioff()
     arxv.plotGrids()
-    pyl.show()
+    pylab.show()
 
 if False:
     """construct radex databases for a bunch of species"""
-    species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'CN']
+    #species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'CN']
+    species = ['CN']  #the pop dense do not add to 1...so this is done saperatly (need to set 'checkOutputIntegrity' to False)
     for specStr in species:
         parms['radex']['specStr'] = specStr
         arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
     
-if False:
+if True:
     arxv.save_radex_grids(
                           relativeDirPath = 'analysis/%s/' % parms['radex']['specStr'],
                           #relativeDirPath = 'analysis/%s/colFmt/' % parms['radex']['specStr'],
                           basename        = 'radexGrid',
-                          transitionInds  = [0,1,2,3,4,5,6],
+                          transitionInds  = [0,1,2,3,4,5], #CO transitions
                           #transitionInds  = range(40), 
                           #transitionInds  = [0,1],
                           quantity        = 'fluxcgs',
@@ -134,7 +137,7 @@ if False:
     arxv.save_PDR_emission_grids(relativeDirPath = 'analysis/%s/' % parms['gridsInfo']['11']['quantity'][1],
                                  basename        = 'pdrGrid',
                                  transitions     = ['1-0'],
-                                 quantity        = 'rate')
+                                 quantity        = 'rate',)
 
 if False:
     arxv.save_PDR_quantity_grids(relativeDirPath = 'analysis/surfaceHeating/',
