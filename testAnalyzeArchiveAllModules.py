@@ -10,7 +10,8 @@ import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
 
-specStr = 'CN'
+specStr_PDR   = 'O'
+specStr_Radex = 'CO'
 
 parms = {
          #path to the database files
@@ -28,7 +29,7 @@ parms = {
                                   # False => 3rd dim is gMech 
          'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
-         'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
+         'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
          #'plotRanges'     : [[-3,7],[-3,7],[-51, -15]],  # uniform gmech
          
          'plot'          : True, 
@@ -43,24 +44,24 @@ parms = {
                                     'show'     : True, 
                                     'quantity' : ['state', 'abun'],
                                     'slabIdx'  : 0,
-                                    'specStr'  : specStr,
+                                    'specStr'  : specStr_PDR,
                                     },
                              '10' : { # column density
                                     'show'     : True,
                                     'maxAv'    : 10,
-                                    'specStr'  : specStr,
+                                    'specStr'  : specStr_PDR,
                                     },
                              '11' : { # line intensitities
                                      'show'           : True,
                                      #------------------comment those if radex parms is 'pdr' is selected below this------------                                    
-                                     #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
-                                     #'quantity'      : ['fineStructureCoolingComponents','C','rate','1-0'], # for use with 'pdr'
-                                     #'specStr'        : 'C',     # database to be restored/computed
+                                     'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
+                                     'quantity'      : ['fineStructureCoolingComponents','C','rate','1-0'], # for use with 'pdr'
+                                     'specStr'        : 'C',     # database to be restored/computed
                                      #-----------comment those radex parms if 'pdr' is selected above this--------------
-                                     'type'           : 'radex',
-                                     'specStr'        : specStr,     # database to be restored/computed
-                                     'transitionIndx' : 0,
-                                     'quantity'       : 'fluxcgs',
+                                     #'type'           : 'radex',
+                                     #'specStr'        : specStr_Radex,     # database to be restored/computed
+                                     #'transitionIndx' : 0,
+                                     #'quantity'       : 'fluxcgs',
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
                                      'Av_max'         : 10.0,  #the maximum Av to be used  
@@ -71,7 +72,7 @@ parms = {
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
          'radex'         : { 'use'                  : True,
-                             'loadAllDbs'           : False,
+                             'loadAllDbs'           : True,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
@@ -79,7 +80,7 @@ parms = {
                                                                     #(only relevent to constructing databases)
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
-                             'specStr'              : specStr,
+                             'specStr'              : specStr_Radex,
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
                              'xH2_Min'              : -1.0,
@@ -122,7 +123,7 @@ if False:
         parms['radex']['specStr'] = specStr
         arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
     
-if True:
+if False:
     arxv.save_radex_grids(
                           relativeDirPath = 'analysis/%s/' % parms['radex']['specStr'],
                           #relativeDirPath = 'analysis/%s/colFmt/' % parms['radex']['specStr'],

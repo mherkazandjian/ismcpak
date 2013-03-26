@@ -17,8 +17,8 @@ import collections
 #########################################parameters##########################################################
 home = '/home/mher'
 
-metallicity = 0.5
-Av_max      = 10.0
+metallicity = 1.0
+Av_max      = 20.0
 
 #imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-atomic-z-%.1f.eps' % metallicity
 imageSavePath = '/home/mher/foo.eps'
@@ -118,7 +118,7 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
         legendStrs.append(gm)
     
     #pylab.yscale('log')
-    pylab.text(0.8, ylim[1]*0.8, modelName)        
+    pylab.text(0.8, ylim[1]*0.9, modelName)        
     pylab.ylabel(r"$log_{10}$[line ratio]")
     pylab.grid(True)
     
@@ -164,7 +164,7 @@ info = plot_ratios_bars(arxv, [0.0, 5.0], 'M4', log_n = 5.5, log_G0 = 5.0)
 
 
 legen = pylab.legend(info['rects'], info['strings'], 
-                   bbox_to_anchor = (-0.1, 1.1, 1.2, .102), loc = 3,  
+                   bbox_to_anchor = (-0.1, 1.1, 1.1, .102), loc = 3, 
                    ncol=5, mode = 'expand', borderaxespad=0.0,
                    title = r"$\alpha$")
 

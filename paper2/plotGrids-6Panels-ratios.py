@@ -13,17 +13,17 @@ from fetchGridData import fetchRadexGrid
 
 #-----------------------------------
 #grid 1
-specStr1       = 'CN'
-transition1    = '2_1.5-1_1.5'
+specStr1       = 'O'
+transition1    = '1-0'
 #grid 2
-specStr2       = 'HCN'
-transition2    = '1-0'
+specStr2       = 'C'
+transition2    = '2-1'
 
 #plotTitle      = '$\log_{10}$[%s(%s)/%s(%s)]' % (specStr1,transition1,specStr2,transition2)
-plotTitle      = '$\log_{10}$[%s(2$_{3/2}$-1$_{1/2}$)/%s(%s)]' % (specStr1,specStr2,transition2)
+#plotTitle      = '$\log_{10}$[%s(2$_{3/2}$-1$_{1/2}$)/%s(%s)]' % (specStr1,specStr2,transition2)
 #plotTitle      = '$\log_{10}$[%s(%s)/HCO$^+$(%s)]' % (specStr1,transition1,transition2)
 #plotTitle      = '$\log_{10}$[%s(1-0)/%s(%s)]' % (specStr1,specStr2,transition2)
-#plotTitle      = r'$\log_{10}$([OI] 63 $\mu m$/ [CI] 609 $\mu m$]'# % (specStr1,transition1,specStr2,transition2)
+plotTitle      = r'$\log_{10}$([OI] 63 $\mu m$/ [CI] 369 $\mu m$]'# % (specStr1,transition1,specStr2,transition2)
 
 Av_max         = 10.0
 dirname2       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % specStr2

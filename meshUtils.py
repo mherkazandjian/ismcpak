@@ -2174,7 +2174,7 @@ class meshArxv():
                 clickedInAxes = True
                 self.logger.debug('####################################button 1 clicked###########################################')
                 indMin = self.get_mesh_index(x = xd, y = yd, z = self.pltGmSec)
-                self.mshTmp.setData( self.meshes[indMin] )
+                self.mshTmp.setData(self.meshes[indMin])
                 
                 #updating the title of ['ax2d']['axes']
                 strng = '$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' %  (np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0']), np.log10(self.mshTmp.data['hdr']['gammaMech']))
@@ -2204,51 +2204,16 @@ class meshArxv():
                 
                 self.logger.debug('####################################button 1 clicked###########################################')
                 self.logger.debug('Av clicked = %.4f' % Av_clicked)
-                
-                #getting the index along the mesh which is closest in Av to the place
-                #where the mouse was clicked, the closes values will be used in the
-                #chemical netowrk of the mesh
-                mshAv = self.mshTmp.data['state']['Av']
-                indAv = np.argmin( np.fabs(mshAv - Av_clicked) )
+
+                #computing the reaction rates at the closes Av available in the pdr mesh
+                self.compute_rxn_rates_at_Av(Av_clicked)
+                #the used Av in the pdr mesh
+                Av_use = self.mshTmp.chemNet.Av
 
                 #plotting the vertical lines on the gui indicating the positions
                 #in the slab used for the chemistry
                 self.mshTmp.plot_v_lines_used_in_chemnet()
                 
-                #the values to be assigned to the chemical network
-                Av_use = self.mshTmp.data['state']['Av'][indAv]
-                gasT_use  = self.mshTmp.data['state']['gasT'][indAv]
-                dustT_use = self.mshTmp.data['state']['dustT'][indAv]
-                beta_CO   = self.mshTmp.data['selfSheilding']['CO'][indAv]
-                beta_13CO = self.mshTmp.data['selfSheilding']['13CO'][indAv]
-                beta_H2   = self.mshTmp.data['selfSheilding']['H2'][indAv]
-                abun_use  = self.mshTmp.data['state']['abun'][:,indAv]
-
-                self.logger.debug('Av   used = %.4f' % Av_use)
-                self.logger.debug('Tgas used = %.4f' % gasT_use)
-                
-                #setting the parameters of the gas and the environment at that slab
-                chemNet.set_environment_state(T           = gasT_use, 
-                                              zeta        = self.parms_used_in_PDR_models['zeta'], 
-                                              Av          = Av_use,
-                                              albedo      = self.parms_used_in_PDR_models['albedo'],
-                                              nDens       = self.mshTmp.data['hdr']['nGas'],
-                                              G0          = self.mshTmp.data['hdr']['G0'],
-                                              Tdust       = dustT_use,
-                                              metallicity = self.metallicity,
-                                              PHI_PAH     = 0.5,
-                                              beta_CO     = beta_CO,
-                                              beta_13CO   = beta_13CO,
-                                              beta_H2     = beta_H2)
-                                
-                #cleaning previously computerd rxn rates and constants (if they were computed)
-                chemNet.set_all_rxn_rates_and_cst_to_none()
-                 
-                #set the abundances at that slab
-                chemNet.set_abundances(fromArray = abun_use) 
-                chemNet.compute_rxn_constants()
-                chemNet.compute_rxn_rates()
-
                 specStr = self.parms['gridsInfo']['10']['specStr']
 
                 self.logger.debug('dominat reactions destroyin %s' % specStr)
@@ -2275,7 +2240,7 @@ class meshArxv():
                 tf = time()
                 self.logger.debug('time elapased after click : %f\n' % (tf - ti))
 
-        if event.button == 3:
+        if event.button == 3: #upon a right click
             print 'button 3 pressed'
 
             self.plot_integrated_emissions()
@@ -2870,9 +2835,14 @@ class meshArxv():
         """plots quantities of a PDR mesh as a function of Av, also some
         quantites from the radexDbs (self.radexDbs)
         """
-
-        fig22 = pylab.figure(figsize=(6,6))
-        ax = fig22.add_subplot(111)
+        xrng = [0.01, 30.0]
+        yrng = [1e-12, 1.0]
+        xscale = 'log' #'linear' #'log'
+        yscale = 'log' #'linear' #'log'
+        
+        fig22 = pylab.figure(figsize=(8,6))
+        #ax = fig22.add_subplot(111)
+        ax = fig22.add_axes([0.15, 0.1, 0.6, 0.8])
         
         m = self.mshTmp
 
@@ -2888,6 +2858,7 @@ class meshArxv():
         #-------------------computing stuff from the PDR meshes--------------        
         quantities = []
     
+        #-------------------------cooling components--------------------
         quantities.append(['therm','cooling'])
         titles.append(r'$\Lambda_{total}$'); symbols.append('-x')
         quantities.append(['cooling','metaStable'])
@@ -2898,9 +2869,20 @@ class meshArxv():
         titles.append(r'$\Lambda_{RV}$');  symbols.append('-')
         quantities.append(['cooling','lymanAlpha'])
         titles.append(r'$\Lambda_{LyA}$');  symbols.append('-')
-
-        #quantities.append(['fineStructureCoolingComponents','C+','rate','1-0'])
-        #titles.append(r'C+');  symbols.append('-')
+        #--------------------------cooling components--------------------
+        
+        #-------------------------fine structure lines--------------------------
+        """
+        quantities.append(['fineStructureCoolingComponents','C+','rate','1-0'])
+        titles.append(r'CII');  symbols.append('-')
+        quantities.append(['fineStructureCoolingComponents','C','rate','1-0'])
+        titles.append(r'CI1-0');  symbols.append('-')
+        quantities.append(['fineStructureCoolingComponents','C','rate','2-1'])
+        titles.append(r'CI2-1');  symbols.append('-')
+        quantities.append(['fineStructureCoolingComponents','O','rate','1-0'])
+        titles.append(r'OI');  symbols.append('-')
+        """
+        #-------------------------fine structure lines---------------------------
         
         Avs = m.data['state']['Av']
                 
@@ -2910,23 +2892,23 @@ class meshArxv():
             for Av in Avs: 
                 v1 = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, Av])
                 vs.append(v1)
-                
+
+            if 'fineStructureCoolingComponents' in quantity[0]:
+                ttl = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 30.0])
+                rng1 = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 10.0])
+                print 'contributions from %s(%s) 0  up to Av=10 is %.2f percent' % (quantity[1],quantity[3],100.0*rng1/ttl)
+                            
             vs = numpy.array(vs)
             
-            #plt, = ax.semilogy(Avs, vs)
             plt, = ax.plot(Avs, vs, symbols[i])
+
             plots.append(plt)
 
-        ttl = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 10.0])
-        rng1 = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 5.0])
-        rng2 = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [5.0, 10.0])
-        print 'contributions from 0  up to Av10 = %e' % (rng1/ttl)
-        print 'contributions from 10 up to Av30 = %e' % (rng2/ttl)
         #-------------------done computing stuff from the PDR meshes--------------        
 
 
         #-------------------extracting and plotting stuff from the radex Dbs------
-        specStrs    = ['CO' , 'CO'  , 'HCN' , 'HNC', 'CS']
+        specStrs    = ['CO' , '13CO'  , 'HCN' , 'HNC', 'CS']
         transitions = [0    ,   0   ,   0   ,   0  ,  0  ]
         titleStrs   = ['1-0',  '1-0', '1-0', '1-0' , '1-0']
         quantity    = 'fluxcgs'
@@ -2936,17 +2918,26 @@ class meshArxv():
                                                                 specStr, 
                                                                 quantity,
                                                                 transitions[i])
-            print Avs, vs
-            plots.append(ax.semilogy(Avs, vs,'--o')[0])
+            #print Avs, vs
+            #plots.append(ax.semilogy(Avs, vs,'--o')[0])
+            plots.append(ax.plot(Avs, vs,'--o')[0])
             titles.append(specStr + titleStrs[i])
         #-------------done extracting and plotting stuff from the radex Dbs-------
 
 
-        pylab.legend(plots, titles)
-        pylab.xlabel('Av')
-        pylab.ylabel('cooling')
+        #pylab.legend(plots, titles)
+        pylab.xlabel('Av', size='large')
+        pylab.ylabel('cooling', size='large')
         pylab.title(plotTitle)
-        pylab.ylim([1e-10, 1.0])
+        pylab.xlim(xrng)
+        pylab.ylim(yrng)
+        pylab.xscale(xscale)
+        pylab.yscale(yscale)
+        
+        pylab.legend(plots, titles, 
+                    bbox_to_anchor = (1.3, 0.1, 0.1, 1))
+        
+                
         pylab.draw()
         pylab.show()
         self.logger.debug('exitting auxiliaray method')
@@ -2980,4 +2971,100 @@ class meshArxv():
         self.use_radexDb(Av=currRadexDb['Av'], specStr=currRadexDb['specStr'])
         
         indsSorted = Avs.argsort()
-        return (Avs[indsSorted], vs[indsSorted])        
+        return (Avs[indsSorted], vs[indsSorted])  
+    
+    def compute_rxn_rates_at_Av(self, Av):
+        """computes the reation rates at the closest Av of the available Av in the
+        pdr mesh object self.mshTmp. The rates are set to self.mshTmp.chemNet 
+        """
+        
+        #getting the index along the mesh which is closest in Av to the place
+        #where the mouse was clicked, the closes values will be used in the
+        #chemical netowrk of the mesh
+        mshAv = self.mshTmp.data['state']['Av']
+        indAv = np.argmin( np.fabs(mshAv - Av) )
+        
+        #the values to be assigned to the chemical network
+        Av_use    = self.mshTmp.data['state']['Av'][indAv]
+        gasT_use  = self.mshTmp.data['state']['gasT'][indAv]
+        dustT_use = self.mshTmp.data['state']['dustT'][indAv]
+        beta_CO   = self.mshTmp.data['selfSheilding']['CO'][indAv]
+        beta_13CO = self.mshTmp.data['selfSheilding']['13CO'][indAv]
+        beta_H2   = self.mshTmp.data['selfSheilding']['H2'][indAv]
+        abun_use  = self.mshTmp.data['state']['abun'][:,indAv]
+
+        #setting the parameters of the gas and the environment at that slab
+        self.chemNet.set_environment_state(T           = gasT_use, 
+                                           zeta        = self.parms_used_in_PDR_models['zeta'], 
+                                           Av          = Av_use,
+                                           albedo      = self.parms_used_in_PDR_models['albedo'],
+                                           nDens       = self.mshTmp.data['hdr']['nGas'],
+                                           G0          = self.mshTmp.data['hdr']['G0'],
+                                           Tdust       = dustT_use,
+                                           metallicity = self.metallicity,
+                                           PHI_PAH     = 0.5,
+                                           beta_CO     = beta_CO,
+                                           beta_13CO   = beta_13CO,
+                                           beta_H2     = beta_H2)
+                        
+        #cleaning previously computerd rxn rates and constants (if they were computed)
+        self.chemNet.set_all_rxn_rates_and_cst_to_none()
+         
+        #set the abundances at that slab
+        self.chemNet.set_abundances(fromArray = abun_use) 
+        self.chemNet.compute_rxn_constants()
+        self.chemNet.compute_rxn_rates()
+        
+    def plot_rxns_rates_vs_Av(self, rxnIDs = None, Avs = None, ylim = None):
+        """plots the reaction rates for the reactions whose IDs are passed in the list
+        rxnIDs. The rates are computes for the values of Av passed in the list Avs.
+        
+        example :
+         
+            arxv.plot_rxns_rates_vs_Av([1559, 2100], numpy.arange(0,30,5), ylim=[1e-24, 1e-5])
+        """
+        
+        if hasattr(rxnIDs, '__iter__') == False:
+            raise TypeError('rxnIDs must be a list')
+        if hasattr(Avs, '__iter__') == False:
+            raise TypeError('rxnIDs must be a list')
+        
+        nRxns = len(rxnIDs)
+        nAv   = len(Avs)
+        
+        #array which will store the rates of the reactions with rxnIDs
+        rates = numpy.zeros((nRxns, nAv), dtype=numpy.float64)
+        
+        for j, Av in enumerate(Avs):
+            
+            #for each Av computing the rates
+            self.compute_rxn_rates_at_Av(Av)
+            
+            #extractin the rates
+            for i, rxnID in enumerate(rxnIDs):
+                rate = self.chemNet.getattr_rxn(rxnID, 'rate')
+                if rate == None:       
+                    rates[i, j] = -1
+                else:
+                    rates[i, j] = rate
+
+        pylab.figure(figsize=(5,5))
+        plots = []
+        titles = []
+        
+        #plotting the reaction rates
+        for i, rxnID in enumerate(rxnIDs):
+            rxnObj = self.chemNet.get_reactions(IDs = rxnID)[0]
+            rxnStr = rxnObj.get_compact_rxn_string()
+            
+            plt, = pylab.semilogy(Avs, rates[i,:])
+            plots.append(plt)
+            titles.append(rxnStr)
+
+        pylab.legend(plots, titles)
+        
+        if ylim != None:
+            pylab.ylim(ylim)
+        pylab.show()    
+
+        

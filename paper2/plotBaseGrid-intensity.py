@@ -8,17 +8,17 @@ import pylab
 import matplotlib.cm as cm
 from fetchGridData import fetchRadexGrid
 
-specStr       = 'HNC'
+specStr       = 'HCO+'
 Av_max        = 10.0    
-transition    = '04-03'
+transition    = '1-0'
 #transition    = '2_1.5-1_1.5'
 #plotTitle     = '$\log_{10}$[ %s (%s) erg.cm^{-2} s^{-1} ]$' % (specStr, transition)
 #plotTitle     = r'$\log_{10}$([CII] 158$\mu m$)' 
 #plotTitle     = r'$\log_{10}$([OI] 63$\mu m$)' 
 #plotTitle     = r'$\log_{10}$(%s(%s))' % (specStr,transition)
-#plotTitle     = r'$\log_{10}$(HCO$^+$(%s))' % (transition)
+plotTitle     = r'$\log_{10}$(HCO$^+$(%s))' % (transition)
 #plotTitle     = r'$\log_{10}$(%s($2_{3/2}$-$1_{3/2}$))' % (specStr,)
-plotTitle     = r'$\log_{10}$(%s(4-3))' % (specStr,)
+#plotTitle     = r'$\log_{10}$(%s(4-3))' % (specStr,)
 cLevels       = [-10, -9, -8, -8.5, -7, -7.5, -6.5, -6, -5, -4, -3, -2]
 cbarTicks     = numpy.hstack([numpy.arange(-18,-1, 2), []])
 #cLevels       = numpy.arange(-18,-1, 1)

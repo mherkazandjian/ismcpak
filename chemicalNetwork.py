@@ -38,6 +38,9 @@ class chemicalNetwork(specie, reaction):
         mainly be black other than commas...etc...otherwise, there are stuff not taken into account,
         this can be done by erasing stuff from self.fileStr after the whole original network has 
         been worked out.
+        
+        .. todo:: make sure that all reactions whose range does not include the temperature of the slab
+        have a rate = None
     """
     def __init__(self, fileName = None, baseSpecies = None, UMISTVER = None):
         self.nReactions = None         #: number of reactions in the network.
@@ -1038,6 +1041,7 @@ class chemicalNetwork(specie, reaction):
         """returns a subset of the self.reactions give the IDs we want to retreive.
         
            :param int|list IDs: an integer or a list of integer of the IDs.
+           .. todo:: optimize this (use a hash list)
         """
         
         rxns_ret = []
@@ -1050,7 +1054,7 @@ class chemicalNetwork(specie, reaction):
 
         for rxn in self.reactions:
             for ID_find in IDs_find:
-                if rxn.has_ID( ID_find):
+                if rxn.has_ID(ID_find):
                     rxns_ret.append(rxn)
                 
         return rxns_ret

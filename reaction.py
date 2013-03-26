@@ -371,18 +371,18 @@ class reaction():
         else:
             return True
                 
-    def display(self, fmt = None ):
+    def display(self, fmt = None, noPrnt = None):
         """display a reaction based on the input format requested.
         
            .. todo:: document the parameter fmt
            
         """
-
+        
         # functions which print the compoments of a reaction
-        def printStatus () : print "%d"   % self.status,
-        def printId     () : print "%04d" % self.ID,
-        def printHash   () : print "%20d" % self.hash,
-        def printType   () : print "%2s"  % self.type,
+        def printStatus () : return "%d "   % self.status
+        def printId     () : return "%04d " % self.ID
+        def printHash   () : return "%20d " % self.hash
+        def printType   () : return "%2s "  % self.type
         def printReacts () :
             # collecting the strings to be printed into a tuple and filling the 
             # reactants which do not exist by empty strings
@@ -395,7 +395,7 @@ class reaction():
                 else:
                     cmpnts += ('',)
                     fmtStr += "%-10s  " 
-            print fmtStr % cmpnts,
+            return fmtStr % cmpnts
         def printProds  () :
             # collecting the strings to be printed into a tuple and filling the 
             # species which do not exist by empty strings
@@ -409,11 +409,9 @@ class reaction():
                 else:
                     cmpnts += ('',) 
                     fmtStr += "%-10s  "   
-            print fmtStr % cmpnts,
+            return fmtStr % cmpnts
         def printRxn    () : 
-            printReacts()
-            print ' --> ',
-            printProds(),
+            return printReacts() + ' --> ' + printProds()
         def printReactsNumeric () :
             # collecting the numeric reprentations of the species to be printed into 
             # a tuple and filling the spcies which do not exist by empty strings
@@ -434,7 +432,7 @@ class reaction():
                     cmpnts += ('',)
                     fmtStr += "%-10s  "
                     
-            print fmtStr % cmpnts,
+            return fmtStr % cmpnts
         def printProdsNumeric  () :
             # collecting the numeric reprentations of the species to be printed into 
             # a tuple and filling the spcies which do not exist by empty strings
@@ -446,55 +444,51 @@ class reaction():
                     n = self.species[ self.products[i] ].num 
                     if n != None:
                         cmpnts += (self.species[ self.products[i] ].num,)
-                        fmtStr += "%-10d"    
+                        fmtStr += "%-10d "    
                     else:
                         cmpnts += (self.species[ self.products[i] ].str,)
                         fmtStr += "%-10s  "   
                 else:
                     cmpnts += ('',)
                     fmtStr += "%-10s  "   
-            print fmtStr % cmpnts,
-        def printRxnNumeric    () :
-            printReactsNumeric()
-            print ' --> ',
-            printProdsNumeric(),
-
-        def printABG    () : print "|%+-5.2e %+-5.2e %+-5.2e|" % (self.alpha, self.beta, self.gamma), 
-        def printTrng   () : print "|%-5d %-5d|" % (self.Tl, self.Tu), 
-        def printAcc    () : print " %s " % ( self.accuracy ),
-        def printRef    () : print " %s " % ( self.refCode ),
+            return fmtStr % cmpnts
+        def printRxnNumeric    ():
+            return printReactsNumeric() + ' --> ' + printProdsNumeric()
+        def printABG    () : return "|%+-5.2e %+-5.2e %+-5.2e|" % (self.alpha, self.beta, self.gamma) 
+        def printTrng   () : return "|%-5d %-5d|" % (self.Tl, self.Tu)
+        def printAcc    () : return " %s " % ( self.accuracy )
+        def printRef    () : return " %s " % ( self.refCode )
         def printCst    () :
             if self.cst == None:
-                print "    NA   ",  
+                return "    NA   "
             else:
-                print " %+-15.8e" % ( self.cst ),
+                return " %+-15.8e" % ( self.cst )
         def printRate   () :
             if self.rate != None:
-                print " %+-15.8e" % ( self.rate ),
+                return " %+-15.8e" % ( self.rate )
             else:
-                print "        NA       ",
+                return "        NA       "
         def printAbun   () : 
-
-            print ''
+            retStr = ''
             for spec in self.reactants:
                 if spec._abun != None:
-                    print "%10s : %+-15.8e" % ( spec.str, spec._abun )
+                    retStr += "%10s : %+-15.8e" % ( spec.str, spec._abun )
                 else:
-                    print "     NA     "
+                    retStr += "     NA     "
             for spec in self.products:
                 if spec._abun != None:
-                    print "%10s : %+-15.8e" % ( spec.str, spec._abun )
+                    retStr += "%10s : %+-15.8e" % ( spec.str, spec._abun )
                 else:
-                    print "     NA     "
-                    
+                    retStr += "     NA     "
+            return retStr
         def printStr():
-            print self.str
+            return self.str
 
         def printTlb():
             if self.Tlb != None:
-                print " %.4e " % self.Tlb,
+                return " %.4e " % self.Tlb
             else:
-                print " None ",
+                return " None "
             
         action = {
                  "status"     : printStatus,
@@ -516,22 +510,49 @@ class reaction():
                  "Tlb"        : printTlb,
             }
         
+        #the string which will be printed 
+        printStr = ''
+
         if self.complements != None:
-            print '---------------------------------------------------------------------' 
+            if noPrnt == None:
+                print '---------------------------------------------------------------------' 
         
         if fmt != None:    
             fmtStrSplt = fmt.split()
             for fmtComp in fmtStrSplt:
-                action[fmtComp.strip()]()
-            print 
+                printStr += action[fmtComp.strip()]()
+            printStr += '\n'
         else:
-            print self.str
+            printStr += self.str
         
+        if noPrnt == None:
+            print printStr
+            
         #printing also the complement reactions
         if self.complements != None:
             for rxn in self.complements:
                 rxn.display(fmt = fmt)
-            print '---------------------------------------------------------------------' 
+            if noPrnt == None:
+                print '---------------------------------------------------------------------' 
 
+        return printStr
+    
+    def get_compact_rxn_string(self):
+        rxnStr = self.display('rxn', noPrnt = True)
+        rxnStr = rxnStr.strip()
+        rxnStr = rxnStr.replace('\n', '')
+        
+        spltLst = rxnStr.split()
+        print spltLst
+        retStr = ''
+        for i, cmpnt in enumerate(spltLst):
+            if cmpnt != '-->':
+                retStr += cmpnt
+                if i != len(spltLst)-1 and spltLst[i+1] != '-->':
+                    retStr += ' + '
+            else:
+                retStr += ' -> '
+                
+        return retStr
         
         
