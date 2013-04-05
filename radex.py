@@ -24,7 +24,7 @@ class radex( ):
         self.molDataFiles =  { 'CO'   : 'co.dat'       ,
                                '13CO' : '13co.dat'     ,
                                'HCO+' : 'hco+@xpol.dat',
-                               'HCN'  : 'hcn.dat'      ,
+                               'HCN'  : 'hcn.dat'      ,  #hcn@xpol.dat, hcn.dat
                                'HNC'  : 'hnc.dat'      ,
                                'CS'   : 'cs@xpol.dat'  ,
                                'C'    : 'catom.dat'    ,

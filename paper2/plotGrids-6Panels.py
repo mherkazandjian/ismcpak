@@ -7,15 +7,20 @@ matplotlib.use('Qt4Agg')
 import pylab
 import matplotlib.cm as cm
 from mylib.utils.misc import scale as scale
+from mylib.utils.misc import rm_noise
+
 from fetchGridData import fetchRadexGrid
 
-specStr       = 'HNC'
-transition    = '04-03'
+specStr       = 'CO'
+
+transition    = '1-0'
 #transition    = '2_1.5-1_1.5'
-#plotTitle     = r'$\log_{10}$[$R$(%s(%s))]' % (specStr,transition)
+
+plotTitle     = r'$\log_{10}$[$R$(%s(%s))]' % (specStr,transition)
 #plotTitle     = r'$\log_{10}$[$R$(HCO$^+$(%s))]' % (transition)
 #plotTitle     = r'$\log_{10}$(%s($2_{3/2}$-$1_{3/2}$))' % (specStr,)
-plotTitle     = r'$\log_{10}$[$R$(%s(4-3))]' % (specStr,)
+#plotTitle     = r'$\log_{10}$[$R$(%s(4-3))]' % (specStr,)
+
 Av_max        = 10.0
 relGmech      = [[1e-3, 1e-2, 5e-2], [0.1, 0.5, 1.0 ] ]
 v_range       = [-2, 2] # range of the values, also that of the cbar
@@ -142,6 +147,7 @@ for r in panelInds:
 
         grdScaled = scale(grd, 0.0, 1.0, v_range[0], v_range[1]) 
         ax = panelAxs[i][j]
+                
         im = ax.imshow(grdScaled, extent = rangesLst, origin='lower', cmap = colormap,
                        vmin = 0.0, vmax = 1.0, norm = None)
         

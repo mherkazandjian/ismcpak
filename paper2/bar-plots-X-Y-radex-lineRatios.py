@@ -18,14 +18,14 @@ import collections
 #########################################parameters##########################################################
 home = '/home/mher'
 
-metallicity = 2.0
+metallicity = 1.0
 Av_max      = 10.0
 
 spec1Str = '13CO'
 spec2Str = 'CO'
 
-imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-%s-%s-z-%.1f.eps' % (spec1Str, spec2Str, metallicity)
-#imageSavePath = '/home/mher/foo.eps'
+#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-%s-%s-z-%.1f.eps' % (spec1Str, spec2Str, metallicity)
+imageSavePath = '/home/mher/foo.eps'
 
 parms = {
          #path to the database files
@@ -142,7 +142,7 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
             pass
     
     #pylab.yscale('log')
-    pylab.text(0.8, ylim[1]*0.8, modelName)        
+    pylab.text(0.8, ylim[1]*0.5, modelName)        
     pylab.ylabel(r"$log_{10}$[line ratio]")
     pylab.grid(True)
     

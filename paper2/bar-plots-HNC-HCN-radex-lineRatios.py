@@ -17,14 +17,14 @@ import collections
 #########################################parameters##########################################################
 home = '/home/mher'
 
-metallicity = 0.1
-Av_max      = 10.0
+metallicity = 2.0
+Av_max      = 29.5
 
 spec1Str = 'HNC'
 spec2Str = 'HCN'
 
-imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-%s-%s-z-%.1f.eps' % (spec1Str, spec2Str, metallicity)
-#imageSavePath = '/home/mher/foo.eps'
+#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-%s-%s-z-%.1f.eps' % (spec1Str, spec2Str, metallicity)
+imageSavePath = '/home/mher/foo.eps'
 
 parms = {
          #path to the database files

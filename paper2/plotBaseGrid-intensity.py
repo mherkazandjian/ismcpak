@@ -7,6 +7,7 @@ matplotlib.use('Qt4Agg')
 import pylab
 import matplotlib.cm as cm
 from fetchGridData import fetchRadexGrid
+from mylib.utils.misc import rm_noise
 
 specStr       = 'HCO+'
 Av_max        = 10.0    
@@ -33,8 +34,8 @@ dirname       = '/home/mher/ism/runs/oneSided/dynamicMeshTest1/analysis/%s/' % s
 parmsFile     = dirname + 'parms.out'
 fileInfoFile  = dirname + 'filesInfo.out'
 colormap      = cm.jet
-imageSavePath = '/home/mher/ism/docs/paper02/src/figs/%s-%s-base.eps' % (specStr,transition)
-#imageSavePath = '/home/mher/foo.eps'
+#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/%s-%s-base.eps' % (specStr,transition)
+imageSavePath = '/home/mher/foo.eps'
 #====================================================================================== 
 
 width  = 3    #figure width (non normalized) 
@@ -76,17 +77,19 @@ grdShape = grd.shape
 grdPts = numpy.meshgrid(numpy.linspace(0,grdShape[0]-1,grdShape[0]),
                         numpy.linspace(0,grdShape[1]-1,grdShape[1]))
 
-if removeNans:
+if removeNans == True:
     cond = True
     cond = numpy.bitwise_and(numpy.isnan(grd), cond)
-    cond = numpy.bitwise_and(grdPts[0] < 4.0*(grdShape[0]/xrange[1]), cond)
+    #cond = numpy.bitwise_and(grdPts[0] < 4.0*(grdShape[0]/xrange[1]), cond)
     cond = numpy.bitwise_or(grd >= -1.0, cond)
     indsNan = numpy.where(cond)
     grd[indsNan] = -18.0
-
+    
 if clip != None:
     grd = grd.clip(clip[0], clip[1])
 #------------done discarding and cliping the value ranges---------------------------
+
+grd = rm_noise(grd, -3.0)
 
 im = ax1.imshow(grd, extent = rangesLst, origin='lower', cmap = colormap)
 

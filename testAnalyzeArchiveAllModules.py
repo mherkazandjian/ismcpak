@@ -10,8 +10,8 @@ import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
 
-specStr_PDR   = 'O'
-specStr_Radex = 'CO'
+specStr_PDR   = 'HCO+'
+specStr_Radex = 'HCO+'
 
 parms = {
          #path to the database files
@@ -21,8 +21,8 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-2/',         
          #'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-2.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-1.0-high-res-no-gmech/',
-         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
          'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
+         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
@@ -48,20 +48,20 @@ parms = {
                                     },
                              '10' : { # column density
                                     'show'     : True,
-                                    'maxAv'    : 10,
+                                    'maxAv'    : 30,
                                     'specStr'  : specStr_PDR,
                                     },
                              '11' : { # line intensitities
                                      'show'           : True,
-                                     #------------------comment those if radex parms is 'pdr' is selected below this------------                                    
-                                     'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
-                                     'quantity'      : ['fineStructureCoolingComponents','C','rate','1-0'], # for use with 'pdr'
-                                     'specStr'        : 'C',     # database to be restored/computed
-                                     #-----------comment those radex parms if 'pdr' is selected above this--------------
-                                     #'type'           : 'radex',
-                                     #'specStr'        : specStr_Radex,     # database to be restored/computed
-                                     #'transitionIndx' : 0,
-                                     #'quantity'       : 'fluxcgs',
+                                     ##------------------comment those if radex parms is 'pdr' is selected below this------------                                    
+                                     #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
+                                     #'quantity'      : ['fineStructureCoolingComponents','C','rate','1-0'], # for use with 'pdr'
+                                     #'specStr'        : 'C',     # database to be restored/computed
+                                     ##-----------comment those radex parms if 'pdr' is selected above this--------------
+                                     'type'           : 'radex',
+                                     'specStr'        : specStr_Radex,     # database to be restored/computed
+                                     'transitionIndx' : 0,
+                                     'quantity'       : 'fluxcgs',
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
                                      'Av_max'         : 10.0,  #the maximum Av to be used  
@@ -72,7 +72,7 @@ parms = {
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
          'radex'         : { 'use'                  : True,
-                             'loadAllDbs'           : True,
+                             'loadAllDbs'           : False,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
@@ -93,12 +93,12 @@ parms = {
                              'verbose'              : False,
                              'maxDisplayTranistion' : 20,
                              ###----------extra convergence params-----------------------
-                             'checkOutputIntegrity' : False,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
+                             'checkOutputIntegrity' : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'   : 1.0, 
                              'popDensSumTol'        : 1e-2,
                              #'popDensSumTol'        : 10,
-                             'changeFracTrial'      : 0.001,
-                             'nMaxTrial'            : 10,
+                             'changeFracTrial'      : 0.01,
+                             'nMaxTrial'            : 100,
                             },
         }
 #############################################################################################################

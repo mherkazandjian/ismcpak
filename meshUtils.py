@@ -316,7 +316,7 @@ class meshArxv():
                     #reading all the databases
                     self.readDbsRadex(allDbs = True)
                     #set the current Db to the one specieified in the input parms
-                    if self.parms['gridsInfo']['11']['type'] == 'radex': 
+                    if 'gridsInfo' in self.parms and self.parms['gridsInfo']['11']['type'] == 'radex': 
                         self.use_radexDb(self.parms['gridsInfo']['11']['Av_max'], 
                                          self.parms['gridsInfo']['11']['specStr'])
             #----
@@ -608,7 +608,7 @@ class meshArxv():
             
             # reading the meshes in database into a list 
             meshesRadex = []
-            radexTransitionsDtype = self.radexObj.generateTransitionDtype()
+            radexTransitionsDtype = radex(None,None).generateTransitionDtype()
     
             for i in np.arange(self.nMeshes):
     
@@ -994,6 +994,23 @@ class meshArxv():
             values[i] = v  
                 
         return values
+    
+    def apply_function_to_all_meshes(self, func, func_kw = None, radex = None):
+        """Applies func to all the meshes in self.meshes. func_kw are passed to func. If radex=True 
+        self.meshesRadex are used instead of self.meshes. The results are returned as a list which 
+        is the same length as self.nMeshes"""
+        
+        if radex != None and radex==True:
+            meshes = self.meshesRadex
+        else:
+            meshes = self.meshes
+            
+        dataRet = []
+        for mesh in meshes:
+            v = func(mesh, **func_kw)
+            dataRet.append(v)
+        return dataRet
+        
         
     def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, values = None, data = None, *args, **kwargs):
         """Returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
@@ -1240,10 +1257,10 @@ class meshArxv():
                             # appending the data and the value to a list to be used
                             # in making the interpolation function
                             
-                            values.append( v )
-                            grid_x.append( x )
-                            grid_y.append( y )
-                            grid_z.append( z )
+                            values.append(v)
+                            grid_x.append(x)
+                            grid_y.append(y)
+                            grid_z.append(z)
                             
                             
                 # getting the data in the shape that is accepted by the interpolation construction        
@@ -1909,7 +1926,7 @@ class meshArxv():
         maps2d_10 = {}
         maps2d_10['axes'] = gui['figure'].add_axes([left, bott, sz, sz])
         maps2d_10['axesCbar'] = gui['figure'].add_axes([left, bott + sz + 0.017, 0.2, 0.01 ])
-        maps2d_10['axesCbar'].set_title('N(X)')
+        maps2d_10['axesCbar'].set_title('N(%s)' % self.parms['gridsInfo']['10']['specStr'])
         maps2d_10['contour'] = None
         maps2d_10['axes'].set_xlabel( '$log_{10} n_{gas}$' )
         maps2d_10['axes'].set_ylabel( '$log_{10} G_0$' )
