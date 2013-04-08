@@ -21,23 +21,25 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-2/',         
          #'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-2.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-1.0-high-res-no-gmech/',
-         'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
+         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1/',
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
+         #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
+         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0/',
          
-         'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+         'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
-         'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
+         #'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
-         'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
-         #'plotRanges'     : [[-3,7],[-3,7],[-51, -15]],  # uniform gmech
+         #'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
+         'plotRanges'     : [[-3,7],[-3,7],[-51, -15]],  # uniform gmech
          
          'plot'          : True, 
          'showGrids'     : True,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
-                                    'quantity' : ['state', 'gasT'],
-                                    #'quantity' : ['therm', 'heating'],
+                                    #'quantity' : ['state', 'gasT'],
+                                    'quantity' : ['therm', 'heating'],
                                     'slabIdx'  : 0,
                                     },
                              '01' : {# abundance 
@@ -54,14 +56,14 @@ parms = {
                              '11' : { # line intensitities
                                      'show'           : True,
                                      ##------------------comment those if radex parms is 'pdr' is selected below this------------                                    
-                                     #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
-                                     #'quantity'      : ['fineStructureCoolingComponents','C','rate','1-0'], # for use with 'pdr'
-                                     #'specStr'        : 'C',     # database to be restored/computed
+                                     'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
+                                     'quantity'      : ['fineStructureCoolingComponents','C','rate','1-0'], # for use with 'pdr'
+                                     'specStr'        : 'C',     # database to be restored/computed
                                      ##-----------comment those radex parms if 'pdr' is selected above this--------------
-                                     'type'           : 'radex',
-                                     'specStr'        : specStr_Radex,     # database to be restored/computed
-                                     'transitionIndx' : 0,
-                                     'quantity'       : 'fluxcgs',
+                                     #'type'           : 'radex',
+                                     #'specStr'        : specStr_Radex,     # database to be restored/computed
+                                     #'transitionIndx' : 0,
+                                     #'quantity'       : 'fluxcgs',
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
                                      'Av_max'         : 10.0,  #the maximum Av to be used  

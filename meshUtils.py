@@ -1059,6 +1059,7 @@ class meshArxv():
 
         if data == None:
             data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
+            #data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
         else:
             data = data
         
@@ -2735,7 +2736,7 @@ class meshArxv():
         """
         from amuse.community.pdr.pyUtils.guess_db import guess_db
         
-        pdrGuessDb = guess_db( path = path )
+        pdrGuessDb = guess_db(path = path)
 
         # setting the x,y,z coordinate variables
         if self.grid_x == None or self.grid_x == None or self.grid_x == None:

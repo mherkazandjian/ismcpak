@@ -8,6 +8,8 @@ from chemicalNetwork import *
 from enumSpecies import *
 from ismUtils import *
 import time, sys, os
+import meshUtils
+
 #---------------------------------------------------------------------------------------------------
 # make sure to use the appropriate database when changing metallicities
 #---------------------------------------------------------------------------------------------------
@@ -15,9 +17,14 @@ import time, sys, os
 nWorker = 3  # number of proccesses
 pdr     = interface.pdrInterface( channel_type = 'mpi', number_of_workers = nWorker, redirection='none') 
 
+exclude = True  #False|True
+exclude_meshes_from_db = '/home/mher/ism/runs/oneSided/sph-db-z-1.0/'
+arxvExc = meshUtils.meshArxv(dirPath = exclude_meshes_from_db, readDb = True, set_defaults = True)
+filter_gMech = [1e-3, 10.0] #None|[1e-3, 10.0]
+
 metallicity = 1.0   # in terms of solar metallicity
 outputDir   = '/home/mher/ism/runs/oneSided/foo-z-1.0/'
- 
+
 pdr.set_outputDir                  (outputDir + 'meshes/');
 pdr.set_species_fName              ("/home/mher/ism/speciesInfo/species.inp");
 pdr.set_underUbundant_fName        ("/home/mher/ism/speciesInfo/underabundant.inp");
@@ -37,46 +44,91 @@ pdr.set_min_deltaAv                (0.01);
 pdr.set_max_deltaAv                (0.5);
 pdr.set_maxSlabs                   (100);
 
-dx   = 0.5      # log10 density
-xMin = 0.0
-xMax = 2.0 - dx + 0.000001
+nx   =  10j      # log10 density
+xMin = -3.0
+xMax =  6.0
 
-dy   = 0.5     # log10 G0
+ny   =  10j     # log10 G0
 yMin = -3.0  
-yMax = 0.0 - 0.000001
+yMax =  6.0
 
+nz   =  26j   #51j
 zMin = -35.0    # log10 mechanical heating
-zMax = -21.0
-dz   =  2.0
+zMax = -10.0
 
+###########################################################################################
+###########################################################################################
+###########################################################################################
 # generating the parameter space 
-if zMin == zMax:
-    x, y = numpy.mgrid[ xMin:(xMax+1e-10):dx, yMin:(yMax+1e-10):dy]
-    z = numpy.ones(x.size)*zMin
-else:
-    x, y, z = numpy.mgrid[ xMin:(xMax+1e-10):dx, yMin:(yMax+1e-10):dy, zMin:(zMax+1e-10):dz]
+x, y, z = numpy.mgrid[xMin:xMax:nx, yMin:yMax:ny, zMin:zMax:nz]
+x, y, z = x.flatten(), y.flatten(), z.flatten()
 
-x = x.flatten()
-y = y.flatten()
-z = z.flatten()
+print 'unique x'
+print numpy.unique(x)
+print 'unique y'
+print numpy.unique(y)
+print 'unique z'
+print numpy.unique(z)
 
+if exclude:
+    #excluding points which are up to 1e-5 in the l2 distance to meshes
+    #in the previous database
+    xex, yex, zex = arxvExc.grid_x, arxvExc.grid_y, arxvExc.grid_z
+    
+    cond = numpy.ones(x.shape)
+    for i in numpy.arange(xex.size):
+        diff = numpy.sqrt((x - xex[i])**2 + (y - yex[i])**2 + (z - zex[i])**2)
+        
+        inds = numpy.where(diff < 1e-5)[0]
+        
+        if inds.size > 0:    
+            cond[inds] *= 0
+    
+    indsKeep = cond.nonzero()    
+    x, y, z = x[indsKeep], y[indsKeep], z[indsKeep]
+
+    if filter_gMech != None:
+        #excluding points which are outside gmech bounds than the surfrace heating by a factors of 
+        #filter_gMech. The surface heating with zero gmech is considered to be the one
+        #of gmech = 1e-50
+        indsKeep = []
+        for i in numpy.arange(x.size):
+            mesh_ref = arxvExc.get_mesh_data(x[i], y[i], -50.0)
+            surfHeat = mesh_ref.data['therm']['heating'][0]
+            gMechAdd = 10.0**z[i]
+             
+            if (gMechAdd/surfHeat >= filter_gMech[0]) and (gMechAdd/surfHeat <= filter_gMech[1]):
+                indsKeep.append(i)
+                print '%-+.2f %-+.2f %-+.2f %-+.2f' % (x[i], y[i], z[i], numpy.log10(surfHeat))
+            
+        x, y, z = x[indsKeep], y[indsKeep], z[indsKeep]
+        
+        
 n = x.size
 
-pylab.ion()
-figModels = pylab.figure()
-axsModels = figModels.add_axes([0.1, 0.1, 0.8, 0.8])
+pylab.ioff()
+fig = pylab.figure()
+ax = fig.add_subplot(111, projection='3d')
 
-fig1 = pylab.Figure()
-axsModels.plot( x, y, 'o' )
-axsModels.set_xlim( [-3, 7] )
-axsModels.set_ylim( [-3, 7] )
+ax.plot( x, y, z, 'ro', markersize=4)
+if exclude:
+    ax.plot(xex, yex, zex, 'bo', markersize=7)
+ax.set_xlim( [-4, 8] )
+ax.set_ylim( [-4, 8] )
+ax.set_zlim( [-51, -15] )
+
+ax.set_xlabel('n')
+ax.set_ylabel('g0')
+ax.set_zlabel('gm')
+
 pylab.draw()
-
+pylab.show()
 print 'number of models to run = ', n
 
 rho   = x
 G0    = y
-Lmech = 10**z
+Lmech = 10.0**z
+
 
 # initializing variables and running the models
 pdr.initialize()
