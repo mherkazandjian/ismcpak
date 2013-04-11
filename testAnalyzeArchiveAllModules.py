@@ -10,8 +10,8 @@ import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
 
-specStr_PDR   = 'HCO+'
-specStr_Radex = 'HCO+'
+specStr_PDR   = 'CO'
+specStr_Radex = 'CO'
 
 parms = {
          #path to the database files
@@ -25,7 +25,7 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
-         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0/',
+         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
          
          #'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
@@ -56,14 +56,14 @@ parms = {
                              '11' : { # line intensitities
                                      'show'           : True,
                                      ##------------------comment those if radex parms is 'pdr' is selected below this------------                                    
-                                     'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
-                                     'quantity'      : ['fineStructureCoolingComponents','C','rate','1-0'], # for use with 'pdr'
-                                     'specStr'        : 'C',     # database to be restored/computed
+                                     #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
+                                     #'quantity'      : ['fineStructureCoolingComponents','C','rate','1-0'], # for use with 'pdr'
+                                     #'specStr'        : 'C',     # database to be restored/computed
                                      ##-----------comment those radex parms if 'pdr' is selected above this--------------
-                                     #'type'           : 'radex',
-                                     #'specStr'        : specStr_Radex,     # database to be restored/computed
-                                     #'transitionIndx' : 0,
-                                     #'quantity'       : 'fluxcgs',
+                                     'type'           : 'radex',
+                                     'specStr'        : specStr_Radex,     # database to be restored/computed
+                                     'transitionIndx' : 0,
+                                     'quantity'       : 'fluxcgs',
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
                                      'Av_max'         : 10.0,  #the maximum Av to be used  
@@ -95,7 +95,7 @@ parms = {
                              'verbose'              : False,
                              'maxDisplayTranistion' : 20,
                              ###----------extra convergence params-----------------------
-                             'checkOutputIntegrity' : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
+                             'checkOutputIntegrity' : False,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'   : 1.0, 
                              'popDensSumTol'        : 1e-2,
                              #'popDensSumTol'        : 10,
@@ -120,7 +120,8 @@ if parms['plot']:
 if False:
     """construct radex databases for a bunch of species"""
     #species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'CN']
-    species = ['CN']  #the pop dense do not add to 1...so this is done saperatly (need to set 'checkOutputIntegrity' to False)
+    #species = ['CN']  #the pop dense do not add to 1...so this is done saperatly (need to set 'checkOutputIntegrity' to False)
+    species = ['CO']
     for specStr in species:
         parms['radex']['specStr'] = specStr
         arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])

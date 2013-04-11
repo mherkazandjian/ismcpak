@@ -15,7 +15,7 @@ import meshUtils
 #---------------------------------------------------------------------------------------------------
 HOME      = '/home/mher'
 outputDir = HOME + '/ism/runs/oneSided/foo-z-1.0/'
-nWorker   = 7  # number of proccesses
+nWorker   = 1  # number of proccesses
 pdr       = interface.pdrInterface( channel_type = 'mpi', number_of_workers = nWorker, redirection='none') 
 
 exclude   = False  #False|True
@@ -44,11 +44,11 @@ pdr.set_min_deltaAv                (0.01);
 pdr.set_max_deltaAv                (0.5);
 pdr.set_maxSlabs                   (200);
 
-nx   =  10j   #5j   # log10 density
+nx   =  37j   #5j   # log10 density
 xMin = -3.0
 xMax =  6.0
 
-ny   =  10j  #5j   # log10 G0
+ny   =  37j  #5j   # log10 G0
 yMin = -3.0  
 yMax =  6.0
 

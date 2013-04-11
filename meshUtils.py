@@ -17,12 +17,10 @@ from scipy      import interpolate
 import chemicalNetwork
 
 class meshArxv():
-    """ this class generates and manipulates archives of PDR meshes.
-
-     :param bool readDb: if this is set, the database is read during initialization.
-      
-     :param bool set_defaults: if this is passed as a keyword, self.set_default attributes and self.set_grid_axes_quantity_values are called upon intialization.
+    """ this class generates and manipulates archives of PDR meshes. By defaults self.set_default attributes and self.set_grid_axes_quantity_values are called upon intialization.
        
+     :param bool readDb: if this is set, the database is read during initialization. (this is done by default if readDb is not provided).
+      
      :param bool no_init_from_run_parms: if this is passed as a keyword, nothing is initialized from used_parms.pkl.                
 
      FILES AND THEIR FORMATS: by default, the prefix name of the individual mesh files is assumed to be
@@ -291,9 +289,11 @@ class meshArxv():
         if self.chemNet != None and self.metallicity != None:
             self.mshTmp = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
 
-        if 'readDb' in kwargs:
+        if 'readDb' in kwargs and kwargs['readDb'] == True:
             kwargs.pop('readDb')
-            self.readDb( check = True)
+            self.readDb(check=True)
+        else:
+            self.readDb(check=True)
 
         #reading|computing radex emission databases
         #-------------------------------------------
@@ -326,10 +326,6 @@ class meshArxv():
             # setting the x,y,z quantities to be used for ploting
             self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech'])
         else:
-            self.set_grid_axes_quantity_values()
-
-        if 'set_defaults' in kwargs:
-            kwargs.pop('set_defaults')
             self.set_default_attributes()
             self.set_grid_axes_quantity_values()
         
