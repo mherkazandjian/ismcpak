@@ -27,12 +27,12 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0/',
          
-         'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+         #'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
          #'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
          #'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
-         'plotRanges'     : [[-3,7],[-3,7],[-51, -15]],  # uniform gmech
+         'plotRanges'     : [[-4,7],[-4,7],[-51, -15]],  # uniform gmech
          
          'plot'          : True, 
          'showGrids'     : True,

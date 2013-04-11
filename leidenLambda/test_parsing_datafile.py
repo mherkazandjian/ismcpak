@@ -1,8 +1,11 @@
 from leidenLambda import molData 
 import numpy
+import os
+HOME = os.environ['HOME']
+#------------------------------------------------
 
 #reading the whole database of line info of species from LAMBDA
-lambdaPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
+lambdaPath = HOME + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 reader = molData.reader(dirPath = lambdaPath, species = 'HCO+')
 
 # getting the data from a particular file

@@ -4,7 +4,7 @@ import pylab
 from ismUtils import getSlabThicknessFromAv, AvToLength
 from mylib.utils.misc import fetchNestedDtypeValue
 
-class mesh( ):
+class mesh(object):
     """This class read a PDR mesh and returns an object containing all the data of that mesh.
         
         :param string fileName: path of the binary file holding the data of the mesh. this is assigned to :data:`self.fileName <fName>`
@@ -484,16 +484,18 @@ class mesh( ):
         self.plt11_v_line.set_ydata( [1e-12, 1])
 
         
-    def plot(self):
+    def plot(self, **kwargs):
         
         if self.chemNet == None:
-            strng = "Error : chemical network object not set." 
-            raise NameError(strng)
+            raise NameError("Error : chemical network object not set.")
         else:
             chemNet = self.chemNet
+
+        if self.metallicity == None:
+            raise NameError("Error : metallicity note set.")
         
         if self.figInit == 0:
-            self.setupFigures()
+            self.setupFigures(**kwargs)
             
         data = self.data
         spcs = chemNet.species

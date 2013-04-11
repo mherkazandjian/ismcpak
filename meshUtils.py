@@ -324,7 +324,9 @@ class meshArxv():
         
         if 'relativeGmech' in self.parms:
             # setting the x,y,z quantities to be used for ploting
-            self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech']) 
+            self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech'])
+        else:
+            self.set_grid_axes_quantity_values()
 
         if 'set_defaults' in kwargs:
             kwargs.pop('set_defaults')
@@ -1012,7 +1014,8 @@ class meshArxv():
         return dataRet
         
         
-    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, values = None, data = None, *args, **kwargs):
+    def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, values = None, 
+                                         data = None, interpolator = None, *args, **kwargs):
         """Returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
            can be used to compute values determined by quantity give (nGas, G0, Gmech)
            (in log_10). The value to be interpolated upon is determined by the parameter
@@ -1036,7 +1039,10 @@ class meshArxv():
            :param numpy.ndarray values: a numpy 1D array whose size if the same as the number of meshes which
              when passed as an argument, will be used as the value to be interpolated. In this case,
              quantity, slabIdx, arrIdx are ignored. 
-           :param numpy.ndarray data: 
+           :param numpy.ndarray data: the coordinates of the mesh points x,y,z to be used 
+           :param string interpolator: 'nearest'|'linear'|'both' uses scipy.interpolate.NearestNDInterpolator or 
+             scipy.interpolate.LinearNDInterpolator respectively if provided.  By default, linear interpolation
+             is used. 
              
            .. todo:: modify this to construct the table over a selected range of the 3D 
                parameter space instead of using all the meshes. (optional)
@@ -1062,9 +1068,13 @@ class meshArxv():
             #data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
         else:
             data = data
-        
+
+        # getting the interpolation function
         ti = time()
-        f = interpolate.LinearNDInterpolator(data, values) # getting the interpolation function     
+        if interpolator == None or interpolator == 'linear':        
+            f = interpolate.LinearNDInterpolator(data, values) 
+        elif interpolator == 'nearest':
+            f = interpolate.NearestNDInterpolator(data, values) # getting the interpolation function
         tf = time()
         self.logger.debug('constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti))
 
