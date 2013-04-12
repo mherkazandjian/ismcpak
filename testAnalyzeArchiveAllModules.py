@@ -10,8 +10,8 @@ import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
 
-specStr_PDR   = 'CO'
-specStr_Radex = 'CO'
+specStr_PDR   = 'HCN'
+specStr_Radex = 'HCN'
 
 parms = {
          #path to the database files
@@ -74,10 +74,10 @@ parms = {
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
          'radex'         : { 'use'                  : True,
-                             'loadAllDbs'           : False,
+                             'loadAllDbs'           : True,
                              ###-----------radex database parms-----------------
-                             'compute'              : False, #if true, runns radex on all meshes
-                             'writeDb'              : False, #if true, writes the computed stuff to a db
+                             'compute'              : True, #if true, runns radex on all meshes
+                             'writeDb'              : True, #if true, writes the computed stuff to a db
                              'Av_range'             : [0.0, 10.0],  #range which will be used in extracting data needed by radex from the PDR models
                                                                     #(only relevent to constructing databases)
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
@@ -117,11 +117,11 @@ if parms['plot']:
     arxv.plotGrids()
     pylab.show()
 
-if False:
+if True:
     """construct radex databases for a bunch of species"""
     #species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'CN']
     #species = ['CN']  #the pop dense do not add to 1...so this is done saperatly (need to set 'checkOutputIntegrity' to False)
-    species = ['CO']
+    species = ['HNC', 'HCO+']
     for specStr in species:
         parms['radex']['specStr'] = specStr
         arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])

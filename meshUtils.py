@@ -19,7 +19,7 @@ import chemicalNetwork
 class meshArxv():
     """ this class generates and manipulates archives of PDR meshes. By defaults self.set_default attributes and self.set_grid_axes_quantity_values are called upon intialization.
        
-     :param bool readDb: if this is set, the database is read during initialization. (this is done by default if readDb is not provided).
+     :param bool readDb: if this is set, the database is read during initialization.
       
      :param bool no_init_from_run_parms: if this is passed as a keyword, nothing is initialized from used_parms.pkl.                
 
@@ -292,8 +292,6 @@ class meshArxv():
         if 'readDb' in kwargs and kwargs['readDb'] == True:
             kwargs.pop('readDb')
             self.readDb(check=True)
-        else:
-            self.readDb(check=True)
 
         #reading|computing radex emission databases
         #-------------------------------------------
@@ -321,13 +319,17 @@ class meshArxv():
                                          self.parms['gridsInfo']['11']['specStr'])
             #----
         #-------------------------------------------
-        
-        if 'relativeGmech' in self.parms:
-            # setting the x,y,z quantities to be used for ploting
-            self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech'])
+
+        #set some default attributes (the quantities of the grids) if meshes have been read
+        if self.meshes != None:        
+            if 'relativeGmech' in self.parms:
+                # setting the x,y,z quantities to be used for ploting
+                self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech'])
+            else:
+                self.set_default_attributes()
+                self.set_grid_axes_quantity_values()
         else:
-            self.set_default_attributes()
-            self.set_grid_axes_quantity_values()
+            self.logger.debug('no meshes read, not setting defualy attributes for the grids')
         
         
     def read_used_parms_used_in_PDR_models(self):
@@ -993,18 +995,29 @@ class meshArxv():
                 
         return values
     
-    def apply_function_to_all_meshes(self, func, func_kw = None, radex = None):
-        """Applies func to all the meshes in self.meshes. func_kw are passed to func. If radex=True 
-        self.meshesRadex are used instead of self.meshes. The results are returned as a list which 
-        is the same length as self.nMeshes"""
+    def apply_function_to_all_meshes(self, func, func_kw = None):
+        """Applies func to all the meshes in self.meshes. func_kw are passed to func. The results are 
+        returned as a list which is the same length as self.nMeshes"""
         
-        if radex != None and radex==True:
-            meshes = self.meshesRadex
-        else:
-            meshes = self.meshes
+        if func_kw == None: func_kw = {}
             
         dataRet = []
-        for mesh in meshes:
+
+        for mesh in self.meshes:            
+            self.mshTmp.setData(mesh)
+            v = func(self.mshTmp, **func_kw)
+            dataRet.append(v)
+        return dataRet
+
+    def apply_function_to_all_radex_meshes(self, func, func_kw = None):
+        """Applies func to all the radex meshes in self.meshesRadex. func_kw are passed to func. The 
+        results are returned as a list which is the same length as self.nMeshes"""
+
+        if func_kw == None: func_kw = {}
+        
+        dataRet = []
+        
+        for mesh in self.meshesRadex:
             v = func(mesh, **func_kw)
             dataRet.append(v)
         return dataRet
