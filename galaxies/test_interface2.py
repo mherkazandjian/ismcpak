@@ -104,7 +104,7 @@ plt_em_rng     = [-10.0, -2.0]
 #=============================================
 #getting the interpolation functio for CO(1-0)
 #loading the molecular specie radex database
-arxvPDR.readDbsRadex(species='CO',Av=10.0)
+arxvPDR.readDbsRadex(species=['CO','HCN','HNC','HCO+'],Av=10.0)
 
 def funcRadex(mesh, **kwargs):
     
@@ -116,21 +116,52 @@ def funcRadex(mesh, **kwargs):
 def funcPDR(meshObj, **kwargs):
     return (1.0/(2.0*numpy.pi))*meshObj.compute_integrated_quantity(kwargs['quantity'], Av_range = kwargs['Av_range'])
 
-v = arxvPDR.apply_function_to_all_radex_meshes(funcRadex, func_kw={'transitionIdx':tansition})
-#v = arxvPDR.apply_function_to_all_meshes(funcPDR, 
-#                                         func_kw={'quantity': ['fineStructureCoolingComponents','C+','rate','1-0'],
-#                                                  'Av_range': [0.0, 10.0]
-#                                                 }
-#                                        )
+"""
+v = arxvPDR.apply_function_to_all_meshes(funcPDR, 
+                                         func_kw={'quantity': ['fineStructureCoolingComponents','C+','rate','1-0'],
+                                                  'Av_range': [0.0, 10.0]
+                                                 }
+                                        )
+"""
 
-v = numpy.array(v)
+def get_interpolation_function_radex(specStr, transIdx):
+    
+    arxvPDR.use_radexDb(specStr=specStr, Av=10.0) #.. todo:: do this for different Avs too    
 
-inds_valid = numpy.isfinite(v)
+    v = arxvPDR.apply_function_to_all_radex_meshes(funcRadex, func_kw={'transitionIdx':transIdx})
 
-v = v[inds_valid] 
-xGrd, yGrd, zGrd = arxvPDR.grid_x[inds_valid], arxvPDR.grid_y[inds_valid], arxvPDR.grid_z[inds_valid]
-data = numpy.array([xGrd, yGrd, zGrd], dtype = numpy.float64).T
-fInterp_lCO = interpolate.NearestNDInterpolator(data, numpy.log10(v))
+    v = numpy.array(v)
+    inds_valid = numpy.isfinite(v)
+    v = v[inds_valid] 
+    xGrd, yGrd, zGrd = arxvPDR.grid_x[inds_valid], arxvPDR.grid_y[inds_valid], arxvPDR.grid_z[inds_valid]
+    data = numpy.array([xGrd, yGrd, zGrd], dtype = numpy.float64).T
+    fInterp = interpolate.NearestNDInterpolator(data, numpy.log10(v))
+    return fInterp
+
+def make_interpolation_functions():
+        
+    funcs = {}
+    
+    funcs['CO-1-0']   = get_interpolation_function_radex('CO', 0)
+    funcs['CO-3-2']   = get_interpolation_function_radex('CO', 2)
+    funcs['CO-7-6']   = get_interpolation_function_radex('CO', 6)
+    funcs['CO-16-15'] = get_interpolation_function_radex('CO', 15)
+
+    funcs['HCN-1-0']  = get_interpolation_function_radex('HCN', 0)
+    funcs['HCN-3-2']  = get_interpolation_function_radex('HCN', 2)
+    
+    funcs['HNC-1-0']  = get_interpolation_function_radex('HNC', 0)
+    funcs['HNC-3-2']  = get_interpolation_function_radex('HNC', 2)
+    
+    funcs['HCO+-1-0'] = get_interpolation_function_radex('HCO+', 0)
+    funcs['HCO+-3-2'] = get_interpolation_function_radex('HCO+', 2)
+
+    return funcs
+
+print 'getting interpolation functions of the emissions'
+funcs = make_interpolation_functions()
+print 'done getting interpolation functions of the emissions'
+
 #=============================================
 
 interp = 'bessel' #intepolation used for imshow
@@ -174,17 +205,50 @@ indsNan = numpy.where(numpy.isnan(Tkin_sph_from_pdf))[0]
 #selecting particles which have alpha < 1.0
 
 if showEm:
+    print 'getting the emissions of each sph particle'
+    #getting emissions with mechanical heating    
+    emissions = {}
     data =  numpy.array([numpy.log10(n1), numpy.log10(g01), numpy.log10(g_mech1)]).T
-    CO = 10.0**fInterp_lCO(data)
     
-    data =  numpy.array([numpy.log10(n1), numpy.log10(g01), numpy.ones(n1.size)*lgMechMin]).T
-    CO_no_gm = 10.0**fInterp_lCO(data)
-else:
-    CO = numpy.zeros(n1.size)
-    CO_no_gm = numpy.zeros(n1.size)
+    emissions['CO-1-0']   = 10.0**funcs['CO-1-0'](data)
+    emissions['CO-3-2']   = 10.0**funcs['CO-3-2'](data)
+    emissions['CO-16-15'] = 10.0**funcs['CO-16-15'](data)
+    
+    emissions['HCN-1-0'] = 10.0**funcs['HCN-1-0'](data)
+    emissions['HCN-3-2'] = 10.0**funcs['HCN-3-2'](data)
+    
+    emissions['HNC-1-0'] = 10.0**funcs['HNC-1-0'](data)
+    emissions['HNC-3-2'] = 10.0**funcs['HNC-3-2'](data)
+    
+    emissions['HCO+-1-0'] = 10.0**funcs['HCO+-1-0'](data)
+    emissions['HCO+-3-2'] = 10.0**funcs['HCO+-3-2'](data)
 
+    #getting emissions without mechanical heating    
+    emissions_no_gm = {}    
+    data =  numpy.array([numpy.log10(n1), numpy.log10(g01), numpy.ones(n1.size)*lgMechMin]).T
+
+    emissions_no_gm['CO-1-0']   = 10.0**funcs['CO-1-0'](data)
+    emissions_no_gm['CO-3-2']   = 10.0**funcs['CO-3-2'](data)
+    emissions_no_gm['CO-16-15'] = 10.0**funcs['CO-16-15'](data)
+    
+    emissions_no_gm['HCN-1-0'] = 10.0**funcs['HCN-1-0'](data)
+    emissions_no_gm['HCN-3-2'] = 10.0**funcs['HCN-3-2'](data)
+
+    emissions_no_gm['HNC-1-0'] = 10.0**funcs['HNC-1-0'](data)
+    emissions_no_gm['HNC-3-2'] = 10.0**funcs['HNC-3-2'](data)
+    
+    emissions_no_gm['HCO+-1-0'] = 10.0**funcs['HCO+-1-0'](data)
+    emissions_no_gm['HCO+-3-2'] = 10.0**funcs['HCO+-3-2'](data)
+    print 'done getting the emissions of each sph particle'
+
+#else:
+#    CO = numpy.zeros(n1.size)
+#    CO_no_gm = numpy.zeros(n1.size)
+
+#--------------------------------------------------------------------------------
 #getting the distribution of mass, particle count as a function of number density
 #--------------------------------------------------------------------------------
+print 'getting the distributions as a function of gas density'
 nDens_hist = hist_nd(numpy.log10(n1.reshape((1,n1.shape[0]))),  loc=True,
                      nbins = nBins, mn = plt_ln_rng[0], mx = plt_ln_rng[1], reverse_indicies = True)
 fMass_vs_n = numpy.zeros((nBins), dtype=numpy.float64) 
@@ -196,14 +260,15 @@ for i in numpy.arange(nBins):
 
     if inds_in_bin.size > 0:
         fMass_vs_n[i] = m1[inds_in_bin].sum()
-        fLumCO_vs_n[i]  = CO[inds_in_bin].sum()
-        fLumCO_no_gm_vs_n[i] = CO_no_gm[inds_in_bin].sum()
+        fLumCO_vs_n[i]  = emissions['CO-1-0'][inds_in_bin].sum()
+        fLumCO_no_gm_vs_n[i] = emissions_no_gm['CO-1-0'][inds_in_bin].sum()
         
 #normalizing the computed distributions to unity
 fn = nDens_hist.f/nDens_hist.f.sum()
 fMass_vs_n /= m1.sum()
 fLumCO_vs_n /= fLumCO_vs_n.sum()
 fLumCO_no_gm_vs_n /= fLumCO_no_gm_vs_n.sum()
+print 'done getting the distributions as a function of gas density'
 
 fig1, axs1 = pylab.subplots(1, 3, sharex=True, sharey=False, figsize=(15,5),
                             subplot_kw = {'xlim':plt_ln_rng,
@@ -221,15 +286,25 @@ axs1[1].plot(nDens_hist.f.cntrd, numpy.log10(fMass_vs_n.cumsum()))
 axs1[2].set_ylabel(r'$\int_0^n f_{L_{CO(%d,%d)}}(n) dn$' % (tansition+1, tansition), fontsize='xx-large')
 axs1[2].plot(nDens_hist.f.cntrd, numpy.log10(fLumCO_vs_n.cumsum()),'b')
 axs1[2].plot(nDens_hist.f.cntrd, numpy.log10(fLumCO_no_gm_vs_n.cumsum()),'r')
+#---------------------------------------------------------------------------------------
+# Done getting the distribution of mass, particle count as a function of number density
+#---------------------------------------------------------------------------------------
+print 'getting the spatial distrubutions'
 
-#--------------------------------------------------------------------------------
 f_sph_part = numpy.zeros((nBins, nBins), dtype=numpy.float64)
 f_m        = numpy.zeros((nBins, nBins), dtype=numpy.float64)
 f_mean_n   = numpy.zeros((nBins, nBins), dtype=numpy.float64)
 f_mean_g0  = numpy.zeros((nBins, nBins), dtype=numpy.float64)
 f_mean_gm  = numpy.zeros((nBins, nBins), dtype=numpy.float64)
-f_mean_CO = numpy.zeros((nBins, nBins), dtype=numpy.float64)
-f_mean_CO_no_gm = numpy.zeros((nBins, nBins), dtype=numpy.float64)
+f_mean_em  = {}
+f_mean_em_no_gm  = {}
+for key in emissions:
+    f_mean_em[key] = numpy.zeros((nBins, nBins), dtype=numpy.float64)
+for key in emissions_no_gm:
+    f_mean_em_no_gm[key] = numpy.zeros((nBins, nBins), dtype=numpy.float64)
+    
+#f_mean_CO = numpy.zeros((nBins, nBins), dtype=numpy.float64)
+#f_mean_CO_no_gm = numpy.zeros((nBins, nBins), dtype=numpy.float64)
 
 hist = hist_nd(numpy.vstack((x1,y1)), mn = bsMin, mx=bsMax, nbins=nBins, reverse_indicies=True) 
 for i in numpy.arange(nBins):
@@ -242,20 +317,30 @@ for i in numpy.arange(nBins):
             f_mean_n[i,j]  = numpy.log10(numpy.mean(n1[inds_in_bin]))
             f_mean_g0[i,j] = numpy.log10(numpy.mean(g01[inds_in_bin]))
             f_mean_gm[i,j] = numpy.log10(numpy.mean(g_mech1[inds_in_bin]))
-            f_mean_CO[i,j] = max(numpy.log10(numpy.mean(CO[inds_in_bin])),plt_em_rng[0])
-            f_mean_CO_no_gm[i,j] = max(numpy.log10(numpy.mean(CO_no_gm[inds_in_bin])), plt_em_rng[0])
+            for key in emissions:
+                f_mean_em[key][i,j] = max(numpy.log10(numpy.mean(emissions[key][inds_in_bin])),plt_em_rng[0])
+            for key in emissions_no_gm:
+                f_mean_em_no_gm[key][i,j] = max(numpy.log10(numpy.mean(emissions_no_gm[key][inds_in_bin])),plt_em_rng[0])
+            #f_mean_CO[i,j] = max(numpy.log10(numpy.mean(CO[inds_in_bin])),plt_em_rng[0])
+            #f_mean_CO_no_gm[i,j] = max(numpy.log10(numpy.mean(CO_no_gm[inds_in_bin])), plt_em_rng[0])
         else:
             f_sph_part[i,j] = 1
             f_m[i,j] = 0.0
             f_mean_n[i,j]  = lnMin
             f_mean_g0[i,j] = lG0Min
             f_mean_gm[i,j] = lgMechMin
-            f_mean_CO[i,j] = plt_em_rng[0]
-            f_mean_CO_no_gm[i,j] = plt_em_rng[0]
+            for key in emissions:
+                f_mean_em[key][i,j] = plt_em_rng[0]
+            for key in emissions_no_gm:
+                f_mean_em_no_gm[key][i,j] = plt_em_rng[0]
 
-print 'no gmech   (log10(gm) = %f): log10[CO] (min,max) = (%f,%f)' % (lgMechMin, f_mean_CO.min(),f_mean_CO.max()) 
-print 'with gmech (from sph parts): log10[CO] (min,max) = (%f,%f)' % (f_mean_CO_no_gm.min(), f_mean_CO_no_gm.max()) 
+            #f_mean_CO[i,j] = plt_em_rng[0]
+            #f_mean_CO_no_gm[i,j] = plt_em_rng[0]
 
+#print 'no gmech   (log10(gm) = %f): log10[CO] (min,max) = (%f,%f)' % (lgMechMin, f_mean_CO.min(),f_mean_CO.max()) 
+#print 'with gmech (from sph parts): log10[CO] (min,max) = (%f,%f)' % (f_mean_CO_no_gm.min(), f_mean_CO_no_gm.max()) 
+
+print 'done getting the spatial distributuions'
 
 fig2, axs2 = pylab.subplots(4, 4, sharex=True, sharey=True, figsize=(16,16), 
                            subplot_kw = {'xlim':[bsMin, bsMax],
@@ -267,7 +352,7 @@ fig2, axs2 = pylab.subplots(4, 4, sharex=True, sharey=True, figsize=(16,16),
 for ax in axs2[:,0]: ax.set_ylabel('y(kpc)')
 for ax in axs2[3,:]: ax.set_xlabel('x(kpc)')
 
-pylab.subplots_adjust(left=0.1, bottom=0.1, right=0.8, top=0.9, wspace=0.3, hspace=0.3)
+pylab.subplots_adjust(left=0.05, bottom=0.05, right=0.9, top=0.95, wspace=0.3, hspace=0.3)
 
 plt00, = axs2[0,0].plot(x1[::plt_every_part], y1[::plt_every_part], '.', markersize=1)
 
@@ -291,12 +376,49 @@ im11   = axs2[1,1].imshow(f_mean_gm      , extent=[bsMin, bsMax, bsMin, bsMax], 
 ttl11  = axs2[1,1].set_title(r'$f(\bar{\Gamma_m})$')
 cbar11 = pylab.colorbar(im11, ax=axs2[1,1], orientation='vertical')
 
-im12   = axs2[1,2].imshow(f_mean_CO      , extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
-tt12   = axs2[1,2].set_title(r'$f(L_{CO})$')
+#CO 1-0
+im12   = axs2[1,2].imshow(f_mean_em['CO-1-0'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+tt12   = axs2[1,2].set_title(r'$f(L_{CO(1-0})$')
 cbar12 = pylab.colorbar(im12, ax=axs2[1,2], orientation='vertical')
 
-im13   = axs2[1,3].imshow(f_mean_CO_no_gm, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
-ttl13  = axs2[1,3].set_title(r'$f(L_{CO})$ $\Gamma_m = 0$')
+im13   = axs2[1,3].imshow(f_mean_em_no_gm['CO-1-0'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+ttl13  = axs2[1,3].set_title(r'$f(L_{CO(1-0)})$ $\Gamma_m = 0$')
 cbar13 = pylab.colorbar(im13, ax=axs2[1,3], orientation='vertical')
+
+#CO-3-2
+im20   = axs2[2,0].imshow(f_mean_em['CO-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+tt20   = axs2[2,0].set_title(r'$f(L_{CO(3-2})$')
+cbar20 = pylab.colorbar(im20, ax=axs2[2,0], orientation='vertical')
+
+im21   = axs2[2,1].imshow(f_mean_em_no_gm['CO-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+ttl21  = axs2[2,1].set_title(r'$f(L_{CO(3-2)})$ $\Gamma_m = 0$')
+cbar21 = pylab.colorbar(im21, ax=axs2[2,1], orientation='vertical')
+
+#HCN-3-2
+im22   = axs2[2,2].imshow(f_mean_em['HCN-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+tt22   = axs2[2,2].set_title(r'$f(L_{HCN(3-2})$')
+cbar22 = pylab.colorbar(im22, ax=axs2[2,2], orientation='vertical')
+
+im23   = axs2[2,3].imshow(f_mean_em_no_gm['HCN-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+ttl23  = axs2[2,3].set_title(r'$f(L_{HCN(3-2)})$ $\Gamma_m = 0$')
+cbar23 = pylab.colorbar(im23, ax=axs2[2,3], orientation='vertical')
+
+#HNC-3-2
+im30   = axs2[3,0].imshow(f_mean_em['HNC-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+tt30   = axs2[3,0].set_title(r'$f(L_{HNC(3-2})$')
+cbar30 = pylab.colorbar(im30, ax=axs2[3,0], orientation='vertical')
+
+im31   = axs2[3,1].imshow(f_mean_em_no_gm['HNC-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+ttl31  = axs2[3,1].set_title(r'$f(L_{HNC(3-2)})$ $\Gamma_m = 0$')
+cbar31 = pylab.colorbar(im31, ax=axs2[3,1], orientation='vertical')
+
+#HCO+-3-2
+im32   = axs2[3,2].imshow(f_mean_em['HCO+-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+tt32   = axs2[3,2].set_title(r'$f(L_{HCO+(3-2})$')
+cbar32 = pylab.colorbar(im32, ax=axs2[3,2], orientation='vertical')
+
+im33   = axs2[3,3].imshow(f_mean_em_no_gm['HCO+-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+ttl33  = axs2[3,3].set_title(r'$f(L_{HCO+(3-2)})$ $\Gamma_m = 0$')
+cbar33 = pylab.colorbar(im33, ax=axs2[3,3], orientation='vertical')
 
 pylab.show()
