@@ -26,7 +26,7 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
-         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-2.0/',
+         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2/',
          
          #'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
@@ -75,10 +75,10 @@ parms = {
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
          'radex'         : { 'use'                  : True,
-                             'loadAllDbs'           : False,
+                             'loadAllDbs'           : True,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
-                             'writeDb'              : False, #if true, writes the computed stuff to a db
+                             'writeDb'              : True, #if true, writes the computed stuff to a db
                              'Av_range'             : [0.0, 10.0],  #range which will be used in extracting data needed by radex from the PDR models
                                                                     #(only relevent to constructing databases)
                              'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
@@ -119,7 +119,7 @@ if parms['plot']:
     pylab.show()
 
 if False:
-    """construct radex databases for a bunch of species"""
+    """construct radex databases for a bunch of species for a single Av"""
     species = ['13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'CN']
     #species = ['CN']  #the pop dense do not add to 1...so this is done saperatly (need to set 'checkOutputIntegrity' to False)
     #species = ['HNC', 'HCO+']
@@ -127,6 +127,20 @@ if False:
         parms['radex']['specStr'] = specStr
         arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
     
+if True:
+    """construct radex databases for a bunch of species for a bunch of Avs"""
+    for Av in numpy.arange(3.0, 30.0, 1.0):
+        parms['radex']['Av_range'][1] = Av
+        species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'SiO']
+        for specStr in species:
+            parms['radex']['specStr'] = specStr
+            arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
+            
+        species = ['CN']  #the pop dense do not add to 1...so this is done saperatly (need to set 'checkOutputIntegrity' to False)
+        parms['radex']['checkOutputIntegrity'] = False
+        for specStr in species:
+            parms['radex']['specStr'] = specStr
+            arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
 if False:
     arxv.save_radex_grids(
                           relativeDirPath = 'analysis/%s/' % parms['radex']['specStr'],

@@ -552,7 +552,7 @@ class meshArxv():
         #-------------------------writing the db info into a file---------------------------
         dbInfoFObj = file(dbInfoFname, 'wb')
         self.verRadex.tofile( dbInfoFObj)
-        self.nMeshes.tofile( dbInfoFObj )
+        numpy.array(self.nMeshes, dtype=numpy.int32).tofile( dbInfoFObj )
         self.infoAllRadex.tofile( dbInfoFObj )
         dbInfoFObj.close()
         self.logger.debug('wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
