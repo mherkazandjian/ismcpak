@@ -37,3 +37,9 @@ def parse_old_runinfo_file(path):
     
     
     return dict_ret    
+
+def make_maps(**kwargs):
+    """
+    """
+    
+    pass

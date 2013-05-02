@@ -19,6 +19,7 @@ from amuse.units import units, constants
 import meshUtils
 from mylib.utils.misc  import xselect
 from mylib.utils.histogram import hist_nd
+from fi_utils import make_maps
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
@@ -26,23 +27,46 @@ from mylib.utils.histogram import hist_nd
 #-----------------------------parameters--------------------------------------
 
 home = '/home/mher'
+
+params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',   # the path of the dir containing the simulation
+          'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
+          'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',        # the path to the dir containing the PDR database
+          
+           
+          'ranges' : #ranges in n,g0 and gm of the sph particles to be included in producing the maps 
+                     {'min_log_n_use'  : -3.0,      
+                      'min_log_G0_use' : -3.0,
+                      'min_log_gm_use' : -50.0, 
+                     
+                     'box_size' : [-4,4] | units.kpc,
+                     },
+
+          }
+
 #snapshots run dir
-dirname = home + "/ism/runs/galaxies/coset2run4/coset-9-sol"
+dirname = params['rundir'] 
 
 dtime = 0.0625
 
 #PDR database file
 #pdrDatabaseDirPath =  home + '/ism/runs/oneSided/uniformSweep2-z-1.0/'
 #pdrDatabaseDirPath =  home + '/ism/runs/oneSided/dynamicMeshTest1/'
-pdrDatabaseDirPath =  home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/'
+#pdrDatabaseDirPath =  home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/'
+pdrDatabaseDirPath =  params['pdrDb']
+
 
 #reading and setting up the pdr database
 arxvPDR = meshUtils.meshArxv(dirPath = pdrDatabaseDirPath, readDb=True)
 
-snaps = numpy.arange(0,5,1)
+snaps = numpy.arange(20,21,1)
 
 for snap in snaps:
     
+    
+    #########################setting up the snapshot data######################
+    #########################setting up the snapshot data######################
+    #########################setting up the snapshot data######################
+    #########################setting up the snapshot data######################
     #snapshot index
     snapIndex = snap
     
@@ -96,26 +120,25 @@ for snap in snaps:
     pylab.loglog(n_gas_cgs, gasT, 'r.')
     pylab.loglog(n_gas_pdr, gasT_pdr, 'b.')
     #pylab.show()
+
+    #########################done setting up the snapshot data######################
+    #########################done setting up the snapshot data######################
+    #########################done setting up the snapshot data######################
+    #########################done setting up the snapshot data######################
     
-    #------------------------------------------------------------------------------------------------
-    #------------------------------------------------------------------------------------------------
-    #------------------------------------------------------------------------------------------------
-    #------------------------------------------------------------------------------------------------
-    #------------------------------------------------------------------------------------------------
-    #------------------------------------------------------------------------------------------------
-    #------------------------------------------------------------------------------------------------
-    #------------------------------------------------------------------------------------------------
-    #------------------------------------------------------------------------------------------------
     #plotting the galaxy spatial (particles above a certain density)
     #---------------------------------------------------------------
     #lnMin, lG0Min, lgMechMin = 0.0, 0.0, -26.0   #log 10 of n, G0, gMech of SPH particles to keep
-    lnMin, lG0Min, lgMechMin = -3.0, -3.0, -50.0  #database minimum boundaries
-    bsMin, bsMax = -4.0, 4.0
+    #lnMin, lG0Min, lgMechMin = -3.0, -3.0, -50.0  #database minimum boundaries
+    
+    lnMin, lG0Min, lgMechMin = params['ranges']['min_log_n_use'], params['ranges']['min_log_G0_use'], params['ranges']['min_log_gm_use']      
+
+    bsMin, bsMax = params['ranges']['box_size'].number 
     showEm       = True
     tansition    = 10 #the index of hte transition, for example: 0 => 1-0
      
     #plotting parms
-    nBins          = 100    #mesh resolution use in binning
+    nBins          = params['imres']    #mesh resolution use in binning
     plt_every_part = 100
     plt_ln_rng     = [lnMin,4] 
     plt_lg0_rng    = [lG0Min,3] 
@@ -324,7 +347,7 @@ for snap in snaps:
         f_mean_em[key] = numpy.zeros((nBins, nBins), dtype=numpy.float64)
     for key in emissions_no_gm:
         f_mean_em_no_gm[key] = numpy.zeros((nBins, nBins), dtype=numpy.float64)
-        
+    
     #f_mean_CO = numpy.zeros((nBins, nBins), dtype=numpy.float64)
     #f_mean_CO_no_gm = numpy.zeros((nBins, nBins), dtype=numpy.float64)
     
@@ -378,73 +401,73 @@ for snap in snaps:
     
     plt00, = axs3[0,0].plot(x1[::plt_every_part], y1[::plt_every_part], '.', markersize=1)
     
-    im01   = axs3[0,1].imshow(numpy.log10(f_sph_part), extent=[bsMin, bsMax, bsMin, bsMax], vmin=0, vmax=6, interpolation=interp)
+    im01   = axs3[0,1].imshow(numpy.log10(f_sph_part).T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=0, vmax=6, interpolation=interp, origin='lower')
     ttl01  = axs3[0,1].set_title(r'$f(N)$', size='large')
     cbar01 = pylab.colorbar(im01, ax=axs3[0,1], orientation='vertical')
     
-    im02   = axs3[0,2].imshow(f_m, extent=[bsMin, bsMax, bsMin, bsMax], vmin=30, vmax=40, interpolation=interp)
+    im02   = axs3[0,2].imshow(f_m.T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=30, vmax=40, interpolation=interp, origin='lower')
     ttl02  = axs3[0,2].set_title(r'$f(m)$', size='large')
     cbar02 = pylab.colorbar(im02, ax=axs3[0,2], orientation='vertical')
     
-    im03   = axs3[0,3].imshow(f_mean_n       , extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_ln_rng[0] , vmax=plt_ln_rng[1] , interpolation=interp)
+    im03   = axs3[0,3].imshow(f_mean_n.T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_ln_rng[0] , vmax=plt_ln_rng[1] , interpolation=interp, origin='lower')
     ttl03  = axs3[0,3].set_title(r'$f(\bar{n})$', size='large')
     cbar03 = pylab.colorbar(im03, ax=axs3[0,3], orientation='vertical')
     
-    im10   = axs3[1,0].imshow(f_mean_g0      , extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_lg0_rng[0], vmax=plt_lg0_rng[1], interpolation=interp)
+    im10   = axs3[1,0].imshow(f_mean_g0.T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_lg0_rng[0], vmax=plt_lg0_rng[1], interpolation=interp, origin='lower')
     ttl10  = axs3[1,0].set_title(r'$f(\bar{g_0})$', size='large')
     cbar10 = pylab.colorbar(im10, ax=axs3[1,0], orientation='vertical')
     
-    im11   = axs3[1,1].imshow(f_mean_gm      , extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_lgm_rng[0], vmax=plt_lgm_rng[1], interpolation=interp)
+    im11   = axs3[1,1].imshow(f_mean_gm.T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_lgm_rng[0], vmax=plt_lgm_rng[1], interpolation=interp, origin='lower')
     ttl11  = axs3[1,1].set_title(r'$f(\bar{\Gamma_m})$', size='large')
     cbar11 = pylab.colorbar(im11, ax=axs3[1,1], orientation='vertical')
     
     #CO 1-0
-    im12   = axs3[1,2].imshow(f_mean_em['CO-1-0'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im12   = axs3[1,2].imshow(f_mean_em['CO-1-0'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     tt12   = axs3[1,2].set_title(r'$f(L_{CO(1-0})$', size='large')
     cbar12 = pylab.colorbar(im12, ax=axs3[1,2], orientation='vertical')
     
-    im13   = axs3[1,3].imshow(f_mean_em_no_gm['CO-1-0'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im13   = axs3[1,3].imshow(f_mean_em_no_gm['CO-1-0'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     ttl13  = axs3[1,3].set_title(r'$f(L_{CO(1-0)})$ $\Gamma_m = 0$', size='large')
     cbar13 = pylab.colorbar(im13, ax=axs3[1,3], orientation='vertical')
     
     #CO-3-2
-    im20   = axs3[2,0].imshow(f_mean_em['CO-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im20   = axs3[2,0].imshow(f_mean_em['CO-3-2'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     tt20   = axs3[2,0].set_title(r'$f(L_{CO(3-2})$', size='large')
     cbar20 = pylab.colorbar(im20, ax=axs3[2,0], orientation='vertical')
     
-    im21   = axs3[2,1].imshow(f_mean_em_no_gm['CO-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im21   = axs3[2,1].imshow(f_mean_em_no_gm['CO-3-2'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     ttl21  = axs3[2,1].set_title(r'$f(L_{CO(3-2)})$ $\Gamma_m = 0$', size='large')
     cbar21 = pylab.colorbar(im21, ax=axs3[2,1], orientation='vertical')
     
     #HCN-3-2
-    im22   = axs3[2,2].imshow(f_mean_em['HCN-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im22   = axs3[2,2].imshow(f_mean_em['HCN-3-2'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     tt22   = axs3[2,2].set_title(r'$f(L_{HCN(3-2})$', size='large')
     cbar22 = pylab.colorbar(im22, ax=axs3[2,2], orientation='vertical')
     
-    im23   = axs3[2,3].imshow(f_mean_em_no_gm['HCN-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im23   = axs3[2,3].imshow(f_mean_em_no_gm['HCN-3-2'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     ttl23  = axs3[2,3].set_title(r'$f(L_{HCN(3-2)})$ $\Gamma_m = 0$', size='large')
     cbar23 = pylab.colorbar(im23, ax=axs3[2,3], orientation='vertical')
     
     #HNC-3-2
-    im30   = axs3[3,0].imshow(f_mean_em['HNC-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im30   = axs3[3,0].imshow(f_mean_em['HNC-3-2'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     tt30   = axs3[3,0].set_title(r'$f(L_{HNC(3-2})$', size='large')
     cbar30 = pylab.colorbar(im30, ax=axs3[3,0], orientation='vertical')
     
-    im31   = axs3[3,1].imshow(f_mean_em_no_gm['HNC-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im31   = axs3[3,1].imshow(f_mean_em_no_gm['HNC-3-2'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     ttl31  = axs3[3,1].set_title(r'$f(L_{HNC(3-2)})$ $\Gamma_m = 0$', size='large')
     cbar31 = pylab.colorbar(im31, ax=axs3[3,1], orientation='vertical')
     
     #HCO+-3-2
-    im32   = axs3[3,2].imshow(f_mean_em['HCO+-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im32   = axs3[3,2].imshow(f_mean_em['HCO+-3-2'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     tt32   = axs3[3,2].set_title(r'$f(L_{HCO+(3-2})$', size='large')
     cbar32 = pylab.colorbar(im32, ax=axs3[3,2], orientation='vertical')
     
-    im33   = axs3[3,3].imshow(f_mean_em_no_gm['HCO+-3-2'], extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp)
+    im33   = axs3[3,3].imshow(f_mean_em_no_gm['HCO+-3-2'].T, extent=[bsMin, bsMax, bsMin, bsMax], vmin=plt_em_rng[0] , vmax=plt_em_rng[1] , interpolation=interp, origin='lower')
     ttl33  = axs3[3,3].set_title(r'$f(L_{HCO+(3-2)})$ $\Gamma_m = 0$', size='large')
     cbar33 = pylab.colorbar(im33, ax=axs3[3,3], orientation='vertical')
     
     pylab.figtext(0.05, 0.97, '%.3f Gyr' % snap_time, size='xx-large')
-    image_fname =  dirname + '/analysis/maps.%s.png' % suffix
+    image_fname =  dirname + '/analysis/maps.%s.eps' % suffix
     fig3.savefig(image_fname)
     print 'wrote image file : %s' % image_fname
     
