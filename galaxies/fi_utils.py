@@ -31,8 +31,6 @@ def parse_old_runinfo_file(path):
                 value = lineSplt[0]
                 key = '-'.join(lineSplt[1::])
                 
-            print value, key
-
             dict_ret[key] = value
     
     
