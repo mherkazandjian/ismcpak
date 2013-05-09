@@ -15,6 +15,9 @@ from ismUtils   import *
 from radex      import *
 from scipy      import interpolate
 import chemicalNetwork
+from despotic import cloud
+from multiprocessing import Process, Pipe
+
 
 class meshArxv():
     """ this class generates and manipulates archives of PDR meshes. By defaults self.set_default attributes and self.set_grid_axes_quantity_values are called upon intialization.
@@ -81,7 +84,7 @@ class meshArxv():
       see test_writeReadArxv.py for an example
     """
     def __init__(self, *args, **kwargs):
-        
+
         self.logger = self.setupLogger()
         """The logging object which will be used to output stuff to stdout"""
 
@@ -1444,117 +1447,131 @@ class meshArxv():
         infoAllRadex = np.ndarray( self.nMeshes, dtype = arxvRadexHdrDtype )
         #initiliizing to zero
         infoAllRadex[:] = 0
-        meshesRadex = []
+        
+        #list which will hold the transitions for the models (intiialized to None)
+        meshesRadex = [None for i in np.arange(self.nMeshes)] 
 
-        #utility object used to get info from the PDR and feeding them to Radex to get emissions        
-        radexObj = self.radexObj
         radex_parms = self.parms['radex']
         
-        meshObj = self.mshTmp
-        
-        specStr  = radex_parms['specStr']
-        xH2_Min  = radex_parms['xH2_Min']
         Av_range = radex_parms['Av_range']
-        
-        for i in np.arange(self.nMeshes):
-            
-            self.logger.debug('pdr mesh index =  %d : ' % i)
-            
-            meshObj.setData( self.meshes[i] )
-            
 
-            #getthing the stuff radex needs from the PDR mesh
-            (gasTRadex, nColls, colDensThisSpec, Av_range_used,) = meshObj.getRadexParameters(speciesStr = specStr, 
-                                                                                              threshold  = xH2_Min,
-                                                                                              Av_range   = Av_range,)
+
+        #
+        #
+        def put_radex_transitions_in_meshesRadex_array(mesh_idx):
             
-            #determining what gas density to use for the collider for H2
-            if radex_parms['use_pdr_gas_den_H2']:
-                #using nGas/2 as the density of H2 (allowed when the only collider is H2)
-                nDensColls = [meshObj.data['hdr']['nGas']/2.0]
-                collsStr   = list(radex_parms['collisionPartners'])
-                
-                if len(radex_parms['collisionPartners']) > 1:
-                    raise ValueError("""collisionsPartners can be only H2 when setting the density 
-                    of the collider H2 to the full gas density""")
-            else:
-                #using the weighted densities extracted from the PDR
-                
-                # getting the collider densities in the same order of the supplied input spcie string list 
-                nDensColls = [ nColls[collSpecStr] for collSpecStr in radex_parms['collisionPartners'] ]
-                collsStr   = list(radex_parms['collisionPartners'])
-                #print 'input coll species', radexParms['collisionPartners'] 
-                #print 'nColls after putting them in the right order = ', nDensColls
+            i = mesh_idx
 
-            radexObj.setInFileParm('specStr', radex_parms['specStr'])
-            radexObj.setInFileParm('tKin', gasTRadex)
-            radexObj.setInFileParm('collisionPartners', collsStr)
-            radexObj.setInFileParm('nDensCollisionPartners', nDensColls)
-            radexObj.setInFileParm('molnDens', colDensThisSpec)
+            #utility object used to get info from the PDR and feeding them to Radex to get emissions 
+            radex_obj_utility = self.radexObj.copy()              
+            pdr_mesh_obj_utility = self.mshTmp.copy()
+            
+            pdr_mesh_obj_utility.setData( self.meshes[i] )
 
-            #remove colliders which are underabundant (below radex limits)
-            radexObj.filterColliders()
-
-            #all colliders have densities outsie the range accepted by radex
-            #filling the data as empty and skipping this radex computation
-            if len(radexObj.inFile['collisionPartners']) == 0:
+            has_lines, radex_parm_from_pdr_mesh = self.run_radex_on_pdr_model(pdr_mesh_obj = pdr_mesh_obj_utility, 
+                                                                              radex_obj = radex_obj_utility,
+                                                                              radex_parms = radex_parms,    
+                                                                              Av_range = Av_range)
+            if has_lines == None:
                 infoAllRadex[i]['info'][1] = 0 #no trainsitions
-                meshesRadex.append(None)
-                radexObj.printSetFlags()
-                continue
-            else:
-                # writing the parameters to a file (for debugging purposes)
-                # this file can be used to re-run radex as standalone
-                fName = radex_parms['path'] + '-debug.inp'
-                fObj = open(fName, 'w')
-                fObj.write(radexObj.genInputFileContentAsStr() )
-                self.logger.debug('input radex file written to %s' % fName)
+                meshesRadex[i] = None
+                radex_obj_utility.printSetFlags()
+            else:                
+                #setting the basic radex run info into the attribute
+                #-----------------------------------------------------------
+                #saving the number of transitions into radex info attribute
+                infoAllRadex[i]['info'][0] = i
+                if radex_obj_utility.flagSet('ERROR') or (has_lines is False): # radex failed, no transition data available
+                    infoAllRadex[i]['info'][1] = 0 #no trainsitions
+                    meshesRadex[i] = None
+                    radex_obj_utility.printSetFlags()
+                else: # radex succeeded, wirint the transition data
+                    infoAllRadex[i]['info'][1] = radex_obj_utility.nTransitions
+                    meshesRadex[i] = radex_obj_utility.transitions
+    
+                #infoAllRadex[i]['info'][2] = NOT SET HERE, IT IS SET WHEN WRITING THE DB TO A FILE
                 
-                if radex_parms['checkOutputIntegrity'] == False:
-                    radexObj.setDefaultStatus()
-                    radexObj.run(checkInput = True, verbose = True)
-                    radexOutputMakesSense = True
-                    status = radexObj.status
+                #setting the status into the attribute
+                infoAllRadex[i]['info'][3] = radex_obj_utility.status
+                #appending the transition data of this mesh to the attribute 
+                #-----------------finished saving the info------------------
+                
+                
+                if radex_obj_utility.flagSet('SUCCESS'):
+                    self.logger.debug('radexGrid : converged with no warnings')
                 else:
-                    #running radex (multiple times if necessary) for it to converge for this set of parms     
-                    status, radexOutputMakesSense = radexObj.run_mutiple_trials(expected_sum_pop_dens = radex_parms['popDensSumExpected'],
-                                                                                rel_pop_dens_tol = radex_parms['popDensSumTol'], 
-                                                                                change_frac_trial = radex_parms['changeFracTrial'],    
-                                                                                max_trials = radex_parms['nMaxTrial'])
+                    self.logger.debug('radexGrid : converged with warnings')
+                    self.logger.debug('------------------------------------')
+                    print radex_obj_utility.getWarnings()
+                    self.logger.debug('------------------------------------')
+    
+                self.logger.debug('---------------------------------------------------------')
                 
-            #setting the basic radex run info into the attribute
-            #-----------------------------------------------------------
-            #saving the number of transitions into radex info attribute
-            infoAllRadex[i]['info'][0] = i
-            if radexObj.flagSet('ERROR') or (radexOutputMakesSense is False): # radex failed, no transition data available
-                infoAllRadex[i]['info'][1] = 0 #no trainsitions
-                meshesRadex.append(None)
-                radexObj.printSetFlags()
-            else: # radex succeeded, wirint the transition data
-                infoAllRadex[i]['info'][1] = radexObj.nTransitions
-                meshesRadex.append(radexObj.transitions)
+            del radex_obj_utility               
+            del pdr_mesh_obj_utility
+            #
+            #
+        
+        #running radex on all the pdr meshes and storing them into meshesRadex
+        if self.parms['nThreads'] == 1:
+            for i in np.arange(self.nMeshes):
+                self.logger.debug('pdr mesh index =  %d : ' % i)
+                put_radex_transitions_in_meshesRadex_array(i)
+        else:
+        #running radex instances in parallel on all the pdr meshes and storing them into meshesRadex
+        
+            nThreads = self.parms['nThreads']
+            nEachThread = self.nMeshes/nThreads
+            
+            #
+            #
+            def run_bunch(tidx, conn):
 
-            #infoAllRadex[i]['info'][2] = NOT SET HERE, IT IS SET WHEN WRITING THE DB TO A FILE
-            
-            #setting the status into the attribute
-            infoAllRadex[i]['info'][3] = status
-            #appending the transition data of this mesh to the attribute 
-            #-----------------finished saving the info------------------
-            
-            
-            if radexObj.flagSet('SUCCESS'):
-                self.logger.debug('radexGrid : converged with no warnings')
-            else:
-                self.logger.debug('radexGrid : converged with warnings')
-                self.logger.debug('------------------------------------')
-                print radexObj.getWarnings()
-                self.logger.debug('------------------------------------')
-                continue
+                start_idx = tidx*nEachThread
+                                
+                #setting the loads                
+                if tidx != nThreads - 1:
+                    end_idx = (tidx+1)*nEachThread 
+                else: 
+                    end_idx = self.nMeshes 
 
-            self.logger.debug('---------------------------------------------------------')
-            
+                #runing the bunch of meshes for each thread
+                for mesh_idx in numpy.arange(start_idx, end_idx):
+                    put_radex_transitions_in_meshesRadex_array(mesh_idx)
 
-        #copying the mesh parameters self.infoAll[:]['parms] to self.infoAllRadex[:]['parms']
+                #sending the array infoAllRadex                
+                conn.send([start_idx, end_idx])
+                conn.send(infoAllRadex[start_idx:end_idx])
+                #sending the transitions info
+                for mesh_idx in numpy.arange(start_idx, end_idx):
+                    conn.send([meshesRadex[mesh_idx]])
+            #
+            #
+            
+            
+            t0 = time()
+            #making the pipes for communicating the results, pipes[i][0] = parent conn, pipes[i][1] child conn
+            pipes = [Pipe() for tidx in range(nThreads)]
+            #making the proccesses
+            ps = [Process(target=run_bunch, args=(tidx, pipes[tidx][1])) for tidx in range(nThreads) ]
+            #running  
+            for p in ps: p.start()
+            
+            #receiving the data (note : if data grater 32MB might raise value errors)
+            for tidx in range(nThreads):
+                #recieving the indicies of the meshes and the meshInfoRadex array for thread tidx
+                start_idx, end_idx = pipes[tidx][0].recv()
+                infoAllRadex[start_idx:end_idx] = pipes[tidx][0].recv()
+                #recieving the transitions info
+                for mesh_idx in numpy.arange(start_idx, end_idx):
+                    meshesRadex[mesh_idx] = pipes[tidx][0].recv()[0]
+                
+            #joining the threads
+            for p in ps: p.join()
+            
+            print 'Time running in parallel = %.2f seconds ' % (time()-t0)
+
+        #copying the mesh parameters self.infoAll[:]['parms] to self.infoAllRadex[:]['parms'] (info are set in the loop above)
         for i in np.arange( self.nMeshes ):
             infoAllRadex[i]['parms'][:] = self.infoAll[i]['parms']
 
@@ -1563,7 +1580,6 @@ class meshArxv():
         
         if writeDb == True:
             self.writeDbRadex()
-        
     
     def save_radex_grids(self, relativeDirPath = None, basename = None, transitionInds = None, 
                          quantity = None, fileFormat = None, *args, **kwargs):
@@ -2002,25 +2018,49 @@ class meshArxv():
         gui['AV'] = AV
 
 
-        # the axes stuff where the radex output wil be plotted
-        radex = {}
+        # the axes stuff where the emission lines will be plotted
+        em_lines = {}
         #-----------------------------------------------------------------------------------
         left  = 0.65
         bott  = 0.07
         sz    = 0.08
         vSpace = 0.0
-        radex['0'] = {'axes' : gui['figure'].add_axes([left, bott + 3*sz + vSpace , 3*sz, sz])}
-        radex['1'] = {'axes' : gui['figure'].add_axes([left, bott + 2*sz + vSpace , 3*sz, sz])}
-        radex['2'] = {'axes' : gui['figure'].add_axes([left, bott + 1*sz + vSpace , 3*sz, sz])}
-        radex['3'] = {'axes' : gui['figure'].add_axes([left, bott + 0*sz          , 3*sz, sz])}
-        radex['title1'] = pyl.figtext(0.65, 0.4, '')
-        radex['title2'] = pyl.figtext(0.9, 0.2 , '')
+        em_lines['0'] = {'axes' : gui['figure'].add_axes([left, bott + 3*sz + vSpace , 3*sz, sz])}
+        em_lines['1'] = {'axes' : gui['figure'].add_axes([left, bott + 2*sz + vSpace , 3*sz, sz])}
+        em_lines['2'] = {'axes' : gui['figure'].add_axes([left, bott + 1*sz + vSpace , 3*sz, sz])}
+        em_lines['3'] = {'axes' : gui['figure'].add_axes([left, bott + 0*sz          , 3*sz, sz])}
+        em_lines['title1'] = pyl.figtext(0.65, 0.4, '')
+        em_lines['title2'] = pyl.figtext(0.9, 0.2 , '')
         #-----------------------------------------------------------------------------------        
-        gui['radex'] = radex
+        gui['em_lines'] = em_lines
         
         #-------------------------------------------------
         return gui
     
+    def update_gui_em_lines_titles(self, solver_instance, Av_range):
+        '''
+        Sets the title of the line emission panels in the gui. 
+        
+        :param solver_instance: The instanance of the code used to get the emissions (radex or despotic)
+        :param Av_range: The range in Av used in the in PDR mesh to compute the emissions
+        '''
+        
+        if isinstance(solver_instance, radex):
+            #updating the display strings on the gui related to Radex
+            #updating the ['radex']['title1'] and ['radex']['title2']
+            #title1
+            
+            radexObj = self.radexObj
+            
+            strng = 'radex LVG data for species %s, Av = [%.2f, %.2f]' %  (radexObj.inFile['specStr'], Av_range[0], Av_range[1])
+            self.gui['em_lines']['title1'].set_text(strng)
+            #title2
+            strng = 'gasT\n%f\nN(specie)\n%e\n' % (radexObj.inFile['tKin'], radexObj.inFile['molnDens'])
+            for i, specStr in enumerate(radexObj.inFile['collisionPartners']):
+                strng += '%s\n%e\n' % (specStr, radexObj.inFile['nDensCollisionPartners'][i])                
+            self.gui['em_lines']['title2'].set_text(strng)
+            
+            
         
     def plotGrids(self, *args, **kwargs):
         """Main method for exploring the meshes in the database.
@@ -2072,10 +2112,10 @@ class meshArxv():
         
         # setting up the axes to plot the radex output for each selected model
         self.pltRadex = np.array([
-                                  self.gui['radex']['0']['axes'],
-                                  self.gui['radex']['1']['axes'],
-                                  self.gui['radex']['2']['axes'],
-                                  self.gui['radex']['3']['axes']
+                                  self.gui['em_lines']['0']['axes'],
+                                  self.gui['em_lines']['1']['axes'],
+                                  self.gui['em_lines']['2']['axes'],
+                                  self.gui['em_lines']['3']['axes']
                                   ]
                                  )
         
@@ -2176,7 +2216,7 @@ class meshArxv():
                 self.plotThisSec() #TODO:: rename this to update 2D grids
                 pyl.draw()
 
-            # radex curves to be displayed in each panel
+            # updating the grid to the selected transition cliked
             #----------------------------------------------------------------------
             if self.gui['widgets']['transitionSelector']['axes'].contains(event)[0]:
                 clickedInAxes = True
@@ -2221,12 +2261,13 @@ class meshArxv():
                 self.gui['ax2d']['pts2'].set_xdata( self.grid_x[indMin] )
                 self.gui['ax2d']['pts2'].set_ydata( self.grid_y[indMin] )
                 self.gui['ax2d']['pts2'].set_color('r')
-                                    
+
                 self.mshTmp.plot() #plotting the PDR mesh curves in the panels (vs Av)
-                                    
-                if self.parms['radex']['use']:
-                    self.computeAndSetRadexCurves(meshObj = self.mshTmp)
                 
+                if self.parms['radex']['use']:
+                    self.compute_and_set_radex_curves(pdr_mesh_obj = self.mshTmp)
+                    #self.compute_and_set_despotic_curves(meshObj = self.mshTmp)
+                    
                 pyl.draw()
 
             # setting the Av of the position clicked on the plots of the current mesh
@@ -2268,7 +2309,7 @@ class meshArxv():
             
             
                 if self.parms['radex']['use']:
-                    self.computeAndSetRadexCurves(meshObj = self.mshTmp,
+                    self.compute_and_set_radex_curves(meshObj = self.mshTmp,
                                                   Av_range = [0, Av_use])
 
                 pyl.draw()
@@ -2281,43 +2322,27 @@ class meshArxv():
             print 'button 3 pressed'
 
             self.plot_integrated_emissions()
-                
-    def computeAndSetRadexCurves(self, meshObj = None, radex_parms = None, Av_range = None, compute_only = None):
-        """This is a utilty method (make it a private method), for populating the radex axes
-          with the plots for the specie passed in the global parameter self.parms['radex']['specStr'].
-          It takes as a paremeter the :data:`mesh` which will be used for doing the radex computations.
-          
-          if meshObj is not passed, self.mshTmp is used as the pdr mesh object.
-          if Av_range is not passed, the maximum Av is used.
-          if compute_only is passed, nothing is plotted, only the emissions are computed and set
-          to self.radexObj
-        """
-
-        if meshObj == None:
-            meshObj = self.mshTmp
-          
-        radexObj = self.radexObj
-        radex_parms = self.parms['radex']
-          
-        if radex_parms == None:
-            radex_parms = self.parms['radex']
-
-        #getthing the stuff radex needs from the PDR mesh
-        (gasTRadex, nColls, colDensThisSpec, Av_range_used,) = meshObj.getRadexParameters(speciesStr = radex_parms['specStr'], 
-                                                                                          threshold  = radex_parms['xH2_Min'],
-                                                                                          Av_range   = Av_range)
+    
+    def run_radex_on_pdr_model(self, pdr_mesh_obj = None, radex_obj = None, radex_parms = None, Av_range = None):
+        '''
+        Runs radex on a PDR model and return the output in self.radexObj.
         
-        if compute_only == None:
-            #setting the axes
-            radexObj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
-            radexObj.set_logger(self.logger)
-            #clearing them in case there was anything
-            radexObj.clearCurves()
-
+        :param pdr_mesh_obj: The mesh object from which the parameters needed by radex will be extracted and used.
+        :param radex_parms: The paramteres needed by radex (the parameters should be a dict of the form self.parms['radex'])
+        :param Av_range: The range in Av of the pdr model to be considered.
+        '''
+        
+        #getthing the stuff radex needs from the PDR mesh
+        radex_parm_from_pdr_mesh = pdr_mesh_obj.get_radex_parameters(speciesStr = radex_parms['specStr'], 
+                                                                     threshold  = radex_parms['xH2_Min'],
+                                                                     Av_range   = Av_range)
+        
+        (gasTRadex, nColls, colDensThisSpec, Av_range_used,) = radex_parm_from_pdr_mesh
+         
         #determining what gas density to use for the collider for H2
         if radex_parms['use_pdr_gas_den_H2']:
             #using nGas/2 as the density of H2 (allowed when the only collider is H2)
-            nDensColls = [meshObj.data['hdr']['nGas']/2.0]
+            nDensColls = [pdr_mesh_obj.data['hdr']['nGas']/2.0]
             collsStr   = list(radex_parms['collisionPartners'])
             
             if len(radex_parms['collisionPartners']) > 1:
@@ -2335,7 +2360,169 @@ class meshArxv():
         #print '================='
         #print collsStr
         #print nDensColls
+
+        radex_obj.setInFileParm('specStr', radex_parms['specStr'])
+        radex_obj.setInFileParm('tKin', gasTRadex)
+        radex_obj.setInFileParm('collisionPartners', collsStr)
+        radex_obj.setInFileParm('nDensCollisionPartners', nDensColls)
+        radex_obj.setInFileParm('molnDens', colDensThisSpec)
         
+        #remove colliders which are underabundant (below radex limits)
+        radex_obj.filterColliders()
+        
+        if len(radex_obj.inFile['collisionPartners']) == 0:
+            self.logger.debug('not enough colliders')
+            return None, None
+        else:
+            # writing the parameters to a file (for debugging purposes)
+            # this file can be used to re-run radex as standalone
+            fName = radex_parms['path'] + '-debug.inp'
+            fObj = open(fName, 'w')
+            fObj.write(radex_obj.genInputFileContentAsStr() )
+            self.logger.debug('input radex file written to %s' % fName)
+            
+            if radex_parms['checkOutputIntegrity'] == False:
+                radex_obj.setDefaultStatus()
+                radex_obj.run(checkInput = True, verbose = radex_parms['verbose'])
+                
+                if radex_obj.flagSet('RUNOK'):
+                    has_lines = True
+                else:
+                    return None, None
+                
+            else:
+                #running radex (multiple times if necessary) for it to converge for this set of parms     
+                status, has_lines = radex_obj.run_mutiple_trials(expected_sum_pop_dens = radex_parms['popDensSumExpected'],
+                                                                 rel_pop_dens_tol = radex_parms['popDensSumTol'],   
+                                                                 change_frac_trial = radex_parms['changeFracTrial'],    
+                                                                 max_trials = radex_parms['nMaxTrial'],
+                                                                 verbose = radex_parms['verbose'])
+        return has_lines, radex_parm_from_pdr_mesh 
+    
+    def compute_and_set_radex_curves(self, pdr_mesh_obj = None, radex_parms = None, Av_range = None, compute_only = None, radex_obj = None):
+        """This is a utilty method (make it a private method), for populating the radex axes
+          with the plots for the specie passed in the global parameter self.parms['radex']['specStr'].
+          It takes as a paremeter the :data:`mesh` which will be used for doing the radex computations.
+          
+          if meshObj is not passed, self.mshTmp is used as the pdr mesh object.
+          if Av_range is not passed, the maximum Av is used.
+          if compute_only is passed, nothing is plotted, only the emissions are computed and set
+          to self.radexObj
+        """
+
+        if pdr_mesh_obj == None: pdr_mesh_obj = self.mshTmp
+        if radex_obj    == None: radex_obj = self.radexObj
+        if radex_parms  == None: radex_parms = self.parms['radex']
+        
+        if compute_only == None:
+            #setting the axes
+            radex_obj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
+            radex_obj.set_logger(self.logger)
+            #clearing them in case there was anything
+            radex_obj.clearCurves()
+
+        radexOutputMakesSense, radex_parm_from_pdr_mesh = self.run_radex_on_pdr_model(pdr_mesh_obj = pdr_mesh_obj,
+                                                                                      radex_obj = radex_obj, 
+                                                                                      radex_parms = radex_parms,    
+                                                                                      Av_range = Av_range)
+        Av_range_used = radex_parm_from_pdr_mesh[3]
+        
+        #plotting only when the radex solution makes sense (pop dens dont add up to 
+        #what they should be up to a certain tolerence)
+        if radexOutputMakesSense:
+            
+            if compute_only == None:
+                # plotting the data (even if it does not converge)
+                if radex_obj.getStatus() & radex_obj.FLAGS['SUCCESS']:
+                    radex_obj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
+                                                     inAxes = self.pltRadex,     
+                                                     title = '')                             
+                radex_obj.setLabels()
+            else:
+                radex_obj.print_warnings() #printing the warnings
+        
+        if compute_only == None:
+            self.update_gui_em_lines_titles(radex_obj, Av_range_used)
+        
+
+    def compute_and_set_despotic_curves(self, meshObj = None, radex_parms = None, Av_range = None, compute_only = None):
+        """This is a utilty method (make it a private method), for populating the radex axes
+          with the plots for the specie passed in the global parameter self.parms['radex']['specStr'].
+          It takes as a paremeter the :data:`mesh` which will be used for doing the radex computations.
+          
+          if meshObj is not passed, self.mshTmp is used as the pdr mesh object.
+          if Av_range is not passed, the maximum Av is used.
+          if compute_only is passed, nothing is plotted, only the emissions are computed and set
+          to self.radexObj
+        """
+
+        if meshObj == None:
+            meshObj = self.mshTmp
+          
+        radexObj = self.radexObj
+        
+        radex_parms = self.parms['radex']
+        
+        #getting the parameters needed by despotic to compute the emissions
+        weigted_parms = meshObj.get_weighted_averages(speciesStr = radex_parms['specStr'], 
+                                                      threshold  = radex_parms['xH2_Min'],
+                                                      Av_range   = Av_range)
+        
+        (TMean, nDenseColl, N_spec, nSpecMean, Av_range_used,) = weigted_parms
+        
+        nGas = meshObj.data['hdr']['nGas']
+        specStr = radex_parms['specStr']
+        
+        mycloud = cloud()
+        mycloud.nH =  nGas                                         #gas density
+        mycloud.colDen = Av2NH(Av_range_used[1], self.metallicity) #cloud column density
+        mycloud.sigmaNT = radex_parms['lineWidth']                 #non-thermal velocity despersion 
+        mycloud.comp.xoH2 = 0.25                                   #ortho-H2 composition, xoH2 molecule per H nucleus
+        mycloud.comp.xpH2 = 0.25                                   #para-H2 composition, xpH2 molecule per H nucleus
+        mycloud.Tg = TMean                                         #cloud gas kinetic temperature
+        mycloud.Td = 0.0                                           #cloud dust temperature
+        
+        mycloud.addEmitter(specStr, nSpecMean/nGas)  
+        
+        #computing the lines
+        lines = mycloud.lineLum(specStr)
+        
+        #assinging the lines info to a radex instance (just for plotting purposes)
+        radexObj.set_attributes_from_despotic(specStr, mycloud, lines)
+
+        if compute_only == None:
+            #setting the axes
+            radexObj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
+            radexObj.set_logger(self.logger)
+            #clearing them in case there was anything
+            radexObj.clearCurves()
+        
+        """
+        #determining what gas density to use for the collider for H2
+        if radex_parms['use_pdr_gas_den_H2']:
+            pass
+            #using nGas/2 as the density of H2 (allowed when the only collider is H2)
+            nDensColls = [meshObj.data['hdr']['nGas']/2.0]
+            collsStr   = list(radex_parms['collisionPartners'])
+            
+            if len(radex_parms['collisionPartners']) > 1:
+                raise ValueError(''''collisionsPartners can be only H2 when setting the density 
+                of the collider H2 to the full gas density''')
+        else:
+            #using the weighted densities extracted from the PDR
+            
+            # getting the collider densities in the same order of the supplied input spcie string list 
+            nDensColls = [ nColls[collSpecStr] for collSpecStr in radex_parms['collisionPartners'] ]
+            collsStr   = list(radex_parms['collisionPartners'])
+            #print 'input coll species', self.radexParms['collisionPartners'] 
+            #print 'nColls after putting them in the right order = ', nDensColls
+        """
+        
+        #print '================='
+        #print collsStr
+        #print nDensColls
+        
+        """
         radexObj.setInFileParm('specStr', radex_parms['specStr'])
         radexObj.setInFileParm('tKin', gasTRadex)
         radexObj.setInFileParm('collisionPartners', collsStr)
@@ -2344,20 +2531,26 @@ class meshArxv():
         
         #remove colliders which are underabundant (below radex limits)
         radexObj.filterColliders()
+        """
         
         if compute_only == None:
             #updating the display strings on the gui related to Radex
             #updating the ['radex']['title1'] and ['radex']['title2']
             #title1
             strng = 'radex LVG data for species %s, Av = [%.2f, %.2f]' %  (radex_parms['specStr'], Av_range_used[0], Av_range_used[1])
-            self.gui['radex']['title1'].set_text(strng)
+            self.gui['em_lines']['title1'].set_text(strng)
             #title2
-            strng = 'gasT\n%f\nN(specie)\n%e\n' % (gasTRadex, colDensThisSpec)
-            for i, specStr in enumerate(radexObj.inFile['collisionPartners']):
-                strng += '%s\n%e\n' % (specStr, radexObj.inFile['nDensCollisionPartners'][i])                
-            self.gui['radex']['title2'].set_text(strng)
-
-
+            strng = 'gasT\n%f\nN(specie)\n%e\n' % (TMean, nSpecMean)
+            #for i, specStr in enumerate(radexObj.inFile['collisionPartners']):
+            #    strng += '%s\n%e\n' % (specStr, radexObj.inFile['nDensCollisionPartners'][i])                
+            self.gui['em_lines']['title2'].set_text(strng)
+            
+        radexObj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
+                                         inAxes = self.pltRadex,     
+                                         title = '')                             
+        radexObj.setLabels()            
+    
+        """
         if len(radexObj.inFile['collisionPartners']) == 0:
             self.logger.debug('not enough colliders')
         else:
@@ -2393,6 +2586,8 @@ class meshArxv():
                     radexObj.setLabels()
                 else:
                     radexObj.print_warnings() #printing the warnings
+        """
+        print 'bbbbbbbbbbbbbbbbbbbbb'
 
     def clear(self):
         """clears all the bufferes allocated in the instance"""

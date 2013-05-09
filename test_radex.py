@@ -12,7 +12,7 @@ radexPath      = '/home/mher/ism/code/radex/Radex/bin/radex'
 molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 
 # parameters that will be passed to radex single partner
-inFile = { 'specStr'                : 'HCN'                              ,
+inFile = { 'specStr'                : 'CO'                              ,
            'freqRange'              : [0, 0]                              ,
            'tKin'                   : 100.0                                    ,
            'collisionPartners'      : ['H2']                              ,

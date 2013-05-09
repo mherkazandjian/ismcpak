@@ -3,7 +3,7 @@ import pylab
 import subprocess
 import logging, sys
 
-class radex( ):
+class radex():
     """A wrapper class which runs radex parses its output into objects. see test_radex.py
     and radexView.py for examples on using this class. Upon a successull executation, all the
     transitions are stored in self.transitions.
@@ -343,7 +343,7 @@ class radex( ):
         if checkInput == True:
             self.checkParameters()
         else:
-            self.status |= self.FLAGS['PARMSOK']    
+            self.status |= self.FLAGS['PARMSOK']
 
         if self.status &  self.FLAGS['PARMSOK']:
         
@@ -690,9 +690,11 @@ class radex( ):
             yPlot1[i] = yThis1
             yPlot2[i] = yThis2
             
-        axes.semilogy([0, 1000], [self.inFile['tKin'], self.inFile['tKin']], 'k--')
         axes.semilogy(xPlot, yPlot1, 'b')
         axes.semilogy(xPlot, yPlot2, 'r')
+        if self.inFile != None: #plotting the horizontal line corresponding to the input kinetic temp            
+            axes.semilogy([0, 1000], [self.inFile['tKin'], self.inFile['tKin']], 'k--')
+        
         axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1, 10000])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
@@ -851,3 +853,29 @@ class radex( ):
         self.logger.addHandler(ch)
 
         return self.logger
+
+    def set_attributes_from_despotic(self, specStr, cloud, linesInfo):
+        """Take a despotic cloud class and the lines information returned by mycloud.lineLum(specStr)
+        and sets the radex attributes which allow us to use the plotting functionality
+        
+        .. todo:: put the plotting funcionality as a sapreate class and inherit it here.
+        """
+        
+        self.transitions = numpy.zeros(len(linesInfo), dtype=self.transitionDtype)
+        self.transitions[:]['fluxcgs'] = numpy.array([l['intIntensity'] for l in linesInfo])
+        
+        self.transitions[:]['Tex'] = numpy.array([l['Tex'] for l in linesInfo])
+        self.transitions[:]['T_R'] = numpy.array([l['Tex'] for l in linesInfo])
+        
+        self.transitions[:]['upper'] = numpy.array(['%d' % l['upper'] for l in linesInfo])
+        self.transitions[:]['lower'] = numpy.array(['%d' % l['lower'] for l in linesInfo])
+        
+        self.transitions[:]['tau'] = numpy.array([l['tau'] for l in linesInfo])
+        self.transitions[:]['pop_up'] = cloud.emitters[specStr].levPop[0:-1]
+        
+    def copy(self):
+        radexNew = radex(self.execPath, self.molDataDir)
+        radexNew.setInFile( self.inFile.copy() )
+        radexNew.logger = self.logger
+        
+        return radexNew

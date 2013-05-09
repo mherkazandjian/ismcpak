@@ -59,3 +59,13 @@ def planckOccupation(h, nu, kb, T):
     """
     x = h * nu / (kb * T)
     return 1.0 / (np.exp(x) - 1.0)
+
+def ortho_para_abundance_at_eq(tkin, xH2):
+    """compute the ortho to para abundance (relative to xH2) at thermodynamic equilibirum given a kinetic temperature.
+    i.e here, they add up to """
+    rop = 9.0*np.exp(-170.6/tkin)
+    
+    xoH2 = xH2 / (1.0 + 1.0 / rop)
+    xpH2 = xH2 - xoH2
+    
+    return xoH2, xpH2

@@ -15,9 +15,9 @@ home = '/home/mher'
 #meshFname      = '/data1/mher/ism/runs/oneSided/testOneSidedPDRGrid/meshes/mesh.dat-id-000000'
 #meshFname      = '/data1/mher/ism/runs/oneSided/runSingleMesh/meshes/mesh.dat-10000percent'
 #meshFname     = '/home/mher/ism/runs/oneSided/tests/M2-30/mesh.dat-adaptive-0.1.10'
-#meshFname     = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/meshes/mesh.dat-id-000119'
-meshFname     = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid/meshes/mesh.dat-id-000000'
-metallicity   = 0.1
+meshFname     = '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/meshes/mesh.dat-id-000119'
+#meshFname     = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid/meshes/mesh.dat-id-000000'
+metallicity   = 2.0
 
 #-----------------chemical network parameters------------------------
 chemParms  = {
@@ -37,16 +37,15 @@ baseSpecs = baseSpecies.baseSpecies()
 net = chemicalNetwork.chemicalNetwork(chemParms['rxnFile'], 
                                       baseSpecs, 
                                       UMISTVER = 'umist99')
-
 # reading the species to be removed from a file
-net.removeSpecies( underAbunFile = chemParms['underAbunFile'] )
-net.removeSpecies( species = chemParms['removeManual'] )
+net.remove_species( underAbunFile = chemParms['underAbunFile'] )
+net.remove_species( species = chemParms['removeManual'] )
 # reading the species number and their corresponding indies and abundances from ascii files
-net.assignNumbersToSpecies(fileName = chemParms['specNumFile'])
+net.assign_numbers_to_species(fileName = chemParms['specNumFile'])
 
 # setting up the PDR slab
 m = mesh(meshFname, net, metallicity)
-TMean1, nColls, NCOLVG1, = m.getRadexParameters('CO', -1.0)
+TMean1, nColls, NCOLVG1, Av_range = m.get_radex_parameters('CO', threshold = -1.0)
 print TMean1, nColls, NCOLVG1
 
 m = mesh( meshFname, net, metallicity )

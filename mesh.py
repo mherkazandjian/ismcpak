@@ -562,14 +562,113 @@ class mesh(object):
         """
         """;;;remove those later;;;"""
 
+    def get_weighted_averages(self, speciesStr = None, threshold = None, Av_range = None):
+        """Returns a list (TMean, nDenseColl, N_spec) which are 
+        the weighted averaged temperature, number density of the collider species and the
+        column density of speciesStr. 
+
+        :param string speciesStr: the sting of the species whose column desnity is to be returned.
+          (note use the function self.getColumnDensity()).
+        :param float threshold: only slabs with an abundance bigger than threshold are considered
+          in computing the column density anf the Tmean. Set this to a negative number to make sure
+          all the slabs are considered.
+        :return:
+          
+          TMean (flaot)
+          
+          nDenseColl (dict) : the number density of the colliders e-, H+, H, He, H2 which are the keys
+            of the dict holding the corresponding number densities.
+            
+          N_spec (float) : the column density of the specie speciesStr
+          
+          nSpecMean : the mean weighed number density of the speice
+          
+          Av_range: the range in Av where things were computed.
+        """
+        spec = speciesStr
+        xMin = threshold
         
-    ## computes the average temperature, weighted by the column density of the XX
-    #  specie. which collides with YY_i other species. The average density of the 
-    #  YY_i species is also weighed by the column density of the specie XX in each
-    #  slab. Only slabs which have abundances greater than XX_threshold are taken
-    #  into account in computing N(XX) and the average collider densities and the 
-    #  average temepratures.
-    def getRadexParameters(self, speciesStr = None, threshold = None, Av_range = None):
+        # checking the metallciity
+        if self.metallicity == None:
+            strng = "Error : metallicity of mesh not set"
+            raise NameError(strng)
+        else:
+            Z = self.metallicity
+            
+        m   = self
+        net = self.chemNet 
+        
+        nGas = m.data['hdr']['nGas']
+        Av   = m.data['state']['Av']
+
+        # assigning/computing the thickness of the last slab to the one before the last one
+        dx    = getSlabThicknessFromAv(Av, nGas, Z)
+        dxNew = numpy.ndarray( len(dx)+1, dtype = numpy.float64 )
+        dxNew[0:-1] = dx
+        dxNew[-1]   = dx[-1]
+        dx = dxNew
+                
+        if Av_range == None:
+            Av_range = [0, Av.max()]
+
+        inds_in_Av_range = numpy.where( (Av >= Av_range[0])*(Av <= Av_range[1]) )  
+        
+        gasT = m.data['state']['gasT'][inds_in_Av_range]
+        dx = dx[inds_in_Av_range]
+        #abundances of species to be used later in getting the input needed by radex
+        xSpec   = m.data['state']['abun'][ net.species[spec].num ][inds_in_Av_range]
+        xColle  = m.data['state']['abun'][ net.species['e-'].num ][inds_in_Av_range]
+        xCollHP = m.data['state']['abun'][ net.species['H+'].num ][inds_in_Av_range]
+        xCollH  = m.data['state']['abun'][ net.species['H'].num ][inds_in_Av_range]
+        xCollHe = m.data['state']['abun'][ net.species['He'].num ][inds_in_Av_range]
+        xCollH2 = m.data['state']['abun'][ net.species['H2'].num ][inds_in_Av_range]
+
+        #getting the indicies of the slab which have xH2 greater than xMin
+        inds = numpy.nonzero( xCollH2  > xMin  )
+        if len(inds[0]) == 0:                
+            return (None, None, None)
+        
+        
+        # selecting the slabs which are usefull
+        Av    = Av[inds]
+        dx    = dx[inds]
+        xSpec = xSpec[inds]
+        gasT  = gasT[inds]
+        xColle  = xColle[inds]
+        xCollHP = xCollHP[inds]
+        xCollH  = xCollH[inds]
+        xCollHe = xCollHe[inds]
+        xCollH2 = xCollH2[inds]
+
+        # calculating the means
+        nSpec    = xSpec * nGas
+        nColle   = xColle * nGas
+        nCollHP  = xCollHP * nGas
+        nCollH   = xCollH * nGas
+        nCollHe  = xCollHe * nGas
+        nCollH2  = xCollH2 * nGas
+        
+        N_spec_each_slab = nSpec * dx #column density for each slab
+        N_spec = numpy.sum(N_spec_each_slab) #total column density
+
+        TMean       = numpy.sum( N_spec_each_slab*gasT    ) / N_spec  
+        nSpecMean   = numpy.sum( N_spec_each_slab*nSpec   ) / N_spec  #mean weighed density of the specie
+        nColleMean  = numpy.sum( N_spec_each_slab*nColle  ) / N_spec
+        nCollHPMean = numpy.sum( N_spec_each_slab*nCollHP ) / N_spec
+        nCollHMean  = numpy.sum( N_spec_each_slab*nCollH  ) / N_spec
+        nCollHeMean = numpy.sum( N_spec_each_slab*nCollHe ) / N_spec
+        nCollH2Mean = numpy.sum( N_spec_each_slab*nCollH2 ) / N_spec
+        
+        nDenseColl = {'e-': nColleMean ,
+                      'H+': nCollHPMean,
+                      'H' : nCollHMean ,
+                      'He': nCollHeMean,
+                      'H2': nCollH2Mean,
+                     }
+        
+        return (TMean, nDenseColl, N_spec, nSpecMean, Av_range,)
+    
+    def get_radex_parameters(self, speciesStr = None, threshold = None, Av_range = None):
         """Returns a list (TMean, nDenseColl, N_specLVG which are 
         the weighted averaged temperature, number density of the collider species and the
         column density of speciesStr. 
@@ -585,6 +684,95 @@ class mesh(object):
             of the dict holding the corresponding number densities.\n
           N_spcLVG (float)
         """
+        spec = speciesStr
+        xMin = threshold
+        
+        # checking the metallciity
+        if self.metallicity == None:
+            strng = "Error : metallicity of mesh not set"
+            raise NameError(strng)
+        else:
+            Z = self.metallicity
+            
+        m   = self
+        net = self.chemNet 
+        
+        nGas = m.data['hdr']['nGas']
+        Av   = m.data['state']['Av']
+
+        # assigning/computing the thickness of the last slab to the one before the last one
+        dx    = getSlabThicknessFromAv(Av, nGas, Z)
+        dxNew = numpy.ndarray( len(dx)+1, dtype = numpy.float64 )
+        dxNew[0:-1] = dx
+        dxNew[-1]   = dx[-1]
+        dx = dxNew
+                
+        if Av_range == None:
+            Av_range = [0, Av.max()]
+
+        inds_in_Av_range = numpy.where( (Av >= Av_range[0])*(Av <= Av_range[1]) )  
+        
+        gasT = m.data['state']['gasT'][inds_in_Av_range]
+        dx = dx[inds_in_Av_range]
+        #abundances of species to be used later in getting the input needed by radex
+        xSpec   = m.data['state']['abun'][ net.species[spec].num ][inds_in_Av_range]
+        xColle  = m.data['state']['abun'][ net.species['e-'].num ][inds_in_Av_range]
+        xCollHP = m.data['state']['abun'][ net.species['H+'].num ][inds_in_Av_range]
+        xCollH  = m.data['state']['abun'][ net.species['H'].num ][inds_in_Av_range]
+        xCollHe = m.data['state']['abun'][ net.species['He'].num ][inds_in_Av_range]
+        xCollH2 = m.data['state']['abun'][ net.species['H2'].num ][inds_in_Av_range]
+
+        #getting the indicies of the slab which have xH2 greater than xMin
+        inds = numpy.nonzero( xCollH2  > xMin  )
+        if len(inds[0]) == 0:                
+            return (None, None, None)
+        
+        
+        # selecting the slabs which are usefull
+        Av    = Av[inds]
+        dx    = dx[inds]
+        xSpec = xSpec[inds]
+        gasT  = gasT[inds]
+        xColle  = xColle[inds]
+        xCollHP = xCollHP[inds]
+        xCollH  = xCollH[inds]
+        xCollHe = xCollHe[inds]
+        xCollH2 = xCollH2[inds]
+
+        # calculating the means
+        nSpec    = xSpec * nGas
+        nColle   = xColle * nGas
+        nCollHP  = xCollHP * nGas
+        nCollH   = xCollH * nGas
+        nCollHe  = xCollHe * nGas
+        nCollH2  = xCollH2 * nGas
+        
+        NSpec     = nSpec * dx
+        N_specLVG = numpy.sum(NSpec)
+
+        TMean = numpy.sum( NSpec*gasT    ) / N_specLVG
+        nColleMean  = numpy.sum( NSpec*nColle  ) / N_specLVG
+        nCollHPMean = numpy.sum( NSpec*nCollHP ) / N_specLVG
+        nCollHMean  = numpy.sum( NSpec*nCollH  ) / N_specLVG
+        nCollHeMean = numpy.sum( NSpec*nCollHe ) / N_specLVG
+        nCollH2Mean = numpy.sum( NSpec*nCollH2 ) / N_specLVG
+        
+        nDenseColl = {'e-': nColleMean ,
+                      'H+': nCollHPMean,
+                      'H' : nCollHMean ,
+                      'He': nCollHeMean,
+                      'H2': nCollH2Mean,
+                     }
+        
+        return (
+                TMean, 
+                nDenseColl,
+                N_specLVG,
+                Av_range,
+                )
+
+    def get_despotic_parameters(self, speciesStr = None, threshold = None, Av_range = None):
+        """This calls         """
         spec = speciesStr
         xMin = threshold
         
@@ -769,3 +957,15 @@ class mesh(object):
             integrated_quantity = numpy.sum(q[inds]*dxSlabs[inds])
             
         return integrated_quantity
+    
+    def copy(self):
+        """returns a copy of the current instance. The new object has the same copied
+        attribute values for some of attributes (NOT ALL OF THEM), see below"""
+        
+        newMesh = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+        if self.data != None:
+            newMesh.setData( self.data.copy() )
+        else:
+            newMesh.setData(None)
+        
+        return newMesh
