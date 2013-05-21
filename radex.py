@@ -254,7 +254,7 @@ class radex():
         # that radex accepts
         for (i, nDense) in enumerate(self.inFile['nDensCollisionPartners']):
             if nDense <= 1e-3:
-                print 'poped ', self.inFile['nDensCollisionPartners'][i], self.inFile['collisionPartners'][i]
+                self.logger.debug('poped %f %d' % self.inFile['nDensCollisionPartners'][i], self.inFile['collisionPartners'][i])
                 self.inFile['nDensCollisionPartners'].pop(i)
                 self.inFile['collisionPartners'].pop(i)
                  
@@ -500,7 +500,6 @@ class radex():
         """
         
         try:
-            #print self.rawOutput
             output = self.rawOutput
             lines  =  output.splitlines()
             nLines = len(lines)
@@ -515,7 +514,7 @@ class radex():
             self.warnings = lines[4:i]  # extracting the warning
             #print self.warnings
             
-            # collecting the header
+            # collecting the header (lines starting with a '*')
             lineNumHdrStart = i
             while True:
                 if lines[i][0] == '*' and lines[i+1][0] != '*':
@@ -554,11 +553,18 @@ class radex():
                 return info
             #--------------------------------------------------------------------------
     
-            lineNum += 3        
+            i = 0 
+            while True: #looking for the first line which starts with a '1' indicating the first transition line
+                lineNum += 1
+                if lines[lineNum + 1][0] == '1':
+                    lineNum += 1
+                    break
+            
+            #parsing the output lines info
             for line in lines[lineNum:nLines-1]:
                 transition = parseLineData(line)
                 transitions.append(transition)
-                
+            
             #copying the content of self.transitions into self.transitionsNdarrya
             ##:note: do this at one go without storing things first in self.transitiosn
             #******************************************************
@@ -569,8 +575,7 @@ class radex():
                     transitionsNdarray[i][key] = trans[key]
             self.transitions = transitionsNdarray
             #******************************************************
-            
-            
+
         except (ValueError, IndexError):
             print self.rawOutput
             errStr = 'parsing the output failed'

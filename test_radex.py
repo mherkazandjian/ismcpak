@@ -8,7 +8,7 @@ from time import *
 
 
 # path of the radex excutable
-radexPath      = '/home/mher/ism/code/radex/Radex/bin/radex'  
+radexPath      = '/home/mher/ism/code/radex/Radex/bin-gcc/radex'  
 molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 
 # parameters that will be passed to radex single partner

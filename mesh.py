@@ -406,7 +406,7 @@ class mesh(object):
         self.axs[0,1].text(0.4, 1e-9 , '$H$'   , color='g')
         self.axs[0,1].text(0.4, 1e-8 , '$H_2$' , color='b')
         self.axs[0,1].text(0.4, 1e-11 ,'$e^-$' , color='c')
-        self.axs[0,1].text(0.4, 1e-12 ,'$He$'  , color='y')
+        #self.axs[0,1].text(0.4, 1e-12 ,'$He$'  , color='y')
 
         #setting ranges of the original axis 
         self.plt01ax1 = self.axs[0,1]
@@ -519,8 +519,8 @@ class mesh(object):
         self.plt01Spec3Plt.set_ydata( data['state']['abun'][spcs['H2'].num] )
         self.plt01Spec4Plt.set_xdata( data['state']['Av'] )
         self.plt01Spec4Plt.set_ydata( data['state']['abun'][spcs['e-'].num] )
-        self.plt01Spec5Plt.set_xdata( data['state']['Av'] )
-        self.plt01Spec5Plt.set_ydata( data['state']['abun'][spcs['He'].num] )
+        #self.plt01Spec5Plt.set_xdata( data['state']['Av'] )
+        #self.plt01Spec5Plt.set_ydata( data['state']['abun'][spcs['He'].num] )
         
         # subplot 1,0
         self.plt10Spec1Plt.set_xdata( data['state']['Av'] )
@@ -529,8 +529,8 @@ class mesh(object):
         self.plt10Spec2Plt.set_ydata( data['state']['abun'][spcs['C'].num] )
         self.plt10Spec3Plt.set_xdata( data['state']['Av'] )
         self.plt10Spec3Plt.set_ydata( data['state']['abun'][spcs['CO'].num] )
-        self.plt10Spec4Plt.set_xdata( data['state']['Av'] )
-        self.plt10Spec4Plt.set_ydata( data['state']['abun'][spcs['O'].num] )
+        #self.plt10Spec4Plt.set_xdata( data['state']['Av'] )
+        #self.plt10Spec4Plt.set_ydata( data['state']['abun'][spcs['O'].num] )
 
         # subplot 1,1
         self.plt11Spec1Plt.set_xdata( data['state']['Av'] )

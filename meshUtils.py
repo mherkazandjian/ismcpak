@@ -96,7 +96,7 @@ class meshArxv():
             """path to the directory which contains all the database info and data"""
             
         self.nMeshes    = None
-        """ np.long64 : number of meshes in the database (this is now as 1x1 array, convert it just into an np.int32 scalar"""
+        """ np.int32 : number of meshes in the database (this is now as 1x1 array, convert it just into an np.int32 scalar"""
         
         self.ver        = None
         """ np.int32 array [3] version number of the database data"""
@@ -231,6 +231,10 @@ class meshArxv():
         """same as qx but for the z axis"""
         self.grid_z = None
         """same as qx but for the z axis"""
+        self.grid_x_unique = None
+        """holds the unique values of grid_x"""
+        self.grid_y_unique = None
+        """holds the unique values of grid_y"""
         self.grid_z_unique = None
         """holds the unique values of grid_z"""
 
@@ -441,6 +445,156 @@ class meshArxv():
         dbInfoFObj.close()
         
         self.logger.debug('wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))        
+
+    def make_copy(self, dirName = None, x = None, y = None, z = None):
+        """makes a copy of all the databases with some selections specified by the arrays x,y,z 
+           picking a meshes whose coordinates are 'exactly' in x,y,z.
+           
+           example : 
+           
+               arxv = meshUtils.meshArxv(**parms)
+               arxv.make_copy(dirName = '/home/mher/foo/',
+                              x = arxv.grid_x_unique[::2], 
+                              y = arxv.grid_y_unique[::2], 
+                              z = arxv.grid_z_unique[::2],
+                             ) 
+        """
+        
+        self.writeDb_selection(dirName, x, y, z)
+
+        for key_Av in self.radexDbs:
+            
+            for key_specStr in self.radexDbs[key_Av]:
+                
+                self.use_radexDb(numpy.float64(key_Av), key_specStr)
+                
+                self.writeDbRadex_selection(dirName, x, y, z)
+
+        
+    def writeDb_selection(self, dirName = None, x = None, y = None, z = None):
+        """ writes the mesh.db and mesh.db.ino into the dir dirName.  Only meshes whose
+            self.grid_x,y,z[i] are in x,y,z are written.
+        
+        :param string dirName: The directory where to write the database files.
+        """
+        
+        if dirName == None:
+            raise ValueError('keyword dirName not set...please provide it')
+        if dirName.replace('/','') == self.parms['dirPath'].replace('/',''):
+            raise ValueError("keyword dirName should be different from self.params['dirPath']")
+        
+        # writing the mesh to the database file
+        dbDataFObj = file(dirName + 'meshes.db', 'wb')
+        
+        #a temporary copy of self.infoAll which will store the info that will be written
+        #to meshes.db.info in the new dirName 
+        infoAll_new = self.infoAll.copy()
+        
+        counter = 0 #to keep track of the number of meshes with the specified coords
+        
+        #looping over all the coordinates of the grids...
+        for i in np.arange( self.nMeshes ):
+            
+            #writing only meshes whose coordinates are in the specified ones
+            if self.grid_x[i] in x and self.grid_y[i] in y and self.grid_z[i] in z:
+                
+                self.meshes[i].tofile( dbDataFObj )
+                
+                infoAll_new[counter] = self.infoAll[i]
+                
+                infoAll_new[counter]['info'][0] = counter # mesh number 
+
+                infoAll_new[counter]['info'][2] = dbDataFObj.tell()  # offset from the start of file
+                
+                np.array( infoAll_new[counter]['info'][2] ).tofile(dbDataFObj)
+                
+                counter += 1
+                
+        dbDataFObj.close()
+        
+        nMeshes_new = numpy.int32(counter)
+        
+        # writing the db info into a file
+        dbInfoFObj = file(dirName + 'meshes.db.info', 'wb')
+        self.ver.tofile( dbInfoFObj)
+        nMeshes_new.tofile( dbInfoFObj )
+        infoAll_new[0:counter].tofile( dbInfoFObj )        
+        dbInfoFObj.close()
+        self.logger.debug('wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))        
+
+    def writeDbRadex_selection(self, dirName = None, x = None, y = None, z = None):
+        """ writes the meshesRadex.db and meshRadex.db.info into the dir dirName.  Only meshes whose
+            self.grid_x,y,z[i] are in x,y,z are written. 
+        
+        .. todo:: add an example of a safe way to use this.
+        
+        :param string dirName: The directory where to write the database files.
+        """
+        
+        if dirName == None:
+            raise ValueError('keyword dirName not set...please provide it')
+        if dirName.replace('/','') == self.parms['dirPath'].replace('/',''):
+            raise ValueError("keyword dirName should be different from self.params['dirPath']")
+
+        Av_end, specStr = self.currentRadexDb['Av'], self.currentRadexDb['specStr']
+        
+        dbFname, dbInfoFname = self.getRadexDbPath(Av_end, specStr, dirpath = dirName) 
+
+        #creating the Av_XX.XX dir is neccessary
+        dirPath_this_db = dbFname.replace(dbFname.split('/')[-1],'')
+        if os.path.exists(dirPath_this_db) == False:
+            os.mkdir(dirPath_this_db)
+            self.logger.debug('created directory : %s' % dirPath_this_db)
+        
+        # writing the mesh to the database file
+        dbDataFObj = file(dbFname, 'wb')
+        
+        #a temporary copy of self.infoAll which will store the info that will be written
+        #to meshes.db.info in the new dirName 
+        infoAllRadex_new = self.infoAllRadex.copy()
+        
+        counter = 0 #to keep track of the number of meshes with the specified coords
+        
+        #looping over all the coordinates of the grids...
+        for i in np.arange( self.nMeshes ):
+            
+            #writing only meshes whose coordinates are in the specified ones
+            if self.grid_x[i] in x and self.grid_y[i] in y and self.grid_z[i] in z:
+
+                #writing the mesh parameters before writing the transition data (extra data integrirty check)
+                thisMeshParms = np.array([self.meshes[i]['hdr']['G0'],
+                                          self.meshes[i]['hdr']['nGas'],
+                                          self.meshes[i]['hdr']['gammaMech']], dtype = np.float64)
+                thisMeshParms.tofile( dbDataFObj )
+
+                infoAllRadex_new[counter] = self.infoAllRadex[i]
+                infoAllRadex_new[counter]['info'][0] = counter # mesh number
+                
+                #writing the transition info to the transiotions db file
+                if self.meshesRadex[i] != None:
+                    #writing the transition data
+                    self.meshesRadex[i].tofile( dbDataFObj )
+                    #filling the necessary values in infoAllRadex
+                    infoAllRadex_new[counter]['info'][2] = dbDataFObj.tell()  # offset from the start of file
+                else:
+                    infoAllRadex_new[counter]['info'][2] = -1                
+                    
+                #writing the offset so far from the begining of the .db file
+                np.array( infoAllRadex_new[counter]['info'][2] ).tofile(dbDataFObj)
+                
+                counter += 1
+                
+        dbDataFObj.close()
+        
+        nMeshesRadex_new = numpy.int32(counter)
+        
+        # writing the db info into a file
+        dbInfoFObj = file(dbInfoFname, 'wb')
+        self.ver.tofile( dbInfoFObj)
+        nMeshesRadex_new.tofile( dbInfoFObj )
+        infoAllRadex_new[0:counter].tofile( dbInfoFObj )        
+        dbInfoFObj.close()
+        self.logger.debug('wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
         
     def readDb(self, check = None):
         """ reads the database and assigns the appropritate attributes (document)
@@ -451,15 +605,12 @@ class meshArxv():
         dbInfoFObj = file(self.dirPath + 'meshes.db.info', 'rb')
         dbDataFObj = file(self.dirPath + 'meshes.db'     , 'rb')
 
-        self.ver = np.fromfile( dbInfoFObj, dtype = (np.int32, 3), count = 1)
-        self.ver = self.ver[0]
-    
-        self.nMeshes = np.fromfile( dbInfoFObj, dtype = np.int32, count = 1)
-        self.nMeshes = self.nMeshes[0]
+        self.ver = np.fromfile( dbInfoFObj, dtype = (np.int32, 3), count = 1)[0]        
+        self.nMeshes = np.fromfile( dbInfoFObj, dtype = np.int32, count = 1)[0]
 
         arxvHdrDtype = np.dtype( self.arxvHdrFormat() )
         self.infoAll = np.fromfile( dbInfoFObj, dtype = arxvHdrDtype, count = self.nMeshes)
-
+        
         # reading the meshes in database into a list 
         self.meshes = []
         
@@ -488,12 +639,16 @@ class meshArxv():
         if check:
             self.checkIntegrity()
     
-    def getRadexDbPath(self, Av, specStr):
+    def getRadexDbPath(self, Av, specStr, dirpath = None):
         """Give the Av and the species string, returns the paths string pointing to the file (see self.radexDbs).
         The path to the .db and to the .info.db files
         """
 
-        dirName = self.parms['dirPath']
+        if dirpath == None:
+            dirName = self.parms['dirPath']
+        else:
+            dirName = dirpath
+            
         radexDbsPath_thisAv = dirName + 'radexDbs/Av_%.2f/' % Av
         
         dbFname = radexDbsPath_thisAv + 'meshesRadex.db.%s' % specStr
@@ -517,7 +672,8 @@ class meshArxv():
         if dirName == None:
             dirName = self.dirPath
 
-        Av_end, specStr = self.parms['radex']['Av_range'][1], self.parms['radex']['specStr']
+        Av_end, specStr = self.currentRadexDb['Av'], self.currentRadexDb['specStr']
+        
         dbFname, dbInfoFname = self.getRadexDbPath(Av_end, specStr) 
 
         #creating the Av_XX.XX dir is neccessary
@@ -643,22 +799,13 @@ class meshArxv():
                 #self.meshes.append( thisMeshRadexData[0] )                
                 meshesRadex.append( thisMeshRadexData )                
             self.logger.debug('read successfully radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
-    
-            self.infoAllRadex = infoAllRadex
-            self.meshesRadex = meshesRadex
-            
-            if check:
-                self.checkIntegrityRadex()            
+                            
+            #setting state attributes related to the current radexDb
+            self.append_radex_db_related_attributes(meshesRadex, infoAllRadex, Av, specStr)
 
-            #storing the read Db into a nested dict
-            self.currentRadexDb = {'Av' : Av, 'specStr':specStr}   
-            radexDb = { 'meshes' : self.meshesRadex, 'infoAll' : self.infoAllRadex}
-            
-            if '%.2f' % Av not in self.radexDbs:
-                self.radexDbs['%.2f' % Av] = {}
-                
-            self.radexDbs['%.2f' % Av][specStr] = radexDb
-            self.logger.debug('added %s radex database to memory' % specStr)
+            if check:
+                self.checkIntegrityRadex()
+
         else:
             self.logger.debug('%s radex database already read...skipping' % specStr)
 
@@ -839,13 +986,24 @@ class meshArxv():
                            np.log10(self.meshes[i]['hdr']['gammaMech'])])
 
             xdv = x2 - x1
-            diff +=  np.sqrt( np.dot(xdv,xdv) )
+            
+            diff_this = np.sqrt( np.dot(xdv,xdv) )
+             
+            if diff_this != 0.0:
+                raise NameError(
+                                """"archive integrity test failed. database file may be corrupt.
+                                    parms in infoAll[i]     : %e %e %e
+                                    parms in mesh[i]['hdr'] : %e %e %e
+                                """ % (
+                                       self.infoAll[i]['parms'][0], self.infoAll[i]['parms'][1], self.infoAll[i]['parms'][2],
+                                       self.meshes[i]['hdr']['G0'], self.meshes[i]['hdr']['nGas'], self.meshes[i]['hdr']['gammaMech']
+                                      )
+                                ) 
+
+            diff += diff_this 
             
         if diff == 0.0:
             self.logger.debug('archive integrity test passed')
-        else:
-            strng = 'archive integrity test failed. database file may be corrupt' 
-            raise NameError(strng)
 
     def checkIntegrityRadex(self):
         """checks the radex db archive integrity by comparing the read parameters for each mesh
@@ -866,13 +1024,24 @@ class meshArxv():
                            np.log10(self.infoAll[i]['parms'][1]),
                            np.log10(self.infoAll[i]['parms'][2])])
             xdv = x2 - x1
-            diff +=  np.sqrt( np.dot(xdv,xdv) )
+
+            diff_this = np.sqrt( np.dot(xdv,xdv) )
+             
+            if diff_this != 0.0:
+                raise NameError("""archive integrity test failed. database file may be corrupt.
+                                   parms in infoAllRadex[i] : %e %e %e
+                                   parms in infoAll[i]      : %e %e %e
+                                """ % (
+                                      self.infoAllRadex[i]['parms'][0], self.infoAllRadex[i]['parms'][1], self.infoAllRadex[i]['parms'][2],
+                                      self.infoAll[i]['parms'][0], self.infoAll[i]['parms'][1], self.infoAll[i]['parms'][2]
+                                      )
+                                )
+                                
+            diff += diff_this 
             
         if diff == 0.0:
             self.logger.debug('archive integrity test passed')
-        else:
-            strng = 'archive integrity test failed. database file may be corrupt' 
-            raise NameError(strng)
+
     
     def setupChemistry(self, parms = None):
         """sets up the attributes related to the chemistry assuming self.parms['chemistry'] is set.
@@ -1349,6 +1518,7 @@ class meshArxv():
         cbar = pyl.colorbar(im00, cax = panel['axesCbar'], ax = panel['axes'], 
                             orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
         
+        self.grds[0][0][:] = grd        
         
     def showAbundancesGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the abundances grid"""
@@ -1371,6 +1541,8 @@ class meshArxv():
         
         pyl.colorbar(im01, cax = panel['axesCbar'], ax = panel['axes'],
                      orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
+        
+        self.grds[0][1][:] = grd        
 
     def showColumnDensityGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the abundances grid"""
@@ -1393,6 +1565,7 @@ class meshArxv():
         pyl.colorbar(im10, cax = panel['axesCbar'], ax = panel['axes'],
                      orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
 
+        self.grds[1][0][:] = grd        
 
     def showLineIntensityGrid(self, ranges = None, res = None, *args, **kwargs):
         """shows the line intensity grid"""            
@@ -1430,6 +1603,8 @@ class meshArxv():
 
         titleStr += ' Av = [0,%2.f]' % self.parms['gridsInfo']['11']['Av_max']
         panel['axesCbar'].set_title(titleStr)
+
+        self.grds[1][1][:] = grd        
         
     def constructRadexDatabase(self, writeDb = None):
         """runs radex on all the models in self.meshes, and computes the line info 
@@ -1454,8 +1629,9 @@ class meshArxv():
         radex_parms = self.parms['radex']
         
         Av_range = radex_parms['Av_range']
-
-
+        Av_end   = Av_range[1]
+        specStr  = radex_parms['specStr']
+        
         #
         #
         def put_radex_transitions_in_meshesRadex_array(mesh_idx):
@@ -1509,9 +1685,11 @@ class meshArxv():
                 
             del radex_obj_utility               
             del pdr_mesh_obj_utility
-            #
-            #
+        #
+        #
         
+        t0 = time()
+
         #running radex on all the pdr meshes and storing them into meshesRadex
         if self.parms['nThreads'] == 1:
             for i in np.arange(self.nMeshes):
@@ -1547,9 +1725,7 @@ class meshArxv():
                     conn.send([meshesRadex[mesh_idx]])
             #
             #
-            
-            
-            t0 = time()
+                        
             #making the pipes for communicating the results, pipes[i][0] = parent conn, pipes[i][1] child conn
             pipes = [Pipe() for tidx in range(nThreads)]
             #making the proccesses
@@ -1569,17 +1745,40 @@ class meshArxv():
             #joining the threads
             for p in ps: p.join()
             
-            print 'Time running in parallel = %.2f seconds ' % (time()-t0)
-
+        #done getting the transitions from all the PDR models
+        
+        print 'Time running in parallel = %.2f seconds ' % (time()-t0)
+        aasdasd
+        
         #copying the mesh parameters self.infoAll[:]['parms] to self.infoAllRadex[:]['parms'] (info are set in the loop above)
         for i in np.arange( self.nMeshes ):
             infoAllRadex[i]['parms'][:] = self.infoAll[i]['parms']
 
-        self.infoAllRadex = infoAllRadex
-        self.meshesRadex = meshesRadex
+        #setting state attributes related to the current radexDb
+        self.append_radex_db_related_attributes(meshesRadex, infoAllRadex, Av_end, specStr)
         
         if writeDb == True:
             self.writeDbRadex()
+    
+    def append_radex_db_related_attributes(self, meshesRadex, infoAllRadex, Av_end, specStr):
+        """This method organizes and append a newly computed/read radex Db to the attributes
+        and in memory. 
+        """
+        
+        self.infoAllRadex = infoAllRadex
+        self.meshesRadex = meshesRadex
+
+        #storing the read Db into a nested dict
+        self.currentRadexDb = {'Av' : Av_end, 'specStr': specStr}   
+        radexDb = { 'meshes' : self.meshesRadex, 'infoAll' : self.infoAllRadex}
+            
+        #if the Av is not in self.radexDbs, make the empty dict object which will hold this Db and its info
+        if '%.2f' % Av_end not in self.radexDbs:
+            self.radexDbs['%.2f' % Av_end] = {}
+                
+        self.radexDbs['%.2f' % Av_end][specStr] = radexDb
+        self.logger.debug('added %s radex database to memory' % specStr)
+        
     
     def save_radex_grids(self, relativeDirPath = None, basename = None, transitionInds = None, 
                          quantity = None, fileFormat = None, *args, **kwargs):
@@ -1856,7 +2055,7 @@ class meshArxv():
         fileInfoFobj.close()
                     
     #################################################################################
-    def setupGui(self):
+    def setup_gui(self):
         """the method which setup the layout of the gui by defining a dict holding
         all the object and variables related to it. Returns the dict object and make
         use of self.parms"""
@@ -2059,8 +2258,6 @@ class meshArxv():
             for i, specStr in enumerate(radexObj.inFile['collisionPartners']):
                 strng += '%s\n%e\n' % (specStr, radexObj.inFile['nDensCollisionPartners'][i])                
             self.gui['em_lines']['title2'].set_text(strng)
-            
-            
         
     def plotGrids(self, *args, **kwargs):
         """Main method for exploring the meshes in the database.
@@ -2078,7 +2275,7 @@ class meshArxv():
         self.radexParms = self.parms['radex']
         
         #setting up the gui attribute
-        self.gui = self.setupGui()
+        self.gui = self.setup_gui()
 
         if self.parms['showGrids']:
             # getting the interpolation function which will be used to display the 2D grids
@@ -2120,7 +2317,7 @@ class meshArxv():
                                  )
         
         # getting and plotting the unique sections in z
-        self.grid_z_unique = self.getUnique_grid_z_sections(1e-13)
+        self.set_unique_grid_sections(1e-13) 
         self.gui['widgets']['zSecSelector']['pointsUnique'].set_xdata(self.grid_z_unique)
         self.gui['widgets']['zSecSelector']['pointsUnique'].set_ydata(self.grid_z_unique*0.0 + 0.5)
 
@@ -2174,7 +2371,7 @@ class meshArxv():
                 self.showLineIntensityGrid(ranges = self.parms['plotRanges'], res = self.resPltGrids, *args, **kwargs)
     
     def on_button_down(self, event):
-        """method called on the event of a mouse button down in self.fig. See self.setupGui()
+        """method called on the event of a mouse button down in self.fig. See self.setup_gui()
            for the layout of the window.
         """
        
@@ -2332,6 +2529,8 @@ class meshArxv():
         :param Av_range: The range in Av of the pdr model to be considered.
         '''
         
+        write_debug_info = False
+        
         #getthing the stuff radex needs from the PDR mesh
         radex_parm_from_pdr_mesh = pdr_mesh_obj.get_radex_parameters(speciesStr = radex_parms['specStr'], 
                                                                      threshold  = radex_parms['xH2_Min'],
@@ -2374,12 +2573,14 @@ class meshArxv():
             self.logger.debug('not enough colliders')
             return None, None
         else:
-            # writing the parameters to a file (for debugging purposes)
-            # this file can be used to re-run radex as standalone
-            fName = radex_parms['path'] + '-debug.inp'
-            fObj = open(fName, 'w')
-            fObj.write(radex_obj.genInputFileContentAsStr() )
-            self.logger.debug('input radex file written to %s' % fName)
+            
+            if write_debug_info:
+                # writing the parameters to a file (for debugging purposes)
+                # this file can be used to re-run radex as standalone
+                fName = radex_parms['path'] + '-debug.inp'
+                fObj = open(fName, 'w')
+                fObj.write(radex_obj.genInputFileContentAsStr() )
+                self.logger.debug('input radex file written to %s' % fName)
             
             if radex_parms['checkOutputIntegrity'] == False:
                 radex_obj.setDefaultStatus()
@@ -2425,7 +2626,6 @@ class meshArxv():
                                                                                       radex_obj = radex_obj, 
                                                                                       radex_parms = radex_parms,    
                                                                                       Av_range = Av_range)
-        Av_range_used = radex_parm_from_pdr_mesh[3]
         
         #plotting only when the radex solution makes sense (pop dens dont add up to 
         #what they should be up to a certain tolerence)
@@ -2442,6 +2642,12 @@ class meshArxv():
                 radex_obj.print_warnings() #printing the warnings
         
         if compute_only == None:
+            
+            if radex_parm_from_pdr_mesh != None:
+                Av_range_used = radex_parm_from_pdr_mesh[3]
+            else:
+                Av_range_used = [-1, -1]
+                
             self.update_gui_em_lines_titles(radex_obj, Av_range_used)
         
 
@@ -2454,6 +2660,8 @@ class meshArxv():
           if Av_range is not passed, the maximum Av is used.
           if compute_only is passed, nothing is plotted, only the emissions are computed and set
           to self.radexObj
+          
+          .. todo:: continue working on this
         """
 
         if meshObj == None:
@@ -2868,21 +3076,40 @@ class meshArxv():
         fObj.close()
         #writing some of the output of the DB in to an ascii file
         
-    def getUnique_grid_z_sections(self, relDiff):
+    def get_unique_grid_x_sections(self, relDiff):
+        """returns the unique section in x up to a relative difference of relDiff"""
+        return self.get_unique_grid_sections('x', relDiff)
+    def get_unique_grid_y_sections(self, relDiff):
+        """returns the unique section in y up to a relative difference of relDiff"""
+        return self.get_unique_grid_sections('y', relDiff)
+    def get_unique_grid_z_sections(self, relDiff):
         """returns the unique section in z up to a relative difference of relDiff"""
+        return self.get_unique_grid_sections('z', relDiff)
+    def set_unique_grid_sections(self, relDiff):
+        """sets the attributes self.grid_x_unique, self.grid_y_unique, self.grid_z_unique"""
+        self.grid_x_unique = self.get_unique_grid_x_sections(relDiff) 
+        self.grid_y_unique = self.get_unique_grid_y_sections(relDiff) 
+        self.grid_z_unique = self.get_unique_grid_z_sections(relDiff) 
         
-        z = self.grid_z
+    def get_unique_grid_sections(self, axis, relDiff):
+        """returns the unique section in up to a relative difference of relDiff of one of the
+        axes x,y or z specified by the axis argument ('x' for self.grid_x, 'y' for self.grid_y
+        and 'z' for self.grid_z)."""
+        
+        if axis == 'x': v = self.grid_x
+        if axis == 'y': v = self.grid_y
+        if axis == 'z': v = self.grid_z
         
         sections = []
 
-        while z.size != 0:
-            mn = np.min(z)
+        while v.size != 0:
+            mn = np.min(v)
             #print 'min = ', mn, 10.0**mn
             if mn == 0.0:
-                inds = np.where( z != mn)
+                inds = np.where( v != mn)
             else:
-                inds = np.where( abs(1.0 - z/mn) > relDiff)
-            z = z[inds]
+                inds = np.where( abs(1.0 - v/mn) > relDiff)
+            v = v[inds]
             sections.append(mn)
     
         return np.array(sections, dtype=np.float64)
@@ -3067,7 +3294,7 @@ class meshArxv():
         """plots quantities of a PDR mesh as a function of Av, also some
         quantites from the radexDbs (self.radexDbs)
         """
-        xrng = [0.01, 30.0]
+        xrng = [0.01, 30.0]  
         yrng = [1e-12, 1.0]
         xscale = 'log' #'linear' #'log'
         yscale = 'log' #'linear' #'log'
@@ -3138,7 +3365,6 @@ class meshArxv():
 
         #-------------------done computing stuff from the PDR meshes--------------        
 
-
         #-------------------extracting and plotting stuff from the radex Dbs------
         specStrs    = ['CO' , '13CO'  , 'HCN' , 'HNC', 'CS']
         transitions = [0    ,   0   ,   0   ,   0  ,  0  ]
@@ -3155,7 +3381,7 @@ class meshArxv():
             plots.append(ax.plot(Avs, vs,'--o')[0])
             titles.append(specStr + titleStrs[i])
         #-------------done extracting and plotting stuff from the radex Dbs-------
-
+        
 
         #pylab.legend(plots, titles)
         pylab.xlabel('Av', size='large')
@@ -3299,4 +3525,82 @@ class meshArxv():
             pylab.ylim(ylim)
         pylab.show()    
 
+    def plot_grid_n_G0_standalone(self, maps2d_idx, title = None, levels = None):
+        """Plots a grid in a new standalone figure instead of the main gui. One of the maps2d index
+        (tuple) (for (0,0), or (0,1), (1,0), (1,1) ) ... sould be passed."""
         
+        i, j = maps2d_idx
+        fig = pylab.figure(figsize=(6,6))
+        
+        grid_info = self.gui['maps2d']['%s%s' % (i,j)]
+        """
+
+        maps2d_10['axesCbar'].set_title('N(%s)' % self.parms['gridsInfo']['10']['specStr'])
+        maps2d_10['contour'] = None
+        maps2d_10['axes'].set_xlabel( '$log_{10} n_{gas}$' )
+        maps2d_10['axes'].set_ylabel( '$log_{10} G_0$' )
+        maps2d_10['axes'].set_xlim(self.ranges[0][0], self.ranges[0][1])
+        maps2d_10['axes'].set_ylim(self.ranges[1][0], self.ranges[1][1])
+        (maps2d_10['axes'].yaxis.get_major_ticks())[-1].label1On = False
+        (maps2d_10['axes'].xaxis.get_major_ticks())[-1].label1On = False
+        gui['maps2d']['10'] = maps2d_10 
+        """
+    
+        left = 0.14
+        bottom = 0.12
+        sz = 0.7
+        vSpace = 0.07
+        nlevels = 12
+        
+        ax = fig.add_axes([left, bottom, sz, sz])
+        ax_cbar = fig.add_axes([left, bottom + sz + vSpace, sz, 0.02])
+
+        grd_data = self.grds[i][j]
+        ranges = (grid_info['axes'].get_xlim()[0], grid_info['axes'].get_xlim()[1], grid_info['axes'].get_ylim()[0], grid_info['axes'].get_ylim()[1])
+        
+        ax.set_xlim(ranges[0],ranges[1])
+        ax.set_ylim(ranges[2],ranges[3])
+        
+        im = ax.imshow(grd_data, extent=ranges, origin='lower')
+        
+        if levels == None:
+            dl = (np.nanmax(grd_data) - np.nanmin(grd_data))/nlevels
+            levels = np.arange( np.nanmin(grd_data), np.nanmax(grd_data), dl )
+        
+        contours = ax.contour(grd_data, levels, extent=ranges, origin='lower', colors = 'black')
+
+        
+        ax.clabel(contours, levels, fmt = '%.1f' )
+        
+        cbar = pyl.colorbar(im, cax = ax_cbar, ax = ax, 
+                            orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
+        
+        ax.set_xlabel(r'log$_{10}$ [n$_{gas}$ / cm$^{-3}$]', size='xx-large')
+        ax.set_ylabel(r'log$_{10}$ G$_0$', size='xx-large')
+
+        ax.tick_params(axis='both', which='major', labelsize=15)
+        ax.tick_params(axis='both', which='minor', labelsize=15)
+
+        ax_cbar.tick_params(axis='both', which='major', labelsize=15)
+        ax_cbar.tick_params(axis='both', which='minor', labelsize=15)
+
+        vmax, vmin = np.nanmax(grd_data), np.nanmin(grd_data)  
+        nTicks = 5
+        cbar_levels = numpy.linspace(vmin, vmax, nTicks)
+        cbar.set_ticks(cbar_levels)
+        
+        title = r'log$_{10}$ [ CO(1-0)' + r'/ erg cm$^{-3}$ s$^{-1}$ ]'                     
+        #title = r'log$_{10}$ [ HCN(1-0)' + r'/ erg cm$^{-3}$ s$^{-1}$ ]'       
+        ax_cbar.set_title(title, size = 'xx-large')
+        
+        pylab.show()
+        
+        
+    def print_available_radex_dbs(self):
+        """prints the keys and the nested keys of the attribute self.radexDbs"""
+        
+        for key_Av in self.radexDbs:
+            print 'Av = %-5s :' % key_Av,
+            for key_specStr in self.radexDbs[key_Av]:
+                print '%-8s ' % key_specStr,
+            print 

@@ -3,8 +3,8 @@ import time
 import sys
 import os
 import matplotlib
-#matplotlib.use('Qt4Agg')
-matplotlib.use('PS')
+matplotlib.use('Qt4Agg')
+#matplotlib.use('PS')
 
 import pylab
 import meshUtils
@@ -22,18 +22,20 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-2/',         
          #'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-2.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-1.0-high-res-no-gmech/',
-         'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy/',
+         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy/',
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2/',
+         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
+         #'dirPath'      : home + '/ism/runs/oneSided/sph-db-test/',
          
-         'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+         'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
-         'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
+         #'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
-         'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
-         #'plotRanges'     : [[-4,7],[-4,7],[-51, -15]],  # uniform gmech
+         #'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
+         'plotRanges'     : [[-4,6],[-4,6],[-51, -15]],  # uniform gmech
          
          'plot'          : True, 
          'showGrids'     : True,
@@ -71,17 +73,17 @@ parms = {
                                     },
                            },
          'gridsRes'      : 100,
-         'nThreads'      : 4,
+         'nThreads'      : 1,
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
          'radex'         : { 'use'                  : True,
-                             'loadAllDbs'           : False,
+                             'loadAllDbs'           : True,
                              ###-----------radex database parms-----------------
-                             'compute'              : True, #if true, runns radex on all meshes
-                             'writeDb'              : True, #if true, writes the computed stuff to a db
+                             'compute'              : False, #if true, runns radex on all meshes
+                             'writeDb'              : False, #if true, writes the computed stuff to a db
                              'Av_range'             : [0.0, 10.0],  #range which will be used in extracting data needed by radex from the PDR models
                                                                     #(only relevent to constructing databases)
-                             'path'                 : home + '/ism/code/radex/Radex/bin/radex',  
+                             'path'                 : home + '/ism/code/radex/Radex/bin-gcc/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : specStr_Radex,
                              'freqRange'            : [0, 50000],
@@ -134,13 +136,13 @@ if False:
         species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'SiO']
         for specStr in species:
             parms['radex']['specStr'] = specStr
-            arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
+            arxv.constructRadexDatabase(writeDb = True)
             
         species = ['CN']  #the pop dense do not add to 1...so this is done saperatly (need to set 'checkOutputIntegrity' to False)
         parms['radex']['checkOutputIntegrity'] = False
         for specStr in species:
             parms['radex']['specStr'] = specStr
-            arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
+            arxv.constructRadexDatabase(writeDb = True)
 if False:
     arxv.save_radex_grids(
                           relativeDirPath = 'analysis/%s/' % parms['radex']['specStr'],
@@ -166,6 +168,30 @@ if False:
                                 )
 if False:
     arxv.do_something_for_all_meshes()
+    
+if False:
+    
+    #makes a copy by selecting every other slice in the grid in each dimension
+    #(i.e half the resolution)
+    """
+    arxv.make_copy(dirName='/home/mher/ism/runs/oneSided/sph-db-test/', 
+                   x = arxv.grid_x_unique[::2], 
+                   y = arxv.grid_y_unique[::2], 
+                   z = arxv.grid_z_unique[::2]
+                  )
+    """
+
+    #makes a copy by selecting every other slice in the grid in each dimension
+    """
+    arxv.make_copy(dirName='/home/mher/ism/runs/oneSided/sph-db-test/', 
+                   x = [0, 2, 4], 
+                   y = [0, 2, 4], 
+                   z = [-50, -25, -20]
+                   )
+    """
+    
+    
+    
     
     
 print 'done'

@@ -102,6 +102,7 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
     allRects = []
     legendStrs = []
     
+    pylab.hold(True)
     for i, gm in enumerate(gm_v):
         
         idx = arxv.get_mesh_index(x = log_n, y = log_G0, z = numpy.log10(gm) )
@@ -113,6 +114,7 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
         rect = pylab.bar(inds + i*barWidth, values, width = barWidth, bottom = 0, color = colors[i])
         allRects.append(rect)
         legendStrs.append(gm)
+    pylab.hold(False)
     
     #pylab.yscale('log')
     pylab.text(0.8, ylim[1]*0.8, modelName, size='large')        
@@ -123,13 +125,12 @@ def plot_ratios_bars(arxv, ylim, modelName, log_n = None, log_G0 = None):
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-#fig, axs = pylab.figure(figsize = (6,12))
 fig, axs = pylab.subplots(6, 1, sharex = True, sharey = False, figsize = (6,12))
 pylab.subplots_adjust(left = 0.15, bottom = 0.1, right = 0.98, top = 0.9,
                      wspace = 0.0, hspace = 0.0)
 
 #ax = fig.add_subplot(616)
-pylab.subplot(616) 
+ 
 #ax.set_position([0.1, 0.2, 0.8, 0.7])
 barWidth = 0.1
 
@@ -137,6 +138,7 @@ gm_v   = numpy.array([0.1, 1.0, 5.0, 10.0, 50.0])/100.0
 colors = [            'k', 'g', 'b', 'c' , 'y',   'r']
 
 #####################################################################################
+pylab.subplot(616)
 info = plot_ratios_bars(arxv, [-3.0, 2.0], 'MA1', log_n = 1.0, log_G0 = 1.0)
 pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 10)
 
@@ -159,7 +161,6 @@ info = plot_ratios_bars(arxv, [-1.0, 4.0], 'M3', log_n = 5.5, log_G0 = 3.0)
 pylab.subplot(611)
 axisUtils.removeAll_xLabels(pylab.gca())
 info = plot_ratios_bars(arxv, [-1.0, 4.0], 'M4', log_n = 5.5, log_G0 = 5.0)
-
 
 legen = pylab.legend(info['rects'], info['strings'], 
                    bbox_to_anchor = (-0.1, 1.1, 1.1, .102), loc = 3,  
