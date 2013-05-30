@@ -969,3 +969,37 @@ class mesh(object):
             newMesh.setData(None)
         
         return newMesh
+    
+    def compute_mu(self, slab_idx = None):
+        """computes the mean molecular weight for all the slabs of the mesh, or a specific one determined
+        by slab_idx. If slab_idx is passed a float64 is returned, otherwise, an array of the same number
+        of slabs is returned. This is done for all the species which chemNet.species which have a type
+        which is not None. Computes  sum(molar_mass_i * abundance_i) for all i species.
+        """
+        
+        nSpecs = self.data['hdr']['nSpecs']  #the number of species whose abundance data for the mesh are avaialabel 
+        nSteps = self.data['hdr']['nSteps']
+        abun   = self.data['state']['abun']
+        
+        #get the molecular mass of each specie corresponding to self.data['state']['abun'][:,i]
+        mol_mass = numpy.zeros(nSpecs, dtype='f8')
+        for spec in self.chemNet.species.values():
+            if spec.num != None:
+                mol_mass[spec.num] = spec.mass
+
+        if slab_idx != None:
+            return numpy.sum(abun[:,slab_idx]*mol_mass)
+        else:
+            mu = numpy.zeros(nSteps, dtype='f8')
+
+            for i in numpy.arange(nSteps):
+                mu[i] = numpy.sum(abun[:,i]*mol_mass)
+
+        return mu
+
+
+
+
+
+
+

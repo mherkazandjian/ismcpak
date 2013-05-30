@@ -111,20 +111,53 @@ else:
 net.merge_identical_reactions()
 net.set_all_rxn_bounds()
 
-##################DONE FULLY SETTING UP THE NETWORK###############################
-
 #setting the state of the gass
 net.set_environment_state(**state)
+
+##################DONE FULLY SETTING UP THE NETWORK###############################
+####NOW WE PROCEED BY COMPUTING THE JACOBIAN AND THE EQUILIBRIUM SOLUTION#########
 
 net.compute_rxn_constants()
 net.compute_rxn_rates()
 
-fmt = 'id rxn trng cst rate'
-print '5 most dominatn reactions destroying CO'
-x=net.filter_reactions(withReacts='CO', show=5, fmt=fmt, sort=True)
-print '5 most dominatn reactions producing CO'
-x=net.filter_reactions(withProds='CO' , show=5, fmt=fmt, sort=True)
-print 'showing some reactions'
-net.print_reactions(IDs=[1,2,3,4,5], fmt=fmt)
+#computing the rate of change of the abundance of each active species. Each entry with index
+#'i' corresponds to a species in net.species whose number is species[SPECSTR].num
+nSpecsActive = net.nSpecsActive
+dxdt  = numpy.zeros(nSpecsActive, 'f8')                 #the rate of change of the abundance of the active species
+jac   = numpy.zeros((nSpecsActive,nSpecsActive), 'f8')  #the jacobian
+
+#for each reaction in the network, see what are the reactants and the products and 
+#accroding to increment/decrement the rate of change in dxdt 
+for i, rxn in enumerate(net.reactions):
+    
+    #rate of the reaction in the temperature range
+    rate = rxn.rxn_in_trng.rate
+    
+    for specStr in rxn.reactants + rxn.products:
+        
+        spec = net.species[specStr]
+        
+        if spec.type >= 0:
+            if specStr in rxn.reactants:
+                dxdt[spec.num] -= rate
+            else:
+                dxdt[spec.num] += rate
+    
+
+#checking for the conservation of the number of 'baseSpecies' (which are active)
+for specStr in net.species:
+    
+    spec = net.species[specStr]
+    
+    for comp in spec.comp:
+        
+        compStr   = comp[0]
+        compCount = comp[1]
+        
+        if compStr == 'PAH':
+            net.species[specStr].show()
+            
+        net.species[compStr].count +=  compCount * spec.abun()
+
 
 print 'done'

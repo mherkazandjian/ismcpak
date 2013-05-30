@@ -41,6 +41,9 @@ class chemicalNetwork(specie, reaction):
         
         .. todo:: make sure that all reactions whose range does not include the temperature of the slab
         have a rate = None
+        
+        .. todo:: implement base species as a dictionary, and get rid of specie.count by making a copy of
+        the input base species and setting them to self.baseSpecies and putting copies of them in self.species too
     """
     def __init__(self, fileName = None, baseSpecies = None, UMISTVER = None):
         self.nReactions = None         #: number of reactions in the network.
@@ -50,14 +53,19 @@ class chemicalNetwork(specie, reaction):
         self.reactionsRemoved = []     #: a list of the reaction removed from the originally read netowrk.
         self.nMerged = None            #: number of reactions merged
         
-        self.nSpecs = None             #: number of active species in the network.
+        self.nSpecs = None             #: number of species used in the network (excluding the ones which are removed from the original input network)
+        self.nSpecsActive = None       #: number of species which are active (i.e basically the ones which have an abundance and use used in computing reaction rates)
+          
         self.species = {}              #: a dictionary of the active specie object list in the network.
         
         self.nSpecsRemoved = None    #: number of non active species in the network.
         self.speciesRemoved = {}     #: a dictionary of the non active species object in the network.
         
-        self.fileName = fileName       #: path of the ascii file from which the reactions of the network were read.
-        self.baseSpecies = baseSpecies #: a list of the species of the base objects.
+        self.fileName = fileName         #: path of the ascii file from which the reactions of the network were read.
+        self.baseSpecies = baseSpecies   #: a list of the species of the base objects.
+        self.indxBaseSpecs = {}          #: a dictionary mapping the base species to locations in self.baseSpecsCounts 
+        self.baseSpecsCounts = None      #: a numpy array holding the counts of the base species
+        
         #gas state attributes
         self.nDens = None              #: density of the ambient hydrogen gas.
         self.T = None                  #: gas temperature.
@@ -83,20 +91,20 @@ class chemicalNetwork(specie, reaction):
             """string of the version of UMIST used. The two supported values are 'umist06'
                and 'umist99'.
             """
-            
+
         if (self.fileName != None) and (self.baseSpecies != None):
             self.setup(fileName, baseSpecies)
-        
+            
     def setup(self, networkFname, baseSpecies):
         """Setup all the chemical network."""
 
-        self.read_network_file(networkFname)   # read the database into a buffer
+        self.read_network_file(networkFname)  # read the database into a buffer
         self.parse_reactions()                # parse the reaction lines from the database
-        self.get_unique_species(baseSpecies)   # fileter the unique species and parse them in their components
-        self.assign_numbers_to_species()        # assingns the index of the specie in the dictionary
-        self.set_reaction_hash_codes()          # compute the hashcodes of the reactions
-        self.update_reactions_types()          # make sure reaction types are correct
-        self.check_reactions_types()           # make sure reaction types are correct
+        self.get_unique_species(baseSpecies)  # fileter the unique species and parse them in their components
+        self.assign_numbers_to_species()      # assingns the index of the specie in the dictionary
+        self.set_reaction_hash_codes()        # compute the hashcodes of the reactions
+        self.update_reactions_types()         # make sure reaction types are correct
+        self.check_reactions_types()          # make sure reaction types are correct
          
     def read_network_file(self, fileName):
         """Read and parses the UMIST 2006 or UMIST 99 reaction file (without the header) and assigns 
@@ -143,24 +151,31 @@ class chemicalNetwork(specie, reaction):
     def get_unique_species(self, baseSpecies):
         """Construct the the speices dict for all the species in the network self.species
            also here all the unique species in the network are put in that dictionary and
-           the components of the species are also extracted
+           the components of the species are also extracted.
+           
+        .. todo:: consider the case when a base species is not in the network which is read. 
+        i.e start with self.species = {} 
+        
+        .. warning:: the base species should all be present (used) in the chemical network.
         """
+
         print 'Analyzing the checmical network.....',
         # put the base species in the dictionary
         for baseSpec in baseSpecies:
             self.species[baseSpec.str] = baseSpec
-
+            
         # getting the unique species from all the reactions 
         for rxn in self.reactions:
             for spec in rxn.species.values():
                 if spec.str not in self.species: 
                     spec.type = 1   # setting the object as a non-base specie
-                    spec.get_components(baseSpecies)      # parsing the specie
-                    self.species [spec.str] = spec
-                                        
+                    spec.get_components(baseSpecies, get_mass = True)  # parsing the specie
+                    self.species[spec.str] = spec
+        
         self.nSpecs = len(self.species)
         print 'Found ', self.nSpecs, ' unique species in the network'
-
+        
+        
         # assign the the species object in the reactions to pointer to those
         # in self.species. This saves memory and time, since only
         # modifying self.species would modify all the corresponding
@@ -264,6 +279,7 @@ class chemicalNetwork(specie, reaction):
         self.__pstr = '     '
         self.initializeDefaultAbunBuffer()
         self.assign_numbers_to_species()
+        self.update_nSpecsActive()
         
         print 'complete'
             
@@ -1146,6 +1162,20 @@ class chemicalNetwork(specie, reaction):
         for i, rxn in enumerate(self.reactions):
             if rxn.ID == ID:
                 self.reactions[i] = new_rxn
+
+    def update_nSpecsActive(self):
+        """Updates the value of the attribute self.nSpecsActive. The number of species
+        which are active in the network.
+        """
+        
+        nSpecsActive = 0
+
+        #counting the species which are active
+        for spec in self.species:
+            if self.species[spec].type >= 0:
+                nSpecsActive += 1 
+                
+        self.nSpecsActive = nSpecsActive
 
 #-------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------

@@ -77,7 +77,7 @@ parms = {
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
          'radex'         : { 'use'                  : True,
-                             'loadAllDbs'           : True,
+                             'loadAllDbs'           : False,
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db

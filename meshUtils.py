@@ -1068,7 +1068,7 @@ class meshArxv():
         #importing the module which holds the definitions of the base species
         baseSpecies = __import__(parms['baseSpecies'])
         baseSpecs = baseSpecies.baseSpecies()
-        
+
         # settin up the orignial netowrk
         net = chemicalNetwork.chemicalNetwork(parms['rxnFile'], 
                                               baseSpecs,

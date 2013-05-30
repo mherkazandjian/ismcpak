@@ -5,10 +5,14 @@ import re
 # class definition for a single specie
 # --------------------------------------
 class specie():
-    """A class for defining species.
+    """A class for defining species. If the species is a baseSpecie (specType=0), the all the keywords
+    (except comp) are mandatory.
+    
+    .. todo:: implement a copy method that returna a copy of the object
     """
-    def __init__(self, specStr, specType=None, charge=None, init=None, comp=None):
-        self.type = specType
+    def __init__(self, specStr, specType=None, charge=None, init=None, comp=None, mass = None):
+        
+        self.type = None
         """   
              + -2 => ignore specie
              + -1 => do not conisder it as a specie
@@ -16,26 +20,43 @@ class specie():
              + 1 => composite specie
              
         """
-        
-        self.str  = specStr    #: string representation of the specie
-        self.num  = None       #: numeric representation of the specie
 
+        #checking keywords and arguments        
+        if specStr  == None: raise ValueError('specStr is a mandatory argument.')
+        
+        #if it is a base sepcie, need to provide the charge, the mass
+        if specType == 0:
+            
+            if charge  == None: raise ValueError('charge is a mandatory keyword when specType = 0')
+            if init    == None: raise ValueError('init is a mandatory keyword when specType = 0')
+            if mass    == None: raise ValueError('mass is a mandatory keyword when specType = 0')
+            
+            self.type = 0
+            
+        self.charge = charge #: the charge of the species (integer) 
+        self._abun  = None   #: Abundance of the specie relative to total H nuclei. It is either None or an ndarray of shape (1,)
+        self.init   = None   #: flag which indicates if the specie is initialized or not
+        
+        self.str     = specStr #: string representation of the specie
+        self.num     = None    #: the index of the specie (a numeric representation of the species mapping it to an array index for example)
+        
+        self.count   = 0.0     #: an attribute that can hold the total count of nuclei or (density of nuclei) 
+        
         if comp == None:
-            if specType == 0:               #: a list holding the indicies of the basic species making 
-                self.comp  = [[specStr,1]]  #: it up and the number number of each sub-specie
+            
+            if specType == 0:                #: a list of [specStr, N, baseSpecObj] for each compoenent making up the specie 
+                self.comp  = [[specStr, 1, self]]  #: where N is the number of times the base species occures (basically baseSpecObj.str = specStr)
             else:
                 self.comp = []
         else:
             self.comp = comp
 
-        self.charge = charge
-        self._abun = None
-        """
-            Abundance of the specie relative to total H nuclei. It is either None or an ndarray of shape (1,)
-        """
-        self.init = None     #: flag which indicates if the specie is inetialized or not
-        self.active = None
+        if mass == None:
+            self.mass = None
+        else:
+            self.mass = float64(mass)
 
+                        
     def show(self):
         """method that prints the string representation of the specie."""
 
@@ -43,32 +64,38 @@ class specie():
         numStr    = '%04d' % self.num if self.num != None else '%-4s' % 'NA'
         typeStr   = '%+-d' % self.type if self.type != None else 'NA'
         abunStr   = '%+-.2e' % self.abun() if self.abun() != None else '%-9s' % 'NA'
+        mass      = '%-10.3f' % self.mass if self.mass != None else '%-4s' % 'NA'
         
-        print 'num = %s %-10s charge = %s type = %s abun = %s elements = ' % (numStr, self.str, chargeStr, typeStr, abunStr),
+        print 'num = %s %-10s charge = %s type = %s abun = %s mass = %s amu | elements = ' % (numStr, self.str, chargeStr, typeStr, abunStr, mass),
         print self.comp
         
-    def get_components(self, baseSpec):
+    def get_components(self, baseSpecs, get_mass = None):
         """Method that parses the components of species by counting the elements in each specie
-           make sure baseSpec has the species with String in a decreasing order in length
+           make sure baseSpecs has the species with String in a decreasing order in length
            (except for the charge for example e-), i.e in this order longest string names ( CRPHOTON, PHOTON, CRP)
            regular elements (Na, Cl,...) elements with a single letter Upper case (H, F, C...)
            species denoted with lower case letters ( e-).
         """
 
-        specStr = self.str
-
-        for bs in baseSpec:
+        specStr = self.str  #specStr gets a copy (this is not assignment by reference)
+        
+        self.comp = []
+        
+        for bs in baseSpecs:
+            
             # work with one base specie at a time
             nFound = int32(0)
             while True:
-                regex = '(' + bs.str + ')' + '([0-9]{0,2})'
-                m = re.search( regex, specStr)
+                
+                regex = '(' + bs.str + ')' + '([0-9]{0,2})' #look for AAANN, i.e text followed by numbers
+                m = re.search( regex, specStr) #if not found, m = None
+
                 if m:
-                    # updating the number of elements found
-                    if len(m.string[m.start(2):m.end(2)])==0:
-                        nFound = nFound + 1
+                    # updating the number of elements found (by looking at the number after the species string)
+                    if len(m.string[m.start(2):m.end(2)])==0: #component string not followed by a number => there is one compoenet of it, for example HCN and we are looking for H
+                        nFound += 1 
                     else:
-                        nFound = nFound + int32(m.string[m.start(2):m.end(2)])
+                        nFound += int32(m.string[m.start(2):m.end(2)]) #component string followed by a number => there is more than one compoenet of it, for example the '3' in H3CN and we are looking for H
                         
                     # removing the found element from the string
                     specStr = re.sub( regex, ' ', specStr, count=1)
@@ -76,7 +103,7 @@ class specie():
                     break
 
             if nFound >= 1:
-                self.comp.append( [bs.str, nFound] ) 
+                self.comp.append( [bs.str, nFound, bs] ) 
         
         # by now, all the elements should be extracted and counted and only
         # the charge char (if any) should be in the string
@@ -85,11 +112,25 @@ class specie():
             self.charge = 0
         elif specStr == '+':
             self.charge = 1
+            specStr = specStr.replace('+','')
         elif specStr == '-':
             self.charge = -1
+            specStr = specStr.replace('-','')
 
+        #by now, specStr should be a blank string, otherwise, it contains components that
+        #are not in baseSpecies (or something went wrong)
+        specStr = specStr.strip() 
+        if len(specStr) != 0:
+            raise ValueError("""After parsing self.str = %s the following part '%s' was
+             not traced back to a base species. Please make sure that all the base 
+             species are provided.""" % (self.str, specStr))        
+
+        if get_mass == True:
+            self.compute_mass()
+            
         # succcessfully processes
         self.init = 1
+        
         
     def hasBaseSpecies(self, specStrList ):
         """Returns True if the base species in specList ['XX','YY'] are in self.comp
@@ -140,3 +181,50 @@ class specie():
         
     def get_num(self):
         return self.num
+    
+    def compute_mass(self):
+        """computes the weight of the speicies. Nothing is done for base species because the mass
+        is a requirement when the species is instantiated.
+        """
+        
+        if self.type == 0:
+            pass
+        else:
+            
+            #computing the mass of the non base specie
+            if len(self.comp) == 0:
+                raise ValueError('cannot compute masses from, compoenents must be computed before calling this method') 
+            
+            mass = float64(0.0)
+            
+            for compStr, count, baseSpec in self.comp:
+                mass += baseSpec.mass * count
+                
+            self.mass = mass
+            
+    def copy(self):
+        """returns a new object whose attribute values are a copy of self"""
+        
+        #setting up a new object which will hold the copied attributes
+        specNew = specie(self.str)
+        
+        #copying basic attributes
+        specNew.charge = self.charge        
+        specNew.init  = self.init
+        specNew.num = self.num
+        specNew.count = self.count 
+        specNew.mass = self.mass
+        specNew._abun = self._abun
+        specNew.type = self.type
+        
+        #copying the components attribute (if any)
+        if len(self.comp) != None:
+            
+            compNew = []
+            
+            for comp in self.comp:
+                compNew.append( [comp[0], comp[1], comp[2]] )
+                
+            specNew.comp = compNew
+            
+        return specNew
