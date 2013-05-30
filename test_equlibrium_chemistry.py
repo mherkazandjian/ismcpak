@@ -145,9 +145,7 @@ for i, rxn in enumerate(net.reactions):
     
 
 #checking for the conservation of the number of 'baseSpecies' (which are active)
-for specStr in net.species:
-    
-    spec = net.species[specStr]
+for specStr, spec in net.species.items():
     
     for comp in spec.comp:
         
@@ -156,8 +154,13 @@ for specStr in net.species:
         
         if compStr == 'PAH':
             net.species[specStr].show()
-            
-        net.species[compStr].count +=  compCount * spec.abun()
+        
+        #index corresponding to the 'abundance' of the base specie in net.base_abun array
+        idx = net.baseSpecies[compStr].num 
+        
+        net.base_abun[idx] += compCount * spec.abun()
 
+for specStr, spec in net.baseSpecies.items():
+    print specStr, spec.abun()
 
 print 'done'

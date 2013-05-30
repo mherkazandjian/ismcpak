@@ -7,8 +7,6 @@ import re
 class specie():
     """A class for defining species. If the species is a baseSpecie (specType=0), the all the keywords
     (except comp) are mandatory.
-    
-    .. todo:: implement a copy method that returna a copy of the object
     """
     def __init__(self, specStr, specType=None, charge=None, init=None, comp=None, mass = None):
         
@@ -39,21 +37,32 @@ class specie():
         
         self.str     = specStr #: string representation of the specie
         self.num     = None    #: the index of the specie (a numeric representation of the species mapping it to an array index for example)
+        self.comp    = None    
+        """"a list of [specStr, N, baseSpecObj] for each compoenent making up the specie
+        where N is the number of times the base species occures (basically baseSpecObj.str = specStr)
+        """
+        self.mass = mass
         
-        self.count   = 0.0     #: an attribute that can hold the total count of nuclei or (density of nuclei) 
-        
+        #setting up the components list
         if comp == None:
             
-            if specType == 0:                #: a list of [specStr, N, baseSpecObj] for each compoenent making up the specie 
-                self.comp  = [[specStr, 1, self]]  #: where N is the number of times the base species occures (basically baseSpecObj.str = specStr)
+            if specType == 0: #if no components have been passed and the specie is a base species, the components are set to [self.specStr, 1, self]         
+                self.comp  = [[specStr, 1, self]]  #otherwise, to [] to be parsed maybe later.
             else:
                 self.comp = []
         else:
+            
+            if len(comp[0]) != 3:
+                raise ValueError('input component must be a list of lists eahc of length 3 [specStr, count, object|string]')
+            else:
+                
+                if comp[0][2] == 'self':
+                    comp[0][2] = self
+                    
             self.comp = comp
 
-        if mass == None:
-            self.mass = None
-        else:
+        #setting the mass of the specie
+        if mass != None:
             self.mass = float64(mass)
 
                         
@@ -81,14 +90,14 @@ class specie():
         
         self.comp = []
         
-        for bs in baseSpecs:
+        for baseSpecStr, baseSpec in baseSpecs.items():
             
             # work with one base specie at a time
             nFound = int32(0)
             while True:
                 
-                regex = '(' + bs.str + ')' + '([0-9]{0,2})' #look for AAANN, i.e text followed by numbers
-                m = re.search( regex, specStr) #if not found, m = None
+                regex = '(' + baseSpecStr + ')' + '([0-9]{0,2})' #look for AAANN, i.e text followed by numbers
+                m = re.search(regex, specStr) #if not found, m = None
 
                 if m:
                     # updating the number of elements found (by looking at the number after the species string)
@@ -98,12 +107,12 @@ class specie():
                         nFound += int32(m.string[m.start(2):m.end(2)]) #component string followed by a number => there is more than one compoenet of it, for example the '3' in H3CN and we are looking for H
                         
                     # removing the found element from the string
-                    specStr = re.sub( regex, ' ', specStr, count=1)
+                    specStr = re.sub(regex, ' ', specStr, count=1)
                 else:
                     break
 
             if nFound >= 1:
-                self.comp.append( [bs.str, nFound, bs] ) 
+                self.comp.append( [baseSpecStr, nFound, baseSpec] ) 
         
         # by now, all the elements should be extracted and counted and only
         # the charge char (if any) should be in the string
@@ -212,7 +221,6 @@ class specie():
         specNew.charge = self.charge        
         specNew.init  = self.init
         specNew.num = self.num
-        specNew.count = self.count 
         specNew.mass = self.mass
         specNew._abun = self._abun
         specNew.type = self.type

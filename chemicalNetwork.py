@@ -1,6 +1,7 @@
 import numpy
 from specie import specie
 from reaction import reaction
+from collections import OrderedDict
 
 class chemicalNetwork(specie, reaction):
     """If a specie 'XXX' is not in self.speciesRemoved and self.species['XXX'].num = None
@@ -42,8 +43,6 @@ class chemicalNetwork(specie, reaction):
         .. todo:: make sure that all reactions whose range does not include the temperature of the slab
         have a rate = None
         
-        .. todo:: implement base species as a dictionary, and get rid of specie.count by making a copy of
-        the input base species and setting them to self.baseSpecies and putting copies of them in self.species too
     """
     def __init__(self, fileName = None, baseSpecies = None, UMISTVER = None):
         self.nReactions = None         #: number of reactions in the network.
@@ -55,16 +54,18 @@ class chemicalNetwork(specie, reaction):
         
         self.nSpecs = None             #: number of species used in the network (excluding the ones which are removed from the original input network)
         self.nSpecsActive = None       #: number of species which are active (i.e basically the ones which have an abundance and use used in computing reaction rates)
-          
+        self.abun = None               #: a numpy array of shape (nSpecies, 1), it is by default initialized to -1.          
         self.species = {}              #: a dictionary of the active specie object list in the network.
         
         self.nSpecsRemoved = None    #: number of non active species in the network.
         self.speciesRemoved = {}     #: a dictionary of the non active species object in the network.
         
         self.fileName = fileName         #: path of the ascii file from which the reactions of the network were read.
-        self.baseSpecies = baseSpecies   #: a list of the species of the base objects.
-        self.indxBaseSpecs = {}          #: a dictionary mapping the base species to locations in self.baseSpecsCounts 
-        self.baseSpecsCounts = None      #: a numpy array holding the counts of the base species
+        
+        self.nBaseSpecies = None          #: number of base species used in the network (input by the user)
+        self.nBaseSpecsActive = None      #: number of base species which are active (i.e basically the ones which have an abundance and use used in computing reaction rates)
+        self.baseSpecies = OrderedDict()  #: a sorted dict of the base species of the base objects.
+        self.base_abun = None             #: a numpy array of shape (self.nBaseSpeciesActive, 1), it is by default initialized to -1.          
         
         #gas state attributes
         self.nDens = None              #: density of the ambient hydrogen gas.
@@ -80,7 +81,6 @@ class chemicalNetwork(specie, reaction):
         self.beta_13CO = None          #: 13CO self sheilding coeffcieint
         self.beta_H2 = None            #: H2 self sheilding coefficient
 
-        self.abun = None               #: a numpy array of shape (nSpecies, 1), it is by default initialized to -1.
         
         self.__pstr = '' # just for printintg purposes
         
@@ -92,7 +92,7 @@ class chemicalNetwork(specie, reaction):
                and 'umist99'.
             """
 
-        if (self.fileName != None) and (self.baseSpecies != None):
+        if (fileName != None) and (baseSpecies != None):
             self.setup(fileName, baseSpecies)
             
     def setup(self, networkFname, baseSpecies):
@@ -100,7 +100,8 @@ class chemicalNetwork(specie, reaction):
 
         self.read_network_file(networkFname)  # read the database into a buffer
         self.parse_reactions()                # parse the reaction lines from the database
-        self.get_unique_species(baseSpecies)  # fileter the unique species and parse them in their components
+        self.set_base_species(baseSpecies)    # setup the base species into the appropriate data structs
+        self.get_unique_species()             # fileter the unique species and parse them in their components
         self.assign_numbers_to_species()      # assingns the index of the specie in the dictionary
         self.set_reaction_hash_codes()        # compute the hashcodes of the reactions
         self.update_reactions_types()         # make sure reaction types are correct
@@ -148,8 +149,41 @@ class chemicalNetwork(specie, reaction):
             
         print 'complete'
 
-    def get_unique_species(self, baseSpecies):
-        """Construct the the speices dict for all the species in the network self.species
+    def set_base_species(self, baseSpecies):
+        """Setup the self.baseSpecies dict for all the species from baseSpecies. Base species
+        should be a list containing species objects."""
+
+        #setting up the base species from the input list        
+        nBaseSpecies, nBaseSpeciesActive = 0, 0
+        for spec in baseSpecies:
+            
+            #assigining the base specie to the self.baseSpecies dict
+            self.baseSpecies[spec.str] = spec
+            
+            #counting the base species
+            nBaseSpecies += 1
+            if spec.type == 0:
+
+                #assiging an unique index to the base species if it is active 
+                spec.num = nBaseSpeciesActive
+                
+                nBaseSpeciesActive += 1
+        
+        
+        base_abun = numpy.zeros( (nBaseSpeciesActive, 1), 'f8' )
+        
+        #mapping the species in the base species (whose type = 0) to base_abun to species[:]._abun 
+        for specStr in self.baseSpecies:
+            if self.baseSpecies[specStr].type == 0:
+                self.baseSpecies[specStr]._abun = base_abun[self.baseSpecies[specStr].num]   
+        
+        self.nBaseSpecies = nBaseSpecies
+        self.nBaseSpecsActive = nBaseSpeciesActive
+        self.base_abun = base_abun
+        
+    
+    def get_unique_species(self):
+        """setup the self.species dict for all the species in the network self.species
            also here all the unique species in the network are put in that dictionary and
            the components of the species are also extracted.
            
@@ -160,16 +194,18 @@ class chemicalNetwork(specie, reaction):
         """
 
         print 'Analyzing the checmical network.....',
+        
         # put the base species in the dictionary
-        for baseSpec in baseSpecies:
-            self.species[baseSpec.str] = baseSpec
-            
-        # getting the unique species from all the reactions 
+        for base_spec_str, base_spec in self.baseSpecies.items():
+            self.species[base_spec_str] = base_spec.copy()
+        
+        # appending to the dict unique species from all the reactions (which are assumed to be 
+        # sepcies composed of the base species which already have been appended to self.species
         for rxn in self.reactions:
             for spec in rxn.species.values():
                 if spec.str not in self.species: 
                     spec.type = 1   # setting the object as a non-base specie
-                    spec.get_components(baseSpecies, get_mass = True)  # parsing the specie
+                    spec.get_components(self.baseSpecies, get_mass = True)  # parsing the specie
                     self.species[spec.str] = spec
         
         self.nSpecs = len(self.species)
@@ -989,7 +1025,7 @@ class chemicalNetwork(specie, reaction):
 
         
     def initializeDefaultAbunBuffer(self):
-        self.abun = numpy.zeros( (len(self.species), 1) ) - 1
+        self.abun = numpy.zeros( (self.nSpecs, 1), 'f8' ) - 1.0
         print self.__pstr + 'Set abundances to default values of -1.'
 
     # set all the numbers of the species self.species[].num to None
