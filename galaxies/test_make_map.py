@@ -43,8 +43,8 @@ snaps = numpy.arange(4, 5, 1)
 
 home = '/home/mher'
 
-params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',   # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-linked',   # the path of the dir containing the simulation
+params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',   # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-linked',   # the path of the dir containing the simulation
           'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',        # the path to the dir containing the PDR database
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2/',        # the path to the dir containing the PDR database          
@@ -673,11 +673,11 @@ def generate_map(snap):
     #displaying all the maps in a single plot    
     print 'done getting the spatial distributuions'
     
-    fig, axs = pylab.subplots(4, 4, sharex=True, sharey=True, figsize=(12,12), 
+    fig, axs = pylab.subplots(4, 4, sharex=True, sharey=True, figsize=(12, 12), 
                               subplot_kw = {'xlim':[bsMin, bsMax],
                                             'ylim':[bsMin, bsMax],
-#                                            'aspect':'equal',
-#                                            'adjustable':'datalim',
+                                            'aspect':'equal',
+                                            'adjustable':'datalim',
                                            })
                               
                                                                                                 

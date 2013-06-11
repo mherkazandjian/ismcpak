@@ -319,7 +319,7 @@ class meshArxv():
                 #----
                 if self.parms['radex']['loadAllDbs']:
                     #reading all the databases
-                    self.readDbsRadex(allDbs = True)
+                    self.readDbsRadex(all = True)
                     #set the current Db to the one specieified in the input parms
                     if 'gridsInfo' in self.parms and self.parms['gridsInfo']['11']['type'] == 'radex': 
                         self.use_radexDb(self.parms['gridsInfo']['11']['Av_max'], 
@@ -807,7 +807,7 @@ class meshArxv():
                 self.checkIntegrityRadex()
 
         else:
-            self.logger.debug('%s radex database already read...skipping' % specStr)
+            self.logger.debug('radex database for %s and Av = %f already read...skipping' % (specStr, Av))
 
     def readDbsRadex(self, Av = None, species = None, allDbs = None):
         """Loads radex database files from disk to a dictionary. The last database loaded is
@@ -889,7 +889,7 @@ class meshArxv():
                                 
                                 self.readDbRadex(Av, specStr, check = True)#read the Db
                                 
-    def use_radexDb(self, Av = None, specStr = None):
+    def use_radexDb(self, Av = None, specStr = None, silent = None):
         """A method which sets a radex database from the databases available in self.radexDbs."""
         
         if self.radex_db_has_been_read(Av, specStr):
@@ -899,7 +899,8 @@ class meshArxv():
                 self.meshesRadex    = self.radexDbs['%.2f' % Av][specStr]['meshes']
                 self.infoAllRadex   = self.radexDbs['%.2f' % Av][specStr]['infoAll']
                 self.currentRadexDb = {'Av':Av, 'specStr':specStr}
-                self.logger.debug('swithced to %s radex database at Av = %f' % (specStr, Av))
+                if silent != None and silent == False:
+                    self.logger.debug('swithced to %s radex database at Av = %f' % (specStr, Av))
         else:
             raise ValueError('radex Db for Av %.2f for the specie %s is not present' % (Av, specStr))
         
@@ -3079,12 +3080,15 @@ class meshArxv():
     def get_unique_grid_x_sections(self, relDiff):
         """returns the unique section in x up to a relative difference of relDiff"""
         return self.get_unique_grid_sections('x', relDiff)
+    
     def get_unique_grid_y_sections(self, relDiff):
         """returns the unique section in y up to a relative difference of relDiff"""
         return self.get_unique_grid_sections('y', relDiff)
+    
     def get_unique_grid_z_sections(self, relDiff):
         """returns the unique section in z up to a relative difference of relDiff"""
         return self.get_unique_grid_sections('z', relDiff)
+    
     def set_unique_grid_sections(self, relDiff):
         """sets the attributes self.grid_x_unique, self.grid_y_unique, self.grid_z_unique"""
         self.grid_x_unique = self.get_unique_grid_x_sections(relDiff) 
@@ -3299,9 +3303,8 @@ class meshArxv():
         xscale = 'log' #'linear' #'log'
         yscale = 'log' #'linear' #'log'
         
-        fig22 = pylab.figure(figsize=(8,6))
-        #ax = fig22.add_subplot(111)
-        ax = fig22.add_axes([0.15, 0.1, 0.6, 0.8])
+        fig = pylab.figure(figsize=(8,6))
+        ax = fig.add_axes([0.15, 0.1, 0.6, 0.8])
         
         m = self.mshTmp
 
@@ -3309,7 +3312,6 @@ class meshArxv():
         lnGas = numpy.log10(m.data['hdr']['nGas'])
         lGmech = numpy.log10(m.data['hdr']['gammaMech'])
         plotTitle =  '$\log_{10} n_{gas} = $ %4.2f  $\log_{10} G_0 =$ %4.2f  $\log_{10} \Gamma_{mech} = $  %5.2f' %  (lnGas, lG0, lGmech)
-        mesh_indx = self.get_mesh_index(x=lnGas, y=lG0, z=self.pltGmSec)
         
         titles = []  #will store legend entries of the plots 
         plots = []   #will store the line object of each plot
@@ -3318,6 +3320,7 @@ class meshArxv():
         quantities = []
     
         #-------------------------cooling components--------------------
+        """
         quantities.append(['therm','cooling'])
         titles.append(r'$\Lambda_{total}$'); symbols.append('-x')
         quantities.append(['cooling','metaStable'])
@@ -3328,10 +3331,10 @@ class meshArxv():
         titles.append(r'$\Lambda_{RV}$');  symbols.append('-')
         quantities.append(['cooling','lymanAlpha'])
         titles.append(r'$\Lambda_{LyA}$');  symbols.append('-')
+        """
         #--------------------------cooling components--------------------
         
         #-------------------------fine structure lines--------------------------
-        """
         quantities.append(['fineStructureCoolingComponents','C+','rate','1-0'])
         titles.append(r'CII');  symbols.append('-')
         quantities.append(['fineStructureCoolingComponents','C','rate','1-0'])
@@ -3340,11 +3343,10 @@ class meshArxv():
         titles.append(r'CI2-1');  symbols.append('-')
         quantities.append(['fineStructureCoolingComponents','O','rate','1-0'])
         titles.append(r'OI');  symbols.append('-')
-        """
         #-------------------------fine structure lines---------------------------
         
         Avs = m.data['state']['Av']
-                
+        
         for i, quantity in enumerate(quantities):
             
             vs = []
@@ -3353,19 +3355,19 @@ class meshArxv():
                 vs.append(v1)
 
             if 'fineStructureCoolingComponents' in quantity[0]:
-                ttl = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 30.0])
-                rng1 = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 10.0])
-                print 'contributions from %s(%s) 0  up to Av=10 is %.2f percent' % (quantity[1],quantity[3],100.0*rng1/ttl)
+                flux_total = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 30.0])
+                flux_upto_Av = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 10.0])
+                print 'contributions from %s(%s) 0  up to Av=10 is %.2f percent' % (quantity[1],quantity[3],100.0*flux_upto_Av/flux_total)
                             
             vs = numpy.array(vs)
             
-            plt, = ax.plot(Avs, vs, symbols[i])
+            plt, = ax.semilogy(Avs, vs, symbols[i])
 
             plots.append(plt)
-
         #-------------------done computing stuff from the PDR meshes--------------        
 
         #-------------------extracting and plotting stuff from the radex Dbs------
+        """
         specStrs    = ['CO' , '13CO'  , 'HCN' , 'HNC', 'CS']
         transitions = [0    ,   0   ,   0   ,   0  ,  0  ]
         titleStrs   = ['1-0',  '1-0', '1-0', '1-0' , '1-0']
@@ -3380,6 +3382,7 @@ class meshArxv():
             #plots.append(ax.semilogy(Avs, vs,'--o')[0])
             plots.append(ax.plot(Avs, vs,'--o')[0])
             titles.append(specStr + titleStrs[i])
+        """
         #-------------done extracting and plotting stuff from the radex Dbs-------
         
 

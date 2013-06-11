@@ -139,12 +139,12 @@ colors = [            'k', 'g', 'b', 'c' , 'y',   'r']
 
 #####################################################################################
 pylab.subplot(616)
-info = plot_ratios_bars(arxv, [-3.0, 2.0], 'MA1', log_n = 1.0, log_G0 = 1.0)
+info = plot_ratios_bars(arxv, [-3.0, 2.0], 'MA1', log_n = 1.0, log_G0 = 2.0)
 pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 10)
 
 pylab.subplot(615)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [-1.0, 3.0], 'MA2', log_n = 2.0, log_G0 = 2.0)
+info = plot_ratios_bars(arxv, [-1.0, 3.0], 'MA2', log_n = 2.0, log_G0 = 1.0)
 
 pylab.subplot(614)
 axisUtils.removeAll_xLabels(pylab.gca())

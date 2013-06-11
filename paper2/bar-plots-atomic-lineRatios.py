@@ -17,11 +17,11 @@ import collections
 #########################################parameters##########################################################
 home = '/home/mher'
 
-metallicity = 1.0
-Av_max      = 20.0
+metallicity = 2.0
+Av_max      = 10.0
 
-#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-atomic-z-%.1f.eps' % metallicity
-imageSavePath = '/home/mher/foo.eps'
+imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-atomic-z-%.1f.eps' % metallicity
+#imageSavePath = '/home/mher/foo.eps'
 
 parms = {
          #path to the database files
@@ -88,12 +88,12 @@ def get_intensities_and_ratios(pdrMeshObj):
     
     ratios = collections.OrderedDict()
     
-    ratios['O63/C369'] = flux['O63']/flux['C369']
-    ratios['O63/C609'] = flux['O63']/flux['C609']
-    ratios['O63/C+158'] = flux['O63']/flux['C+158']
-    ratios['C+158/C369'] = flux['C+158']/flux['C369']
-    ratios['C+158/C609'] = flux['C+158']/flux['C609']
-    ratios['C369/C609'] = flux['C369']/flux['C609']
+    ratios['O63/C369']   = flux['O63']   / flux['C369']
+    ratios['O63/C609']   = flux['O63']   / flux['C609']
+    ratios['O63/C+158']  = flux['O63']   / flux['C+158']
+    ratios['C+158/C369'] = flux['C+158'] / flux['C369']
+    ratios['C+158/C609'] = flux['C+158'] / flux['C609']
+    ratios['C369/C609']  = flux['C369']  / flux['C609']
 
     return (flux, ratios)
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -139,12 +139,12 @@ gm_v   = numpy.array([0.1, 1.0, 5.0, 10.0, 50.0])/100.0
 colors = [                  'k',  'g', 'b', 'c', 'y',   'r']
 
 #####################################################################################
-info = plot_ratios_bars(arxv, [-1.0, 2.0], 'MA1', log_n = 1.0, log_G0 = 1.0)
+info = plot_ratios_bars(arxv, [-1.0, 2.0], 'MA1', log_n = 1.0, log_G0 = 2.0)
 pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 10)
 
 pylab.subplot(615)
 axisUtils.removeAll_xLabels(pylab.gca())
-info = plot_ratios_bars(arxv, [-1.0, 2.0], 'MA2', log_n = 2.0, log_G0 = 2.0)
+info = plot_ratios_bars(arxv, [-1.0, 2.0], 'MA2', log_n = 2.0, log_G0 = 1.0)
 
 pylab.subplot(614)
 axisUtils.removeAll_xLabels(pylab.gca())

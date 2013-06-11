@@ -406,7 +406,7 @@ class mesh(object):
         self.axs[0,1].text(0.4, 1e-9 , '$H$'   , color='g')
         self.axs[0,1].text(0.4, 1e-8 , '$H_2$' , color='b')
         self.axs[0,1].text(0.4, 1e-11 ,'$e^-$' , color='c')
-        #self.axs[0,1].text(0.4, 1e-12 ,'$He$'  , color='y')
+        self.axs[0,1].text(0.4, 1e-12 ,'$O$'  , color='y')
 
         #setting ranges of the original axis 
         self.plt01ax1 = self.axs[0,1]
@@ -529,8 +529,8 @@ class mesh(object):
         self.plt10Spec2Plt.set_ydata( data['state']['abun'][spcs['C'].num] )
         self.plt10Spec3Plt.set_xdata( data['state']['Av'] )
         self.plt10Spec3Plt.set_ydata( data['state']['abun'][spcs['CO'].num] )
-        #self.plt10Spec4Plt.set_xdata( data['state']['Av'] )
-        #self.plt10Spec4Plt.set_ydata( data['state']['abun'][spcs['O'].num] )
+        self.plt10Spec4Plt.set_xdata( data['state']['Av'] )
+        self.plt10Spec4Plt.set_ydata( data['state']['abun'][spcs['O'].num] )
 
         # subplot 1,1
         self.plt11Spec1Plt.set_xdata( data['state']['Av'] )
