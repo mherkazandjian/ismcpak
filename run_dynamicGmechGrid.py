@@ -18,13 +18,13 @@ nWorker = 3  # number of proccesses
 pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none') 
 
 # path where the model data will be dumped
-outputDir     = home + '/ism/runs/oneSided/dynamicMeshTest1/'
-
-# path of the database from which the surface mech heating rates will be extracted
-databasePath  = home + '/ism/runs/oneSided/surfaceGridHighRes-z-1.0/'
+outputDir     = home + '/ism/runs/oneSided/foo/'
 
 metallicity  =  1.0   # in terms of solar metallicity
 plotRangenG0 = [[0,6],[0,6]]
+
+# path of the database from which the surface mech heating rates will be extracted
+databasePath  = home + '/ism/runs/oneSided/surfaceGrid-z-%.1f-high-res-no-gmech/' % metallicity 
 
 #---------chemical network parameters (not used in the modelling)-------------------
 rxnFile       = home + '/ism/code/ismcpak/data/rate99Fixed.inp'
@@ -40,7 +40,7 @@ pdr.set_rate99_fName               (home + '/ism/speciesInfo/rate99.inp');
 pdr.set_selfSheilding_CO_fName     (home + '/ism/speciesInfo/self_shielding_CO.inp');
 pdr.set_rotationalCooling_baseName (home + '/ism/speciesInfo/rotationalcooling/rotcool');
 pdr.set_vibrationalCooling_baseName(home + '/ism/speciesInfo/vibrationalcooling/vibcool');
-pdr.set_database_fName             (home + '/ism/database/database2.dat');
+pdr.set_database_fName             (home + '/ism/database/z-%.1f.dat' % metallicity);
 pdr.set_zeta                       (5.0e-17);
 pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);
@@ -59,9 +59,7 @@ baseSpecs = baseSpecies.baseSpecies()
 # reading the archive
 print 'setting up the archive'
 t0 = time()
-arxv = meshArxv( metallicity = metallicity )
-arxv.readDb( databasePath )
-arxv.checkIntegrity()
+arxv = meshArxv(dirPath = databasePath, readDb = True)
 print 'time reading %f' % (time() - t0)
 
 #--------------------------grid point to be modelled-------------------------------
@@ -74,7 +72,7 @@ yMin = 0.0
 yMax = 6.01
 
 # factor of surface heating to be added as mechanical heating
-z = [1e-10, 0.0001, 0.001, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 1.0, 10.0, 1e2, 1e3, 1e4]
+z = [1e-10, 0.001, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 1.0,]
 #z = [0.0001, 0.001]
 
 #-----------------------getting the mech heating rates at grid points--------------
@@ -100,9 +98,7 @@ x = x[ inds ]
 y = y[ inds ]
 gammaSurf = gammaSurf[ inds ]
 
-xTmp = []
-yTmp = []
-zTmp = []
+xTmp, yTmp, zTmp = [], [], []
 
 for v in z:
     xTmp.append(x)
@@ -140,7 +136,7 @@ ids,err = pdr.add_mesh(rho, 1000.0, G0, Lmech)
 # writing the parameter into an ascii file
 f = file(outputDir+'parameters.out', 'w')
 for i in arange(n):
-    f.write( format(int(ids[i]), '06') + ' ' + format(rho[i], '.3f') + ' ' + format(G0[i], '.3f') + ' ' + format(Lmech[i], '.3e') + '\n' )
+    f.write( '%06d  %.3f  %.3f  %.3f\n' % (ids[i], rho[i], G0[i], Lmech[i]))
 f.close()
 
 #running the models

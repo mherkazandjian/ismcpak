@@ -144,7 +144,12 @@ class radex():
         """
         
         self.FLAGS       = {'DEFAULT': 0x000, 'ERROR'  : 0x001, 'PARMSOK' : 0x002, 'RUNOK': 0x004,   
-                            'SUCCESS': 0x008, 'WARNING': 0x010, 'ITERWARN': 0x020}   
+                            'SUCCESS': 0x008, 'WARNING': 0x010, 'ITERWARN': 0x020,
+                            #out of range parameter flags
+                            'TKIN_OUT_OF_RANGE'                      : 0x100, 
+                            'N_DENS_COLLIOSION_PARTERS_OUT_OF_RANGE' : 0x110, 
+                            'MOL_N_DENS_OUT_OF_RANGE'                : 0x120, 
+                            }   
         """dict : Flags set when running radex which can be used to examing the output. The flags are :
          
            .. code-block:: python
@@ -242,10 +247,10 @@ class radex():
         return self.nIter
     def printSetFlags(self):
         """prints in a pretty way all the flags (whether they are set or not) in self.status"""
-        print 'FLAG_NAME     SET'
-        print '------------------'
+        print '             FLAG_NAME                     SET'
+        print '---------------------------------------------------'
         for i, key in enumerate(self.FLAGS):
-            print '%-9s  %r' % (key, (self.getStatus() & self.FLAGS[key]) >= 1)
+            print '%-40s  %r' % (key, (self.getStatus() & self.FLAGS[key]) >= 1)
         
     def setAxes(self, fig, axs):
         """set the axes and figure objects"""
@@ -307,18 +312,21 @@ class radex():
             
         # checking for correct range for the kinetic temperature
         if inFile['tKin'] <= 0.1 or inFile['tKin'] >= 1e4 :
+            self.set_flag('TKIN_OUT_OF_RANGE')
             self.set_flag('ERROR')
             
         # checking for correct range for the densities of the collion partners
         for i, collPartner in enumerate(inFile['collisionPartners']):
             nDens = inFile['nDensCollisionPartners'][i]
-            if nDens < 1e-3 or nDens > 1e12 :
+            if nDens < 1e-3 or nDens > 1e12 :                
+                self.set_flag('N_DENS_COLLIOSION_PARTERS_OUT_OF_RANGE')
                 self.set_flag('ERROR')
-                
+
         # checking for correct range for the species column density
         if inFile['molnDens'] < 1e5 or inFile['molnDens'] > 1e25:
+            self.set_flag('MOL_N_DENS_OUT_OF_RANGE')
             self.set_flag('ERROR')
-        
+            
         if self.flag_is_set('ERROR'):
             return self.FLAGS['ERROR']
         else:
@@ -421,6 +429,15 @@ class radex():
             self.setDefaultStatus()
             self.run(checkInput = True, verbose = verbose)
 
+            if self.flag_is_set('PARMSOK') == False:
+                self.logger.debug('parameters not ok')
+                self.printSetFlags()
+                break
+
+            if nTried >= max_trials: #no meaningful output after nTried trials
+                print self.inFile
+                break # here radexOutputMakesSense woulbe be False
+                
             #does shifts when radex issues a warning
             if strict == True and (self.flag_is_set('WARNING') or self.flag_is_set('ITERWARN')):
 
@@ -451,6 +468,7 @@ class radex():
                     self.logger.warn('====> pop dens does NOT make sense, trial %d' % nTried)
                     self.logger.warn('====> total pop dense lower = %18.15f' % totalPopDensLower)
                     self.logger.warn('====> absolute difference = %.2e\n' % diff)
+                    self.logger.warn('====> number of iterations = %d\n' % self.nIter)
 
                     self.rand_shift_inFile_params(inFileOrig, change_frac_trial)                
                     
@@ -462,6 +480,7 @@ class radex():
                     break
             
             else: # radex did not succeed
+                #gets here only in case of an error (or a warning when strict = False) 
                 self.logger.debug('radex failed')
                 self.logger.debug('---------------------------------------------------------')
                 self.logger.debug('------------------------radex raw output-----------------')
@@ -469,12 +488,8 @@ class radex():
                 print self.rawOutput
                 self.logger.debug('---------------------------------------------------------')
                 break  # here radexOutputMakesSense woulbe be False
-            
-            #nTried += 1
-            
-            if nTried >= max_trials: #no meaningful output after nTried trials
-                break # here radexOutputMakesSense woulbe be False
-                
+        #
+                        
         return self.status, radexOutputMakesSense
         
     def rand_shift_inFile_params(self, inFileOrig, factor):
@@ -596,10 +611,10 @@ class radex():
             i = 0 
             while True: #looking for the first line which starts with a '1' indicating the first transition line
                 lineNum += 1
-                if lines[lineNum + 1][0] == '1':
-                    lineNum += 1
+                if 'transition data' in lines[lineNum + 1]:
+                    lineNum += 2
                     break
-            
+                
             #parsing the output lines info
             for line in lines[lineNum:nLines-1]:
                 transition = parseLineData(line)

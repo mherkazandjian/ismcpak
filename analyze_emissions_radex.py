@@ -27,7 +27,7 @@ inFile = { 'specStr'                : 'HCN'      ,
 transIndx = 1
 
 #-------x1 (quantity to be plotted wit curves on the same plot with different color--------
-x1 = [10, 50, 200, 500]  #changing the kinetic temperature
+x1 = [10, 50, 500]  #changing the kinetic temperature
 qx1 = 'tKin' 
 
 #x1 = [[1e3], [1e4], [1e5], [1e6]]   #changing the density of the colliding specie

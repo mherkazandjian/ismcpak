@@ -11,8 +11,8 @@ import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
 
-specStr_PDR   = 'CO'
-specStr_Radex = 'CO'
+specStr_PDR   = 'HCN'
+specStr_Radex = 'HCN'
 
 parms = {
          #path to the database files
@@ -23,19 +23,19 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/singleModels-z-2.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/surfaceGrid-z-1.0-high-res-no-gmech/',
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy/',
-         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy/',
+         'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy2/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2/',
-         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
+         #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-test/',
          
-         'relativeGmech' : False,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+         'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
                                   # False => 3rd dim is gMech 
-         #'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
+         'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
-         #'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
-         'plotRanges'     : [[-4,6],[-4,6],[-51, -15]],  # uniform gmech
+         'plotRanges'    : [[-1,7],[-1,7  ],[-12, 6]],     # adaptive gMech 
+         #'plotRanges'     : [[-4,6],[-4,6],[-51, -15]],  # uniform gmech
          
          'plot'          : True, 
          'showGrids'     : True,
@@ -98,11 +98,11 @@ parms = {
                              'verbose'              : False,
                              'maxDisplayTranistion' : 20,
                              ###----------extra convergence params-----------------------
-                             'checkOutputIntegrity' : False,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
+                             'checkOutputIntegrity' : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'   : 1.0, 
-                             'popDensSumTol'        : 1e-2,
-                             #'popDensSumTol'        : 10,
+                             'popDensSumTol'        : 3e-2,
                              'changeFracTrial'      : 0.01,
+                             'strict'               : True,
                              'nMaxTrial'            : 100,
                             },
         }
@@ -122,12 +122,13 @@ if parms['plot']:
 
 if False:
     """construct radex databases for a bunch of species for a single Av"""
-    species = ['13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'CN']
+    #species = ['13CO', 'HCN', 'HNC', 'HCO+', 'CS']
     #species = ['CN']  #the pop dense do not add to 1...so this is done saperatly (need to set 'checkOutputIntegrity' to False)
     #species = ['HNC', 'HCO+']
+    species = ['HNC']
     for specStr in species:
         parms['radex']['specStr'] = specStr
-        arxv.constructRadexDatabase(writeDb = parms['radex']['writeDb'])
+        arxv.constructRadexDatabase(writeDb = True)
     
 if False:
     """construct radex databases for a bunch of species for a bunch of Avs"""

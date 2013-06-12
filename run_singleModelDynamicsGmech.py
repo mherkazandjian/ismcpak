@@ -11,15 +11,15 @@ from enumSpecies import *
 #---------------------------------------------------------------------------
 home = '/home/mher'
 
-outputDir   = '/home/mher/ism/runs/oneSided/testOneSidedPDRGrid/'
-metallicity = 0.1   # in terms of solar metallicity
-alpha       = 1.0   #percent of the surface heating to be used as gmech
+outputDir   = home + '/ism/runs/oneSided/dynamicMeshTest1/'
+metallicity = 1.0   # in terms of solar metallicity
+alpha       = 0.1   #percent of the surface heating to be used as gmech
 log10nGas   = 3.0
 log10G0     = 5.0
 
 
 #reference database path from which the surface heating in the case of zero gmech will be extracted
-databasePath  = '/home/mher/ism/runs/oneSided/surfaceGrid-z-0.1/'
+databasePath  = '/home/mher/ism/runs/oneSided/surfaceGrid-z-1.0/'
 
 plotRangenG0  = [[0,6],[0,6]]
 #-----------------chemical network parameters------------------------
@@ -38,13 +38,13 @@ pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none
  
 #---------------------amuse parameters------------------------------------------------
 pdr.set_outputDir                  (outputDir + 'meshes/');
-pdr.set_species_fName              ("/home/mher/ism/speciesInfo/species.inp");
-pdr.set_underUbundant_fName        ("/home/mher/ism/speciesInfo/underabundant.inp");
-pdr.set_rate99_fName               ("/home/mher/ism/speciesInfo/rate99.inp");
-pdr.set_selfSheilding_CO_fName     ("/home/mher/ism/speciesInfo/self_shielding_CO.inp");
-pdr.set_rotationalCooling_baseName ("/home/mher/ism/speciesInfo/rotationalcooling/rotcool");
-pdr.set_vibrationalCooling_baseName("/home/mher/ism/speciesInfo/vibrationalcooling/vibcool");
-pdr.set_database_fName             ("/home/mher/ism/database/z-1.0.dat");
+pdr.set_species_fName              (home + "/ism/speciesInfo/species.inp");
+pdr.set_underUbundant_fName        (home + "/ism/speciesInfo/underabundant.inp");
+pdr.set_rate99_fName               (home + "/ism/speciesInfo/rate99.inp");
+pdr.set_selfSheilding_CO_fName     (home + "/ism/speciesInfo/self_shielding_CO.inp");
+pdr.set_rotationalCooling_baseName (home + "/ism/speciesInfo/rotationalcooling/rotcool");
+pdr.set_vibrationalCooling_baseName(home + "/ism/speciesInfo/vibrationalcooling/vibcool");
+pdr.set_database_fName             (home + "/ism/database/z-1.0.dat");
 pdr.set_zeta                       (5.0e-17);
 pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);
@@ -58,8 +58,8 @@ pdr.set_maxSlabs                   (200);
 #------------------------------------------------------------------------------------
 
 # getting the basic species defined in baseSpecies.py
-import baseSpecies
-baseSpecs = baseSpecies.baseSpecies()
+import baseSpeciesDefault
+baseSpecs = baseSpeciesDefault.baseSpecies()
 
 # reading the archive
 print 'setting up the archive'

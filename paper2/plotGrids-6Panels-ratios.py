@@ -48,7 +48,8 @@ parmsFile2     = dirname2 + 'parms.out'
 fileInfoFile2  = dirname2 + 'filesInfo.out'
 
 colormap      = cm.jet
-imageSavePath = '/home/mher/ism/docs/paper02/src/figs/lineRatio-%s-%s-%s-%s-gMech.eps' % (specStr1, transition1, specStr2, transition2)
+#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/lineRatio-%s-%s-%s-%s-gMech.eps' % (specStr1, transition1, specStr2, transition2)
+imageSavePath = '/home/mher/tmp/foo/lineRatio-%s-%s-%s-%s-gMech.eps' % (specStr1, transition1, specStr2, transition2)
 #=====================================================================================
 
 ny = len(relGmech)

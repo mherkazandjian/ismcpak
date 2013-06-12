@@ -24,12 +24,12 @@ Av_max      = 10.0
 spec1Str = '13CO'
 spec2Str = 'CO'
 
-imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-%s-%s-z-%.1f.eps' % (spec1Str, spec2Str, metallicity)
-#imageSavePath = '/home/mher/foo.eps'
+#imageSavePath = '/home/mher/ism/docs/paper02/src/figs/bar-plots-lineRatios-%s-%s-z-%.1f.eps' % (spec1Str, spec2Str, metallicity)
+imageSavePath = '/home/mher/foo.eps'
 
 parms = {
          #path to the database files
-         'dirPath'       : home + '/ism/runs/oneSided/singleModels-z-%.1f/' % metallicity,
+         #'dirPath'       : home + '/ism/runs/oneSided/singleModels-z-%.1f/' % metallicity,
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
          'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
          #'plotRanges'     : [[0,6],[0,6],[-51, -15]],  # uniform gmech

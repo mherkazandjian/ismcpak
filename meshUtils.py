@@ -340,7 +340,7 @@ class meshArxv():
         
         
     def read_used_parms_used_in_PDR_models(self):
-        fpath_parms_used = os.path.join(self.dirPath,'used_parms.pkl')
+        fpath_parms_used = os.path.join(self.dirPath, 'used_parms.pkl')
         if os.path.isfile(fpath_parms_used):
             self.logger.debug('setting metallicity and chemical network from : %s' % fpath_parms_used)
             #loading the parameters
@@ -1649,6 +1649,7 @@ class meshArxv():
                                                                               radex_obj = radex_obj_utility,
                                                                               radex_parms = radex_parms,    
                                                                               Av_range = Av_range)
+            
             if has_lines == None:
                 infoAllRadex[i]['info'][1] = 0 #no trainsitions
                 meshesRadex[i] = None
@@ -1748,8 +1749,7 @@ class meshArxv():
             
         #done getting the transitions from all the PDR models
         
-        print 'Time running in parallel = %.2f seconds ' % (time()-t0)
-        aasdasd
+        self.logger.debug('Time running in parallel = %.2f seconds ' % (time()-t0))
         
         #copying the mesh parameters self.infoAll[:]['parms] to self.infoAllRadex[:]['parms'] (info are set in the loop above)
         for i in np.arange( self.nMeshes ):
@@ -2464,7 +2464,6 @@ class meshArxv():
                 
                 if self.parms['radex']['use']:
                     self.compute_and_set_radex_curves(pdr_mesh_obj = self.mshTmp)
-                    #self.compute_and_set_despotic_curves(meshObj = self.mshTmp)
                     
                 pyl.draw()
 
@@ -2598,7 +2597,8 @@ class meshArxv():
                                                                  rel_pop_dens_tol = radex_parms['popDensSumTol'],   
                                                                  change_frac_trial = radex_parms['changeFracTrial'],    
                                                                  max_trials = radex_parms['nMaxTrial'],
-                                                                 verbose = radex_parms['verbose'])
+                                                                 verbose = radex_parms['verbose'],
+                                                                 strict = radex_parms['strict'])
         return has_lines, radex_parm_from_pdr_mesh 
     
     def compute_and_set_radex_curves(self, pdr_mesh_obj = None, radex_parms = None, Av_range = None, compute_only = None, radex_obj = None):
@@ -2611,7 +2611,6 @@ class meshArxv():
           if compute_only is passed, nothing is plotted, only the emissions are computed and set
           to self.radexObj
         """
-
         if pdr_mesh_obj == None: pdr_mesh_obj = self.mshTmp
         if radex_obj    == None: radex_obj = self.radexObj
         if radex_parms  == None: radex_parms = self.parms['radex']
@@ -2627,21 +2626,23 @@ class meshArxv():
                                                                                       radex_obj = radex_obj, 
                                                                                       radex_parms = radex_parms,    
                                                                                       Av_range = Av_range)
-        
+
         #plotting only when the radex solution makes sense (pop dens dont add up to 
         #what they should be up to a certain tolerence)
         if radexOutputMakesSense:
             
             if compute_only == None:
-                # plotting the data (even if it does not converge)
-                if radex_obj.getStatus() & radex_obj.FLAGS['SUCCESS']:
+                # plotting the data (even if it does not converge)                
+                if radex_obj.flag_is_set('SUCCESS'):
                     radex_obj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
                                                      inAxes = self.pltRadex,     
                                                      title = '')                             
                 radex_obj.setLabels()
             else:
                 radex_obj.print_warnings() #printing the warnings
-        
+        else:
+            self.logger.debug('radex output doesnt make sesne')
+
         if compute_only == None:
             
             if radex_parm_from_pdr_mesh != None:
@@ -2788,7 +2789,7 @@ class meshArxv():
                 
                 if compute_only == None:
                     # plotting the data (even if it does not converge)
-                    if radexObj.getStatus() & radexObj.FLAGS['SUCCESS']:
+                    if radexObj.flag_is_set('SUCCESS'):
                         radexObj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
                                                          inAxes = self.pltRadex,     
                                                          title = '')                             
