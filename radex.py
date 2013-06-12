@@ -2,6 +2,7 @@ import numpy
 import pylab
 import subprocess
 import logging, sys
+from mylib.utils.misc import default_logger
 
 class radex():
     """A wrapper class which runs radex parses its output into objects. see test_radex.py
@@ -16,7 +17,7 @@ class radex():
     :test: test_radex.py, radexView.py
     """
 
-    def __init__(self, execPath, molDataDir):
+    def __init__(self, execPath, molDataDir, logger=None):
         """Initializes some of the instance variables needed to run radex."""
         
         self.execPath     = execPath   #: string : The path to the radex executable 
@@ -186,6 +187,11 @@ class radex():
         """integer : number of horizontal division in the figure (default)"""
         self.logger = None
         
+        if logger == None:
+            self.logger = default_logger()
+        else:
+            self.logger = logger 
+        
     def setInFileParm(self, parm, value):
         """This method sets values to the parameters to be passed to radex.
 
@@ -204,6 +210,8 @@ class radex():
         return self.inFile
     def getStatus(self):
         return self.status
+    def set_flag(self, flag):
+        self.status |= self.FLAGS[flag]    
     def getRawOutput(self):
         return self.rawOutput
     def setStatus(self, status):
@@ -238,7 +246,6 @@ class radex():
         print '------------------'
         for i, key in enumerate(self.FLAGS):
             print '%-9s  %r' % (key, (self.getStatus() & self.FLAGS[key]) >= 1)
-        
         
     def setAxes(self, fig, axs):
         """set the axes and figure objects"""
@@ -300,22 +307,22 @@ class radex():
             
         # checking for correct range for the kinetic temperature
         if inFile['tKin'] <= 0.1 or inFile['tKin'] >= 1e4 :
-            self.status |= self.FLAGS['ERROR']
+            self.set_flag('ERROR')
             
         # checking for correct range for the densities of the collion partners
         for i, collPartner in enumerate(inFile['collisionPartners']):
             nDens = inFile['nDensCollisionPartners'][i]
             if nDens < 1e-3 or nDens > 1e12 :
-                self.status |= self.FLAGS['ERROR']
+                self.set_flag('ERROR')
                 
         # checking for correct range for the species column density
         if inFile['molnDens'] < 1e5 or inFile['molnDens'] > 1e25:
-            self.status |= self.FLAGS['ERROR']
+            self.set_flag('ERROR')
         
-        if self.status & self.FLAGS['ERROR']:
+        if self.flag_is_set('ERROR'):
             return self.FLAGS['ERROR']
         else:
-            self.status |= self.FLAGS['PARMSOK']
+            self.set_flag('PARMSOK')
             return self.FLAGS['PARMSOK']
 
     def run(self, checkInput = None, verbose = None ):
@@ -343,10 +350,10 @@ class radex():
         if checkInput == True:
             self.checkParameters()
         else:
-            self.status |= self.FLAGS['PARMSOK']
+            self.set_flag('PARMSOK')
 
-        if self.status &  self.FLAGS['PARMSOK']:
-        
+        if self.flag_is_set('PARMSOK'):
+
             radexInput = self.genInputFileContentAsStr()
             
             if verbose == True:
@@ -364,13 +371,13 @@ class radex():
             
             self.rawOutput = radexOutput
             self.parseOutput()
-            self.status |= self.FLAGS['RUNOK']
+            self.set_flag('RUNOK')
         
             if self.nIter == 10000:  # ;;; get this from radex.inc
-                self.status |= self.FLAGS['WARNING']
-                self.status |= self.FLAGS['ITERWARN']
+                self.set_flag('WARNING')
+                self.set_flag('ITERWARN')
             else:
-                self.status |= self.FLAGS['SUCCESS']
+                self.set_flag('SUCCESS')
             
             if verbose == True:
                 print '-------------raw output of Radex stdout------------------'
@@ -386,6 +393,7 @@ class radex():
                                  rel_pop_dens_tol = None, 
                                  change_frac_trial = None, 
                                  max_trials = None,
+                                 strict = None,
                                  verbose = None):
         """Runs the same parameters set a few times by doing minor random steps around the
         input original parameters (since although radex sometimes fails for a certain
@@ -399,39 +407,60 @@ class radex():
         :param float64 change_frac_trial: the relative amount by which the input 
           parameters to radex are changed.
         :param int max_trials: number of time random changes are done before giving up
-        
+        :param bool strict: if this is True, the shift attempts are also done to attempt to 
+        get a solution which makes sense even when warnings are issued.
         """
+        
         radexOutputMakesSense = False
         
         inFileOrig = self.inFile.copy() # original parameters
 
-        nTried     = 0
+        nTried = 0
         while not radexOutputMakesSense:
+            
             self.setDefaultStatus()
             self.run(checkInput = True, verbose = verbose)
 
+            #does shifts when radex issues a warning
+            if strict == True and (self.flag_is_set('WARNING') or self.flag_is_set('ITERWARN')):
+
+                self.logger.debug('radex has a warning')
+                self.logger.warn('====> radex issued a warning during trial %d' % nTried)
+                self.logger.warn('====> varying slightly the input parameters')
+                
+                if verbose == True:
+                    self.logger.debug('---------------------------------------------------------')
+                    self.logger.debug('------------------------radex raw output-----------------')
+                    self.logger.debug('---------------------------------------------------------')
+                    print self.rawOutput
+                    self.logger.debug('---------------------------------------------------------')
+
+                self.rand_shift_inFile_params(inFileOrig, change_frac_trial)                
+                nTried += 1
+                continue
+            
             # checking the integrity of the solution in case it converged
-            if self.getStatus() & self.FLAGS['SUCCESS']:
-                                    
+            #if self.flag_is_set('SUCCESS') or self.flag_is_set('WARNING') or self.flag_is_set('ITERWARN'):
+            if self.flag_is_set('SUCCESS'):
+                
                 totalPopDensLower = numpy.sum(self.transitions[:]['pop_down'])
                 diff = numpy.fabs(expected_sum_pop_dens - totalPopDensLower) 
+                
                 if  diff > rel_pop_dens_tol:
                     
                     self.logger.warn('====> pop dens does NOT make sense, trial %d' % nTried)
                     self.logger.warn('====> total pop dense lower = %18.15f' % totalPopDensLower)
                     self.logger.warn('====> absolute difference = %.2e\n' % diff)
 
-                    #change in input parameters by a tiny amount and run again
-                    #(this is a numerical bug in radex which fails sometimes)
-                    self.inFile['tKin']     = inFileOrig['tKin']*(1.0 + numpy.random.rand()*change_frac_trial)
-                    self.inFile['molnDens'] = inFileOrig['molnDens']*(1.0 + numpy.random.rand()*change_frac_trial)
-                    for i, dens in enumerate(self.inFile['nDensCollisionPartners']):
-                        self.inFile['nDensCollisionPartners'][i] = inFileOrig['nDensCollisionPartners'][i]*(1.0 + numpy.random.rand()*change_frac_trial)
-                        
+                    self.rand_shift_inFile_params(inFileOrig, change_frac_trial)                
+                    
+                    nTried += 1
+                    continue
                 else:
                     radexOutputMakesSense = True
-                    print '====>', 'pop dense make sense, trial %d' % nTried
-                    
+                    print '====>', 'pop dense make sense, trial %d with %d iterations' % (nTried, self.nIter)
+                    break
+            
             else: # radex did not succeed
                 self.logger.debug('radex failed')
                 self.logger.debug('---------------------------------------------------------')
@@ -441,14 +470,25 @@ class radex():
                 self.logger.debug('---------------------------------------------------------')
                 break  # here radexOutputMakesSense woulbe be False
             
-            nTried += 1
+            #nTried += 1
             
             if nTried >= max_trials: #no meaningful output after nTried trials
                 break # here radexOutputMakesSense woulbe be False
                 
         return self.status, radexOutputMakesSense
         
-    
+    def rand_shift_inFile_params(self, inFileOrig, factor):
+        """change the in input parameters 'inFileParms' within an amount randomly determined by 'factor'. 
+        This might be useful since there is a numerical bug in radex which fails sometimes and 
+        the output varies hugely even for parameters which are a relative distance of 1e-6
+        apart. The shifted parameters are set to self.inFile
+        """
+        
+        self.inFile['tKin']     = inFileOrig['tKin']*(1.0 + numpy.random.rand()*factor)
+        self.inFile['molnDens'] = inFileOrig['molnDens']*(1.0 + numpy.random.rand()*factor)
+        for i, dens in enumerate(self.inFile['nDensCollisionPartners']):
+            self.inFile['nDensCollisionPartners'][i] = inFileOrig['nDensCollisionPartners'][i]*(1.0 + numpy.random.rand()*factor)
+
     def print_warnings(self):
         """prints the warning strings dumped by Radex"""
         self.logger.debug('--------------warnings---------------')
@@ -475,7 +515,7 @@ class radex():
        
         return numpy.dtype(fmt)
     
-    def flagSet(self, flag):
+    def flag_is_set(self, flag):
         """returns True 'flag' is set, false otherwise"""
         return self.status & self.FLAGS[flag]
         

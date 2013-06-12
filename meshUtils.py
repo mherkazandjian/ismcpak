@@ -1658,7 +1658,7 @@ class meshArxv():
                 #-----------------------------------------------------------
                 #saving the number of transitions into radex info attribute
                 infoAllRadex[i]['info'][0] = i
-                if radex_obj_utility.flagSet('ERROR') or (has_lines is False): # radex failed, no transition data available
+                if radex_obj_utility.flag_is_set('ERROR') or (has_lines is False): # radex failed, no transition data available
                     infoAllRadex[i]['info'][1] = 0 #no trainsitions
                     meshesRadex[i] = None
                     radex_obj_utility.printSetFlags()
@@ -1674,7 +1674,7 @@ class meshArxv():
                 #-----------------finished saving the info------------------
                 
                 
-                if radex_obj_utility.flagSet('SUCCESS'):
+                if radex_obj_utility.flag_is_set('SUCCESS'):
                     self.logger.debug('radexGrid : converged with no warnings')
                 else:
                     self.logger.debug('radexGrid : converged with warnings')
@@ -2587,7 +2587,7 @@ class meshArxv():
                 radex_obj.setDefaultStatus()
                 radex_obj.run(checkInput = True, verbose = radex_parms['verbose'])
                 
-                if radex_obj.flagSet('RUNOK'):
+                if radex_obj.flag_is_set('RUNOK'):
                     has_lines = True
                 else:
                     return None, None
@@ -3277,7 +3277,7 @@ class meshArxv():
            and 'molnDens' as None. Also sets the attribute self.radexObj
         """
         #making the instance            
-        radexObj = radex(radex_parms['path'], radex_parms['molDataDirPath'])
+        radexObj = radex(radex_parms['path'], radex_parms['molDataDirPath'], logger = self.logger)
         #setting some default radex paraemeters
         inFile = {'specStr'                : radex_parms['specStr'],
                   'outPath'                : 'foo' ,
@@ -3290,7 +3290,6 @@ class meshArxv():
                   'lineWidth'              : radex_parms['lineWidth'],  # fixed
                   'runAnother'             : 1     }
         radexObj.setInFile( inFile )
-        radexObj.logger = self.logger
         
         self.radexObj = radexObj
         
