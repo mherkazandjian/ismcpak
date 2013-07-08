@@ -24,15 +24,15 @@ import numpy
 from numpy import log10
 import pylab
 import logging
-from numpy import log10
 
 from amuse.io import read_set_from_file
 from amuse.io.fi_io import FiFileFormatProcessor
 from amuse.units import units, constants, nbody_system
 import meshUtils
-from mylib.utils.misc  import xselect
+from mylib.utils.misc  import xselect, default_logger
 from mylib.utils.histogram import hist_nd
 from fi_utils import make_maps, parse_old_runinfo_file
+import fi_utils
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
@@ -47,26 +47,30 @@ home = '/home/mher'
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',   # the path of the dir containing the simulation
           'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',   # the path of the dir containing the simulation
           'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
-          'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',        # the path to the dir containing the PDR database
+          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',        # the path to the dir containing the PDR database
+          'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',        # the path to the dir containing the PDR database
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2/',        # the path to the dir containing the PDR database          
-          'use_em' : False, 
-           
+          'use_em' : True, 
+          
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
                              'min_log_n_use'  : -3.0,      
                              'min_log_G0_use' : -3.0,
                              'min_log_gm_use' : -50.0,
-                             'Av'             :  [0.0, 19],
+                             'Av_use'         :  [0.0, 200.0],
+                             'Av_clip'        :  [3.0, 29.9],  #sph particles with Av higher than this are clipped to this value                             
                             },
                       
-                      #ranges of the pdr models to be used in constructing the interpolation functions
-                      'pdr': {
-                              'log_n' : [0,0],
-                             },
                       #the size of the box to be displayed (particles outside the range are discarded)
-                      'box_size' : [-4,4] | units.kpc,
-                      'Av'       : [3.0, 20.0],  #range in Av over which the interpolation function will be constructed (for radex, Dbs with an increment of 1 will be queried)
-                      },          
+                      'box_size' : [-2.0, 2.0],
+
+                       #modes in the PDR arxv which are within those ranges will be used in constructing interpolation functions 
+                      'interp'   : {'log_n'    : [-10.0,  10.0 ],
+                                    'log_G0'   : [-2.0 ,  3.0 ],
+                                    'log_gmech': [-50.0, -20.0],
+                                    'Av'       : [ 3.0 ,  30.0],
+                                    },                          
+                      },
           'maps'   : {
                       'f_n_part' : {'pos': [0,0], 'title': r'$f(N)$'        , 'v_rng': [0,6]      , 'log10': True}, 
                       'f_mass'   : {'pos': [0,1], 'title': r'$f(m)$'        , 'v_rng': [30,40]    , 'log10': True},
@@ -74,20 +78,21 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',   # the
                       'f_mean_g0': {'pos': [0,3], 'title': r'$f(\bar{g_0})$', 'v_rng': [-3.0, 3.0], 'log10': True},
                       #--------
                       'f_mean_gm'              : {'pos': [1,0], 'title': r'$f(\bar{\Gamma_m})$'                  , 'v_rng': [-35.0, -22.0], 'log10': True},
-                      'f_mean_Av'              : {'pos': [1,1], 'title': r'$f(\bar{Av_m})$'                      , 'v_rng': [0.0  , 2.0] , 'log10': False},
+                      #'f_mean_Av'              : {'pos': [1,1], 'title': r'$f(\bar{Av})$'                      , 'v_rng': [0.0  , 2.0] ,  'log10': True},
+                      'T_mean'                 : {'pos': [1,1], 'title': r'$f(\bar{T})$'                        , 'v_rng': [0.0  , 5.0] ,  'log10': True},
                       #'f_mean_em_C+-1-0'       : {'pos': [1,1], 'title': r'$f(L_{C^+ 158 \mu m})$'               , 'v_rng': [-6.0, -2.0]  , 'log10': True},
                       #'f_mean_em_no_gm_C+-1-0' : {'pos': [1,2], 'title': r'$f(L_{C^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
-                      #'f_mean_em_CO-7-6'       : {'pos': [1,3], 'title': r'$f(L_{O^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
+                      'f_mean_em_CO-7-6'       : {'pos': [1,3], 'title': r'$f(L_{O^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
                       #--------
                       'f_mean_em_CO-1-0'       : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'                  , 'v_rng': [-10.0, -2.0], 'log10': True},
-                      #'f_mean_em_no_gm_CO-1-0' : {'pos': [2,1], 'title': r'$f(L_{CO(1-0)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
-                      #'f_mean_em_CO-3-2'       : {'pos': [2,2], 'title': r'$f(L_{CO(3-2})$'                  , 'v_rng': [-10.0, -2.0], 'log10': True},
-                      #'f_mean_em_no_gm_CO-3-2' : {'pos': [2,3], 'title': r'$f(L_{CO(3-2)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
+                      'f_mean_em_no_gm_CO-1-0' : {'pos': [2,1], 'title': r'$f(L_{CO(1-0)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
+                      'f_mean_em_CO-3-2'       : {'pos': [2,2], 'title': r'$f(L_{CO(3-2})$'                  , 'v_rng': [-10.0, -2.0], 'log10': True},
+                      'f_mean_em_no_gm_CO-3-2' : {'pos': [2,3], 'title': r'$f(L_{CO(3-2)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
                       #--------
-                      #'f_mean_em_HCN-1-0'       : {'pos': [3,0], 'title': r'$f(L_{HCN(1-0})$'                 , 'v_rng': [-10.0, -7.0], 'log10': True},
-                      #'f_mean_em_no_gm_HCN-1-0' : {'pos': [3,1], 'title': r'$f(L_{HCN(1-0)})$ $\Gamma_m = 0$' , 'v_rng': [-10.0, -7.0], 'log10': True},
-                      #'f_mean_em_HCO+-1-0'      : {'pos': [3,2], 'title': r'$f(L_{HCO+(1-0})$'                , 'v_rng': [-10.0, -7.0], 'log10': True},
-                      #'f_mean_em_no_gm_HCO+-1-0': {'pos': [3,3], 'title': r'$f(L_{HCO+(1-0)})$ $\Gamma_m = 0$', 'v_rng': [-10.0, -7.0], 'log10': True},
+                      'f_mean_em_HCN-1-0'       : {'pos': [3,0], 'title': r'$f(L_{HCN(1-0})$'                 , 'v_rng': [-10.0, -7.0], 'log10': True},
+                      'f_mean_em_no_gm_HCN-1-0' : {'pos': [3,1], 'title': r'$f(L_{HCN(1-0)})$ $\Gamma_m = 0$' , 'v_rng': [-10.0, -7.0], 'log10': True},
+                      'f_mean_em_HCO+-1-0'      : {'pos': [3,2], 'title': r'$f(L_{HCO+(1-0})$'                , 'v_rng': [-10.0, -7.0], 'log10': True},
+                      'f_mean_em_no_gm_HCO+-1-0': {'pos': [3,3], 'title': r'$f(L_{HCO+(1-0)})$ $\Gamma_m = 0$', 'v_rng': [-10.0, -7.0], 'log10': True},
                       },
 
           #'interpolator' : interpolate.NearestNDInterpolator, 
@@ -114,45 +119,10 @@ lines_info = { #line str  transIdx    trans latex str               pdr|lvg
               'HCO+-3-2':  {'idx':2,  'latex': r'HCO$^{+}$(3-2)'  , 'type':'lvg', },
              }
 
-lnMin, lG0Min, lgMechMin = params['ranges']['sph']['min_log_n_use'], params['ranges']['sph']['min_log_G0_use'], params['ranges']['sph']['min_log_gm_use']      
-bsMin, bsMax = params['ranges']['box_size'].number 
-
-
 #extracting/guessing the metallicity from the name of the directory of the run
-metallicity = None
+metallicity = fi_utils.guess_metallicity(params['rundir'])
 
-if '-std' in params['rundir']:
-    metallicity = 0.2
-if '-sol' in params['rundir']:
-    metallicity = 1.0
-
-#------------------------------------------
-
-def setupLogger():
-    """sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger."""
-    
-    # setting up the logger                                                                                                                                                                                                              
-    # create logger                                                                                                                                                                                                                      
-    logger = logging.getLogger('simple_example')
-    if not len(logger.handlers):
-        logger.setLevel(logging.DEBUG)
-
-        # create console handler and set level to debug                                                                                                                                                                                      
-        ch = logging.StreamHandler( sys.stdout )  # setting the stream to stdout                                                                                                                                                             
-        ch.setLevel(logging.DEBUG)
-
-        # create formatter                                                                                                                                                                                                                   
-        formatter = logging.Formatter('[%(asctime)s %(funcName)s() %(filename)s:%(lineno)s] %(message)s') # this was the original in the example                                                                              
-
-        # add formatter to ch                                                                                                                                                                                                                
-        ch.setFormatter(formatter)
-
-        # add ch to logger                                                                                                                                                                                                                   
-        logger.addHandler(ch)
-
-    return logger
-
-logger = setupLogger()
+logger = default_logger()
 
 #############################setting up the PDR databaseses and the interpolation function##################
 #############################setting up the PDR databaseses and the interpolation function##################
@@ -162,19 +132,23 @@ logger = setupLogger()
 
 #reading and setting up the pdr database
 arxvPDR = meshUtils.meshArxv(dirPath = params['pdrDb'], readDb=True)
-    
+
+lgMechMin = arxvPDR.grid_z.min()     
+bs_min, bs_max = params['ranges']['box_size'] 
+
 if params['use_em'] == True:    
     #=============================================
     #loading the molecular specie radex database
-    arxvPDR.readDbsRadex(allDbs=True)
-    #arxvPDR.readDbsRadex(species=['CO','HCN','HNC','HCO+'], Av=params['ranges']['Av'])
+    #arxvPDR.readDbsRadex(allDbs=True)
+    #arxvPDR.readDbsRadex(species=['CO','HCN','HNC','HCO+'], Av=params['ranges']['interp']['Av'])
+    arxvPDR.readDbsRadex(species=['CO','HCN', 'HCO+'], in_Av_rng=params['ranges']['interp']['Av'])
 
 def funcRadex(mesh_radex, **kwargs):
     
     if mesh_radex == None:
         return numpy.nan
     else:
-        return numpy.log10(mesh_radex[kwargs['transitionIdx']]['fluxcgs'])  #a radex quantity
+        return log10(mesh_radex[kwargs['transitionIdx']]['fluxcgs'])  #a radex quantity
 
 def funcPDR(meshObj, **kwargs):
     
@@ -184,36 +158,33 @@ def funcPDR(meshObj, **kwargs):
     value = meshObj.compute_integrated_quantity(quantity, Av_range = [0.0, up_to_Av])
     value /= (2.0*numpy.pi)
     
-    return numpy.log10(value)
+    return log10(value)
 
 def interpolator_sectioned_by_gm_Av(data_db, v):
     """Returns an interpolator function which makes use of sub-interpolation function for ranges in 
        mechanical heating. data_db is an array whose columns are : n, G0, gm, Av.
     """
     
-    intervals_gm = [ [-50.0, -40.0],  #sections in gm within which saperate interpolation functions will be built.
-                     [-45.0, -35.0],  # .. note:: make sure there are enough points in the database within each section
-                     [-35.0, -32.0],
-                     [-32.0, -30.0],
-                     [-30.0, -28.0],
-                     [-28.0, -26.0],
-                     [-26.0, -24.0],
-                     [-24.0, -22.0],
-                     [-22.0, -20.0],
-                     [-20.0, -18.0],
-                     [-18.0, -14.0],
+    #sections in gm within which saperate interpolation functions will be built.
+    # .. note:: make sure there are enough points in the database within each section
+    intervals_gm = [ 
+                     [-50.0, -35.0],  
+                     [-35.0, -34.0], [-34.0, -33.0], [-33.0, -32.0], [-32.0, -31.0], [-31.0, -30.0],    
+                     [-30.0, -29.0], [-29.0, -28.0], [-28.0, -27.0], [-27.0, -26.0], [-26.0, -25.0],    
+                     [-25.0, -24.0], [-24.0, -23.0], [-23.0, -22.0], [-22.0, -21.0], [-21.0, -20.0],    
+                     #[-20.0, -13.0],
                    ]
-    ghost_gm = 1.1
+    ghost_gm = 0.0 #1.1
     
-    intervals_Av = [ [3.0, 4.0],  #sections in Av within which saperate interpolation functions will be built.
-                     [4.0, 5.0],  # .. note:: make sure there are enough points in the database within each section
-                     [5.0, 6.0],
-                     [6.0, 7.0],
-                     [7.0, 8.0],
-                     [8.0, 9.0],
-                     [9.0, 10.0],
-                   ]
-    ghost_Av = 1.0
+    #sections in Av within which saperate interpolation functions will be built.
+    # .. note:: make sure there are enough points in the database within each section
+    intervals_Av = [ 
+                     [3.0, 4.0],   [4.0, 5.0],   [5.0, 6.0],   [6.0, 7.0],   [7.0, 8.0],   [8.0, 9.0], [9.0, 10.0],
+                     [10.0, 12.0], [12.0, 14.0], [14.0, 16.0], [16.0, 18.0], [18.0, 20.0], 
+                     [20.0, 22.0], [22.0, 24.0], [24.0, 26.0], [26.0, 28.0], [28.0, 30.0],
+                   ] 
+
+    ghost_Av = 0.0 #1.1
     
     #splitting data into sections specified by intervals_gm and constructing an interpolation
     #function for each interval (the intevals include an extra dex in each bound of the specified
@@ -231,27 +202,33 @@ def interpolator_sectioned_by_gm_Av(data_db, v):
     #and construct an interpolation function using those points
     for i, interval_gm in enumerate(intervals_gm):
         
+        if interval_gm[0] < params['ranges']['interp']['log_gmech'][0] or interval_gm[1] > params['ranges']['interp']['log_gmech'][1]:
+            raise ValueError("specified interval [%.2f, %.2f] for gmech is outside the range specified in params['ranges']['interp']" % (interval_gm[0], interval_gm[1],)) 
+        
         interval_gm_low  = interval_gm[0] - ghost_gm
-        interval_gm_high = interval_gm[1] + ghost_gm
-
+        interval_gm_high = interval_gm[1] + ghost_gm        
+        
         for j, interval_Av in enumerate(intervals_Av):
+
+            if interval_Av[0] < params['ranges']['interp']['Av'][0] or interval_Av[1] > params['ranges']['interp']['Av'][1]:
+                raise ValueError("specified interval [%.2f, %.2f] for Av is outside the range specified in params['ranges']['interp']" % (interval_Av[0],interval_Av[1],)) 
         
             interval_Av_low  = interval_Av[0] - ghost_Av
             interval_Av_high = interval_Av[1] + ghost_Av
 
             #finding the points in the DB in this section
-            inds_in_this_box = numpy.where( 
-                                            (data_db_gm >= interval_gm_low)*(data_db_gm <= interval_gm_high)*
-                                            (data_db_Av >= interval_Av_low)*(data_db_Av <= interval_Av_high)
-                                          )[0]
+            inds_in_this_interval = numpy.where(
+                                               (data_db_gm >= interval_gm_low)*(data_db_gm <= interval_gm_high)*
+                                               (data_db_Av >= interval_Av_low)*(data_db_Av <= interval_Av_high)
+                                              )[0]
                                
-            if inds_in_this_box.size != 0:
+            if inds_in_this_interval.size != 0:
                 
                 #if enough points are found, make the interpolation funcion
-                data_db_this_box = data_db[inds_in_this_box, :]
-                v_in_this_box = v[inds_in_this_box]
-                  
-                print '(i,j) = (%02d, %02d) %06d DB points in box gm = [%.2f, %.2f ], Av = [%04.1f,%04.1f ] ' % (i, j, inds_in_this_box.size, interval_gm_low, interval_gm_high, interval_Av_low, interval_Av_high),
+                data_db_this_box = data_db[inds_in_this_interval, :]
+                v_in_this_box = v[inds_in_this_interval]
+                
+                print '(i,j) = (%02d, %02d) %06d DB points in box gm = [%.2f, %.2f ], Av = [%04.1f,%04.1f ] ' % (i, j, inds_in_this_interval.size, interval_gm_low, interval_gm_high, interval_Av_low, interval_Av_high),
                 t0 = time.time()
                 fInterp_this_interval = params['interpolator'](data_db_this_box, v_in_this_box)
                 print 'interpolation function constructed in %.2f sec' % (time.time()-t0)
@@ -295,10 +272,10 @@ def interpolator_sectioned_by_gm_Av(data_db, v):
                 
                 data_in_this_interval = data[inds_in_box, :]
 
-                print '(i,j) = (%02d, %02d) %06d SPH points in box gm = [%.2f, %.2f ], Av = [%4.1f,%4.1f ] ' % (i, j, inds_in_box.size, interval_gm_low, interval_gm_high, interval_Av_low, interval_Av_high),                
+                print '(i,j) = (%02d, %02d) %06d SPH points in box gm = [%.2f, %.2f ], Av = [%4.1f,%4.1f ] ' % (i, j, inds_in_box.size, interval_gm[0], interval_gm[1], interval_Av[0], interval_Av[1]),                
                 t0 = time.time()
-                #v = all_fInterps[i,j](data_in_this_interval)
-                v = 0.0
+                v = all_fInterps[i,j](data_in_this_interval)
+                #v = 0.0
                 dt = time.time()-t0
             
                 #setting the values in the array to be returned
@@ -338,11 +315,20 @@ def get_interpolation_function_radex(**kwargs):
     """makes an interpolation function from the radex meshes from the database."""
     
     specStr  = kwargs.pop('specStr')
-    Av_range = kwargs.pop('Av_range')
+    Av_range = params['ranges']['interp']['Av']
     
+    
+    #reading only the radex databases which are within the specified range in Av
+    available_Avs_for_radex_dbs = numpy.sort(numpy.array(arxvPDR.radexDbs.keys(), dtype='f8'))
+    inds_read = numpy.where(
+                            (available_Avs_for_radex_dbs >= Av_range[0])*
+                            (available_Avs_for_radex_dbs <= Av_range[1])
+                           )[0]
+    Avs_read = available_Avs_for_radex_dbs[inds_read]
+
     #collecting the data from the database corresponding to all the data
     #in Av avaiable
-    for i, Av in enumerate(numpy.arange(Av_range[0], Av_range[1])):
+    for i, Av in enumerate(Avs_read):
         
         #using the database of the specific Av
         arxvPDR.use_radexDb(specStr=specStr, Av=Av)
@@ -358,7 +344,7 @@ def get_interpolation_function_radex(**kwargs):
         xGrd, yGrd, zGrd = arxvPDR.grid_x[inds_valid], arxvPDR.grid_y[inds_valid], arxvPDR.grid_z[inds_valid]
         AvGrd = numpy.ones(xGrd.shape, 'f')*Av
         data = numpy.array([xGrd, yGrd, zGrd, AvGrd], dtype = numpy.float64).T
-        
+                
         #soting the x,y,z,t, and v into arrays to be used later to construct the interpoaltion function
         if i == 0:
             data_all_Av = data
@@ -366,8 +352,27 @@ def get_interpolation_function_radex(**kwargs):
         else:
             data_all_Av = numpy.vstack( (data_all_Av, data) )
             v_all_Av = numpy.hstack( (v_all_Av, v) )
-
-    t0 = time.time()    
+    #
+    
+    #using the subset of points in the radex databse specified by params['ranges']['interp']
+    inds_keep = numpy.where( 
+                             (data_all_Av[:,0] >= params['ranges']['interp']['log_n'][0])* 
+                             (data_all_Av[:,0] <= params['ranges']['interp']['log_n'][1])*
+                             
+                             (data_all_Av[:,1] >= params['ranges']['interp']['log_G0'][0])*
+                             (data_all_Av[:,1] <= params['ranges']['interp']['log_G0'][1])*
+                             
+                             (data_all_Av[:,2] >= params['ranges']['interp']['log_gmech'][0])* 
+                             (data_all_Av[:,2] <= params['ranges']['interp']['log_gmech'][1])*
+                             
+                             (data_all_Av[:,3] >= params['ranges']['interp']['Av'][0])*
+                             (data_all_Av[:,3] <= params['ranges']['interp']['Av'][1])
+                           )[0]
+    data_all_Av = data_all_Av[inds_keep,:] 
+    v_all_Av    = v_all_Av[inds_keep] 
+    #
+    
+    t0 = time.time()
     if 'sectioned' in kwargs and kwargs['sectioned'] == True:
         fInterp = interpolator_sectioned_by_gm_Av(data_all_Av, v_all_Av)
     else:
@@ -393,7 +398,6 @@ def make_emission_interp_funcs():
             if lines_info[line]['type'] == 'lvg':
                 funcs[line] = get_interpolation_function_radex(
                                                                specStr  = specStr,
-                                                               Av_range = params['ranges']['Av'],
                                                                transitionIdx = lines_info[line]['idx'],
                                                                sectioned = True,
                                                               )
@@ -401,7 +405,6 @@ def make_emission_interp_funcs():
             if lines_info[line]['type'] == 'pdr':
                 funcs[line] = get_interpolation_function_pdr(
                                                              quantity = lines_info[line]['quantity'],
-                                                             Av_range = params['ranges']['Av'],
                                                              sectioned = True,
                                                              )
             '''
@@ -439,11 +442,11 @@ def plot_map_standalone(key, title):
     ax.set_xlabel('x(kpc)', size='x-large')
     ax.set_ylabel('y(kpc)', size='x-large')
 
-    bsMin, bsMax = params['ranges']['box_size'].number     
-    ax.set_xlim([bsMin, bsMax])
-    ax.set_ylim([bsMin, bsMax])
+    bs_min, bs_max = params['ranges']['box_size'].number     
+    ax.set_xlim([bs_min, bs_max])
+    ax.set_ylim([bs_min, bs_max])
     
-    ticksv = numpy.linspace(bsMin, bsMax, 5)
+    ticksv = numpy.linspace(bs_min, bs_max, 5)
     ax.set_xticks(ticksv)
     ax.set_yticks(ticksv)
 
@@ -452,13 +455,13 @@ def plot_map_standalone(key, title):
 
     im_map = params['maps'][key] 
 
-    im_data = numpy.log10(im_map['data']).T
+    im_data = log10(im_map['data']).T
     
     #clipping the map values outside the specified colorbar ranges
     im_data = numpy.clip(im_data, im_map['v_rng'][0], im_map['v_rng'][1])
 
     im = ax.imshow(im_data, 
-              extent=[bsMin, bsMax, bsMin, bsMax],
+              extent=[bs_min, bs_max, bs_min, bs_max],
               vmin=im_map['v_rng'][0], 
               vmax=im_map['v_rng'][1], 
               interpolation='bessel', #intepolation used for imshow
@@ -481,8 +484,6 @@ def plot_map_standalone(key, title):
 #############################done setting   up the PDR databaseses and the interpolation function##################
 #############################done setting   up the PDR databaseses and the interpolation function##################
 #############################done setting   up the PDR databaseses and the interpolation function##################
-
-xx = {} #.. note:: just a temporary variable
 
 def generate_map(snap):
     #snapshot index
@@ -508,120 +509,58 @@ def generate_map(snap):
     runinfo = parse_old_runinfo_file(path)
 
     snap_time = (float(runinfo['dtime'])*timeUnit.number) * (float(runinfo['noutbod']) * snap)
-    
-    #plotting the temperature vs the gas density
-    meanmwt=1.3|units.amu
-    n_gas_cgs = (gas.rho/meanmwt).value_in( units.cm **-3 )
-    gasT = gas.temperat.value_in(units.K)
-    G0 = 6.54*gas.fuvheat.value_in( units.none )
-    g_mech = gas.dethdt.as_quantity_in( units.erg / (units.g * units.s ) )
-    # converting the mechanical heating rate from per unit mass (of H gas)     
-    # to per unit volume (see notesISM.odt)
-    g_mech = g_mech.value_in( g_mech.unit ) # gMech in erg / (g s )
-    g_mech = g_mech * 1.6474e-24 * n_gas_cgs # gMech in erg / (cm^3 s) 
-    m_cgs = gas.mass.value_in(units.g)
-    
-    #computing the mean Av of the sph particles using Inti's recipe
-    def Av_sph_particles():
-        Tk = gasT #sph gas particle temperature in K
-        sigma_v = gas.vdisp.value_in(units.km / units.s)  #sph particle velocity despertion in km/s
-        
-        Pe = (1.085 * gasT + 54.0 * sigma_v**2.0)*n_gas_cgs
-                
-        Av_mean = 0.22 * metallicity * ( 1520.0 / 100.0) * numpy.sqrt(Pe/1e4)
-        
-        return Av_mean
-    #
-    Av_mean = Av_sph_particles()
 
-    xkpc, ykpc, zkpc = gas.position.value_in(params['ranges']['box_size'].unit).T
-    
-    #h = hist_nd(numpy.vstack((log10(n_gas_cgs), log10(G0)), nbins=10, plot=True, mn=-3.0, mx=3.0)
-    #h = hist_nd(numpy.vstack((log10(xx['n']), xx['av'])), nbins=10, plot=True)
-    #h = hist_nd(numpy.vstack((log10(xx['n']), xx['av'])), nbins=100, plot=True, mn=[0,0], mx=[4,30], w = numpy.ones(xx['n'].shape,'f'), wfunc = lambda x: numpy.log10(numpy.sum(x)))
-
-    xx['av'] = Av_mean
-    xx['n']  = n_gas_cgs
-    xx['g0'] = G0
-    xx['x']  = xkpc
-    asdasdasd
-    
-    #using  a minimum Av according to the speciecied range
-    Av_mean = Av_mean.clip(params['ranges']['sph']['Av'][0], params['ranges']['sph']['Av'][1])
-    xx['Av_parts'] = Av_mean # ;;;
-    logger.debug('compute the mean Av of the sph particles')
-
+    #getting a new particle set for the gas particles with the attributes we will be using later
+    #and converting the units to the same as those of the PDR models    
+    gas = fi_utils.convert_units_to_pdr_units(gas, metallicity)
     logger.debug('converted and computed stuff from sph data (in units compatible with the pdr models)')
     
-    """
-    pylab.plot(n_gas_cgs, Av_mean,'.')
-    pylab.show()
-    asdasd
-    """
-    #########################done setting up the snapshot data######################
-    #########################done setting up the snapshot data######################
-    #########################done setting up the snapshot data######################
-    #########################done setting up the snapshot data######################
+    print 'quantity          min              max  '
+    print 'n_gas         %e     %e   '  % (gas.n.min()     , gas.n.max())
+    print 'G0_gas        %e     %e   '  % (gas.G0.min()    , gas.G0.max())
+    print 'g_mech        %e     %e   '  % (gas.gmech.min() , gas.gmech.max())
+    print 'Av_gas        %e     %e   '  % (gas.Av.min()    , gas.Av.max())
     
-    
+    #keeping gas particles within the specified ranges
+    gas = fi_utils.select_particles(gas, params['ranges'])
+    logger.debug('got the sph particles in the required ranges')
+
+
     #setting the lower bound of the mechanical heating of the sph particles of the 
     #minimum of the pdr database which is almost negligable (since some of the 
     #sph particles have a zero gmech, their log would be -inf, so we clip it to the
     #mininmum of the pdr database
-    g_mech = g_mech.clip(10.0**lgMechMin)
+    gas.gmech = numpy.clip(gas.gmech, 10.0**lgMechMin, numpy.Infinity)
 
-    ##
-    def select_sph_particles(ranges):
-        '''
-        returns the sph particle indicies which are of interest and can be used to get stuff from the 
-        PDR database.
-        
-        :param ranges: the ranges which will be used to select the particles
-        '''
-
-        #selecting particles within a spatial range and within the 
-        #density and g0 range of the database
-        inds = numpy.where(
-                           (numpy.log10(n_gas_cgs) >= ranges['sph']['min_log_n_use'])*
-                           (numpy.log10(G0) >= ranges['sph']['min_log_G0_use'])*
-                           (numpy.log10(g_mech) >= ranges['sph']['min_log_gm_use'])*                   
-                           (xkpc > ranges['box_size'][0].number)*(xkpc < ranges['box_size'][1].number)*
-                           (ykpc > ranges['box_size'][0].number)*(ykpc < ranges['box_size'][1].number)
-                          )[0]
-                          
-        return inds
-    #
-    #
-        
-    inds = select_sph_particles(params['ranges'])
-    x1, y1, z1 = xkpc[inds], ykpc[inds], zkpc[inds]
-    n1, g01, g_mech1 = n_gas_cgs[inds], G0[inds], g_mech[inds]
-    Av1 = Av_mean[inds]
-    m1 = m_cgs[inds]
-    logger.debug('got the sph particles in the required ranges')
+    #h = hist_nd(numpy.vstack((gas.x, gas.y)), nbins=100, plot=True)
+    #h = hist_nd(numpy.vstack((log10(gas.n), log10(gas.G0))), nbins=50, plot=True, mn=-3.0, mx=3.0)
+    #h = hist_nd(numpy.vstack((log10(gas.n), log10(gas.G0))), nbins=50, plot=True, mn=-3.0, mx=3.0)
+    #h = hist_nd(numpy.vstack((log10(gas.n), log10(gas.Av))), nbins=100, plot=True, plot_log=True, mn=[-3.0, -2.0], mx=[4.0, 2.0]) 
+    #########################done setting up the snapshot data######################    
 
     #computing alpha for each sph particle (amount of gm wrt surface heating for the PDR model)
-    f_log_gamma_surf=arxvPDR.construct3DInterpolationFunction(quantity=['therm','heating'], slabIdx=0, log10=True, interpolator='nearest') 
-    dataNew = numpy.array([numpy.log10(n1), numpy.log10(g01), numpy.ones(n1.shape)*lgMechMin]).T
-    gammaSurf_sph_from_pdr = 10.0**f_log_gamma_surf(dataNew)
-    Tkin_sph_from_pdf = 10.0**f_log_gamma_surf(dataNew)
-    alpha_sph = g_mech1/gammaSurf_sph_from_pdr
+    #and selecting particles which have alpha < 1.0
+    fi_utils.compute_alpha(gas, arxvPDR)
+    logger.debug('computed the alpha for the sph particles')
+    inds = numpy.where( gas.alpha < 1.0 )
+    gas = gas[inds]
+     
+    #h = hist_nd(numpy.vstack((log10(gas.n), log10(gas.T))), nbins=100, plot=True, plot_log=True, mn=[-3.0, 0.0], mx=[4.0, 5.0])
+    #return gas #inds = xselect(log10(gas.n), log10(gas.T))
+    #return h
+    #asdasdad
     
-    indsNan = numpy.where(numpy.isnan(Tkin_sph_from_pdf))[0]
-    if indsNan.size != 0:
-        raise ValueError('interpolated variable Tkin_sph_from_pdf has nan values in it!!')
+    #setting the maximum Av of the sph particles to a predifined value (usually the emissions do not increase after some Av bec of the optical depth of the lines)
+    gas.Av = numpy.clip(gas.Av, params['ranges']['sph']['Av_clip'][0], params['ranges']['sph']['Av_clip'][1])
     
-    #selecting particles which have alpha < 1.0
-    logger.debug('compute the alpha for the sph particles')
+    maps = params['maps']    
     
-    maps = params['maps']
-
     print 'getting the emissions of each sph particle'
     #getting emissions of the sph particles with mechanical heating    
     em_sph = {}
-    data_with_gm  =  numpy.array([numpy.log10(n1), numpy.log10(g01), numpy.log10(g_mech1), Av1]).T
-    data_no_gm    =  numpy.array([numpy.log10(n1), numpy.log10(g01), numpy.ones(n1.size)*lgMechMin, Av1]).T
-    
+    data_with_gm  =  numpy.array([log10(gas.n), log10(gas.G0), log10(gas.gmech), gas.Av]).T
+    data_no_gm    =  numpy.array([log10(gas.n), log10(gas.G0), numpy.ones(len(gas))*lgMechMin, gas.Av]).T
+
     time_interp = 0.0
     
     #getting the emission of the sph particles from the PDR models
@@ -646,28 +585,18 @@ def generate_map(snap):
                 dt = time.time() - t0
                 
                 logger.debug('time interpolating emission for map %s = %.3f seconds for %d points at %e points/sec' % (map_key, dt, data_use.shape[0], data_use.shape[0]/dt) )
-                asdasdad
+
                 #setting emissions of particles with nan interpolated values to zero             
                 indsNan = numpy.where(numpy.isnan(em_sph[map_key]))[0]
                 if indsNan.size != 0:
-                    em_sph[map_key][indsNan] = 0.0
+                    em_sph[map_key][indsNan] = 1e-30
+                    
+                gas.CO10 = em_sph[map_key]
+                
                 time_interp += dt
             
     logger.debug('done getting the emissions of each sph particle in %.2f seconds' % time_interp)
     
-    #global xx
-    #xx = [data_with_gm, em_sph['f_mean_em_CO-1-0'], alpha_sph]
-
-    """    
-    m1      : masses of the particles we selected for the visualization  
-    n1      : masses of the particles we selected for the visualization  
-    g01     : masses of the particles we selected for the visualization  
-    g_mech1 : masses of the particles we selected for the visualization  
-    em_sph  : a dict of arrays each holding the emissions of a specific 
-              line of the sph particles we selected for visualization. The keys
-              are the same as those of params['maps'] i.e f_mean_C+-1-0 for example.
-    """
-     
     #---------------------------------------------------------------------------------------
     # Done getting the distribution of mass, particle count as a function of number density
     #---------------------------------------------------------------------------------------
@@ -679,19 +608,27 @@ def generate_map(snap):
         maps[map_idx_key]['data'] = numpy.zeros((nBins, nBins), dtype=numpy.float64) 
         maps[map_idx_key]['f_logn'] = None 
     
-    hist = hist_nd(numpy.vstack((x1,y1)), mn = bsMin, mx=bsMax, nbins=nBins, reverse_indicies=True) 
+    x_sph, y_sph = gas.x, gas.y
+    m_sph, G0_sph, n_sph, Av_sph, gmech_sph, T_sph = gas.mass, gas.G0, gas.n, gas.Av, gas.gmech, gas.T
+     
+    hist = hist_nd(numpy.vstack((x_sph, y_sph)), mn = bs_min, mx=bs_max, nbins=nBins, reverse_indicies=True)
+    hist.info()
+     
     for i in numpy.arange(nBins):
+        
         for j in numpy.arange(nBins):
+            
             inds_in_bin = hist.get_indicies([i,j])
     
             maps['f_n_part']['data'][i,j] = inds_in_bin.size
             
             if inds_in_bin.size > 0:
-                maps['f_mass']['data'][i,j]    = m1[inds_in_bin].sum()
-                maps['f_mean_n']['data'][i,j]  = numpy.mean(n1[inds_in_bin])
-                maps['f_mean_g0']['data'][i,j] = numpy.mean(g01[inds_in_bin])
-                maps['f_mean_gm']['data'][i,j] = numpy.mean(g_mech1[inds_in_bin])
-                maps['f_mean_Av']['data'][i,j] = numpy.mean(Av_mean[inds_in_bin])
+                maps['f_mass']['data'][i,j]    = m_sph[inds_in_bin].sum()
+                maps['f_mean_n']['data'][i,j]  = numpy.mean(n_sph[inds_in_bin])
+                maps['f_mean_g0']['data'][i,j] = numpy.mean(G0_sph[inds_in_bin])
+                maps['f_mean_gm']['data'][i,j] = numpy.mean(gmech_sph[inds_in_bin])
+                #maps['f_mean_Av']['data'][i,j] = numpy.mean(Av_sph[inds_in_bin])
+                maps['T_mean']['data'][i,j]     = numpy.mean(T_sph[inds_in_bin])
 
                 for key in em_sph:
                     if '_em_' in key:
@@ -728,27 +665,27 @@ def generate_map(snap):
     #getting the distributions as a functio of log_n (the gas density)
     for map_idx_key in maps:
         if map_idx_key == 'f_n_part':
-            maps['f_n_part']['f_logn'] = get_histogram(numpy.log10(n1), numpy.ones(n1.shape), 100.0, -3.0, 3.0)
+            maps['f_n_part']['f_logn'] = get_histogram(log10(n1), numpy.ones(n1.shape), 100.0, -3.0, 3.0)
         if map_idx_key == 'f_mass':
-            maps['f_mass']['f_logn'] = get_histogram(numpy.log10(n1), m1, 100.0, -3.0, 3.0) 
+            maps['f_mass']['f_logn'] = get_histogram(log10(n1), m1, 100.0, -3.0, 3.0) 
         if map_idx_key == 'f_mean_n':
-            maps['f_mean_n']['f_logn'] = get_histogram(numpy.log10(n1), n1, 100.0, -3.0, 3.0)
+            maps['f_mean_n']['f_logn'] = get_histogram(log10(n1), n1, 100.0, -3.0, 3.0)
         if map_idx_key == 'f_mean_g0':
-            maps['f_mean_g0']['f_logn'] = get_histogram(numpy.log10(n1), g01, 100.0, -3.0, 3.0) 
+            maps['f_mean_g0']['f_logn'] = get_histogram(log10(n1), g01, 100.0, -3.0, 3.0) 
         if map_idx_key == 'f_mean_gm':
-            maps['f_mean_gm']['f_logn'] = get_histogram(numpy.log10(n1), g_mech1, 100.0, -3.0, 3.0)
+            maps['f_mean_gm']['f_logn'] = get_histogram(log10(n1), g_mech1, 100.0, -3.0, 3.0)
         for key in em_sph:
             if '_em_' in key:
-                maps[key]['f_logn'] = get_histogram(numpy.log10(n1), em_sph[key], 100.0, -3.0, 3.0)
+                maps[key]['f_logn'] = get_histogram(log10(n1), em_sph[key], 100.0, -3.0, 3.0)
     #
     """
     
     #
     #
-    def fetch_grid_data(map_key, log10 = None):
+    def fetch_grid_data(map_key, do_log10 = None):
         
-        if log10 != None and log10 == True:
-            return numpy.log10(maps[map_key]['data'])
+        if do_log10 != None and do_log10 == True:
+            return log10(maps[map_key]['data'])
         else:
             return maps[map_key]['data']
     #
@@ -758,13 +695,12 @@ def generate_map(snap):
     print 'done getting the spatial distributuions'
     
     fig, axs = pylab.subplots(4, 4, sharex=True, sharey=True, figsize=(12, 12), 
-                              subplot_kw = {'xlim':[bsMin, bsMax],
-                                            'ylim':[bsMin, bsMax],
+                              subplot_kw = {'xlim':[bs_min, bs_max],
+                                            'ylim':[bs_min, bs_max],
                                             'aspect':'equal',
                                             'adjustable':'datalim',
                                            })
                               
-                                                                                                
     for ax in axs[:,0]: ax.set_ylabel('y(kpc)')
     for ax in axs[3,:]: ax.set_xlabel('x(kpc)')
     
@@ -776,7 +712,7 @@ def generate_map(snap):
     
         im_map = maps[map_key] 
         
-        map_data = fetch_grid_data(map_key, log10 = im_map['log10']).T
+        map_data = fetch_grid_data(map_key, do_log10 = im_map['log10']).T
         
         print 'idx = %d,%d quantity = %-30s max,min = %s,%s' % (im_map['pos'][0], im_map['pos'][1], map_key, map_data.min(), map_data.max()) 
 
@@ -784,7 +720,7 @@ def generate_map(snap):
         map_data = numpy.clip(map_data, im_map['v_rng'][0], im_map['v_rng'][1])
         
         im = axs[i,j].imshow(map_data, 
-                             extent=[bsMin, bsMax, bsMin, bsMax],
+                             extent=[bs_min, bs_max, bs_min, bs_max],
                              vmin=im_map['v_rng'][0], 
                              vmax=im_map['v_rng'][1], 
                              interpolation='bessel', #intepolation used for imshow
@@ -793,8 +729,8 @@ def generate_map(snap):
         
         pylab.colorbar(im, ax=axs[i,j], orientation='vertical')
         
-        axs[i,j].set_xlim([bsMin, bsMax])
-        axs[i,j].set_ylim([bsMin, bsMax])
+        axs[i,j].set_xlim([bs_min, bs_max])
+        axs[i,j].set_ylim([bs_min, bs_max])
         
     pylab.figtext(0.05, 0.97, '%.3f %s' % (snap_time, timeUnit.unit.symbol), size='xx-large', color='k')
     image_fname =  params['rundir'] + '/analysis/maps.%s.%s' % (suffix, params['image_ext'])
@@ -827,7 +763,7 @@ def generate_map(snap):
         im_map = maps[map_key] 
         
         xPlt = maps[map_key]['f_logn'].f.cntrd
-        yPlt = numpy.log10(maps[map_key]['f_logn'].f/maps[map_key]['f_logn'].f.max())
+        yPlt = log10(maps[map_key]['f_logn'].f/maps[map_key]['f_logn'].f.max())
         axs[i,j].plot(xPlt, yPlt)
         
         axs[i,j].set_title(im_map['title'], size='large')
@@ -842,13 +778,15 @@ def generate_map(snap):
         
     #subprocess.Popen(['xv', image_fname])
     pylab.show()
+    
+    return gas
 #
 #
 
 t0 = time.time()
 if pool_size == 1:
     for snap in snaps:
-        generate_map(snap)
+        gas = generate_map(snap)
 else:
     pool = multiprocessing.Pool(pool_size)
     pool.map(generate_map, snaps)
@@ -856,29 +794,41 @@ print 'total time = %s s' % (time.time() - t0)
 
 
 def test_plot():
+    
+    '''
     nPts = 10000.0
-        
-    n_arr  = numpy.log10(numpy.ones(nPts)*1e2)
-    
-    G0_arr = numpy.log10(numpy.ones(nPts)*1e2)
-    
-    #gm_arr = numpy.log10(numpy.ones(nPts)*1e-24)
+    n_arr  = log10(numpy.ones(nPts)*1e2)
+    G0_arr = log10(numpy.ones(nPts)*1e2)
+    #gm_arr = log10(numpy.ones(nPts)*1e-24)
     gm_arr = numpy.linspace(-30.0, -16, nPts)
-    
     #Av_arr = numpy.linspace(5.0, 10.0, nPts)
     Av_arr = numpy.ones(nPts)*5.0
+    '''
     
-    data  =  numpy.array([
-                          n_arr, 
-                          G0_arr, 
-                          gm_arr,
-                          Av_arr, 
-                         ]
-                        ).T
+    inds = numpy.where( 
+                        (log10(gas.gmech) >= -26.00)*(log10(gas.gmech) <= -24.00)*
+                        (gas.Av >= 4.00)*(gas.Av <= 5.0)
+                      )  
+
+    #inds = [ 63, 64,  65, 184]
     
+    n_arr  = log10(gas[inds].n)
+    G0_arr = log10(gas[inds].G0)
+    gm_arr = log10(gas[inds].gmech)
+    Av_arr = gas[inds].Av
+    #Av_arr = gas[inds].Av.clip(0.0, 9.9)
+
+    data  =  numpy.array([n_arr, G0_arr, gm_arr, Av_arr,]).T
+    
+    print data.shape
     vi = funcs['CO-1-0'](data)
+    
+    print numpy.where(numpy.isnan(vi))[0].size
+    """
+
     pylab.plot(gm_arr, vi, '.')
     pylab.show()
+    """
 
 
     

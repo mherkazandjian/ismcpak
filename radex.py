@@ -2,7 +2,9 @@ import numpy
 import pylab
 import subprocess
 import logging, sys
+
 from mylib.utils.misc import default_logger
+
 
 class radex():
     """A wrapper class which runs radex parses its output into objects. see test_radex.py
@@ -266,7 +268,7 @@ class radex():
         # that radex accepts
         for (i, nDense) in enumerate(self.inFile['nDensCollisionPartners']):
             if nDense <= 1e-3:
-                self.logger.debug('poped %f %d' % self.inFile['nDensCollisionPartners'][i], self.inFile['collisionPartners'][i])
+                self.logger.debug('poped %e %s' % (self.inFile['nDensCollisionPartners'][i], self.inFile['collisionPartners'][i]) )
                 self.inFile['nDensCollisionPartners'].pop(i)
                 self.inFile['collisionPartners'].pop(i)
                  
@@ -460,15 +462,31 @@ class radex():
             #if self.flag_is_set('SUCCESS') or self.flag_is_set('WARNING') or self.flag_is_set('ITERWARN'):
             if self.flag_is_set('SUCCESS'):
                 
-                totalPopDensLower = numpy.sum(self.transitions[:]['pop_down'])
-                diff = numpy.fabs(expected_sum_pop_dens - totalPopDensLower) 
+                pop_dense_check = True
+
+                #checking for the sum of the population densities if it is close to the expected one
+                pop_dense_sum_check = self.check_for_pop_density_sum(expected_sum_pop_dens, rel_pop_dens_tol)
+                pop_dense_check &= pop_dense_sum_check
+
+                #checking if the transitions are smooth (i.e ladder has no abrupt order of magnitude jumops)                
+                continuity_check = self.check_for_pop_density_continuity()  
+                pop_dense_check &= continuity_check
+                    
+                #checking for pop dense positivity (since they can not be negative)
+                pop_density_positivity = self.check_for_pop_density_positivity()
+                pop_dense_check &= pop_density_positivity
                 
-                if  diff > rel_pop_dens_tol:
+                if  pop_dense_check == False:
                     
                     self.logger.warn('====> pop dens does NOT make sense, trial %d' % nTried)
-                    self.logger.warn('====> total pop dense lower = %18.15f' % totalPopDensLower)
-                    self.logger.warn('====> absolute difference = %.2e\n' % diff)
-                    self.logger.warn('====> number of iterations = %d\n' % self.nIter)
+                    self.logger.warn('====> total pop dense lower = %18.15f' % self.transitions['pop_down'].sum())
+                    self.logger.warn('====> number of iterations = %d' % self.nIter)
+                    if pop_dense_sum_check == False:
+                        self.logger.warn('====> pop_dense_sum_check = False')
+                    if continuity_check == False:
+                        self.logger.warn('====> continuity_check = False')
+                    if pop_density_positivity == False:
+                        self.logger.warn('====> pop_density_positivity = False')
 
                     self.rand_shift_inFile_params(inFileOrig, change_frac_trial)                
                     
@@ -635,7 +653,46 @@ class radex():
             print self.rawOutput
             errStr = 'parsing the output failed'
             raise NameError(errStr)
+    
+    def check_for_pop_density_sum(self, expected_sum, tolerence):
+        '''returns True if all the population densities sum is close to one up to a tolerence and False otherwise'''
+        totalPopDensLower = numpy.sum(self.transitions[:]['pop_down'])
+        diff = numpy.fabs(expected_sum - totalPopDensLower) 
+                
+        #checking if the sum of the population desity makes sense
+        if diff > tolerence:
+            return False
+        else:
+            return True
+
+    def check_for_pop_density_positivity(self):
+        '''returns True if all the population densities are positive and False otherwise'''
         
+        inds_neg = numpy.where(self.transitions[:]['pop_down'] < 0.0)[0]
+        if inds_neg.size >= 1:
+            return False
+        else:
+            return True        
+         
+    def check_for_pop_density_continuity(self):
+        '''returns true if the difference between the population densities of two consecutive transitions 
+        is not greate than 'log_max_diff' '''
+        
+        pop_down = self.transitions['pop_down'] 
+        
+        #value of the log of the diff in consecutive pop dense above which it is considered bogus
+        #usually a value below 6 sometimes returns an error for good data, but above 6 (7,8,9) nail
+        #down the anomaleous ladders
+        log_max_diff = 7.0
+        
+        dlogx = numpy.log10(pop_down[0:-2]) - numpy.log10(pop_down[1:-1])
+        
+        ind = numpy.where(numpy.fabs(dlogx) > log_max_diff)[0]
+        if ind.size > 0:
+            return False
+        else:
+            return True
+
     # -------------------------- Plotting Methods ---------------------------------
     # -----------------------------------------------------------------------------
     # -----------------------------------------------------------------------------
@@ -939,3 +996,196 @@ class radex():
         radexNew.logger = self.logger
         
         return radexNew
+
+try:    
+    from PyQt4 import QtGui, QtCore
+    from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+    #import matplotlib.pyplot as plt
+except:
+    print 'can not use radex in gui mode..failed to import PyQt4, or matplotlib.backends.backend_qt4agg'
+
+class radex_gui(QtGui.QWidget):
+    
+    def __init__(self, parent=None):
+        super(radex_gui, self).__init__(parent)
+
+        self.setup_radex_and_set_default_vaules()
+        
+        self.initUI()
+
+    def initUI(self):
+        
+        #-----------------------------------------------------------------------
+        # a figure instance to plot on
+        self.figure = self.radexObj.fig
+
+        # this is the Canvas Widget that displays the `figure`
+        # it takes the `figure` instance as a parameter to __init__
+        self.canvas = FigureCanvas(self.figure)
+
+        # this is the Navigation widget
+        # it takes the Canvas widget and a parent
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        #-----------------------------------------------------------------------
+
+        #---------laying out the line edit feilds-------------------------------        
+        self.lbl_specStr = QtGui.QLabel('specie')
+        default_text = self.radexObj.inFile['specStr']
+        self.qle_specStr = QtGui.QLineEdit(default_text, self)
+        self.qle_specStr.textChanged[str].connect(self.onChanged_specStr)
+
+        self.lbl_freqRange = QtGui.QLabel('freqRange')
+        default_text = '%d, %d' % (self.radexObj.inFile['freqRange'][0],self.radexObj.inFile['freqRange'][1])
+        self.qle_freqRange = QtGui.QLineEdit(default_text, self)
+        self.qle_freqRange.textChanged[str].connect(self.onChanged_freqRange)
+
+        self.lbl_T = QtGui.QLabel('T')
+        default_text = '%.2e' % (self.radexObj.inFile['tKin'])
+        self.qle_T = QtGui.QLineEdit(default_text, self)        
+        self.qle_T.textChanged[str].connect(self.onChanged_T)
+
+        self.lbl_n_coll = QtGui.QLabel('n(H2)')
+        default_text = '%.2e' % (self.radexObj.inFile['nDensCollisionPartners'][0])        
+        self.qle_n_coll = QtGui.QLineEdit(default_text, self)
+        self.qle_n_coll.textChanged[str].connect(self.onChanged_n_coll)
+
+        self.lbl_t_back = QtGui.QLabel('t_back')
+        default_text = '%.2e' % (self.radexObj.inFile['tBack'])        
+        self.qle_t_back = QtGui.QLineEdit(default_text, self)
+        self.qle_t_back.textChanged[str].connect(self.onChanged_t_back)
+        
+        self.lbl_molnDens = QtGui.QLabel('N(mol)')
+        default_text = '%.2e' % (self.radexObj.inFile['molnDens'])
+        self.qle_molnDens = QtGui.QLineEdit(default_text, self)
+        self.qle_molnDens.textChanged[str].connect(self.onChanged_molnDens)
+
+        self.lbl_lineWidth = QtGui.QLabel('lineWidth')
+        default_text = '%.2e' % (self.radexObj.inFile['lineWidth'])        
+        self.qle_lineWidth = QtGui.QLineEdit(default_text, self)
+        self.qle_lineWidth.textChanged[str].connect(self.onChanged_lineWidth)
+        #-----------------------------------------------------------------
+        
+        # Just some button connected to `plot` method
+        self.button = QtGui.QPushButton('Plot')
+        self.button.clicked.connect(self.plot)
+        
+        grid = QtGui.QGridLayout()
+        grid.setSpacing(10)
+        
+        grid.addWidget(self.toolbar, 1, 0, 1, 3) #location 1,0 on the grid spanning 1 row and 3 columns
+
+        #-----------------------------------------
+        grid.addWidget(self.lbl_specStr, 1, 4)
+        grid.addWidget(self.qle_specStr, 1, 5, 1, 2)
+
+        grid.addWidget(self.lbl_freqRange, 2, 4)
+        grid.addWidget(self.qle_freqRange, 2, 5, 1, 2)
+
+        grid.addWidget(self.lbl_T, 3, 4)
+        grid.addWidget(self.qle_T, 3, 5, 1, 2)
+
+        grid.addWidget(self.lbl_n_coll, 4, 4)
+        grid.addWidget(self.qle_n_coll, 4, 5, 1, 2)
+
+        grid.addWidget(self.lbl_t_back, 5, 4)
+        grid.addWidget(self.qle_t_back, 5, 5, 1, 2)
+        
+        grid.addWidget(self.lbl_molnDens, 6, 4)
+        grid.addWidget(self.qle_molnDens, 6, 5, 1, 2)
+
+        grid.addWidget(self.lbl_lineWidth, 7, 4)
+        grid.addWidget(self.qle_lineWidth, 7, 5, 1, 2)        
+        #----------------------------------------
+        
+        grid.addWidget(self.button , 15, 5)
+        
+        grid.addWidget(self.canvas , 2, 0, 15, 3)
+
+        
+        self.setLayout(grid) 
+        
+        self.setGeometry(300, 300, 1000, 700)
+        self.setWindowTitle('Radex')    
+        self.show()
+
+    def onChanged_specStr(self, text):
+        self.radexObj.inFile['specStr'] = str(text)
+    def onChanged_freqRange(self, text):
+        #range = parse text into an object [rangemin, rangemax] 
+        self.radexObj.inFile['freqRange'] = [0,0]
+    def onChanged_T(self, text):
+        self.radexObj.inFile['tKin'] = numpy.float(text)
+    def onChanged_n_coll(self, text):
+        self.radexObj.inFile['nDensCollisionPartners'][0] = numpy.float(text)
+    def onChanged_t_back(self, text):
+        self.radexObj.inFile['tBack'] = numpy.float(text)
+    def onChanged_molnDens(self, text):
+        self.radexObj.inFile['molnDens'] = numpy.float(text)
+    def onChanged_lineWidth(self, text):
+        self.radexObj.inFile['lineWidth'] = numpy.float(text)
+
+    def plot(self):
+
+        radexObj = self.radexObj 
+               
+        radexObj.run( checkInput = True, verbose = True)
+
+        if radexObj.getStatus() &  radexObj.FLAGS['SUCCESS'] :
+            
+                radexObj.parseOutput()
+                
+                # printing all transitions and fluxes
+                print 'header'
+                print '------'
+                print radexObj.outputHdr
+                
+                for transition in radexObj.transitions:
+                    print transition['upper'], transition['lower'], transition['fluxcgs']
+                    
+                radexObj.plotModelInFigureColumn(inAxes = radexObj.axs, title='')
+
+                self.canvas.draw()                
+        else:
+            
+            if radexObj.getStatus() &  radexObj.FLAGS['ITERWARN']:
+                print 'did not converge'
+                
+                print 'warnings'
+                print '--------'
+                print radexObj.warnings
+
+    def set_label_text(self):
+        '''Sets the'''
+        pass 
+            
+    def setup_radex_and_set_default_vaules(self):
+        '''sets the default values of the radex parameters'''
+        
+        # path of the radex excutable
+        radexPath      = '/home/mher/ism/code/radex/Radex/bin-gcc/radex'  
+        molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
+        
+        # parameters that will be passed to radex single partner
+        inFile = { 'specStr'                : 'CO'   ,
+                   'freqRange'              : [0, 0] ,
+                   'tKin'                   : 100.0  ,
+                   'collisionPartners'      : ['H2'] ,
+                   'nDensCollisionPartners' : [1e3]  ,
+                   'tBack'                  : 2.73   ,
+                   'molnDens'               : 1e14   ,
+                   'lineWidth'              : 1.0    ,
+                   'runAnother'             : 0      }
+        
+        # creating the radex process instance
+        self.radexObj = radex(radexPath, molDataDirPath)
+        self.radexObj.setInFile( inFile )
+        self.radexObj.setupPlot(1)
+                
+def run_radex_gui():
+        
+    app = QtGui.QApplication(sys.argv)
+    gui = radex_gui()
+    sys.exit(app.exec_())
+
+    

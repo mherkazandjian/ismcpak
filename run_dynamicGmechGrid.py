@@ -1,5 +1,8 @@
-# the models of paper1 (table-1)
 #---------------------------------------------------------------------------------------------------
+import matplotlib
+#matplotlib.use('Qt4Agg')
+matplotlib.use('PS')
+
 from numpy import *
 from numpy.random import *
 import pylab as pyl
@@ -15,7 +18,9 @@ from time import *
 home =  '/home/mher'
 
 nWorker = 3  # number of proccesses
-pdr     = interface.pdrInterface( number_of_workers = nWorker, redirection='none') 
+pdr     = interface.pdrInterface(channel_type = 'mpi', 
+                                 number_of_workers = nWorker, 
+                                 redirection='none') 
 
 # path where the model data will be dumped
 outputDir     = home + '/ism/runs/oneSided/foo/'

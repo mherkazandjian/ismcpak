@@ -319,7 +319,7 @@ class meshArxv():
                 #----
                 if self.parms['radex']['loadAllDbs']:
                     #reading all the databases
-                    self.readDbsRadex(all = True)
+                    self.readDbsRadex(allDbs = True)
                     #set the current Db to the one specieified in the input parms
                     if 'gridsInfo' in self.parms and self.parms['gridsInfo']['11']['type'] == 'radex': 
                         self.use_radexDb(self.parms['gridsInfo']['11']['Av_max'], 
@@ -714,8 +714,8 @@ class meshArxv():
         numpy.array(self.nMeshes, dtype=numpy.int32).tofile( dbInfoFObj )
         self.infoAllRadex.tofile( dbInfoFObj )
         dbInfoFObj.close()
-        self.logger.debug('wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
-
+        self.logger.debug('wrote successfully the radex database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))        
+        
     def radex_db_has_been_read(self, Av, specStr):
         """defining a function which checks if the specified Db has been
            already read. If found returns True, Flase otherwise
@@ -809,7 +809,7 @@ class meshArxv():
         else:
             self.logger.debug('radex database for %s and Av = %f already read...skipping' % (specStr, Av))
 
-    def readDbsRadex(self, Av = None, species = None, allDbs = None):
+    def readDbsRadex(self, Av = None, species = None, allDbs = None, in_Av_rng = None):
         """Loads radex database files from disk to a dictionary. The last database loaded is
         the one being used.
         
@@ -842,13 +842,24 @@ class meshArxv():
   
         if allDbs == None:
             #loading the specified radex Dbs
-            if species == None or Av == None:
-                raise ValueError('both keywords species and Av must be provided.')
+            if species == None and Av == None and  in_Av_rng == None:
+                raise ValueError('one of the keywords "species", "Av" or "in_Av_rng" must be provided.')
             
             if hasattr(species, '__iter__') == False:
-                species = [species]      
-            if hasattr(Av, '__iter__') == False:
-                Av = [Av]      
+                species = [species]
+            
+            if Av != None and in_Av_rng != None:
+                raise ValueError('either Av or in_Av_rng must be provided, not both')
+            elif Av != None and hasattr(Av, '__iter__') == False:
+                Av = [Av]
+            elif in_Av_rng != None:
+                Avs_on_disk = self.query_available_radex_dbs()
+                inds_in_rng = numpy.where((Avs_on_disk >= in_Av_rng[0])*(Avs_on_disk <= in_Av_rng[1]))[0]
+                
+                if inds_in_rng.size != 0:
+                    Av = Avs_on_disk[inds_in_rng]
+                else:
+                    raise ValueError('no radex Dbs were found in the Av range [%f, %f]' % (in_Av_rng[0],in_Av_rng[1]))
             
             for AvThis in Av:   
                 for specStr in species:
@@ -888,7 +899,37 @@ class meshArxv():
                                 specStr = specline.replace('meshesRadex.db.', '').strip()
                                 
                                 self.readDbRadex(Av, specStr, check = True)#read the Db
-                                
+
+    def query_available_radex_dbs(self):
+        """method which looks for the available radex dbs, and for each Av returns a dict of the 
+        available dbs in the dirpath"""
+        pass
+    
+        sourceDir = os.path.join(self.dirPath, 'radexDbs')
+        lookFor   = 'meshesRadex.db.*'
+
+        matches = []
+        for root, dirnames, filenames in os.walk(sourceDir):
+            for filename in fnmatch.filter(filenames, lookFor):
+                matches.append(os.path.join(root, filename))
+        
+        #getting the Avs of the matched databases from the dirs in which the matches were found
+        if len(matches) != 0:
+            
+            Avs = []
+            for match in matches:
+                match = match.split('/')[-2]  #the name of the dir
+                AvStr = match.replace('Av_','')
+                Avs.append(AvStr)
+            
+            Avs = numpy.unique(numpy.float64(Avs))
+            
+            return Avs
+        
+        else:
+            return None
+        
+                                        
     def use_radexDb(self, Av = None, specStr = None, silent = None):
         """A method which sets a radex database from the databases available in self.radexDbs."""
         
@@ -902,7 +943,7 @@ class meshArxv():
                 if silent != None and silent == False:
                     self.logger.debug('swithced to %s radex database at Av = %f' % (specStr, Av))
         else:
-            raise ValueError('radex Db for Av %.2f for the specie %s is not present' % (Av, specStr))
+            raise ValueError('radex Db for Av %.2f for the specie %s has not been read into memory' % (Av, specStr))
         
     def mergeDbs(self, newDbRunDirPath, outDirPath = None):
         """ merges two databases into one and write the resulting db and its info file
@@ -1605,7 +1646,7 @@ class meshArxv():
         titleStr += ' Av = [0,%2.f]' % self.parms['gridsInfo']['11']['Av_max']
         panel['axesCbar'].set_title(titleStr)
 
-        self.grds[1][1][:] = grd        
+        self.grds[1][1][:] = grd
         
     def constructRadexDatabase(self, writeDb = None):
         """runs radex on all the models in self.meshes, and computes the line info 
@@ -1780,6 +1821,79 @@ class meshArxv():
         self.radexDbs['%.2f' % Av_end][specStr] = radexDb
         self.logger.debug('added %s radex database to memory' % specStr)
         
+    def check_radex_databases_for_bogus_meshes(self):
+        '''This method checks for radex meshes (self.meshesRadex) which could hold incorrect results. For example, 
+        it checks for jumps in the population densities'''
+                    
+        inds_bogus = []
+        
+        for i in numpy.arange(self.nMeshes):
+            
+            if self.meshesRadex[i] != None:
+                
+                self.radexObj.transitions = self.meshesRadex[i] 
+ 
+                if self.radexObj.check_for_pop_density_continuity() and self.radexObj.check_for_pop_density_positivity():
+                    continue
+                else:
+                    #print i, 'possibly incorrect radex run'
+                    #print self.grid_x[i], self.grid_y[i], 10.0**self.grid_z[i]
+                    inds_bogus.append(i)
+                    
+        return inds_bogus
+    
+    def fix_bogus_radex_meshes(self):
+        '''Checks for radex models which might be bogus, and re-runs radex with stricter convergence 
+        conditions and re-updates the databases.  This method will look for all the radex
+        meshes for a specific specie for all the Av loaded into memory.
+        How to use this method? for example in the gui we see some jumps in the maps for the species CO for Av=4.0
+        a) load the radex databases for CO using: 
+            arxv.readDbs(allDbs=True)  #or arxv.readDbRadex(Av=4.0, specStr='CO')
+        b) set the 'species' parameter below to the one we need to check, species='CO' in this case
+        c) arxv.fix_bogus_radex_meshes()
+        d) if all goes well, running arxv.fix_bogus_radex_meshes() shud not complain
+        e) as a test, first do these steps with self.writeDbRadex() commented
+        '''
+        
+        species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+']
+        
+        
+        for specCheck in species:
+            
+            self.parms['radex']['specStr']=specCheck
+            self.setup_default_radex_instance(self.parms['radex'])
+            
+            for AvStrDb in self.radexDbs.keys():
+                for specStrDb in self.radexDbs[AvStrDb]:
+                    
+                    if specCheck != specStrDb:
+                        continue
+                        
+                    #loading a database
+                    self.use_radexDb(Av=float(AvStrDb), specStr=specCheck, silent=False)
+    
+                    #finding the meshes whihc might have anomaleous data (if any)                   
+                    inds = self.check_radex_databases_for_bogus_meshes()
+                   
+                    if len(inds) == 0:
+                        continue
+                   
+                    self.logger.debug('indicies of anomaleous radex meshes')
+                    print '                 ', inds
+                   
+                    #re-running radex on the false meshes
+                    for ind in inds:
+                       
+                        print '               ',
+                        print 'x, y, 10**z = ', self.grid_x[ind], self.grid_y[ind], 10.0**self.grid_z[ind]
+                       
+                        self.mshTmp.setData(self.meshes[ind])
+                        self.compute_and_set_radex_curves(pdr_mesh_obj = self.mshTmp, compute_only=True)
+                        self.meshesRadex[ind][:] = self.radexObj.transitions[:]
+                   
+                    #writing the updated database
+                    self.writeDbRadex()
+
     
     def save_radex_grids(self, relativeDirPath = None, basename = None, transitionInds = None, 
                          quantity = None, fileFormat = None, *args, **kwargs):
@@ -2444,8 +2558,8 @@ class meshArxv():
 
             # selecting a mesh from points: getting the coordinates inthe grid to display 
             # as a single mesh as a function of Av and maybe display the radex calculations
-            #------------------------------------------------------------------------------------                
-            if self.gui['ax2d']['axes'].contains(event)[0]:
+            #------------------------------------------------------------------------------------
+            if self.gui['ax2d']['axes'].contains(event)[0] or self.gui['maps2d']['00']['axes'].contains(event)[0] or self.gui['maps2d']['01']['axes'].contains(event)[0] or self.gui['maps2d']['10']['axes'].contains(event)[0] or self.gui['maps2d']['11']['axes'].contains(event)[0]:
                 clickedInAxes = True
                 self.logger.debug('####################################button 1 clicked###########################################')
                 indMin = self.get_mesh_index(x = xd, y = yd, z = self.pltGmSec)
@@ -2463,7 +2577,14 @@ class meshArxv():
                 self.mshTmp.plot() #plotting the PDR mesh curves in the panels (vs Av)
                 
                 if self.parms['radex']['use']:
-                    self.compute_and_set_radex_curves(pdr_mesh_obj = self.mshTmp)
+                    
+                    if self.parms['radex']['plot_model_from_Db'] == False:
+                        self.compute_and_set_radex_curves(pdr_mesh_obj = self.mshTmp)
+                    else:
+                        if self.meshesRadex[indMin] != None:
+                            self.set_radex_curves_from_db(indMin)
+                        else:
+                            self.logger.debug('No radex data available for this PDR model clicked on.')
                     
                 pyl.draw()
 
@@ -2506,8 +2627,9 @@ class meshArxv():
             
             
                 if self.parms['radex']['use']:
+
                     self.compute_and_set_radex_curves(meshObj = self.mshTmp,
-                                                  Av_range = [0, Av_use])
+                                                      Av_range = [0, Av_use])
 
                 pyl.draw()
 
@@ -2519,6 +2641,39 @@ class meshArxv():
             print 'button 3 pressed'
 
             self.plot_integrated_emissions()
+
+
+    def replace_radexObj_transitions_into_radexDb(self, no_write=None, no_refresh=None):
+        '''This is an auxiliary method which replaces the transitions data in self.radexObj 
+        (corresponding to a mesh with coordinates self.mshTmp into the array position corresponding 
+        to self.meshesRadex.  The z quantity used is the plotting gmech section
+        
+        If the optional keyword write is passed, the Db is written to the appropriate file
+        corresponding to it Av and specie.
+        
+        Howto use : 
+          1- assigm a the mesh data to arxv.mshTmp by clicking somewhere on a grid
+          2- call arxv.replace_radexObj_transitions_into_radexDb(write=True)
+          3- call arxv.computeAndSetInterpolationFunctions()
+          4- press on the z selectior of the current section to refresh the maps
+        '''
+        
+        x, y = np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0'])
+        z = self.pltGmSec #using as 'z' the plotting gmech
+        
+        ind = self.get_mesh_index(x = x, y = y, z = z)
+        
+        self.meshesRadex[ind][:] = self.radexObj.transitions[:]
+        
+        if no_write != None and no_write == False:
+            pass
+        else:
+            self.writeDbRadex()
+
+        if no_refresh != None and no_refresh == False:
+            pass
+        else:
+            self.computeAndSetInterpolationFunctions()
     
     def run_radex_on_pdr_model(self, pdr_mesh_obj = None, radex_obj = None, radex_parms = None, Av_range = None):
         '''
@@ -2593,12 +2748,14 @@ class meshArxv():
                 
             else:
                 #running radex (multiple times if necessary) for it to converge for this set of parms     
-                status, has_lines = radex_obj.run_mutiple_trials(expected_sum_pop_dens = radex_parms['popDensSumExpected'],
+                status, has_lines = radex_obj.run_mutiple_trials(
+                                                                 expected_sum_pop_dens = radex_parms['popDensSumExpected'],
                                                                  rel_pop_dens_tol = radex_parms['popDensSumTol'],   
                                                                  change_frac_trial = radex_parms['changeFracTrial'],    
                                                                  max_trials = radex_parms['nMaxTrial'],
                                                                  verbose = radex_parms['verbose'],
-                                                                 strict = radex_parms['strict'])
+                                                                 strict = radex_parms['strict']
+                                                                 )
         return has_lines, radex_parm_from_pdr_mesh 
     
     def compute_and_set_radex_curves(self, pdr_mesh_obj = None, radex_parms = None, Av_range = None, compute_only = None, radex_obj = None):
@@ -2652,6 +2809,31 @@ class meshArxv():
                 
             self.update_gui_em_lines_titles(radex_obj, Av_range_used)
         
+    def set_radex_curves_from_db(self, ind, radex_obj = None):
+        """This is a utilty method which plots the radex transitions from a the precomputed radex
+          database. The Av of the current radex Db is used.
+          
+          if Av_range is not passed, currenlty used Av of the gui is used.
+        """
+        if radex_obj == None:
+            
+            if self.radexObj == None:
+                self.setup_default_radex_instance(self.parms['radex'])
+            else:   
+                radex_obj = self.radexObj
+        
+        radex_parms = self.parms['radex']
+
+        radex_obj.transitions = self.meshesRadex[ind] 
+        
+        radex_obj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
+                                                     inAxes = self.pltRadex,     
+                                                     title = '')                             
+        #radex_obj.setLabels()
+        strng = 'transitions from DB [index = %d], Av = %.2f of clicked mesh' % (ind, self.currentRadexDb['Av'])
+        self.gui['em_lines']['title1'].set_text(strng)
+        #Av_range_used = [0.0, self.currentRadexDb['Av']]
+        #self.update_gui_em_lines_titles(radex_obj, Av_range_used)
 
     def compute_and_set_despotic_curves(self, meshObj = None, radex_parms = None, Av_range = None, compute_only = None):
         """This is a utilty method (make it a private method), for populating the radex axes

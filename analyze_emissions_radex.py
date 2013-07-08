@@ -13,7 +13,7 @@ radexPath      = '/home/mher/ism/code/radex/Radex/bin-gcc/radex'
 molDataDirPath = '/home/mher/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 
 # parameters that will be passed to radex single partner
-inFile = { 'specStr'                : 'HCN'      ,
+inFile = { 'specStr'                : 'CO'      ,
            'freqRange'              : [0, 0]    ,
            'tKin'                   : 30.0     ,
            'collisionPartners'      : ['H2']    ,
@@ -65,8 +65,8 @@ for i, v1 in enumerate(x1):
         
         inFile[qx2] = v2
         
-        #radexObj.run( checkInput = True, verbose = True)        #<<< running radex without error checks
-        radexObj.run_mutiple_trials(1.0, 1e-2, 1e-2, 100, strict = True, verbose = False) #<<<< running radex with checks
+        radexObj.run( checkInput = True, verbose = True)        #<<< running radex without error checks
+        #radexObj.run_mutiple_trials(1.0, 1e-2, 1e-2, 100, strict = True, verbose = False) #<<<< running radex with checks
         
         if radexObj.getStatus() &  radexObj.FLAGS['SUCCESS'] :
             radexObj.parseOutput()
