@@ -1,51 +1,74 @@
 from amuse.units import units
 
 lines = {
+         'C+158'     : {'ismcpak' : ['fineStructureCoolingComponents','C+','rate','1-0'],
+                        'latex'  : r'[CII] 158$\mu m$',  
+                        'latex2'  : r'C$^+$ 158$\mum$',
+                        'nu'      : 000e0 | units.Hz,
+                        'type'    : 'pdr',
+                        'specStr' : 'C+',
+                       },
          'C609'      : {'ismcpak' : ['fineStructureCoolingComponents','C','rate','1-0'], 
-                        'latex'   : r'[CI]609\mu m', 
-                        'nu'      : 492e9 | units.Hz,
+                        'latex'   : r'[CI] 609$\mu m$', 
+                        'nu'      : 000e0 | units.Hz,
+                        'type'    : 'pdr',
+                        'specStr' : 'C',
                        },
          'C369'      : {'ismcpak' : ['fineStructureCoolingComponents','C','rate','2-1'], 
-                        'latex'   : r'[CI]369\mu m', 
-                        'nu'      : 492e9 | units.Hz,
+                        'latex'   : r'[CI] 369$\mu m$', 
+                        'nu'      : 000e0 | units.Hz,
+                        'type'    : 'pdr',
+                        'specStr' : 'C',
                        },
-         'CO1-0'     : {'radexIdx'  : 0,  'latex' : 'CO(1-0)'                              ,},
-         'CO2-1'     : {'radexIdx'  : 1,  'latex' : 'CO(2-1)'                              ,},
-         'CO3-2'     : {'radexIdx'  : 2,  'latex' : 'CO(3-2)'                              ,},
-         'CO4-3'     : {'radexIdx'  : 3,  'latex' : 'CO(4-3)'                              ,},
-         'CO5-4'     : {'radexIdx'  : 4,  'latex' : 'CO(5-4)'                              ,},
-         'CO6-5'     : {'radexIdx'  : 5,  'latex' : 'CO(6-5)'                              ,},
-         'CO7-6'     : {'radexIdx'  : 6,  'latex' : 'CO(7-6)'                              ,},
-         'CO8-7'     : {'radexIdx'  : 7,  'latex' : 'CO(8-7'                               ,},
-         'CO9-8'     : {'radexIdx'  : 8,  'latex' : 'CO(9-8)'                              ,},
-         'CO10-9'    : {'radexIdx'  : 9,  'latex' : 'CO(10-9)'                             ,},
-         'CO11-10'   : {'radexIdx'  : 10, 'latex' : 'CO(11-10)'                            ,},
-         'CO12-11'   : {'radexIdx'  : 11, 'latex' : 'CO(12-11)'                            ,},
-         'CO13-12'   : {'radexIdx'  : 12, 'latex' : 'CO(13-12)'                            ,},
-         'CO14-13'   : {'radexIdx'  : 13, 'latex' : 'CO(14-13)'                            ,},
-         'CO15-14'   : {'radexIdx'  : 14, 'latex' : 'CO(15-14)'                            ,},
-         #------------------------------------------------------------------------------------------
-         '13CO1-0'     : {'radexIdx'  : 0,  'latex' : '13CO(1-0)'                              ,},
-         '13CO2-1'     : {'radexIdx'  : 1,  'latex' : '13CO(2-1)'                              ,},
-         '13CO3-2'     : {'radexIdx'  : 2,  'latex' : '13CO(3-2)'                              ,},
-         '13CO4-3'     : {'radexIdx'  : 3,  'latex' : '13CO(4-3)'                              ,},
-         '13CO5-4'     : {'radexIdx'  : 4,  'latex' : '13CO(5-4)'                              ,},
-         '13CO6-5'     : {'radexIdx'  : 5,  'latex' : '13CO(6-5)'                              ,},
-         '13CO7-6'     : {'radexIdx'  : 6,  'latex' : '13CO(7-6)'                              ,},
-         #---------------------------------------------------------------------------------------------
-         'HCO+1-0'   : {'radexIdx'  : 0,  'latex' : 'HCO+(1-0)'                            ,},
-         'HCO+4-3'   : {'radexIdx'  : 3,  'latex' : 'HCO+(4-3)'                            ,},
-         'HCO+7-6'   : {'radexIdx'  : 6,  'latex' : 'HCO+(7-6)'                            ,},
-         'HCN1-0'    : {'radexIdx'  : 0,  'latex' : 'HCN(1-0)'                            ,},
-         'HCN3-2'    : {'radexIdx'  : 2,  'latex' : 'HCN(3-2)'                            ,},
-         'HCN4-3'    : {'radexIdx'  : 3,  'latex' : 'HCN(4-3)'                            ,},
-        }
+         'O63'       : {'ismcpak' : ['fineStructureCoolingComponents','O','rate','1-0'], 
+                        'latex'   : r'[OI] 63$\mu m$', 
+                        'nu'      : 000e0 | units.Hz,
+                        'type'    : 'pdr',
+                        'specStr' : 'O',
+                       },
+         #----------------------------------------------------------------------------------------------------------
+         'CO1-0'     : {'radexIdx'  : 0,  'latex' : 'CO(1-0)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO2-1'     : {'radexIdx'  : 1,  'latex' : 'CO(2-1)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO3-2'     : {'radexIdx'  : 2,  'latex' : 'CO(3-2)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO4-3'     : {'radexIdx'  : 3,  'latex' : 'CO(4-3)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO5-4'     : {'radexIdx'  : 4,  'latex' : 'CO(5-4)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO6-5'     : {'radexIdx'  : 5,  'latex' : 'CO(6-5)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO7-6'     : {'radexIdx'  : 6,  'latex' : 'CO(7-6)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO8-7'     : {'radexIdx'  : 7,  'latex' : 'CO(8-7'   , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO9-8'     : {'radexIdx'  : 8,  'latex' : 'CO(9-8)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO10-9'    : {'radexIdx'  : 9,  'latex' : 'CO(10-9)' , 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO11-10'   : {'radexIdx'  : 10, 'latex' : 'CO(11-10)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO12-11'   : {'radexIdx'  : 11, 'latex' : 'CO(12-11)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO13-12'   : {'radexIdx'  : 12, 'latex' : 'CO(13-12)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO14-13'   : {'radexIdx'  : 13, 'latex' : 'CO(14-13)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO15-14'   : {'radexIdx'  : 14, 'latex' : 'CO(15-14)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         'CO16-15'   : {'radexIdx'  : 15, 'latex' : 'CO(16-15)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  ,},
+         #------------------------------------------------------------------------------------------------------------
+         '13CO1-0'     : {'radexIdx'  : 0,  'latex' : r'$^{13}$CO(1-0)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO2-1'     : {'radexIdx'  : 1,  'latex' : r'$^{13}$CO(2-1)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO3-2'     : {'radexIdx'  : 2,  'latex' : r'$^{13}$CO(3-2)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO4-3'     : {'radexIdx'  : 3,  'latex' : r'$^{13}$CO(4-3)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO5-4'     : {'radexIdx'  : 4,  'latex' : r'$^{13}$CO(5-4)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO6-5'     : {'radexIdx'  : 5,  'latex' : r'$^{13}$CO(6-5)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO7-6'     : {'radexIdx'  : 6,  'latex' : r'$^{13}$CO(7-6)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         #------------------------------------------------------------------------------------------------------------
+         'HCO+1-0'   : {'radexIdx'  : 0,  'latex' : r'HCO$^+$(1-0)', 'type'   : 'radex-lvg' , 'specStr': 'HCO+'  ,},
+         'HCO+4-3'   : {'radexIdx'  : 3,  'latex' : r'HCO$^+$(4-3)', 'type'   : 'radex-lvg' , 'specStr': 'HCO+'  ,},
+         'HCO+7-6'   : {'radexIdx'  : 6,  'latex' : r'HCO$^+$(7-6)', 'type'   : 'radex-lvg' , 'specStr': 'HCO+'  ,},
+         #------------------------------------------------------------------------------------------------------------
+         'HCN1-0'    : {'radexIdx'  : 0,  'latex' : r'HCN(1-0)', 'type'    : 'radex-lvg' , 'specStr': 'HCN'      ,},
+         'HCN3-2'    : {'radexIdx'  : 2,  'latex' : r'HCN(3-2)', 'type'    : 'radex-lvg' , 'specStr': 'HCN'      ,},
+         'HCN4-3'    : {'radexIdx'  : 3,  'latex' : r'HCN(4-3)', 'type'    : 'radex-lvg' , 'specStr': 'HCN'      ,},
+         #------------------------------------------------------------------------------------------------------------
+         'HNC1-0'    : {'radexIdx'  : 0,  'latex' : r'HNC(1-0)', 'type'    : 'radex-lvg' , 'specStr': 'HNC'      ,},
+         'HNC3-2'    : {'radexIdx'  : 2,  'latex' : r'HNC(3-2)', 'type'    : 'radex-lvg' , 'specStr': 'HNC'      ,},
+         'HNC4-3'    : {'radexIdx'  : 3,  'latex' : r'HNC(4-3)', 'type'    : 'radex-lvg' , 'specStr': 'HNC'      ,},
+         #------------------------------------------------------------------------------------------------------------         
+         'CN1_0.5-0_0.5' : {'radexIdx'  : 0,  'latex' : r'CN(1$_{1/2}$-0$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
+         'CN2_1.5-1_1.5' : {'radexIdx'  : 3,  'latex' : r'CN(2$_{3/2}$-1$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
+         #------------------------------------------------------------------------------------------------------------         
+         'CS1-0' : {'radexIdx'  : 0,  'latex' : r'CS(1-0)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
+         'CS4-3' : {'radexIdx'  : 3,  'latex' : r'CS(4-3)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
+         #------------------------------------------------------------------------------------------------------------         
 
-'''
-    quantity = ['fineStructureCoolingComponents','C','rate','1-0'] # CI 609um
-    flux['C609'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
-    quantity = ['fineStructureCoolingComponents','C','rate','2-1'] # CI 369um
-    flux['C369'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
-    quantity = ['fineStructureCoolingComponents','C+','rate','1-0'] # CII 158um
-    flux['C+158'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
-'''
+        }

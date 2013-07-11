@@ -11,8 +11,8 @@ import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
 
-specStr_PDR   = 'HCN'
-specStr_Radex = 'HCN'
+specStr_PDR   = 'CO'
+specStr_Radex = 'CO'
 
 parms = {
          #path to the database files
@@ -29,7 +29,7 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-test/',
-         'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-0.5/',
+         'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
 
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
          #'relativeGmech' : False,  # False => 3rd dim is gMech 
@@ -70,7 +70,7 @@ parms = {
                                      'quantity'       : 'fluxcgs',
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
-                                     'Av_max'         : 30.0,  #the maximum Av to be used  
+                                     'Av_max'         : 10.0,  #the maximum Av to be used  
                                     },
                            },
          'gridsRes'      : 100,
@@ -83,7 +83,7 @@ parms = {
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
-                             'Av_range'             : [0.0, 10.0],  #range which will be used in extracting data needed by radex from the PDR models
+                             'Av_range'             : [0.0, 30.0],  #range which will be used in extracting data needed by radex from the PDR models
                                                                     #(only relevent to constructing databases)
                              'path'                 : home + '/ism/code/radex/Radex/bin-gcc/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
@@ -102,10 +102,9 @@ parms = {
                              ###----------extra convergence params-----------------------
                              'checkOutputIntegrity'       : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'         : 1.0, 
-                             'popDensSumTol'              : 4e-2,
+                             'popDensSumTol'              : 1e-2,
                              'changeFracTrial'            : 0.05,
                              'strict'                     : True,
-#                             'check_pop_dense_continuity' : True,                             
                              'nMaxTrial'                  : 100,
                             },
         }
@@ -128,7 +127,7 @@ if False:
     #species = ['13CO', 'HCN', 'HNC', 'HCO+', 'CS']
     #species = ['CN']  #the pop dense do not add to 1...so this is done saperatly (need to set 'checkOutputIntegrity' to False)
     #species = ['HNC', 'HCO+']
-    species = ['HNC']
+    species = ['CN']
     for specStr in species:
         parms['radex']['specStr'] = specStr
         arxv.constructRadexDatabase(writeDb = True)

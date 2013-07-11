@@ -461,32 +461,56 @@ class radex():
             # checking the integrity of the solution in case it converged
             #if self.flag_is_set('SUCCESS') or self.flag_is_set('WARNING') or self.flag_is_set('ITERWARN'):
             if self.flag_is_set('SUCCESS'):
-                
+
+                #the checks to be done                
+                do_check_for_pop_density_sum          = False
+                do_check_for_pop_density_continuity   = True
+                do_check_for_pop_density_positivity   = True
+                do_check_for_pop_density_all_non_zero = True
+                  
+                #variable which holds the boolean indicating the test results
                 pop_dense_check = True
 
                 #checking for the sum of the population densities if it is close to the expected one
-                pop_dense_sum_check = self.check_for_pop_density_sum(expected_sum_pop_dens, rel_pop_dens_tol)
-                pop_dense_check &= pop_dense_sum_check
+                if do_check_for_pop_density_sum:
+                    pop_dense_sum_check = self.check_for_pop_density_sum(expected_sum_pop_dens, rel_pop_dens_tol)
+                    pop_dense_check &= pop_dense_sum_check
 
-                #checking if the transitions are smooth (i.e ladder has no abrupt order of magnitude jumops)                
-                continuity_check = self.check_for_pop_density_continuity()  
-                pop_dense_check &= continuity_check
+                #checking if the transitions are smooth (i.e ladder has no abrupt order of magnitude jumops)
+                if do_check_for_pop_density_continuity:                
+                    continuity_check = self.check_for_pop_density_continuity()  
+                    pop_dense_check &= continuity_check
                     
                 #checking for pop dense positivity (since they can not be negative)
-                pop_density_positivity = self.check_for_pop_density_positivity()
-                pop_dense_check &= pop_density_positivity
+                if do_check_for_pop_density_positivity:
+                    pop_density_positivity = self.check_for_pop_density_positivity()
+                    pop_dense_check &= pop_density_positivity
+
+                #checking for pop dense are all negligible
+                if do_check_for_pop_density_all_non_zero:
+                    pop_density_all_non_zero = self.check_for_pop_density_all_non_zero()
+                    pop_dense_check &= pop_density_all_non_zero
                 
                 if  pop_dense_check == False:
                     
                     self.logger.warn('====> pop dens does NOT make sense, trial %d' % nTried)
                     self.logger.warn('====> total pop dense lower = %18.15f' % self.transitions['pop_down'].sum())
                     self.logger.warn('====> number of iterations = %d' % self.nIter)
-                    if pop_dense_sum_check == False:
-                        self.logger.warn('====> pop_dense_sum_check = False')
-                    if continuity_check == False:
-                        self.logger.warn('====> continuity_check = False')
-                    if pop_density_positivity == False:
-                        self.logger.warn('====> pop_density_positivity = False')
+                    if do_check_for_pop_density_sum:
+                        if pop_dense_sum_check == False:
+                            self.logger.warn('====> pop_dense_sum_check = False')
+                   
+                    if do_check_for_pop_density_continuity:         
+                        if continuity_check == False:
+                            self.logger.warn('====> continuity_check = False')
+
+                    if do_check_for_pop_density_positivity:
+                        if pop_density_positivity == False:
+                            self.logger.warn('====> pop_density_positivity = False')
+
+                    if do_check_for_pop_density_all_non_zero:
+                        if pop_density_all_non_zero == False:
+                            self.logger.warn('====> pop_density_all_nonzero = False')
 
                     self.rand_shift_inFile_params(inFileOrig, change_frac_trial)                
                     
@@ -673,6 +697,15 @@ class radex():
             return False
         else:
             return True        
+
+    def check_for_pop_density_all_non_zero(self):
+        '''returns True if all the population densities are non negligibel and False otherwise'''
+        
+        inds_tiny = numpy.where(self.transitions[:]['pop_down'] < 1e-10)[0]
+        if inds_tiny.size == self.transitions[:]['pop_down'].size:
+            return False
+        else:
+            return True        
          
     def check_for_pop_density_continuity(self):
         '''returns true if the difference between the population densities of two consecutive transitions 
@@ -781,8 +814,9 @@ class radex():
 
         #plotting the intensities    
         axes.semilogy(xPlot, yPlot, 'b')
-        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-10, 1e-1])
+        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-15, 1e-1])
         axes.set_xticks( allTrans, minor = False )
+        axes.set_yticks( [1e-15, 1e-12, 1e-9, 1e-6, 1e-3, 1e-1], minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
         ##numpy.savetxt('/home/mher/ism/tmp/intensities.out', numpy.array([xPlot, yPlot]).T, '%e')
         ##print '-----------> saved the file /home/mher/intensities.out'
@@ -857,7 +891,7 @@ class radex():
             yPlot1[i]  = yThis1
             
         axes.semilogy(xPlot, yPlot1, 'b')
-        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-10, 1])
+        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-16, 1])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
 

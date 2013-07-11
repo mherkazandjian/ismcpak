@@ -156,7 +156,6 @@ def funcPDR(meshObj, **kwargs):
     up_to_Av = kwargs['up_to_Av']
     
     value = meshObj.compute_integrated_quantity(quantity, Av_range = [0.0, up_to_Av])
-    value /= (2.0*numpy.pi)
     
     return log10(value)
 

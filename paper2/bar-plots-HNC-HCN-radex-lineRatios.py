@@ -30,6 +30,7 @@ parms = {
          #path to the database files
          'dirPath'       : home + '/ism/runs/oneSided/singleModels-z-%.1f/' % metallicity,
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+         'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive                  
          'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
          #'plotRanges'     : [[0,6],[0,6],[-51, -15]],  # uniform gmech
          

@@ -15,6 +15,7 @@ from ismUtils   import *
 from radex      import *
 from scipy      import interpolate
 import chemicalNetwork
+import lineDict
 from despotic import cloud
 from multiprocessing import Process, Pipe
 
@@ -348,7 +349,14 @@ class meshArxv():
             #setting the attributes
             self.metallicity = parms['metallicity']
             self.setupChemistry(parms['chemistry']) 
-            self.parms_used_in_PDR_models = parms 
+            self.parms_used_in_PDR_models = parms
+            
+            if 'min_gMech' not in self.parms and 'min_gMech' in parms:
+                self.parms['min_gMech'] = parms['min_gMech']
+                
+            if 'relativeGmech' not in self.parms and 'relativeGmech' in parms:
+                self.parms['relativeGmech'] = parms['relativeGmech']
+                                 
         else:
             self.logger.debug('no used_parms.pkl file found : %s' % fpath_parms_used) 
     
@@ -930,10 +938,13 @@ class meshArxv():
             return None
         
                                         
-    def use_radexDb(self, Av = None, specStr = None, silent = None):
+    def use_radexDb(self, Av=None, specStr=None, silent=None, load_if_not_in_memory=None):
         """A method which sets a radex database from the databases available in self.radexDbs."""
+
+        if self.radex_db_has_been_read(Av, specStr) == False:
+            self.readDbRadex(Av, specStr)
         
-        if self.radex_db_has_been_read(Av, specStr):
+        if self.radex_db_has_been_read(Av, specStr) == True:
 
             if self.currentRadexDb['Av'] != Av or self.currentRadexDb['specStr'] != specStr:
                 #setting the new Db only if it is different from the specified one 
@@ -1238,7 +1249,8 @@ class meshArxv():
         
         
     def construct3DInterpolationFunction(self, quantity = None, slabIdx = None, arrIdx = None, log10 = None, values = None, 
-                                         data = None, interpolator = None, *args, **kwargs):
+                                         data = None, interpolator = None, remove_nan_inf = None, 
+                                         f_interp_dim = None, *args, **kwargs):
         """Returns a 3D interpolation function (interpolate.LinearNDInterpolator) which
            can be used to compute values determined by quantity give (nGas, G0, Gmech)
            (in log_10). The value to be interpolated upon is determined by the parameter
@@ -1276,7 +1288,10 @@ class meshArxv():
         # checking if the grid_x,y,z are set, if not, set them        
         self.set_grid_axes_quantity_values(**kwargs)
         self.set_attributes(**kwargs)
-            
+        
+        if f_interp_dim == None:
+            f_interp_dim = '3D'
+        
         if values == None:
             # the quantitiy we are intiesrested in showing
             values = self.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx, arrIdx = arrIdx)
@@ -1287,11 +1302,28 @@ class meshArxv():
             values[:] = np.log10(values[:])
 
         if data == None:
-            data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
-            #data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
+            if f_interp_dim == '3D':
+                data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
+            elif f_interp_dim == '2D':
+                data = np.array([self.grid_x, self.grid_y]).T  #2D coordinates                                
+            else:
+                raise ValueError('dim of interpolation function is unknow.')
         else:
             data = data
-
+        
+        #make sure the data points and the values are of compatible shapes
+        if data.shape[0] != values.size:
+            raise ValueError('data and values are of incompatible shape')
+            
+        if remove_nan_inf != None and remove_nan_inf == True:
+            inds_valid = numpy.where(numpy.isfinite(values))[0]
+            
+            if inds_valid.size == 0:
+                raise ValueError('no valid points were found')
+            
+            values = values[inds_valid]
+            data = data[inds_valid, :]
+             
         # getting the interpolation function
         ti = time()
         if interpolator == None or interpolator == 'linear':        
@@ -1302,29 +1334,6 @@ class meshArxv():
         self.logger.debug('constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti))
 
         return f
-
-    def construct2DInterpolationFunction(self, quantity = None, slabIdx = None, *args, **kwargs):
-        """ same as :data:`construct3DInterpolationFunction` but does it for n and G0
-        
-            .. warning:: make sure that the G_mech for all the models is the same. Other
-               things will not make sense, bec the models would have diffrent G_mech
-               
-            .. warning:: make sure that the interpolated points are at the centroids of the grid points
-        """
-        
-        x = np.log10( self.getQuantityFromAllMeshes( self.grid_qx ) )
-        y = np.log10( self.getQuantityFromAllMeshes( self.grid_qy ) )
-        
-        values = self.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx)
-
-        data = np.array([x, y]).T  #2D
-        
-        ti = time()
-        f = interpolate.LinearNDInterpolator(data, values) # getting the interpolation function     
-        tf = time()
-        self.logger.debug('constructed the interpolation function from %d points in %f seconds' % (len(values), tf-ti))
-
-        return f 
 
     def computeInterpolated2DGrid(self, ranges = None, res = None, zSec = None, 
                                   fInterp = None, *args, **kwargs):
@@ -1364,14 +1373,17 @@ class meshArxv():
         yNew = grid_y.reshape(nPts)
         zNew = xNew.copy()
         
-        # setting the values of mechanical heating to interpolate on
-        zNew[:] = zSec      # all the grid points have the same mechanical heating
-        
-        dataNew = np.array( [xNew, yNew, zNew] ).T
-        
+        if zSec != None:
+            # setting the values of mechanical heating to interpolate on
+            zNew[:] = zSec      # all the grid points have the same mechanical heating
+            dataNew = np.array( [xNew, yNew, zNew] ).T            
+        else:
+            dataNew = np.array( [xNew, yNew] ).T            
+
         ti = time()
         tNew = fInterp(dataNew)
         tf = time()
+        
         self.logger.debug('interpolated %d points in %f seconds at a rate of %e pts/sec' % (nPts, tf-ti, nPts / (tf-ti)))
         tNew = np.reshape(tNew, grid_x.shape)
         
@@ -1399,6 +1411,7 @@ class meshArxv():
             f = self.construct3DInterpolationFunction(quantity = quantity, slabIdx  = slabIdx, *args, **kwargs)
         else:
             f = fInterp
+            
         grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
                                                         res      = res, 
                                                         zSec     = zSec, 
@@ -1496,14 +1509,14 @@ class meshArxv():
                             grid_y.append(y)
                             grid_z.append(z)
                             
-                            
                 # getting the data in the shape that is accepted by the interpolation construction        
-                data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T 
-                values = np.array(values, dtype = np.float64)
+                data   = np.array([grid_x, grid_y, grid_z], 'f8').T 
+                values = np.array(values, 'f8')
                 
                 self.intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
                                                                                    values = values,
                                                                                    log10  = True,
+                                                                                   remove_nan_inf = True,
                                                                                    *args, **kwargs)
 
             #----------------------------emissions from the PDR slabs---------------------------------------
@@ -1519,7 +1532,7 @@ class meshArxv():
                 for i, data in enumerate(self.meshes):
                     
                     m.setData(data)
-                    v = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
+                    v = m.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
 
                     if v < 0:
                         self.logger.warning('negative intensitiy detected - setting it to 0')
@@ -1833,7 +1846,13 @@ class meshArxv():
                 
                 self.radexObj.transitions = self.meshesRadex[i] 
  
-                if self.radexObj.check_for_pop_density_continuity() and self.radexObj.check_for_pop_density_positivity():
+                check = True
+                check &= self.radexObj.check_for_pop_density_continuity()
+                check &= self.radexObj.check_for_pop_density_positivity() 
+                check &= self.radexObj.check_for_pop_density_continuity()
+                check &= self.radexObj.check_for_pop_density_all_non_zero()
+                
+                if check :
                     continue
                 else:
                     #print i, 'possibly incorrect radex run'
@@ -1855,8 +1874,8 @@ class meshArxv():
         e) as a test, first do these steps with self.writeDbRadex() commented
         '''
         
-        species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+']
-        
+        #species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS']
+        species = ['CN']        
         
         for specCheck in species:
             
@@ -2051,8 +2070,6 @@ class meshArxv():
                     v = m.compute_integrated_quantity(quantity_PDR_em, 
                                                       Av_range = [0.0, Av_max]
                                                      )
-                    v /= (2.0*np.pi)
-
                     if v < 0:
                         self.logger.warning('negative intensitiy detected - setting it to 0')
                         v = np.float64(0)
@@ -3328,7 +3345,7 @@ class meshArxv():
                 """
                 #----------------dumping the total cooling--------------------
                 quantity = ['therm','heating']
-                v = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity)
+                v = m.compute_integrated_quantity(quantity)
                 fObj.write('%d %.2f %.2f %.5e\n' % (i, x, y, v))
                 #----------------done dumping the total cooling---------------
                 """
@@ -3533,12 +3550,12 @@ class meshArxv():
             
             vs = []
             for Av in Avs: 
-                v1 = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, Av])
+                v1 = m.compute_integrated_quantity(quantity, Av_range = [0.0, Av])
                 vs.append(v1)
 
             if 'fineStructureCoolingComponents' in quantity[0]:
-                flux_total = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 30.0])
-                flux_upto_Av = (1.0/(2.0*np.pi))*m.compute_integrated_quantity(quantity, Av_range = [0.0, 10.0])
+                flux_total = m.compute_integrated_quantity(quantity, Av_range = [0.0, 30.0])
+                flux_upto_Av = m.compute_integrated_quantity(quantity, Av_range = [0.0, 10.0])
                 print 'contributions from %s(%s) 0  up to Av=10 is %.2f percent' % (quantity[1],quantity[3],100.0*flux_upto_Av/flux_total)
                             
             vs = numpy.array(vs)
@@ -3789,3 +3806,71 @@ class meshArxv():
             for key_specStr in self.radexDbs[key_Av]:
                 print '%-8s ' % key_specStr,
             print 
+        
+    def get_emissions_from_databases(self, line=None, Av_use=None, z_sec=None):
+        '''gets the emissions from the pdr database or radex models determined by the keyword line'''
+    
+        lineInfo = lineDict.lines[line['code']]
+        
+        #setting the pointer to the quantity which will be used to access the emission data 
+        #depending on the line type requested
+        #---------------------------------------------------------------------------------------------------
+        if line['type'] == 'pdr':
+
+            v = self.apply_function_to_all_meshes(
+                                                  pdr_mesh_log_intensity, 
+                                                  func_kw = {
+                                                             'quantity': lineInfo['ismcpak'],
+                                                             'up_to_Av': Av_use,
+                                                            }
+                                                  )
+        #---------------------------------------------------------------------------------------------------        
+        if line['type'] == 'radex-lvg':
+
+            self.use_radexDb(Av=Av_use, specStr=lineInfo['specStr'], load_if_not_in_memory=True)
+    
+            v = self.apply_function_to_all_radex_meshes(
+                                                        radex_mesh_log_intensity, 
+                                                        func_kw = {
+                                                                   'transitionIdx': lineInfo['radexIdx'],
+                                                                  }
+                                                       )
+        return  np.array(v, 'f8') 
+    
+    def get_emission_grid_from_databases(self, line=None, Av_use=None, ranges=None, res=None, z_sec=None, f_interp_dim=None, **kwargs):
+        '''gets an interpolated grid from the database for a pdr or radex models determined by the keyword line'''
+    
+        v = self.get_emissions_from_databases(line, Av_use, z_sec)
+        
+        data=np.array([self.grid_x, self.grid_y, self.grid_z], 'f8').T
+        
+        if f_interp_dim != None and f_interp_dim == '2D':
+            inds = numpy.where(data[:,2]==z_sec)[0] 
+            data, v = data[inds, 0:2], v[inds]
+            fInterp = self.construct3DInterpolationFunction(data=data, values=v, remove_nan_inf=True, f_interp_dim='2D')  #interpolator='nearest',
+            grd, grd_x, grd_y = self.computeInterpolated2DGrid(ranges=ranges, res=res, fInterp=fInterp)
+        else:            
+            fInterp = self.construct3DInterpolationFunction(data=data, values=v, remove_nan_inf=True)  #interpolator='nearest',
+            grd, grd_x, grd_y = self.computeInterpolated2DGrid(ranges=ranges, res=res, zSec=z_sec, fInterp = fInterp)            
+    
+        return grd
+    
+def pdr_mesh_log_intensity(meshObj, **kwargs):
+    '''returns the log10 intentisty (per sr) emitting from a pdr mesh with a certain Av'''
+    
+    quantity = kwargs['quantity']
+    up_to_Av = kwargs['up_to_Av']
+    
+    value = meshObj.compute_integrated_quantity(quantity, Av_range = [0.0, up_to_Av])
+    
+    return numpy.log10(value)
+
+def radex_mesh_log_intensity(mesh_radex, **kwargs):
+    '''returns the log10 intentisty emitted from a radex model applied on a pdr mesh with the Av of the current Db'''
+    
+    transitionIdx = kwargs['transitionIdx']
+    
+    if mesh_radex == None:
+        return numpy.nan
+    else:
+        return numpy.log10(mesh_radex[transitionIdx]['fluxcgs'])

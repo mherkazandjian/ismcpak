@@ -159,7 +159,7 @@ for snap in snaps:
             return mesh[kwargs['transitionIdx']]['fluxcgs']  #a radex quantity
     
     def funcPDR(meshObj, **kwargs):
-        return (1.0/(2.0*numpy.pi))*meshObj.compute_integrated_quantity(kwargs['quantity'], Av_range = kwargs['Av_range'])
+        return meshObj.compute_integrated_quantity(kwargs['quantity'], Av_range = kwargs['Av_range'])
     
     """
     v = arxvPDR.apply_function_to_all_meshes(funcPDR, 

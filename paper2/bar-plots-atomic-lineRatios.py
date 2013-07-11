@@ -27,6 +27,7 @@ parms = {
          #path to the database files
          'dirPath'       : home + '/ism/runs/oneSided/singleModels-z-%.1f/' % metallicity,
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+         'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive                  
          'plotRanges'    : [[0,6],[0,6  ],[-12, 6]],     # adaptive gMech 
          #'plotRanges'     : [[0,6],[0,6],[-51, -15]],  # uniform gmech
          
@@ -78,13 +79,13 @@ def get_intensities_and_ratios(pdrMeshObj):
     flux = collections.OrderedDict()
     
     quantity = ['fineStructureCoolingComponents','O','rate','1-0'] #OI 63um
-    flux['O63'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
+    flux['O63'] = pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
     quantity = ['fineStructureCoolingComponents','C','rate','1-0'] # CI 609um
-    flux['C609'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
+    flux['C609'] = pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
     quantity = ['fineStructureCoolingComponents','C','rate','2-1'] # CI 369um
-    flux['C369'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
+    flux['C369'] = pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
     quantity = ['fineStructureCoolingComponents','C+','rate','1-0'] # CII 158um
-    flux['C+158'] = (1.0/(2.0*numpy.pi))*pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
+    flux['C+158'] = pdrMeshObj.compute_integrated_quantity(quantity, Av_range = [0.0, Av_max])
     
     ratios = collections.OrderedDict()
     
