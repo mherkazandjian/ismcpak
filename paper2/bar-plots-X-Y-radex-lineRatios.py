@@ -13,6 +13,7 @@ import meshUtils
 import mesh
 import mylib.utils.removeAxesLabels as axisUtils 
 import collections
+import plot_utils
 
 
 #########################################parameters##########################################################
@@ -168,7 +169,6 @@ pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 10)
 pylab.subplot(615)
 axisUtils.removeAll_xLabels(pylab.gca())
 info = plot_ratios_bars(arxv, [-2.0,0.5], 'MA2', log_n = 2.0, log_G0 = 1.0)
-
 
 pylab.subplot(614)
 axisUtils.removeAll_xLabels(pylab.gca())

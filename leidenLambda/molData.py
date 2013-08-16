@@ -4,6 +4,7 @@ import numpy
 import re
 
 from scipy.interpolate import interp1d
+import lineDict
 
 class reader():
     """This is a class which provides an interface to the LAMDA database. 
@@ -131,6 +132,11 @@ class reader():
     .. todo:: add a method which clears memory and check for memory leaks
     .. todo:: see what it is about the differences in the computed and tabulated deltaEs and energy levels
     .. todo:: collect the filenames only by doing one pass over all the files and compiling a dictionary
+    .. warning:: for collision rates which have only one entry in the molData database, that same value 
+     is used for all temperatures. However for rates which are tabulated fror a range of temperatures
+     an error is raised by the interpolator which doesnt return when the provided temperature range is
+     outside the data range. 
+    
       for the species and different versions of the files. Also write a routine which writes all the info
       of the read files.
     .. warning:: in the online data there are few mistakes (not sure if they were corrected):
@@ -163,6 +169,27 @@ class reader():
         """A list of strings holding the names of the files to be ignored. Those files
            are old ones which are not combatible with the current parser of this class.
         """
+
+        self.default_paths = { 
+                              'CO'     : 'co.dat'       ,
+                              '13CO'   : '13co.dat'     ,
+                              '13C16O' : '13co.dat'     ,
+                              'HCO+'   : 'hco+@xpol.dat',
+                              'HCN'    : 'hcn.dat'      ,  #hcn@xpol.dat, hcn.dat
+                              'HNC'    : 'hnc.dat'      ,
+                              'CS'     : 'cs@xpol.dat'  ,
+                              'C'      : 'catom.dat'    ,
+                              'C+'     : 'c+.dat'       ,
+                              'O'      : 'oatom.dat'    ,
+                              'SiO'    : 'sio.dat'      ,
+                              'CN'     : 'cn.dat'       ,
+                              'OH'     : 'oh.dat'       ,
+                              'SO2'    : 'so2@xpol.dat' ,
+                              'HF'     : 'hf.dat'       ,
+                              'SO'     : 'so.dat'       ,
+                              'N2H+'   : 'n2h+@xpol.dat',
+                              'HCS+'   : 'hcs+@xpol.dat',
+                              }
 
         self.specStrs = []
         """A list which will hold all the names of the species extracted from the headers
@@ -339,20 +366,29 @@ class reader():
                      )
 
         for partner in specDict['transColl']['partnersList']:
+            
             transColl = numpy.ndarray(specDict['transColl'][partner]['nTrans'], dtype = dt)
             tKin =  specDict['transColl'][partner]['temps']
+            
             for idx, transCollStr in enumerate(specDict['transColl'][partner]['table']):
+                
                 transCollStrParsed = re.split('\s+', transCollStr.strip())
                 transColl[idx]['n']  = numpy.int32(transCollStrParsed[0]) - 1 
                 transColl[idx]['u']  = numpy.int32(transCollStrParsed[1]) - 1
                 transColl[idx]['l']  = numpy.int32(transCollStrParsed[2]) - 1
-                # getting the interpolation function
-                rc = numpy.array(transCollStrParsed[3:])
                 
-                if len(rc) == 1:
-                    f_rc = lambda x: rc if x == tKin else -1.0
+                # getting the interpolation function of the collision rates
+                rc = numpy.array(transCollStrParsed[3:], 'f8')
+                
+                if rc.size == 1:
+                    
+                    def f_rc_partner(rc_arg): 
+                        return lambda x: rc_arg[0]
+
+                    f_rc = f_rc_partner(rc)
                 else:
                     f_rc = interp1d(tKin, rc)
+                    
                 transColl[idx]['rc'] = f_rc
                 
             specDict['transColl'][partner]['trans'] = transColl  
@@ -568,8 +604,8 @@ class reader():
         specStr = specStr.replace('o-','').replace('p-','').replace('E-','')
         return (specStr, info)
     
-    def get_specie(self, specStr = None, inPath = None, inInfo = None):
-        """This method can be used to return the data for a certain specie one
+    def get_specie(self, specStr = None, inPath = None, inInfo = None, default = True):
+        """This method can be used to return the data for a certain specie once
          the data has been read.  None of the keywords are mandatory. But
          at least one should be present. The checks are done using the 'AND'
          logic. Note that all the matches are returned. So a tuple of matches
@@ -580,6 +616,7 @@ class reader():
               co_data = reader.get_specie( specStr = 'CO', inPath = 'xpol_new' )
          
          this call returns the data about CO which is in the file co@xpol_new.dat
+         By default the default specie is returned.
          
          :param string specStr: the specie to be returned (not that if multiple 
            files contain info about the same specie, multiple species info
@@ -589,8 +626,18 @@ class reader():
            remaining keyword checks restuls True).  
          :param string inInfo: if this string is in the MOLECULE feild, the check
            results as True.               
-        """
+         :param bool default: If this is true, the file of the specie with the defaul
+          path is returned.  Each species has a defualt path defined in self.default_paths.
+          This is not a complete list (update as needed). If the keywords inPath or inInfo 
+          are set, this keyword is disabled. 
+        """        
         
+        #checking keywords
+        if inPath != None or inInfo != None:
+            default = None
+        
+        #getting all the species which have the specified string, and applying
+        #filters according to the provided keywords (if any)
         returnList = ()
         for spec in self.speciesInfo:
             
@@ -601,12 +648,14 @@ class reader():
             else:
                 consider *= False
                 
+            #path filter
             if inPath != None:
                 if inPath in spec.path.split('/')[-1]:
                     pass
                 else:
                     consider *= False
-                    
+            
+            #info filters
             if inInfo != None:
                 if inInfo in spec.info:
                     pass
@@ -615,7 +664,17 @@ class reader():
             
             if consider == True:
                 returnList += (spec,)
-    
+
+        #returning the specie with the pre-definined default path    
+        if default != None and default == True:
+            for spec in returnList:
+
+                if spec.path.split('/')[-1].strip() == self.default_paths[specStr]:
+                    print 'returning data of %s withe the default path.' % returnList[0].specStr
+                    return spec
+             
+            raise ValueError('no default path for %s defined in self.default paths.' % specStr)
+
         if len(returnList) == 1:
             print 'returning data from the file :\n     %s' % returnList[0].path
             return returnList[0]
@@ -627,7 +686,52 @@ class reader():
         self.dirPath = path
     def get_dirPath(self):
         return self.dirPath
-    
+
+    def get_line_critical_density(self, line_code, T_kin):
+        '''computes the critical density of a line (with all the availabe colliders) given the line code 
+         which should be amoung the ones defined in lineDict.lines.
+         
+        :param string line_code: A string representation of a transition as defined in lineDict.lines
+        :param T_kin: The kinetica temperature of the gas at which the critical density will be computed. 
+        '''
+        
+        #the species string
+        specStr = lineDict.lines[line_code]['specStr']
+        moldata_transition_idx = lineDict.lines[line_code]['radexIdx']
+        
+        #get the moldata.species object corresponding to that specStr
+        spec = self.get_specie(specStr, default=True)
+        
+        #dictionary which will hold all the critical densities
+        nc = dict()
+        
+        #the indicies of the upper and lower transitions in the levels array
+        u, l = spec.transRad[['u','l']][moldata_transition_idx]
+        
+        #getting critical densities
+        for partner in spec.transColl['partnersList']:
+            
+            nc[partner] = spec.critical_density(upper = u, lower = l, T_kin = T_kin, collider = partner)
+        
+        return nc
+
+    def get_line_mean_critical_density_H2(self, line_code, T_kin):
+        '''returns the mean critical density of p and o-H2, if H2 is present, then
+         the value of H2 is returned and the p- and o-H2 are ignored.
+        '''
+        
+        nc = self.get_line_critical_density(line_code, T_kin)
+        
+        if 'H2' not in nc: 
+            if 'p-H2' in nc and 'o-H2' not in nc: nc_ret = nc['p-H2']
+            if 'p-H2' not in nc and 'o-H2' in nc: nc_ret = nc['o-H2']
+            if 'p-H2' in nc and 'o-H2' in nc: nc_ret = 0.5*(nc['p-H2']+ nc['p-H2'])
+        else:
+            nc_ret = nc['H2']
+        
+        return nc_ret
+    #
+
     
 #----------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------
@@ -651,16 +755,27 @@ class species():
         self.transRad = specDict['transRad']
         self.transColl = specDict['transColl']
         
-    def critical_density(self, upper = None, lower = None, T_kin = None, collider = None):
+    def critical_density(self, trans=None, upper = None, lower = None, T_kin = None, collider = None):
         """computes the cricical density (n_crit = A/K) of a transition given the cleaned output
            of :data:`reader` (see also :data:`reader.get_specie`). The inputs are the
            upper and lower levels corresponding to specInfo['levels'] and the kinetic
            temperature at which the collisional coefficient will be computed. Also
            it is required to specify the collider specie as a string. See documentation
-           of reader for the supported colliders. 
+           of reader for the supported colliders.
+           
+           :param int trans: The index of the radiative transition. Either this can be supplied or both upper
+            and lower.  
         """
-    
-        eins_A = None    
+        
+        #checking parameters
+        if trans == None and (upper == None or lower == None):
+            raise ValueError('either keyword trans must be provided or both upper and lower.')
+        
+        if trans != None:
+            upper, lower = self.transRad[['u','l']][trans]
+        
+        #intializing
+        eins_A = None
         k_coll = None
         
         #getting the einstein A coefficient

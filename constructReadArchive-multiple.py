@@ -4,19 +4,20 @@ import numpy as np
 from time import *
 
 def constructAndReadArxiv( runDirPath ):
-        
+
     # constructing the archive
     t0 = time()
-    arxvW = meshArxv(  )
-    arxvW.construct( runDirPath )
+    arxvW = meshArxv(dirPath = runDirPath)
+    arxvW.construct( meshNamePrefix = 'mesh', writeDb = True )
     print 'time constructing %f' % (time() - t0)
-    
+        
     # reading the archive 
     t0 = time()
-    arxvR = meshArxv(  )
-    arxvR.readDb( runDirPath )
-    print 'time reading %f' % (time() - t0)
-    
+    arxvR = meshArxv( dirPath = runDirPath )
+    arxvR.readDb( )
+    arxvR.checkIntegrity()
+    print 'time reading %f' % (time() - t0)        
+
     # checking the accuracy
     diff = 0.0
     for i in np.arange(arxvR.nMeshes):
@@ -31,11 +32,10 @@ def constructAndReadArxiv( runDirPath ):
         print 'database might be corrupt'
 
 
-constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformSweep2-z-1.0-no-mech/' )
-constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformSweep2-highRes-z-1.0/' )
-constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformSweep2-z-0.5/' )
-constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformSweep2-z-0.5-no-mech/' )
-constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformSweep2-z-1.0/' )
-constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformSweep2-z-1.0-no-mech/' )
-constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformSweep2-z-2/' )
-constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformSweep2-z-2-no-mech/' )
+constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformGrid-z-1.0-no-gm-CR-1_solar/' )
+constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformGrid-z-1.0-no-gm-CR-10_solar/' )
+constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformGrid-z-1.0-no-gm-CR-100_solar/' )
+constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformGrid-z-1.0-no-gm-CR-1000_solar/' )
+constructAndReadArxiv( '/home/mher/ism/runs/oneSided/uniformGrid-z-1.0-no-gm-CR-10000_solar/' )
+
+

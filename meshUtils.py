@@ -10,7 +10,7 @@ from   mpl_toolkits.mplot3d import Axes3D
 from time  import *
 from mesh  import *
 from mylib.utils.ndmesh import ndmesh
-from mylib.utils.misc   import fetchNestedDtypeValue
+from mylib.utils.misc   import fetchNestedDtypeValue, scale
 from ismUtils   import *
 from radex      import *
 from scipy      import interpolate
@@ -20,7 +20,7 @@ from despotic import cloud
 from multiprocessing import Process, Pipe
 
 
-class meshArxv():
+class meshArxv(object):
     """ this class generates and manipulates archives of PDR meshes. By defaults self.set_default attributes and self.set_grid_axes_quantity_values are called upon intialization.
        
      :param bool readDb: if this is set, the database is read during initialization.
@@ -274,7 +274,6 @@ class meshArxv():
         else:
             self.metallicity = None
         
-        
         self.gui = None
         self.parms_used_in_PDR_models = None
         """a dictionary holding the parameters used in modeling the PDRs.  This is read
@@ -329,13 +328,19 @@ class meshArxv():
         #-------------------------------------------
 
         #set some default attributes (the quantities of the grids) if meshes have been read
-        if self.meshes != None:        
-            if 'relativeGmech' in self.parms:
-                # setting the x,y,z quantities to be used for ploting
-                self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech'])
-            else:
-                self.set_default_attributes()
+        if self.meshes != None:
+            
+            if 'grid_qx' in self.parms and 'grid_qy' in self.parms and 'grid_qz' in self.parms:
+                #specifying the grid quantities explicityly
+                self.set_attributes(**kwargs)
                 self.set_grid_axes_quantity_values()
+            else:
+                if 'relativeGmech' in self.parms:
+                    # setting the x,y,z quantities to be used for ploting
+                    self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech'])
+                else:
+                    self.set_default_attributes()
+                    self.set_grid_axes_quantity_values()
         else:
             self.logger.debug('no meshes read, not setting defualy attributes for the grids')
         
@@ -409,11 +414,15 @@ class meshArxv():
             infoAll[i]['info'][4] = mData['hdr']['nSpecs']
             infoAll[i]['info'][5] = mData['hdr']['version']
      
+            #setting the variables which make the run unique
+            #-----------------------------------------------
             infoAll[i]['parms'][0] = mData['hdr']['G0']
             infoAll[i]['parms'][1] = mData['hdr']['nGas']
             infoAll[i]['parms'][2] = mData['hdr']['gammaMech']
             infoAll[i]['parms'][3] = np.float64(0.0)
-            infoAll[i]['parms'][4] = np.float64(0.0)
+            infoAll[i]['parms'][4] = np.float64(0.0) #not used
+            #------------------------------------------------
+            
             
             del m
             
@@ -956,19 +965,24 @@ class meshArxv():
         else:
             raise ValueError('radex Db for Av %.2f for the specie %s has not been read into memory' % (Av, specStr))
         
-    def mergeDbs(self, newDbRunDirPath, outDirPath = None):
+    def mergeDbs(self, newDbRunDirPath=None, new_arxv=None, outDirPath = None):
         """ merges two databases into one and write the resulting db and its info file
             :param string newDbRunDirPath: the dir in which the new db to be added to the current db is located.
+            :param object new_arxv: The meshArxv object to be added to self
         """
         
-        arxv2 = meshArxv()
-        arxv2.readDb( newDbRunDirPath )
-        arxv2.checkIntegrity()
-
+        if newDbRunDirPath!=None and new_arxv==None:
+            arxv2 = meshArxv()
+            arxv2.readDb( newDbRunDirPath )
+            arxv2.checkIntegrity()
+        else:
+            if new_arxv != None:
+                arxv2=new_arxv 
+            
         if self.ver[0] != arxv2.ver[0] and self.ver[1] != arxv2.ver[1] and self.ver[2] != arxv2.ver[2]:
             raise ValueError('can not merge databases with different versions.')
         
-        self.nMeshes[0] = self.nMeshes + arxv2.nMeshes
+        self.nMeshes += arxv2.nMeshes
         
         # appending the meshes from the new arxv to the existing one
         for i in np.arange( arxv2.nMeshes ):
@@ -1203,21 +1217,38 @@ class meshArxv():
             :param int arrIdx: in case the quantity pointed to is an array, arrIdx would be the 
               index in the array we would like to retrieve.
         """
-        
+
         values = np.zeros(self.nMeshes, dtype = np.float64)
         
-        for i in np.arange(self.nMeshes):
-            q = fetchNestedDtypeValue(self.meshes[i], quantity )
-        
-            if slabIdx != None and arrIdx != None:
-                v = q[arrIdx][slabIdx]
-            elif slabIdx != None and arrIdx == None:
-                v = q[slabIdx]
-            else:
-                v = q
+        if 'from_meshes_info' in quantity:
+            #getting the values from the info corresponding to each mesh in self.infoMeshes. In this case 
+            # quantity should be as follows ['from_meshes_info', 'info|parms', index]
+            
+            q_name, q_indx = quantity[1], quantity[2] 
+            
+            for i in np.arange(self.nMeshes):
 
-            values[i] = v  
+                q = fetchNestedDtypeValue(self.infoAll[i], [q_name] )
+            
+                values[i] = q[q_indx]  
+        
+        else:
+            #getting the values from the meshes data self.meshes
+             
+            for i in np.arange(self.nMeshes):
                 
+                q = fetchNestedDtypeValue(self.meshes[i], quantity )
+            
+                if slabIdx != None and arrIdx != None:
+                    v = q[arrIdx][slabIdx]
+                elif slabIdx != None and arrIdx == None:
+                    v = q[slabIdx]
+                else:
+                    v = q
+    
+                values[i] = v  
+        #
+        
         return values
     
     def apply_function_to_all_meshes(self, func, func_kw = None):
@@ -3162,7 +3193,7 @@ class meshArxv():
             try: 
                 setRelativeGmech = kwargs['relativeGmech']
             except:
-                setRelativeGmech = False                
+                setRelativeGmech = False
                         
             # if relativeGmech is present AND it is True
             if setRelativeGmech == True:
@@ -3223,7 +3254,7 @@ class meshArxv():
             else:
                 # just use gMech as the 3rd axis
                 self.grid_z = np.log10( self.getQuantityFromAllMeshes(self.grid_qz) )
-    
+                
     def setupLogger(self):
         """sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger."""
         
@@ -3808,10 +3839,26 @@ class meshArxv():
             print 
         
     def get_emissions_from_databases(self, line=None, Av_use=None, z_sec=None):
-        '''gets the emissions from the pdr database or radex models determined by the keyword line'''
+        '''gets the emissions from the pdr database or radex models determined by the keyword line
+        
+        .. todo:: i dont know why the z_sec keyword is there, it is redundant. remove it and make sure
+            everything still works.  
+        
+        .. code-block:: python
+        
+            CO1_0 = arxv.get_emissions_from_databases(
+                                                      line   = {'type':'pdr', 'code':'CO1-0'}
+                                                      Av_use = 10.0,
+                                                     )
+        '''
     
         lineInfo = lineDict.lines[line['code']]
         
+        if line['type'] == 'pdr' or line['type'] == 'radex-lvg':
+            pass
+        else:
+            raise ValueError('unknow line type, please specify "pdr" or "radex-lvg"')
+         
         #setting the pointer to the quantity which will be used to access the emission data 
         #depending on the line type requested
         #---------------------------------------------------------------------------------------------------
@@ -3874,3 +3921,4 @@ def radex_mesh_log_intensity(mesh_radex, **kwargs):
         return numpy.nan
     else:
         return numpy.log10(mesh_radex[transitionIdx]['fluxcgs'])
+    

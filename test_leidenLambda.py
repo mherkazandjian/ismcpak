@@ -1,8 +1,7 @@
 #this is a test file for leidenLambda.py.
 import sys, os
-if 'particle3' in os.uname():
-    import matplotlib
-    matplotlib.use('Qt4Agg')
+import matplotlib
+matplotlib.use('Qt4Agg')
 import pylab as pyl
 
 from leidenLambda import molData 
