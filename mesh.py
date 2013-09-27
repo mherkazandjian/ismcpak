@@ -451,20 +451,21 @@ class mesh(object):
         self.axs[1,0].set_xlabel('$A_V$')
         self.axs[1,0].set_ylabel('abun')
 
-        #subplot 1,1
+        #subplot 1,1 
         #------------------------------------------------------------------
         self.plt11Spec1Plt, = self.axs[1,1].semilogy([1],  [1], 'r' )
         self.plt11Spec2Plt, = self.axs[1,1].semilogy([1],  [1], 'g' )
         self.plt11Spec3Plt, = self.axs[1,1].semilogy([1],  [1], 'b' )
         self.plt11_v_line,  = self.axs[1,1].semilogy([1],  [1], 'k--' )
         self.axs[1,1].set_xlim(plot_x_range[0], plot_x_range[1])
-        self.axs[1,1].set_ylim(1e-12, 2)   
+        #self.axs[1,1].set_ylim(1e-12, 2)   
+        self.axs[1,1].set_ylim(1e-30, 1e-15)   
         self.axs[1,1].text(0.4, 1e-10, '$HCN$'  , color='r')
         self.axs[1,1].text(0.4, 1e-9 , '$HNC$'  , color='g')
         self.axs[1,1].text(0.4, 1e-8 , '$HCO^+$', color='b')
         self.axs[1,1].set_xlabel('$A_V$')
         for tick in self.axs[1,1].yaxis.get_major_ticks():
-            tick.label1On = False
+            tick.label1On = False        
         
     def plot_v_lines_used_in_chemnet(self):
         """plotting the vertical lines on the gui indicating the positions
@@ -539,7 +540,7 @@ class mesh(object):
         self.plt11Spec2Plt.set_ydata( data['state']['abun'][spcs['HNC'].num] )
         self.plt11Spec3Plt.set_xdata( data['state']['Av'] )
         self.plt11Spec3Plt.set_ydata( data['state']['abun'][spcs['HCO+'].num] )
-        
+
         """;;;remove those later;;;"""
         """
         m = data

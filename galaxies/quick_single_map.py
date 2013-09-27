@@ -7,6 +7,7 @@ matplotlib.use('Qt4Agg')
 import numpy
 from numpy import log10
 import pylab
+from mpl_toolkits.mplot3d import Axes3D
 
 from amuse.io import read_set_from_file
 from amuse.io.fi_io import FiFileFormatProcessor
@@ -31,9 +32,10 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',   # the 
                       },          
           }
 
-snap_index = 20
-vMin, vMax = [0, 5]
-plot       = True
+snap_index   = 20
+vMin, vMax   = [0, 5]
+plot_map     = True
+plot_n_gm_g0 = True
 #===========================================================================================================
  
 #extracting/guessing the metallicity from the name of the directory of the run
@@ -119,7 +121,8 @@ for i in numpy.arange(nBins):
 
 print 'map min,max = ', map_f.min(), map_f.max()
 
-if plot:
+if plot_map:
+    
     #clipping the map values outside the specified colorbar ranges
     map_f = log10(map_f)
     print 'map in log scale before clipping = ', map_f.min(), map_f.max()
@@ -140,5 +143,23 @@ if plot:
     pylab.show()
 
 
-
+if plot_n_gm_g0:
     
+    x, y, z = log10(n_gas_cgs), log10(G0), log10(g_mech)
+    
+    fig = pylab.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(x, y, z, '.', alpha=0.1)
+    ax.set_xlim(-3, 6)
+    ax.set_ylim(-3, 6)
+    ax.set_zlim(-35, -15)
+    
+    ax.set_xlabel('n')
+    ax.set_ylabel('G0')
+    ax.set_zlabel('g_mech')
+    
+    z_rng    = ax.get_zlim()
+    n_z_secs = 20
+    z_secs   = numpy.linspace(z_rng[0], z_rng[1], n_z_secs)
+        
+    pylab.show()

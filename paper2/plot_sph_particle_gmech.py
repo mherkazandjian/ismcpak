@@ -44,11 +44,11 @@ g_mech = g_mech * 1.6474e-24 * n_gas_cgs # gMech in erg / (cm^3 s)
 
 #-------------------------------------------------
 width  = 3.0    #figure width (non normalized) 
-height = 3.4  #figure heigh (non normalized)
+height = 3.0  #figure heigh (non normalized)
 as_rat = width/height #aspect ratio of the figure
 
 ax_xs  = 0.25 #axses x start (normalized)
-ax_ys  = 0.18 #axses y start (normalized)
+ax_ys  = 0.19 #axses y start (normalized)
 ax_sz  = 0.73 #axses size (normalized)
 
 fig    = pylab.figure(0, figsize = (width, height) )
@@ -70,8 +70,8 @@ indsBoundaryCurve = [19735, 19662,  3511,  4001, 11167, 13883,   157, 10948,  60
                                
 ax1.set_xlim([0, 6])
 ax1.set_ylim([-26, -21])
-ax1.set_ylabel(r'$\Gamma$ [erg cm$^{-3}$ s$^{-1}$]', size = 'large')
-ax1.set_xlabel(r'n [cm$^{-3}$]', size = 'large')
+ax1.set_ylabel(r'$\log_{10}$ [ $\Gamma$ / erg cm$^{-3}$ s$^{-1}$]', size = 'large')
+ax1.set_xlabel(r'$\log_{10}$ [ n$_{gas}$ / cm$^{-3}$]', size = 'large')
 
 fig.savefig(imageSavePath)
 

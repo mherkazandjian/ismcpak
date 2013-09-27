@@ -11,8 +11,8 @@ import plot_utils
 
 home         = '/home/mher'
 dirPath      = os.path.join(home, 'ism/runs/oneSided/dynamicMesh-z-1.0/')
-#imageSaveDir = '/home/mher/ism/docs/paper02/src/figs'
-imageSaveDir = '/home/mher/tmp/foo'
+imageSaveDir = '/home/mher/ism/docs/paper02/src/figs'
+#imageSaveDir = '/home/mher/tmp/foo'
 
 #reading and setting up the pdr database
 arxvPDR = meshUtils.meshArxv(dirPath = dirPath, readDb=True)
@@ -346,7 +346,7 @@ parms = {
                    'code' : 'HCN1-0',
                    'type' : 'radex-lvg'
                  },
-        'Av_use'    : 10.0,
+        'Av_use'    :  10.0,
         'z_sec'     : -10.0,
         'res'       : [100.0, 100.0],
         'ranges'    : [[0.0, 6.0], [0.0, 6.0]],

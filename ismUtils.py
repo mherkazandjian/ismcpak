@@ -1,5 +1,7 @@
 # utility function useful for ISM stuff
 import numpy as np
+from scipy import integrate
+import numpy
 
 def Av2NH(Av, Z):
     """Computes the column density of hydrogen nuclei given an Av using the formula
@@ -69,3 +71,49 @@ def ortho_para_abundance_at_eq(tkin, xH2):
     xpH2 = xH2 - xoH2
     
     return xoH2, xpH2
+
+
+def startburst_gamma_mech_rate(SFR=None, n_PDR=None, d_PDR=None, d_SB=None, E_SN=None, eta=None):
+    '''computes the mechanical heating rate in a startburst reigon given :
+    
+       - star formation rate in Msun/yr (SFR) 
+       - number density of PDRs per pc^3
+       - the average diameter of each PDR in pc
+       - energy of each super nova (E_SN) event = 1e51 egrs
+       - SN heating efficiency (the efficiency of turbulent heating due to the SN shock absorbed by the ISM)
+    '''
+
+    pc2cm = 3.08e18
+    yr2sec = 365.25 * 24.0 * 3600.0
+    
+    def f_IMF(x):
+        return x**(-2.35)
+    
+    #relation between SFR and SNR, k = SNR / SFR
+    mass_SN_rng = numpy.linspace(8.0, 50.0, 1000.0)
+    mass_SF_rng = numpy.linspace(0.1, 125.0, 10000.0)
+    k = integrate.simps(f_IMF(mass_SN_rng), mass_SN_rng) / integrate.simps(mass_SF_rng*f_IMF(mass_SF_rng), mass_SF_rng) 
+    
+    #the supernova rate
+    SNR = SFR * k
+    
+    #volume of each PDR (in cm^3)
+    V_PDR = (4.0*numpy.pi/3.0)*(0.5*d_PDR*pc2cm)**3.0
+    
+    #volume of starburst reigon (in pc^3, yes, it is pc^3 not cm^3)
+    V_SB = (4.0*numpy.pi/3.0)*(0.5*d_SB)**3.0 
+    
+    #number of PDRs in the SB
+    N_PDR = V_SB * n_PDR
+    
+    #energy input absorbed by the PDRs due to all the supernovea (erg / sec)
+    E_SN_absorbed = SNR * E_SN * eta / yr2sec
+    
+    #total volume of PDRs in the starburst 
+    V_total_PDRs_in_SB = N_PDR * V_PDR 
+    
+    #mechanical heating rate in erg/cm^3/s
+    #mean_gamma_mech_per_unit_volume_in_PDRs = E_SN_absorbed / (total_NR * E_SN * eta /) 
+    gamma_mech = E_SN_absorbed / V_total_PDRs_in_SB 
+    
+    print gamma_mech

@@ -3,7 +3,7 @@ from leidenLambda import molData
 
 lines = {
          'C+158'     : {'ismcpak' : ['fineStructureCoolingComponents','C+','rate','1-0'],
-                        'latex'  : r'[CII] 158$\mu m$',  
+                        'latex'   : r'[CII] 158$\mu m$',  
                         'latex2'  : r'C$^+$ 158$\mum$',
                         'nu'      : 000e0 | units.Hz,
                         'type'    : 'pdr',
@@ -56,6 +56,14 @@ lines = {
          'CO14-13'   : {'radexIdx'  : 13, 'latex' : 'CO(14-13)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
          'CO15-14'   : {'radexIdx'  : 14, 'latex' : 'CO(15-14)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
          'CO16-15'   : {'radexIdx'  : 15, 'latex' : 'CO(16-15)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
+         'CO17-16'   : {'radexIdx'  : 16, 'latex' : 'CO(17-16)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
+         'CO18-17'   : {'radexIdx'  : 17, 'latex' : 'CO(18-17)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
+         'CO19-18'   : {'radexIdx'  : 18, 'latex' : 'CO(19-18)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
+         'CO20-19'   : {'radexIdx'  : 19, 'latex' : 'CO(20-19)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
+         'CO21-20'   : {'radexIdx'  : 20, 'latex' : 'CO(21-20)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
+         'CO22-21'   : {'radexIdx'  : 21, 'latex' : 'CO(22-21)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
+         'CO23-22'   : {'radexIdx'  : 22, 'latex' : 'CO(23-22)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
+         'CO24-23'   : {'radexIdx'  : 23, 'latex' : 'CO(24-23)', 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
          #------------------------------------------------------------------------------------------------------------
          '13CO1-0'     : {'radexIdx'  : 0,  'latex' : r'$^{13}$CO(1-0)'  , 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
          '13CO2-1'     : {'radexIdx'  : 1,  'latex' : r'$^{13}$CO(2-1)'  , 'type' : 'radex-lvg' , 'specStr': '13CO' ,},

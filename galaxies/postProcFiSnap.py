@@ -1,3 +1,6 @@
+#<keywords>
+#post processing, visualise, viz, bird eye, perspective, sph, fi
+#</keywords>
 import numpy
 
 import matplotlib

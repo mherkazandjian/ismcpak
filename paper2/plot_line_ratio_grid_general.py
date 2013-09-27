@@ -31,7 +31,7 @@ parms = {
         'Av_use'    : 10.0,
         'z_sec'     : numpy.log10(1e-1),
         'res'       : [100, 100],
-        'ranges'    : [[0.0, 6.0], [0.0, 6.0]],
+        'ranges'    : [[3.0, 6.0], [3.0, 6.0]],
         'cmap'      : {'obj'     : matplotlib.cm.jet,
                        'v_range' : [-2, 2],
                        'log'     : True,
@@ -43,7 +43,8 @@ parms = {
         'c_levels'  : {
                        #'values' : numpy.log10([0.1, 0.5, 1, 2, 4, 6, 8, 10, 50]),
                        'values' : numpy.log10([0.01,   0.1,  1,    10,    30,   100]),
-                       'format' : '%.1f',  # None, '10^x', '%e' (or any format), 'strs'
+                       'format' : '%.2f',  # None, '10^x', '%e' (or any format such as '%.2f'), 'strs'
+                       'pow10'  : True,
                        #'strs'   : ['0.01',  '0.1', '1', '10', '30', '100'],
                       },
         'clip'      : None,
@@ -61,8 +62,8 @@ if False:
 if True:
     def main():
         app = QtGui.QApplication(sys.argv)
-        #gui = plot_utils.line_ratio_app(arxvPDR=arxvPDR, initial_parms=parms)
-        gui = plot_utils.line_ratio_app(arxvPDR=arxvPDR)
+        gui = plot_utils.line_ratio_app(arxvPDR=arxvPDR, initial_parms=parms)
+        #gui = plot_utils.line_ratio_app(arxvPDR=arxvPDR)
         sys.exit(app.exec_())    
     
     if __name__ == '__main__':

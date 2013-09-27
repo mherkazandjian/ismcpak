@@ -3550,7 +3550,6 @@ class meshArxv(object):
         quantities = []
     
         #-------------------------cooling components--------------------
-        """
         quantities.append(['therm','cooling'])
         titles.append(r'$\Lambda_{total}$'); symbols.append('-x')
         quantities.append(['cooling','metaStable'])
@@ -3561,10 +3560,19 @@ class meshArxv(object):
         titles.append(r'$\Lambda_{RV}$');  symbols.append('-')
         quantities.append(['cooling','lymanAlpha'])
         titles.append(r'$\Lambda_{LyA}$');  symbols.append('-')
-        """
+        #--------------------------cooling components--------------------
+
+        #-------------------------heating components--------------------
+        quantities.append(['therm','heating'])
+        titles.append(r'$\Gamma_{total}$'); symbols.append('-o')        
+        quantities.append(['heating','photo'])
+        titles.append(r'$\Gamma_{photo}$'); symbols.append('->')
+        quantities.append(['heating','cr'])
+        titles.append(r'$\Gamma_{CR}$'); symbols.append('-<')
         #--------------------------cooling components--------------------
         
         #-------------------------fine structure lines--------------------------
+        '''
         quantities.append(['fineStructureCoolingComponents','C+','rate','1-0'])
         titles.append(r'CII');  symbols.append('-')
         quantities.append(['fineStructureCoolingComponents','C','rate','1-0'])
@@ -3573,6 +3581,7 @@ class meshArxv(object):
         titles.append(r'CI2-1');  symbols.append('-')
         quantities.append(['fineStructureCoolingComponents','O','rate','1-0'])
         titles.append(r'OI');  symbols.append('-')
+        '''
         #-------------------------fine structure lines---------------------------
         
         Avs = m.data['state']['Av']
