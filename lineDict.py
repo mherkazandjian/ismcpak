@@ -1,5 +1,4 @@
 from amuse.units import units
-from leidenLambda import molData
 
 lines = {
          'C+158'     : {'ismcpak' : ['fineStructureCoolingComponents','C+','rate','1-0'],

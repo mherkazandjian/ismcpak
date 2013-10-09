@@ -11,8 +11,8 @@ import plot_utils
 
 home         = '/home/mher'
 dirPath      = os.path.join(home, 'ism/runs/oneSided/dynamicMesh-z-1.0/')
-imageSaveDir = '/home/mher/ism/docs/paper02/src/figs'
-#imageSaveDir = '/home/mher/tmp/foo'
+#imageSaveDir = '/home/mher/ism/docs/paper02/src/figs'
+imageSaveDir = '/home/mher/tmp/foo'
 
 #reading and setting up the pdr database
 arxvPDR = meshUtils.meshArxv(dirPath = dirPath, readDb=True)
@@ -36,6 +36,7 @@ parms = {
         }
 grd = arxvPDR.get_emission_grid_from_databases(**parms)
 plot_utils.plot_intensity_grid(grd, imageSaveDir=imageSaveDir, **parms)
+'''
 #--------------------------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------------------------
 parms = {
@@ -541,5 +542,5 @@ parms = {
 grd = arxvPDR.get_emission_grid_from_databases(**parms)
 plot_utils.plot_intensity_grid(grd, imageSaveDir=imageSaveDir, **parms)
 #--------------------------------------------------------------------------------------------------------------------------
-
+'''
 print 'done'

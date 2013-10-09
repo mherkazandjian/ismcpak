@@ -12,3 +12,4 @@ arxv = meshArxv(  )
 arxv.construct( runDirPath )
 arxv.plotCurvesFromMeshes(qx = ['state','Av'], qy = ['state', 'gasT'], qz = ['hdr', 'gammaMech'])
 print 'done'
+

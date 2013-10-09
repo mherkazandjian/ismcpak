@@ -65,7 +65,7 @@ ax1.plot(x, y,'.', markersize=1)
 indsBoundaryCurve = [19735, 19662,  3511,  4001, 11167, 13883,   157, 10948,  6004, 8977, 19920, 
                      66, 13913,  6037,  8996,  6019, 2,    31, 3896,   109,  8995, 19935,  6223,  
                      8987,    33, 19759,  4101, 34,  5991,  1408,  3757,  6339, 10691, 10645,] 
-#ax1.plot(x[indsBoundaryCurve], y[indsBoundaryCurve], 'ko')
+ax1.plot(x[indsBoundaryCurve], y[indsBoundaryCurve], 'ko')
                      
                                
 ax1.set_xlim([0, 6])

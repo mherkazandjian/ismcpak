@@ -42,17 +42,24 @@ def parse_old_runinfo_file(path):
 
 def convert_units_to_pdr_units(gas, metallicity):
     """convert some of the attributes of the gas particles to units that are compatible with the 
-    units used in the PDR code.
+    units used in the PDR code. This addes the attributes :
+    
+        Av, G0, gmech, x, y, z, n, T, vdisp, Pe 
+        
     """
     
     gas_new = Particles(len(gas))
     
     pos = gas.position.value_in(units.kpc).T
-    
+
     gas_new.x = pos[0]
     gas_new.y = pos[1]
     gas_new.z = pos[2]
 
+    gas_new.vx = gas.vx.value_in(units.kms) 
+    gas_new.vy = gas.vy.value_in(units.kms)
+    gas_new.vz = gas.vz.value_in(units.kms) 
+    
     mean_spec_weight = 1.3|units.amu
     gas_new.n = ((gas.rho / mean_spec_weight).value_in( units.cm **-3 ))
 

@@ -1,15 +1,18 @@
-# in this test file, we load a database of PDR meshes and extract information
-# at conditions determined by the SPH simulations
+'''
+ in this test file, we load a database of PDR meshes and extract information
+ at conditions determined by the SPH simulations
 
-#  - exclude sph particles which have densities below which the LVG model codes can handel 
-#    (for example, one with n_gas < 1e-3))
-#  - exlcude particle with alpha > 1 (unless for very high densities (get the densitiy of 
-#    the specie whose  emission is to be computed and see if its abundance is too low, if 
-#    if is too low, just set the emission of the sph particle corresponding to that specie
-#    to zero.
-#  - abundances of CO for PDR modesls with n < 0.1 cm^-3 are ~ 1e-10 (which is too low compared to the
-#    high density modesl
+  - exclude sph particles which have densities below which the LVG model codes can handel 
+    (for example, one with n_gas < 1e-3))
+  - exlcude particle with alpha > 1 (unless for very high densities (get the densitiy of 
+    the specie whose  emission is to be computed and see if its abundance is too low, if 
+    if is too low, just set the emission of the sph particle corresponding to that specie
+    to zero.
+  - abundances of CO for PDR modesls with n < 0.1 cm^-3 are ~ 1e-10 (which is too low compared to the
+    high density modesl
 
+'''
+#########################################################################################################
 import time
 import sys
 import os
@@ -40,13 +43,13 @@ import fi_utils
 #-----------------------------parameters--------------------------------------
 
 pool_size = 1
-snaps = numpy.arange(4, 4+1, 1)
+snaps = numpy.arange(4, 4 + 1, 1)
 
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
           'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
-          'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
+          'imres' : 50,                                                 # resolution of the maps to be produced imres x imres
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',      # the path to the dir containing the PDR database
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2/',          # the path to the dir containing the PDR database          
@@ -62,14 +65,14 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
-                      'box_size' : [-2.0, 2.0],
+                      'box_size' : [-2.0, 2.0], #kpc
 
                        #modes in the PDR arxv which are within those ranges will be used in constructing interpolation functions 
-                      'interp'   : {'log_n'    : [-10.0,  10.0 ],
+                      'interp'   : {'log_n'    : [-10.0,  10.0],
                                     'log_G0'   : [-2.0 ,  3.0 ],
                                     'log_gmech': [-50.0, -20.0],
                                     'Av'       : [ 3.0 ,  30.0],
-                                    },                          
+                                    },
                       },
           'maps'   : {
                       'f_n_part' : {'pos': [0,0], 'title': r'$f(N)$'        , 'v_rng': [0,6]      , 'log10': True}, 
@@ -77,46 +80,47 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       'f_mean_n' : {'pos': [0,2], 'title': r'$f(\bar{n})$'  , 'v_rng': [-3.0, 4.0], 'log10': True},
                       'f_mean_g0': {'pos': [0,3], 'title': r'$f(\bar{g_0})$', 'v_rng': [-3.0, 3.0], 'log10': True},
                       #--------
-                      'f_mean_gm'              : {'pos': [1,0], 'title': r'$f(\bar{\Gamma_m})$'                  , 'v_rng': [-35.0, -22.0], 'log10': True},
-                      #'f_mean_Av'              : {'pos': [1,1], 'title': r'$f(\bar{Av})$'                      , 'v_rng': [0.0  , 2.0] ,  'log10': True},
-                      'T_mean'                 : {'pos': [1,1], 'title': r'$f(\bar{T})$'                        , 'v_rng': [0.0  , 5.0] ,  'log10': True},
+                      'f_mean_gm'              : {'pos': [1,0], 'title': r'$f(\bar{\Gamma_m})$'                , 'v_rng': [-35.0, -22.0], 'log10': True},
+                      'f_mean_Av'              : {'pos': [1,1], 'title': r'$f(\bar{Av})$'                      , 'v_rng': [0.0  , 2.0] ,  'log10': True},
+                      'T_mean'                 : {'pos': [1,2], 'title': r'$f(\bar{T})$'                        , 'v_rng': [0.0  , 5.0] ,  'log10': True},
                       #'f_mean_em_C+-1-0'       : {'pos': [1,1], 'title': r'$f(L_{C^+ 158 \mu m})$'               , 'v_rng': [-6.0, -2.0]  , 'log10': True},
                       #'f_mean_em_no_gm_C+-1-0' : {'pos': [1,2], 'title': r'$f(L_{C^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
-                      'f_mean_em_CO-7-6'       : {'pos': [1,3], 'title': r'$f(L_{O^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
+                      #'f_mean_em_CO-7-6'       : {'pos': [1,3], 'title': r'$f(L_{O^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
                       #--------
-                      'f_mean_em_CO-1-0'       : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'                  , 'v_rng': [-10.0, -2.0], 'log10': True},
-                      'f_mean_em_no_gm_CO-1-0' : {'pos': [2,1], 'title': r'$f(L_{CO(1-0)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
-                      'f_mean_em_CO-3-2'       : {'pos': [2,2], 'title': r'$f(L_{CO(3-2})$'                  , 'v_rng': [-10.0, -2.0], 'log10': True},
-                      'f_mean_em_no_gm_CO-3-2' : {'pos': [2,3], 'title': r'$f(L_{CO(3-2)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
+                      'f_mean_em_CO-1-0'       : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'                  , 'v_rng': [-10.0, -4.0], 'log10': True},
+                      #'f_mean_em_no_gm_CO-1-0' : {'pos': [2,1], 'title': r'$f(L_{CO(1-0)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
+                      #'f_mean_em_CO-3-2'       : {'pos': [2,2], 'title': r'$f(L_{CO(3-2})$'                  , 'v_rng': [-10.0, -2.0], 'log10': True},
+                      #'f_mean_em_no_gm_CO-3-2' : {'pos': [2,3], 'title': r'$f(L_{CO(3-2)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
                       #--------
-                      'f_mean_em_HCN-1-0'       : {'pos': [3,0], 'title': r'$f(L_{HCN(1-0})$'                 , 'v_rng': [-10.0, -7.0], 'log10': True},
-                      'f_mean_em_no_gm_HCN-1-0' : {'pos': [3,1], 'title': r'$f(L_{HCN(1-0)})$ $\Gamma_m = 0$' , 'v_rng': [-10.0, -7.0], 'log10': True},
-                      'f_mean_em_HCO+-1-0'      : {'pos': [3,2], 'title': r'$f(L_{HCO+(1-0})$'                , 'v_rng': [-10.0, -7.0], 'log10': True},
-                      'f_mean_em_no_gm_HCO+-1-0': {'pos': [3,3], 'title': r'$f(L_{HCO+(1-0)})$ $\Gamma_m = 0$', 'v_rng': [-10.0, -7.0], 'log10': True},
+                      #'f_mean_em_HCN-1-0'       : {'pos': [3,0], 'title': r'$f(L_{HCN(1-0})$'                 , 'v_rng': [-10.0, -7.0], 'log10': True},
+                      #'f_mean_em_no_gm_HCN-1-0' : {'pos': [3,1], 'title': r'$f(L_{HCN(1-0)})$ $\Gamma_m = 0$' , 'v_rng': [-10.0, -7.0], 'log10': True},
+                      #'f_mean_em_HCO+-1-0'      : {'pos': [3,2], 'title': r'$f(L_{HCO+(1-0})$'                , 'v_rng': [-10.0, -7.0], 'log10': True},
+                      #'f_mean_em_no_gm_HCO+-1-0': {'pos': [3,3], 'title': r'$f(L_{HCO+(1-0)})$ $\Gamma_m = 0$', 'v_rng': [-10.0, -7.0], 'log10': True},
                       },
 
-          #'interpolator' : interpolate.NearestNDInterpolator, 
-          'interpolator' : interpolate.LinearNDInterpolator, 
+          'interpolator' : interpolate.NearestNDInterpolator, 
+          #'interpolator' : interpolate.LinearNDInterpolator, 
           'image_save': False,
           'image_ext' : 'eps',
+          'save_info' : True,
           }
 
 #those are the lines which will be computed
 lines_info = { #line str  transIdx    trans latex str               pdr|lvg
-              'C+-1-0'  :  {          'latex': r'C$^+$ 158 $\mum$', 'type':'pdr', 'quantity':['fineStructureCoolingComponents','C+','rate','1-0']},
+              #'C+-1-0'  :  {          'latex': r'C$^+$ 158 $\mum$', 'type':'pdr', 'quantity':['fineStructureCoolingComponents','C+','rate','1-0']},
               'CO-1-0'  :  {'idx':0,  'latex': r'CO(1-0)'         , 'type':'lvg', },
-              'CO-3-2'  :  {'idx':2,  'latex': r'CO(3-2)'         , 'type':'lvg', },
-              'CO-7-6'  :  {'idx':6,  'latex': r'CO(7-6)'         , 'type':'lvg', },
-              'CO-16-15':  {'idx':15, 'latex': r'CO(7-6)'         , 'type':'lvg', },
+              #'CO-3-2'  :  {'idx':2,  'latex': r'CO(3-2)'         , 'type':'lvg', },
+              #'CO-7-6'  :  {'idx':6,  'latex': r'CO(7-6)'         , 'type':'lvg', },
+              #'CO-16-15':  {'idx':15, 'latex': r'CO(7-6)'         , 'type':'lvg', },
                           
-              'HCN-1-0':   {'idx':0,  'latex': r'HCN(1-0)'        , 'type':'lvg', },
-              'HCN-3-2':   {'idx':2,  'latex': r'HCN(3-2)'        , 'type':'lvg', },
+              #'HCN-1-0':   {'idx':0,  'latex': r'HCN(1-0)'        , 'type':'lvg', },
+              #'HCN-3-2':   {'idx':2,  'latex': r'HCN(3-2)'        , 'type':'lvg', },
  
-              'HNC-1-0':   {'idx':0,  'latex': r'HNC(1-0)'        , 'type':'lvg', },
-              'HNC-3-2':   {'idx':2,  'latex': r'HNC(3-2)'        , 'type':'lvg', },
+              #'HNC-1-0':   {'idx':0,  'latex': r'HNC(1-0)'        , 'type':'lvg', },
+              #'HNC-3-2':   {'idx':2,  'latex': r'HNC(3-2)'        , 'type':'lvg', },
 
-              'HCO+-1-0':  {'idx':0,  'latex': r'HCO$^{+}$(1-0)'  , 'type':'lvg', },
-              'HCO+-3-2':  {'idx':2,  'latex': r'HCO$^{+}$(3-2)'  , 'type':'lvg', },
+              #'HCO+-1-0':  {'idx':0,  'latex': r'HCO$^{+}$(1-0)'  , 'type':'lvg', },
+              #'HCO+-3-2':  {'idx':2,  'latex': r'HCO$^{+}$(3-2)'  , 'type':'lvg', },
              }
 
 #extracting/guessing the metallicity from the name of the directory of the run
@@ -141,7 +145,8 @@ if params['use_em'] == True:
     #loading the molecular specie radex database
     #arxvPDR.readDbsRadex(allDbs=True)
     #arxvPDR.readDbsRadex(species=['CO','HCN','HNC','HCO+'], Av=params['ranges']['interp']['Av'])
-    arxvPDR.readDbsRadex(species=['CO','HCN', 'HCO+'], in_Av_rng=params['ranges']['interp']['Av'])
+    #arxvPDR.readDbsRadex(species=['CO','HCN', 'HCO+'], in_Av_rng=params['ranges']['interp']['Av'])
+    arxvPDR.readDbsRadex(species=['CO'], in_Av_rng=params['ranges']['interp']['Av'])
 
 def funcRadex(mesh_radex, **kwargs):
     
@@ -230,7 +235,7 @@ def interpolator_sectioned_by_gm_Av(data_db, v):
                 print '(i,j) = (%02d, %02d) %06d DB points in box gm = [%.2f, %.2f ], Av = [%04.1f,%04.1f ] ' % (i, j, inds_in_this_interval.size, interval_gm_low, interval_gm_high, interval_Av_low, interval_Av_high),
                 t0 = time.time()
                 fInterp_this_interval = params['interpolator'](data_db_this_box, v_in_this_box)
-                print 'interpolation function constructed in %.2f sec' % (time.time()-t0)
+                print 'interpolation function constructed in %.2e sec' % (time.time()-t0)
                 all_fInterps[i,j] = fInterp_this_interval
             
             else:                
@@ -492,7 +497,7 @@ def generate_map(snap):
     #path to fi snapshots
     snapName = 'fiout.%s' % suffix 
     filename = params['rundir'] + '/firun/' + snapName 
-        
+    
     #########################setting up the snapshot data######################
     #########################setting up the snapshot data######################
     #########################setting up the snapshot data######################
@@ -524,7 +529,6 @@ def generate_map(snap):
     gas = fi_utils.select_particles(gas, params['ranges'])
     logger.debug('got the sph particles in the required ranges')
 
-
     #setting the lower bound of the mechanical heating of the sph particles of the 
     #minimum of the pdr database which is almost negligable (since some of the 
     #sph particles have a zero gmech, their log would be -inf, so we clip it to the
@@ -555,7 +559,7 @@ def generate_map(snap):
     maps = params['maps']    
     
     print 'getting the emissions of each sph particle'
-    #getting emissions of the sph particles with mechanical heating    
+    #getting emissions of the sph particles with mechanical heating
     em_sph = {}
     data_with_gm  =  numpy.array([log10(gas.n), log10(gas.G0), log10(gas.gmech), gas.Av]).T
     data_no_gm    =  numpy.array([log10(gas.n), log10(gas.G0), numpy.ones(len(gas))*lgMechMin, gas.Av]).T
@@ -590,8 +594,6 @@ def generate_map(snap):
                 if indsNan.size != 0:
                     em_sph[map_key][indsNan] = 1e-30
                     
-                gas.CO10 = em_sph[map_key]
-                
                 time_interp += dt
             
     logger.debug('done getting the emissions of each sph particle in %.2f seconds' % time_interp)
@@ -610,15 +612,16 @@ def generate_map(snap):
     x_sph, y_sph = gas.x, gas.y
     m_sph, G0_sph, n_sph, Av_sph, gmech_sph, T_sph = gas.mass, gas.G0, gas.n, gas.Av, gas.gmech, gas.T
      
-    hist = hist_nd(numpy.vstack((x_sph, y_sph)), mn = bs_min, mx=bs_max, nbins=nBins, reverse_indicies=True)
+    hist = hist_nd(numpy.vstack((x_sph, y_sph)), mn = bs_min, mx=bs_max, nbins=nBins, reverse_indicies=True, loc=True)
     hist.info()
-     
+
+    #looping over the bins of the 2D histogram of the x,y coordinates and computing the averages of the maps
     for i in numpy.arange(nBins):
         
         for j in numpy.arange(nBins):
             
             inds_in_bin = hist.get_indicies([i,j])
-    
+            
             maps['f_n_part']['data'][i,j] = inds_in_bin.size
             
             if inds_in_bin.size > 0:
@@ -626,14 +629,15 @@ def generate_map(snap):
                 maps['f_mean_n']['data'][i,j]  = numpy.mean(n_sph[inds_in_bin])
                 maps['f_mean_g0']['data'][i,j] = numpy.mean(G0_sph[inds_in_bin])
                 maps['f_mean_gm']['data'][i,j] = numpy.mean(gmech_sph[inds_in_bin])
-                #maps['f_mean_Av']['data'][i,j] = numpy.mean(Av_sph[inds_in_bin])
-                maps['T_mean']['data'][i,j]     = numpy.mean(T_sph[inds_in_bin])
+                maps['f_mean_Av']['data'][i,j] = numpy.mean(Av_sph[inds_in_bin])
+                maps['T_mean']['data'][i,j]    = numpy.mean(T_sph[inds_in_bin])
 
                 for key in em_sph:
                     if '_em_' in key:
                         maps[key]['data'][i,j] = numpy.mean(em_sph[key][inds_in_bin])
     #
     #
+    """
     def get_histogram(x, y, nb, mn, mx):
         '''
         given a map key, it generates and the distribution of y as a function of the quantity x
@@ -657,6 +661,7 @@ def generate_map(snap):
         
         hist.f[:] = dist[:]
         return hist
+    """
     #
     #    
 
@@ -682,14 +687,14 @@ def generate_map(snap):
     #
     #
     def fetch_grid_data(map_key, do_log10 = None):
-        
+        '''returns the data of a map given its key in parms['maps']. Basically this returns params['maps']['MAP_KEY]['data']'''
         if do_log10 != None and do_log10 == True:
             return log10(maps[map_key]['data'])
         else:
             return maps[map_key]['data']
     #
     #
-
+    
     #displaying all the maps in a single plot    
     print 'done getting the spatial distributuions'
     
@@ -708,8 +713,8 @@ def generate_map(snap):
     for map_key in maps:
         
         i, j = maps[map_key]['pos']
-    
-        im_map = maps[map_key] 
+        
+        im_map = maps[map_key]
         
         map_data = fetch_grid_data(map_key, do_log10 = im_map['log10']).T
         
@@ -730,19 +735,35 @@ def generate_map(snap):
         
         axs[i,j].set_xlim([bs_min, bs_max])
         axs[i,j].set_ylim([bs_min, bs_max])
-        
+    #
+    
+    #plotting the time string
     pylab.figtext(0.05, 0.97, '%.3f %s' % (snap_time, timeUnit.unit.symbol), size='xx-large', color='k')
     image_fname =  params['rundir'] + '/analysis/maps.%s.%s' % (suffix, params['image_ext'])
     
+    #saving the image
     if params['image_save'] == True:
         fig.savefig(image_fname)
     print 'wrote image file : %s' % image_fname
 
+    #plotting the mesh of the histogram
+    pylab.Figure()
+    pylab.plot(hist.f.cntrd[0].flatten(), hist.f.cntrd[1].flatten(), '+')
 
+    #saving the computed info
+    if params['save_info'] == True:
+        filename = os.path.join(params['rundir'],'analysis','data.npz') 
+        numpy.savez(
+                    filename, 
+                    gas_x=gas.x, gas_y=gas.y, gas_z=gas.z, 
+                    gas_vx=gas.vx, gas_vy=gas.vy, gas_vz=gas.vz, gas_mass=gas.mass,
+                    em_CO_1_0=em_sph['f_mean_em_CO-1-0']                   
+                   )
+        print 'wrote the processed data to\n\t\t%s' % filename
+
+    '''
     #displaying the distributions as a function of n
-    print 'done getting the spatial distributuions'
-    
-    """
+    print 'done getting the spatial distributuions'    
     fig, axs = pylab.subplots(4, 4, sharex=True, sharey=False, figsize=(16,16), 
                               subplot_kw = {'xlim':[-3.0, 3.0],
                                             'ylim':[-5.0, 0.5],
@@ -773,25 +794,26 @@ def generate_map(snap):
     if params['image_save'] == True:
         fig.savefig(image_fname)
     print 'wrote image file : %s' % image_fname
-    """
+    
         
     #subprocess.Popen(['xv', image_fname])
     pylab.show()
-    
-    return gas
+    '''
+        
+    return gas, hist
 #
 #
 
 t0 = time.time()
 if pool_size == 1:
     for snap in snaps:
-        gas = generate_map(snap)
+        gas, hist = generate_map(snap)
 else:
     pool = multiprocessing.Pool(pool_size)
     pool.map(generate_map, snaps)
 print 'total time = %s s' % (time.time() - t0)
 
-
+"""
 def test_plot():
     
     '''
@@ -823,11 +845,12 @@ def test_plot():
     vi = funcs['CO-1-0'](data)
     
     print numpy.where(numpy.isnan(vi))[0].size
-    """
-
+    
+    '''
     pylab.plot(gm_arr, vi, '.')
     pylab.show()
-    """
+    '''
+"""
 
-
+pylab.show()
     

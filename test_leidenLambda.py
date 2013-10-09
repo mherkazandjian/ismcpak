@@ -2,11 +2,10 @@
 import sys, os
 import matplotlib
 matplotlib.use('Qt4Agg')
-import pylab as pyl
+import pylab
 
 from leidenLambda import molData 
 import numpy
-import re
 from ismUtils import planckOccupation as ng
 
 restore = False
@@ -189,51 +188,46 @@ rhs[-1] = 1
 sol = numpy.linalg.lstsq(full2, rhs)
 f2 = sol[0]
 
-pyl.figure( figsize = (6,12))
-pyl.subplot(211)
-pyl.semilogy(f)
-pyl.hold(True)
-pyl.semilogy(f2, 'o')
-pyl.xlabel('level')
-pyl.ylabel('population density')
+pylab.figure( figsize = (6,12))
+pylab.subplot(211)
+pylab.semilogy(f)
+pylab.hold(True)
+pylab.semilogy(f2, 'o')
+pylab.xlabel('level')
+pylab.ylabel('population density')
 
 #solving by evolving with time
 #-----------------------------
+f0 = numpy.zeros(pNH3.nlevels)
+
 #setting up the initial conditions to population densities
 # that would be attained at LTE
-f0 = numpy.zeros(pNH3.nlevels)
-Z = numpy.float64(0.0)  # the partition function
-for i in numpy.arange(pNH3.nlevels):
-    f0[i] = pNH3.levels[i]['g']*numpy.exp(- pNH3.levels[i]['E'] / Tkin)
-    Z += f0[i]
-f0 /= Z # the initial fractional population densities
-#f0 = f #using the eq sol as ICs
+if False:
+    f0 = numpy.zeros(pNH3.nlevels)
+    Z = numpy.float64(0.0)  # the partition function
+    for i in numpy.arange(pNH3.nlevels):
+        f0[i] = pNH3.levels[i]['g']*numpy.exp(- pNH3.levels[i]['E'] / Tkin)
+        Z += f0[i]
+    f0 /= Z # the initial fractional population densities
+    
+if False:
+    f0 = f #using the eq sol as ICs
 
-"""
-f0[0] = 0.3
-f0[1] = 1e-2
-f0[2] = 1e-3
-f0[3] = 0.5
-f0[4] = 1e-5
-f0[5] = 1e-6
-"""
-
+if True:
+    #setting population levels manually
+    f0[0] = 0.3
+    f0[1] = 1e-2
+    f0[2] = 1e-3
+    f0[3] = 0.5
+    f0[4] = 1e-5
+    f0[5] = 1e-6
+    
+    #normalizing to 1
+    f0 /= f0.sum() 
+    
 t0 = 0.0 # the initial time
-dt = 2e3 # initial timestep in seconds 
-tf = 2e6 #final time
-
-#defining the function which will be the rhs of df/dt
-def ode_rhs(t, y, args):
-    return numpy.dot(full, y)
-
-#evolving with respect to time
-from scipy.integrate import ode
-#r = ode(ode_rhs, jac = None).set_integrator('vode', 
-r = ode(ode_rhs, jac = None).set_integrator('dopri', 
-                                            method='bdf', 
-                                            #with_jacobian = False,
-                                            rtol = 1e-12)
-r.set_initial_value(f0, t0).set_f_params(1.0)
+dt = 2e4 # initial timestep in seconds 
+tf = 2e8 #final time
 
 lPlot = numpy.array([0, 1, 2, 3, 4, 5])   
 t = []
@@ -243,6 +237,21 @@ ft_2 = []
 ft_3 = []
 ft_4 = []
 ft_5 = []
+
+#defining the function which will be the rhs of df/dt
+def ode_rhs(t, y, args):
+    return numpy.dot(full, y)
+
+'''
+#evolving with respect to time
+from scipy.integrate import ode
+#r = ode(ode_rhs, jac = None).set_integrator('vode', 
+r = ode(ode_rhs, jac = None).set_integrator('dopri', 
+                                            method='bdf', 
+                                            #with_jacobian = False,
+                                            rtol = 1e-12)
+r.set_initial_value(f0, t0).set_f_params(1.0)
+
 i = 0
 while r.successful() and r.t < tf:
     r.integrate(r.t+dt)
@@ -256,39 +265,91 @@ while r.successful() and r.t < tf:
 
     if i % 100 == 0:
         print 'i = %d t = %e' % (i, r.t), 1.0 - numpy.sum(r.y), 1.0 - r.y[0]/f[0]
+        print 'stepNum = %d t = %e, current dt = %e, 1 - sum(pop_dens) = %e' % (i, r.t, dt, 1.0 - numpy.sum(r.y))
+
     i+=1
+'''
 
-#pyl.figure(1)
-pyl.subplot(212)
+'''
+####################################################################################################
+            solving using my implementation of the bulrische stoer integrator
+####################################################################################################
+'''
+import mylib.numerics.ode
+
+rel_tol = 1e-3
+n_steps = 1000
+dt0_bs  = 1.0
+
+#intial conditions
+state = mylib.numerics.ode.State(f0.size)
+state.t    = 0.0
+state.y[:] =     f0
+
+#defining the function which will be the rhs of df/dt
+def ode_rhs(state, state_der, parms=None):    
+    
+    state_der.y[:] = numpy.dot(full, state.y) 
+    return True
+
+solver = mylib.numerics.ode.BS(log_dir='.', dx0=dt0_bs, reltol=rel_tol, state0=state, verbose=False)
+solver.set_derivs_func(ode_rhs)
+
+stepNum = 0
+while solver.state.x <= tf:
+
+    t.append(solver.state.x)
+    ft_0.append(solver.state.y[0])
+    ft_1.append(solver.state.y[1])
+    ft_2.append(solver.state.y[2])
+    ft_3.append(solver.state.y[3])
+    ft_4.append(solver.state.y[4])
+    ft_5.append(solver.state.y[5])
+    
+    solver.advance_one_step()
+
+    if stepNum % 100 == 0:
+        print 'stepNum = %d t = %e, current dt = %e, 1 - sum(pop_dens) = %e' % (stepNum, solver.state.x, solver.dx, 1.0 - numpy.sum(solver.state.y))
+    
+    stepNum += 1
+
+'''
+###########################finishing integrating using the BS method##############################
+'''
+
+t = numpy.array(t)
+
+#pylab.figure(1)
+pylab.subplot(212)
 #plotting the actual curves with the equilib sols (dashes)
-pyl.hold(True)
-pyl.loglog(t, ft_0,'r')
-pyl.loglog(t, ft_1,'g')
-pyl.loglog(t, ft_2,'b')
-pyl.loglog(t, ft_3,'c')
-pyl.loglog(t, ft_4,'k')
-pyl.loglog(t, ft_5,'y')
-pyl.loglog([dt,tf], [f2[lPlot[0]],f2[lPlot[0]]], '--r')
-pyl.loglog([dt,tf], [f2[lPlot[1]],f2[lPlot[1]]], '--g')
-pyl.loglog([dt,tf], [f2[lPlot[2]],f2[lPlot[2]]], '--b')
-pyl.loglog([dt,tf], [f2[lPlot[3]],f2[lPlot[3]]], '--c')
-pyl.loglog([dt,tf], [f2[lPlot[4]],f2[lPlot[4]]], '--k')
-pyl.loglog([dt,tf], [f2[lPlot[5]],f2[lPlot[5]]], '--y')
-pyl.axis([dt, tf, 1e-13, 1])
-pyl.xlabel('time (s)')
-pyl.ylabel('population density')
+pylab.hold(True)
+pylab.loglog(t, ft_0,'r')
+pylab.loglog(t, ft_1,'g')
+pylab.loglog(t, ft_2,'b')
+#pylab.loglog(t, ft_3,'c')
+#pylab.loglog(t, ft_4,'k')
+#pylab.loglog(t, ft_5,'y')
+pylab.loglog([dt,tf], [f2[lPlot[0]],f2[lPlot[0]]], '--r')
+pylab.loglog([dt,tf], [f2[lPlot[1]],f2[lPlot[1]]], '--g')
+pylab.loglog([dt,tf], [f2[lPlot[2]],f2[lPlot[2]]], '--b')
+#pylab.loglog([dt,tf], [f2[lPlot[3]],f2[lPlot[3]]], '--c')
+#pylab.loglog([dt,tf], [f2[lPlot[4]],f2[lPlot[4]]], '--k')
+#pylab.loglog([dt,tf], [f2[lPlot[5]],f2[lPlot[5]]], '--y')
+pylab.axis([dt, t.max()*1.1, 1e-13, 1])
+pylab.xlabel('time (s)')
+pylab.ylabel('population density')
 
 """
-pyl.hold(True)
+pylab.hold(True)
 #plotting the relative difference between the final sol and the eq sol
-pyl.loglog(t, numpy.fabs(1.0 - ft_0/f2[lPlot[0]]),'r')
-pyl.loglog(t, numpy.fabs(1.0 - ft_1/f2[lPlot[1]]),'g')
-pyl.loglog(t, numpy.fabs(1.0 - ft_2/f2[lPlot[2]]),'b')
-pyl.axis([dt, tf, 1e-9, 1])
+pylab.loglog(t, numpy.fabs(1.0 - ft_0/f2[lPlot[0]]),'r')
+pylab.loglog(t, numpy.fabs(1.0 - ft_1/f2[lPlot[1]]),'g')
+pylab.loglog(t, numpy.fabs(1.0 - ft_2/f2[lPlot[2]]),'b')
+pylab.axis([dt, tf, 1e-9, 1])
 """
 
-pyl.ion()
-pyl.show()
+pylab.ion()
+pylab.show()
 
 """
 ####### plotting the line intensities per molecule as a function of Tkin#####
@@ -323,15 +384,15 @@ for nc in nH2:
     if nc == 1000000.0:
         colorStr = 'b'
         
-    pyl.plot(Tkins, Llines['11'], colorStr)
-    pyl.hold(True)
-    pyl.plot(Tkins, Llines['22'], colorStr+'--')
-    pyl.plot(Tkins, Llines['44'], colorStr+'-.')
+    pylab.plot(Tkins, Llines['11'], colorStr)
+    pylab.hold(True)
+    pylab.plot(Tkins, Llines['22'], colorStr+'--')
+    pylab.plot(Tkins, Llines['44'], colorStr+'-.')
     
-pyl.xscale('log')    
-pyl.yscale('log')
-pyl.axis([15,300,1e-25,1e-22])
-pyl.show()
+pylab.xscale('log')    
+pylab.yscale('log')
+pylab.axis([15,300,1e-25,1e-22])
+pylab.show()
 """
 
 """
@@ -367,15 +428,16 @@ for nc in nH2:
     if nc == 1000000.0:
         colorStr = 'b'
         
-    pyl.plot(Tkins, numpy.array(Llines['22'])/numpy.array(Llines['11']), colorStr)
-    pyl.hold(True)
-    pyl.plot(Tkins, numpy.array(Llines['44'])/numpy.array(Llines['22']), colorStr+'--')
-    pyl.plot(Tkins, numpy.array(Llines['44'])/numpy.array(Llines['11']), colorStr+'-.')
+    pylab.plot(Tkins, numpy.array(Llines['22'])/numpy.array(Llines['11']), colorStr)
+    pylab.hold(True)
+    pylab.plot(Tkins, numpy.array(Llines['44'])/numpy.array(Llines['22']), colorStr+'--')
+    pylab.plot(Tkins, numpy.array(Llines['44'])/numpy.array(Llines['11']), colorStr+'-.')
     
-pyl.xscale('log')    
-pyl.yscale('log')
-pyl.axis([15, 300, 0.01, 1.0])
-pyl.show()    
+pylab.xscale('log')    
+pylab.yscale('log')
+pylab.axis([15, 300, 0.01, 1.0])
+pylab.show()    
 """
 
 print 'done'
+
