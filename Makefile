@@ -5,4 +5,8 @@ doc:
 clean:
 	rm -rvf *.pyc
 	cd doc_source && make clean && cd ..
+	cd galaxies && make clean
+	cd ismrad && make clean
+	cd paper2 && make clean
+	cd data-for-collaborators && make clean
 

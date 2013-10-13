@@ -86,10 +86,9 @@ class meshArxv(object):
     """
     def __init__(self, *args, **kwargs):
 
-        self.logger = self.setupLogger()
-        """The logging object which will be used to output stuff to stdout"""
-
         # attributes
+        self.logger = None
+        
         if 'dirPath' in kwargs:
             self.dirPath = kwargs['dirPath']
         else:
@@ -218,6 +217,7 @@ class meshArxv(object):
         
         This could be achived also using the method 
         """
+        self.radexObj = None
         #-------------------------------------------------------------------------------------
         
         self.grid_qx = None
@@ -279,71 +279,76 @@ class meshArxv(object):
         """a dictionary holding the parameters used in modeling the PDRs.  This is read
         from self.dirPath/used_parms.pkl""" 
         
-        #reading the used_parms.pkl file (if found) and setting the vaues read from it
-        if 'no_init_from_run_parms' not in kwargs:
-            self.read_used_parms_used_in_PDR_models()
+        if 'no_init' not in kwargs:
 
-        #setting up the auxiliary attributes if the parms are available
-        #self.mshTmp and self.radexObj
-        self.radexObj = None
-        if 'radex' in self.parms and  self.parms['radex']['use'] == True:
-            if self.parms['radex']['use']:
-                #making the instance            
-                self.setup_default_radex_instance(self.parms['radex'])
-
-        self.mshTmp = None
-        """a mesh object which is used to store single mesh data just for plotting purposes"""
-        if self.chemNet != None and self.metallicity != None:
-            self.mshTmp = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
-
-        if 'readDb' in kwargs and kwargs['readDb'] == True:
-            kwargs.pop('readDb')
-            self.readDb(check=True)
-
-        #reading|computing radex emission databases
-        #-------------------------------------------
-        if 'radex' in self.parms:
-            if self.parms['radex']['use']:
-                if 'gridsInfo' in self.parms and 'show' in self.parms['gridsInfo']['11'] and self.parms['gridsInfo']['11']['show'] == True:
-                    #----
-                    if self.parms['gridsInfo']['11']['type'] == 'radex':
-                        if self.parms['radex']['compute']:
-                            self.constructRadexDatabase(writeDb = self.parms['radex']['writeDb'])
+            #The logging object which will be used to output stuff to stdout
+            self.logger = self.setupLogger()
+                        
+            #reading the used_parms.pkl file (if found) and setting the vaues read from it
+            if 'no_init_from_run_parms' not in kwargs:
+                self.read_used_parms_used_in_PDR_models()
+    
+            #setting up the auxiliary attributes if the parms are available
+            #self.mshTmp and self.radexObj
+            if 'radex' in self.parms and  self.parms['radex']['use'] == True:
+                if self.parms['radex']['use']:
+                    #making the instance            
+                    self.setup_default_radex_instance(self.parms['radex'])
+    
+            self.mshTmp = None
+            """a mesh object which is used to store single mesh data just for plotting purposes"""
+            if self.chemNet != None and self.metallicity != None:
+                self.mshTmp = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
+    
+            if 'readDb' in kwargs and kwargs['readDb'] == True:
+                kwargs.pop('readDb')
+                self.readDb(check=True)
+    
+            #reading|computing radex emission databases
+            #-------------------------------------------
+            if 'radex' in self.parms:
+                if self.parms['radex']['use']:
+                    if 'gridsInfo' in self.parms and 'show' in self.parms['gridsInfo']['11'] and self.parms['gridsInfo']['11']['show'] == True:
+                        #----
+                        if self.parms['gridsInfo']['11']['type'] == 'radex':
+                            if self.parms['radex']['compute']:
+                                self.constructRadexDatabase(writeDb = self.parms['radex']['writeDb'])
+                            else:
+                                self.readDbsRadex(Av = self.parms['gridsInfo']['11']['Av_max'], 
+                                                  species = self.parms['gridsInfo']['11']['specStr']
+                                                  )
+                        #----
                         else:
-                            self.readDbsRadex(Av = self.parms['gridsInfo']['11']['Av_max'], 
-                                              species = self.parms['gridsInfo']['11']['specStr']
-                                              )
+                            self.logger.debug('pdr emissions will be computed on the spot')
                     #----
-                    else:
-                        self.logger.debug('pdr emissions will be computed on the spot')
+                    if self.parms['radex']['loadAllDbs']:
+                        #reading all the databases
+                        self.readDbsRadex(allDbs = True)
+                        #set the current Db to the one specieified in the input parms
+                        if 'gridsInfo' in self.parms and self.parms['gridsInfo']['11']['type'] == 'radex': 
+                            self.use_radexDb(self.parms['gridsInfo']['11']['Av_max'], 
+                                             self.parms['gridsInfo']['11']['specStr'])
                 #----
-                if self.parms['radex']['loadAllDbs']:
-                    #reading all the databases
-                    self.readDbsRadex(allDbs = True)
-                    #set the current Db to the one specieified in the input parms
-                    if 'gridsInfo' in self.parms and self.parms['gridsInfo']['11']['type'] == 'radex': 
-                        self.use_radexDb(self.parms['gridsInfo']['11']['Av_max'], 
-                                         self.parms['gridsInfo']['11']['specStr'])
-            #----
-        #-------------------------------------------
-
-        #set some default attributes (the quantities of the grids) if meshes have been read
-        if self.meshes != None:
-            
-            if 'grid_qx' in self.parms and 'grid_qy' in self.parms and 'grid_qz' in self.parms:
-                #specifying the grid quantities explicityly
-                self.set_attributes(**kwargs)
-                self.set_grid_axes_quantity_values()
-            else:
-                if 'relativeGmech' in self.parms:
-                    # setting the x,y,z quantities to be used for ploting
-                    self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech'])
-                else:
-                    self.set_default_attributes()
+            #-------------------------------------------
+    
+            #set some default attributes (the quantities of the grids) if meshes have been read
+            if self.meshes != None:
+                
+                if 'grid_qx' in self.parms and 'grid_qy' in self.parms and 'grid_qz' in self.parms:
+                    #specifying the grid quantities explicityly
+                    self.set_attributes(**kwargs)
                     self.set_grid_axes_quantity_values()
-        else:
-            self.logger.debug('no meshes read, not setting defualy attributes for the grids')
-        
+                else:
+                    if 'relativeGmech' in self.parms:
+                        # setting the x,y,z quantities to be used for ploting
+                        self.set_grid_axes_quantity_values(relativeGmech = self.parms['relativeGmech'])
+                    else:
+                        self.set_default_attributes()
+                        self.set_grid_axes_quantity_values()
+            else:
+                self.logger.debug('no meshes read, not setting defualy attributes for the grids')
+        #
+        #finished intializing and setting up some attributes
         
     def read_used_parms_used_in_PDR_models(self):
         fpath_parms_used = os.path.join(self.dirPath, 'used_parms.pkl')
@@ -1470,6 +1475,9 @@ class meshArxv(object):
         
         return ()
 
+    def construct_4D_interpolation_function_sectioned(self, ):
+        pass 
+    
     def computeAndSetInterpolationFunctions(self, *args, **kwargs):
         """compute the 3D interpolation functions which will be used to compute the 2D grids.
             sets the attributes : self.grdInterp_f, self.abunGridInterp_f, self.colDensGridInterp_f
@@ -3910,7 +3918,41 @@ class meshArxv(object):
             grd, grd_x, grd_y = self.computeInterpolated2DGrid(ranges=ranges, res=res, zSec=z_sec, fInterp = fInterp)            
     
         return grd
+
+    def as_dict(self):
+        '''returns a dict of a selection of the attributes. Mainly the ones which can be pickeled
+         and serialized. This method was written so that the components of this object can be
+         pushed to remote machines/hosts/processes using IPython's parallel capabilitie'''
+        
+        #the attributes to be returned as keys of a dict
+        ret_attr =  ('dirPath', 'nMeshes', 'ver', 'meshes', 'infoAll', 'verRadex', 'currentRadexDb',)
+        ret_attr += ('infoAllRadex', 'meshesRadex', 'radexDbs', 'grid_qx', 'grid_x', 'grid_qy',)
+        ret_attr += ('grid_qy', 'grid_y', 'grid_qz', 'grid_z', 'grid_x_unique', 'grid_y_unique',)
+        ret_attr += ('grid_z_unique', 'nDbFiles', 'chemNet', 'ranges', 'parms', 'metallicity',)
+        ret_attr += ('parms_used_in_PDR_models',)
+
+        #the dict to be returned
+        dict_ret = dict()
+        
+        #setting the keys of the dict to be returned
+        for attr in ret_attr:
+            dict_ret[attr] = getattr(self, attr) 
+             
+        return dict_ret
     
+    def make_copy_from_data(self, data_as_dict):
+        '''returns a new :data:`meshUtils.meshArxv` object and sets the attributes from the data
+         passed. The data should be a dict returned by the method :data:`meshUtils.as_dict`
+         '''
+        
+        arxv_ret = meshArxv(no_init=True)
+        
+        for key in data_as_dict:
+            setattr(arxv_ret, key, data_as_dict[key])
+            
+        return arxv_ret
+    
+#############################################################################################
 def pdr_mesh_log_intensity(meshObj, **kwargs):
     '''returns the log10 intentisty (per sr) emitting from a pdr mesh with a certain Av'''
     
