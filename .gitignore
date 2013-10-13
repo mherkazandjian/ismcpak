@@ -1,0 +1,10 @@
+*.log
+*.png
+kimya
+*foo*
+racoon
+time_dependent_and_eq_test.pdf
+bs_info.out
+bs_states_info.out
+despotic
+LAMDA
