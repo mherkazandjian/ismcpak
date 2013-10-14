@@ -13,34 +13,19 @@
 
 '''
 #########################################################################################################
-import time
-import sys
-import os
-import subprocess
-import multiprocessing
-from IPython.parallel import Client
+import time, sys, os
 
 import matplotlib
 matplotlib.use('Qt4Agg')
 
-from scipy import interpolate
 import numpy
-from numpy import log10
 import pylab
-import logging
 
-from amuse.io import read_set_from_file
-from amuse.io.fi_io import FiFileFormatProcessor
-from amuse.units import units, constants, nbody_system
-import meshUtils
-from mylib.utils.misc  import xselect, default_logger
-from mylib.utils.histogram import hist_nd
-from mylib.utils.interpolation import sectioned_4D_interpolator 
+from amuse.units import units, nbody_system
+from mylib.utils.misc  import default_logger
+from mylib.utils.histogram import hist_nd 
 from fi_utils import parse_old_runinfo_file
 import fi_utils
-import lineDict
-from amuse.io import write_set_to_file
-from amuse.io import read_set_from_file
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 
@@ -54,7 +39,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',      # the path to the dir containing the PDR database
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2/',          # the path to the dir containing the PDR database          
-          'use_em' : True, 
+          'use_em' : True,
           'species' : ['CO', '13CO'],
           
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
@@ -84,7 +69,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'maps'   : {
                       'attr' : 'em_fluxKkms_13CO1-0', #'mass', 'G0', 'gmech', 'Av'
                       'v_rng': [-10.0, 4.0],
-                      'title': r'$f(L_{13CO(1-0} K.km.s-1)$', 
+                      'title': r'$f(L_{CO(1-0} K.km.s-1))$', 
                       'log10': True                      
                      }, 
  
@@ -133,7 +118,7 @@ def generate_maps(snapIndex, params):
     #path to processed fi snapshot  
     snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % snapIndex + '.states.npz'  
     
-    #loading the sph simulation data 
+    #loading the processed sph simulation data with the emissions 
     logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
     gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'])
     
@@ -159,7 +144,13 @@ def generate_maps(snapIndex, params):
 
     #getting the map
     map_data = fi_utils.make_map(params['maps']['attr'], gas, hist, as_log10=params['maps']['log10'])
-        
+    
+    #saving the produced map file into the analysis dir
+    filename = os.path.join(params['rundir'],'analysis', 'fiout.%06d.%s.npz' % (snapIndex, params['maps']['attr']))
+    print params  
+    numpy.savez_compressed(filename, params=params, map_data=map_data)
+    print 'saved map to file:\n\t\t\t%s' % filename
+    
     #displaying all the maps in a single plot
     fig = pylab.figure(0, figsize=(8,8))
     ax = fig.add_axes([0.2, 0.2, 0.6, 0.6])
@@ -168,7 +159,7 @@ def generate_maps(snapIndex, params):
                'aspect', 'equal', 'adjustable', 'datalim'
                )
 
-    im = ax.imshow(map_data, 
+    im = ax.imshow(map_data,
                    extent=[bs_min, bs_max, bs_min, bs_max],
                    vmin=params['maps']['v_rng'][0],  
                    vmax=params['maps']['v_rng'][1], 
@@ -179,6 +170,7 @@ def generate_maps(snapIndex, params):
     pylab.colorbar(im, ax=ax, orientation='vertical')
         
     pylab.show()
+
 #
 
 for snap in snaps:    
