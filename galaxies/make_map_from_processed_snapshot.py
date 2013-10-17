@@ -13,20 +13,16 @@ from mylib.utils.histogram import hist_nd
 import fi_utils
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
-
-snaps = numpy.arange(20, 20 + 1, 1)
-
 home = '/home/mher'
 
 params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
-          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',      # the path to the dir containing the PDR database
-          'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
-          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2/',          # the path to the dir containing the PDR database          
           'species' : ['CO', '13CO'],
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
+          'snaps'   : numpy.arange(20, 20 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
                              'min_log_n_use'  : -3.0,      
@@ -69,7 +65,7 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
                   'map3'   : {
                               'attr'    : 'pdr_NH2',
                               'v_rng'   : [10.0, 30.0],
-                              'title'   : r'$N(CO)$', 
+                              'title'   : r'$N(H2)$', 
                               'as_log10': True,
                               'func'    : numpy.sum,
                              },
@@ -80,38 +76,14 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
 #                              'as_log10': True,
 #                              'func'    : numpy.sum,
 #                             },
-                        }
- 
-                      #'f_mean_n' : {'pos': [0,2], 'title': r'$f(\bar{n})$'  , 'v_rng': [-3.0, 4.0], 'log10': True},
-                      #'f_mean_g0': {'pos': [0,3], 'title': r'$f(\bar{g_0})$', 'v_rng': [-3.0, 3.0], 'log10': True},
-                      #--------
-                      #'f_mean_gm'              : {'pos': [1,0], 'title': r'$f(\bar{\Gamma_m})$'                , 'v_rng': [-35.0, -22.0], 'log10': True},
-                      #'f_mean_Av'              : {'pos': [1,1], 'title': r'$f(\bar{Av})$'                      , 'v_rng': [0.0  , 2.0] ,  'log10': True},
-                      #'T_mean'                 : {'pos': [1,2], 'title': r'$f(\bar{T})$'                        , 'v_rng': [0.0  , 5.0] ,  'log10': True},
-                      #'f_mean_em_C+-1-0'       : {'pos': [1,1], 'title': r'$f(L_{C^+ 158 \mu m})$'               , 'v_rng': [-6.0, -2.0]  , 'log10': True},
-                      #'f_mean_em_no_gm_C+-1-0' : {'pos': [1,2], 'title': r'$f(L_{C^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
-                      #'f_mean_em_CO-7-6'       : {'pos': [1,3], 'title': r'$f(L_{O^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
-                      #--------
-                      #'f_mean_em_CO1-0'       : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'                  , 'v_rng': [-10.0, -4.0], 'log10': True},
-                      #'f_mean_em_CO2-1'       : {'pos': [2,1], 'title': r'$f(L_{CO(1-0})$'                  , 'v_rng': [-10.0, -4.0], 'log10': True},
-                      #'f_mean_em_no_gm_CO-1-0' : {'pos': [2,1], 'title': r'$f(L_{CO(1-0)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
-                      #'f_mean_em_CO-3-2'       : {'pos': [2,2], 'title': r'$f(L_{CO(3-2})$'                  , 'v_rng': [-10.0, -2.0], 'log10': True},
-                      #'f_mean_em_no_gm_CO-3-2' : {'pos': [2,3], 'title': r'$f(L_{CO(3-2)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
-                      #--------
-                      #'f_mean_em_HCN-1-0'       : {'pos': [3,0], 'title': r'$f(L_{HCN(1-0})$'                 , 'v_rng': [-10.0, -7.0], 'log10': True},
-                      #'f_mean_em_no_gm_HCN-1-0' : {'pos': [3,1], 'title': r'$f(L_{HCN(1-0)})$ $\Gamma_m = 0$' , 'v_rng': [-10.0, -7.0], 'log10': True},
-                      #'f_mean_em_HCO+-1-0'      : {'pos': [3,2], 'title': r'$f(L_{HCO+(1-0})$'                , 'v_rng': [-10.0, -7.0], 'log10': True},
-                      #'f_mean_em_no_gm_HCO+-1-0': {'pos': [3,3], 'title': r'$f(L_{HCO+(1-0)})$ $\Gamma_m = 0$', 'v_rng': [-10.0, -7.0], 'log10': True},
-                      
-        #'save_maps' : False,
+                        },
+        'save_maps' : False,
+        'save_image': False,
         }
 
 #############################################################################################################
 #############################################################################################################
 #############################################################################################################
-
-#extracting/guessing the metallicity from the name of the directory of the run
-metallicity = fi_utils.guess_metallicity(params['rundir'])
 
 #setting up the logger object
 logger = default_logger()
@@ -122,10 +94,10 @@ bs_min, bs_max = params['ranges']['box_size'].number
 conv = nbody_system.nbody_to_si(1 | units.kpc, 1e9 | units.MSun)
 timeUnit = conv.to_si(1 | nbody_system.time).in_(units.Gyr)
 
-def generate_maps(snapIndex, params):
+def generate_maps(snap_index, params):
     
     #path to processed fi snapshot  
-    snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % snapIndex + '.states.npz'  
+    snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % snap_index + '.states.npz'  
     
     #loading the processed sph simulation data with the emissions 
     logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
@@ -152,32 +124,21 @@ def generate_maps(snapIndex, params):
         map_data = fi_utils.make_map(gas, hist, **this_map_info)
         
         #saving the produced map file into the analysis dir
-        filename = os.path.join(params['rundir'],'analysis', 'fiout.%06d.%s.npz' % (snapIndex, this_map_info['attr']))
-  
-        numpy.savez_compressed(filename, params=params, map_data=map_data)
-        print 'saved map to file:\n\t\t\t%s' % filename
+        filename = os.path.join(params['rundir'],'analysis', 'fiout.%06d.%s.npz' % (snap_index, this_map_info['attr']))
         
-        #displaying all the maps in a single plot
-        fig = pylab.figure(i, figsize=(8,8))
-        ax = fig.add_axes([0.2, 0.2, 0.6, 0.6])
-        pylab.setp(ax, 
-                   'xlabel', 'x(kpc)', 'ylabel', 'y(kpc)', 'xlim', [bs_min, bs_max], 'ylim', [bs_min, bs_max],
-                   'aspect', 'equal', 'adjustable', 'datalim'
-                   )
-    
-        im = ax.imshow(map_data,
-                       extent = [bs_min, bs_max, bs_min, bs_max],
-                       vmin = this_map_info['v_rng'][0],  
-                       vmax = this_map_info['v_rng'][1], 
-                       interpolation = 'bessel', #intepolation used for imshow
-                       origin = 'lower')
-        ax.set_title(this_map_info['title'], size='large')
-            
-        pylab.colorbar(im, ax=ax, orientation='vertical')
+        if params['save_maps']:
+            numpy.savez_compressed(filename, params=params, map_data=map_data)
+            print 'saved map to file:\n\t\t\t%s' % filename
+        
+        fi_utils.plot_map(map_data, params, this_map_info, 
+                          fi_utils.get_snapshot_time(snap_index, params), 
+                          params,
+                          snap_filename
+                          )
     #
 #
 
-for snap in snaps:    
+for snap in params['snaps']:    
     generate_maps(snap, params)
 
 pylab.show()

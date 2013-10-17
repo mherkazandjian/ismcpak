@@ -470,7 +470,8 @@ class meshArxv(object):
 
     def make_copy(self, dirName = None, x = None, y = None, z = None):
         """makes a copy of all the databases with some selections specified by the arrays x,y,z 
-           picking a meshes whose coordinates are 'exactly' in x,y,z.
+           picking a meshes whose coordinates are 'exactly' in x,y,z. This is done for all the Avs
+           available for the Radex meshes.
            
            example : 
            
@@ -614,7 +615,7 @@ class meshArxv(object):
         dbInfoFObj = file(dbInfoFname, 'wb')
         self.ver.tofile( dbInfoFObj)
         nMeshesRadex_new.tofile( dbInfoFObj )
-        infoAllRadex_new[0:counter].tofile( dbInfoFObj )        
+        infoAllRadex_new[0:counter].tofile( dbInfoFObj )
         dbInfoFObj.close()
         self.logger.debug('wrote successfully database files : \n  %s\n  %s' % (dbInfoFObj.name, dbDataFObj.name))
         
@@ -1951,279 +1952,6 @@ class meshArxv(object):
                    
                     #writing the updated database
                     self.writeDbRadex()
-
-    
-    def save_radex_grids(self, relativeDirPath = None, basename = None, transitionInds = None, 
-                         quantity = None, fileFormat = None, *args, **kwargs):
-        """method that saves the radex grids (emission grids) for now into files.
-        
-           :param string fileFormat: When this is set to **'numpytxt'**, the grid 
-            is dumped written to an ascii file using numpy.savetxt, one row on 
-            each line.  When this parameter is set to **'3column'**, the 
-            coordinates of the centroid of the grid cell and the value 
-            (x_i, y_i, v_i) are written on each line.  
-        """
-        
-        ranges  = self.parms['plotRanges'] 
-        res     = self.resPltGrids 
-        Av_max  = self.parms['gridsInfo']['11']['Av_max']
-
-        #self.set_default_attributes()
-        #self.set_grid_axes_quantity_values()
-
-        #dumping the parameters of meshutils used in generating the data
-        timeStr = ctime().replace(' ','-')
-        parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out' #-' + timeStr 
-        parmsOut = open(parmsOutputFile, 'wb')
-        pickle.dump(self.parms, parmsOut)
-        parmsOut.close()
-        
-        filesInfo = ()
-        
-        for zSec in self.grid_z_unique:
-            
-            for transitionIdx in transitionInds:
-            
-                nValidRadexInSec = 0 # number of meshes wiht radex data in this section
-    
-                ####################################################################################################################
-                #getting the inerpolation function for this section in z
-                ####################################################################################################################
-                values, grid_x, grid_y, grid_z = [], [], [], []
-                
-                #looping over all the radex info of all the mesehes and getting the
-                #transition data to be displayed
-                for i in np.arange(self.nMeshes):
-                    
-                    if self.meshesRadex[i] != None:
-                        
-                        x, y, z = self.grid_x[i], self.grid_y[i], self.grid_z[i]
-                        v = self.meshesRadex[i][transitionIdx][quantity]
-                        
-                        # appending the data and the value to a list to be used
-                        # in making the interpolation function
-                        
-                        values.append( v )
-                        grid_x.append( x )
-                        grid_y.append( y )
-                        grid_z.append( z )
-                        
-                        # getting the transition string
-                        transStrng = '%s-%s' % (self.meshesRadex[i][transitionIdx]['upper'],self.meshesRadex[i][transitionIdx]['lower'])
-                        nValidRadexInSec += 1
-                
-                if nValidRadexInSec > 0:
-                    # getting the data in the shape that is accepted by the interpolation construction        
-                    data   = np.array([grid_x, grid_y, grid_z], dtype = np.float64).T
-                    values = np.array( values, dtype = np.float64)
-                    intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
-                                                                                  values = values,
-                                                                                  log10  = True,
-                                                                                  *args, **kwargs)
-        
-                    ####################################################################################################################
-                    #interpolating the grids
-                    ####################################################################################################################
-                    
-        
-                    grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
-                                                                     res      = res,  
-                                                                     zSec     = zSec, 
-                                                                     fInterp  = intensityGridInterp_f,
-                                                                     *args, **kwargs)
-                                                                
-                    grd = grd.T
-    
-                    filename  = self.dirPath + relativeDirPath + basename
-                    filename += '-' + quantity + '-' + transStrng
-                    filename += '-' + 'Av=%.2f' % Av_max
-                    filename += '-log10zSec=%f' % zSec
-                    filename += '.txt'
-                    
-                    #------------setting the format of the data to be written to a text file--------
-                    if fileFormat == 'numpytxt': #writing the grid as a 2D table
-                        fileData = grd
-                    elif fileFormat == '3columns':
-                        n = grd.size
-                        # converting the grids into a 3 column format 
-                        fileData = np.array([grdx.reshape(n), grdy.reshape(n), grd.reshape(n)]).T
-                    #--------------------------------------------------------------------------------
-                    
-                    np.savetxt(filename, fileData, fmt = '%1.4e')
-                    self.logger.debug('wrote the file %s' % filename)
-                    
-                    thisFileInfo = {'zSec'       : zSec,
-                                    'transition' : transStrng,
-                                    'filename'   : filename,
-                                    'Av_max'     : Av_max,
-                                    }
-                    filesInfo += (thisFileInfo,)
-                else:
-                    self.logger.warn('no valid radex data found in this section')
-                    
-        #dumping information about the files into a pickle file
-        fileInfoPath = self.dirPath + relativeDirPath + 'filesInfo.out' #-' + timeStr
-        fileInfoFobj = open(fileInfoPath, 'wb')
-        pickle.dump(filesInfo, fileInfoFobj)
-        fileInfoFobj.close()
-
-    def save_PDR_emission_grids(self, relativeDirPath = None, basename = None, transitions = None, 
-                                quantity = None, Av_max = None, *args, **kwargs):
-        """method that saves the emission grids computed from the PDR models (emission grids) for now into files"""
-        
-        ranges = self.parms['plotRanges'] 
-        res    = self.resPltGrids 
-        
-        #dumping the parameters of meshutils used in generating the data
-        timeStr = ctime().replace(' ','-')
-        parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out' 
-        parmsOut = open(parmsOutputFile, 'wb')
-        pickle.dump(self.parms, parmsOut)
-        parmsOut.close()
-        
-        filesInfo = ()
-
-        specStr = self.parms['gridsInfo']['11']['quantity'][1]
-        Av_max = self.parms['gridsInfo']['11']['Av_max']
-        quantity_PDR_em = ['fineStructureCoolingComponents', specStr, quantity, '']
-        
-        #a temporary object used to calculate stuff from a pdr mesh object
-        m = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
-
-        for zSec in self.grid_z_unique:
-            
-            for transStrng in transitions:
-            
-                ####################################################################################################################
-                #getting the inerpolation function for this section in z
-                ####################################################################################################################
-
-                values  = np.ndarray(self.nMeshes, dtype = np.float64)
-                quantity_PDR_em[3] = transStrng 
-                
-                #looping over all the radex info of all the mesehes and getting the
-                #transition data to be displayed
-                for i, data in enumerate(self.meshes):
-                    
-                    m.setData(data)
-                    v = m.compute_integrated_quantity(quantity_PDR_em, 
-                                                      Av_range = [0.0, Av_max]
-                                                     )
-                    if v < 0:
-                        self.logger.warning('negative intensitiy detected - setting it to 0')
-                        v = np.float64(0)
-                        #print self.grid_x[i], self.grid_y[i], self.grid_z[i], v 
-
-                    values[i] = v
-                #--------done extracting the data from the meshes------- 
-                
-                # getting the data in the shape that is accepted by the interpolation construction        
-                data   = np.array([self.grid_x, self.grid_y, self.grid_z], dtype = np.float64).T
-                intensityGridInterp_f = self.construct3DInterpolationFunction(data   = data,
-                                                                              log10  = True,
-                                                                              values = values,
-                                                                              *args, **kwargs)
-        
-                ####################################################################################################################
-                #interpolating the grids
-                ####################################################################################################################
-        
-                grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
-                                                                 res      = res,  
-                                                                 zSec     = zSec, 
-                                                                 fInterp  = intensityGridInterp_f,
-                                                                 *args, **kwargs)
-                                                                
-                grd = grd.T
-
-                filename  = self.dirPath + relativeDirPath + basename
-                if quantity == 'rate': # just to make the filenames for emission the same as radex
-                    filename += '-' + 'fluxcgs' + '-' + transStrng
-                else:
-                    filename += '-' + quantity + '-' + transStrng
-                    
-                filename += '-' + 'Av=%.2f' % Av_max
-                filename += '-log10zSec=%f' % zSec
-                filename += '.txt'
-                    
-                np.savetxt(filename, grd, fmt = '%1.4e')
-                self.logger.debug('wrote the file %s' % filename)
-                    
-                thisFileInfo = {'zSec'       : zSec,
-                                'transition' : transStrng,
-                                'Av_max'     : Av_max,
-                                'filename'   : filename,
-                               }
-                filesInfo += (thisFileInfo,)
-            #--------end loop over transitions-------------
-        #-----end loop over zSections------------
-        
-        #dumping information about the files into a pickle file
-        fileInfoPath = self.dirPath + relativeDirPath + 'filesInfo.out'# + timeStr
-        fileInfoFobj = open(fileInfoPath, 'wb')
-        pickle.dump(filesInfo, fileInfoFobj)
-        fileInfoFobj.close()
-
-    def save_PDR_quantity_grids(self, relativeDirPath = None, basename = None, quantity = None, slabIdx = None, *args, **kwargs):
-        """method that saves a grid computed from the PDR models for now into files
-        keywords : save, grid, pdr, quantity, slab
-        """
-        
-        ranges = self.parms['plotRanges'] 
-        res    = self.resPltGrids 
-        
-        #dumping the parameters of meshutils used in generating the data
-        timeStr = ctime().replace(' ','-')
-        parmsOutputFile = self.dirPath + relativeDirPath + 'parms.out' 
-        parmsOut = open(parmsOutputFile, 'wb')
-        pickle.dump(self.parms, parmsOut)
-        parmsOut.close()
-        
-        filesInfo = ()
-        
-        for zSec in self.grid_z_unique:
-            
-            ####################################################################################################################
-            #getting the inerpolation function for this section in z
-            ####################################################################################################################
-            grdInterp_f = self.construct3DInterpolationFunction(quantity = quantity, 
-                                                                slabIdx  = slabIdx,
-                                                                log10    = True,
-                                                                *args, **kwargs)
-            #--------done extracting the data from the meshes------- 
-            
-            ####################################################################################################################
-            #interpolating the grids
-            ####################################################################################################################
-    
-            grd, grdx, grdy = self.computeInterpolated2DGrid(ranges   = ranges,
-                                                             res      = res,  
-                                                             zSec     = zSec, 
-                                                             fInterp  = grdInterp_f,
-                                                             *args, **kwargs)
-                                                            
-            grd = grd.T
-
-            filename  = self.dirPath + relativeDirPath + basename
-            filename += '-log10zSec=%f' % zSec
-            filename += '-%d-' % slabIdx
-            filename += '.txt'
-                
-            np.savetxt(filename, grd, fmt = '%1.4e')
-            self.logger.debug('wrote the file %s' % filename)
-                
-            thisFileInfo = {'zSec'       : zSec,
-                            'slabIdx'    : slabIdx, 
-                            'filename'   : filename,
-                           }
-            filesInfo += (thisFileInfo,)
-        #-----end loop over zSections------------
-        
-        #dumping information about the files into a pickle file
-        fileInfoPath = self.dirPath + relativeDirPath + 'filesInfo.out'# + timeStr
-        fileInfoFobj = open(fileInfoPath, 'wb')
-        pickle.dump(filesInfo, fileInfoFobj)
-        fileInfoFobj.close()
                     
     #################################################################################
     def setup_gui(self):
@@ -3952,7 +3680,9 @@ class meshArxv(object):
             
         return arxv_ret
     
-#############################################################################################
+######################################################################################################################
+#                utility functions               utility functions               utility functions
+######################################################################################################################
 def radex_mesh_log_intensity(mesh_radex, **kwargs):
     '''returns the log10 intentisty emitted from a radex model applied on a pdr mesh with the Av of the current Db'''
     

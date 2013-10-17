@@ -29,7 +29,7 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',      # the path to the dir containing the PDR database
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
-          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2/',          # the path to the dir containing the PDR database
+          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',          # the path to the dir containing the PDR database
                     
           'use_em'  : False, 
           'use_pdr' : True,
@@ -57,7 +57,7 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
                       },
           
           'emission': {
-#                        'f_mean_em_<q>fluxcgs</q>_CO<template>' : 2,
+#                      'f_mean_em_<q>fluxcgs</q>_CO<template>' : 2,
 #                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 2,
 #                      'f_mean_em_<q>Tex</q>_CO<template>'      : 2,
 #                      'f_mean_em_<q>tau</q>_CO<template>'      : 2,
@@ -96,7 +96,7 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
 #                     'f_mean_em_<q>fluxKkms</q>_13CO<template>'  : {'pos': [3,2], 'title': r'$f(L_{13CO(1-0})$'   , 'v_rng': [-10.0, -4.0] , 'log10': True},
 #                     'f_mean_em_<q>tau</q>_13CO<template>'      : {'pos': [3,3], 'title': r'$f(tau_{CO(1-0})$'   , 'v_rng': [0.0, 100.0], 'log10': False},
                       ########                                            
-                     'f_mean_em_<q>fluxcgs</q>_CO1-0'   : {'pos': [2,0], 'title': r'$f(L_{CO(1-0 [erg.cm^2.s-1]})$'       , 'v_rng': [-10.0, -4.0], 'log10': True},
+#                      'f_mean_em_<q>fluxcgs</q>_CO1-0'   : {'pos': [2,0], 'title': r'$f(L_{CO(1-0 [erg.cm^2.s-1]})$'       , 'v_rng': [-10.0, -4.0], 'log10': True},
 #                      'f_mean_em_<q>fluxKkms</q>_CO1-0'  : {'pos': [2,1], 'title': r'$f(L_{CO(1-0}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
 #                      'f_mean_em_<q>Tex</q>_CO1-0'       : {'pos': [2,2], 'title': r'$f(Tex_{CO(1-0} [K])$'                , 'v_rng': [0.0, 1000.0], 'log10': False},
 #                      'f_mean_em_<q>tau</q>_CO1-0'       : {'pos': [2,3], 'title': r'$f(tau_{CO(1-0} [K])$'                , 'v_rng': [0.0, 100.0], 'log10': False},
@@ -112,10 +112,8 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
 
           'interpolator' : scipy.interpolate.NearestNDInterpolator, 
           #'interpolator' : scipy.interpolate.LinearNDInterpolator, 
-          'image_save'  : False,
-          'image_ext'   : 'eps',
-          #'save_info'   : True,
-          #'save_secies' : ['CO', '13CO']
+          'save_info'   : True,
+          'save_secies' : ['CO', '13CO']
           }
 
 #fluxcgs, fluxKkms, tau, Tex, T_R

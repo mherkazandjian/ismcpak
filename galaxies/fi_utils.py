@@ -617,8 +617,6 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
     '''
     bs_min, bs_max = map_params['ranges']['box_size'].number
     
-    #displaying all the maps in a single plot
-    
     fig = pylab.figure(figsize=(8,8))
 
     ax = fig.add_axes([0.15, 0.085, 0.75, 0.75])
@@ -648,12 +646,13 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
     pylab.figtext(0.01, 0.87, '%.2f' % snap_time + 'Gyr', 
             color='black', size='xx-large', weight='bold')
 
-    filename_fig = processed_snap_filename + '.eps' 
-    fig.savefig(filename_fig)
-    print 'saved image file to :\n\t\t\t %s' % filename_fig
+    if 'save_image' in params and params['save_image'] == True:
+        filename_fig = processed_snap_filename + '.eps' 
+        fig.savefig(filename_fig)
+        print 'saved image file to :\n\t\t\t %s' % filename_fig
     
     #copy the saved image to the latex direcotry
-    if 'latex' in params:
+    if 'latex' in params and params['latex'] == True:
 
         copy_to = os.path.join(params['latex'], '%s-%s-%s' % (os.path.split(os.path.split(params['rundir'])[-2])[-1],    
                                                               os.path.split(params['rundir'])[-1],
@@ -665,11 +664,7 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
         subprocess.call(args)
         
         print 'copied %s to \n\t %s' % (filename_fig, copy_to) 
-    
-    
-    
-    
-    
+        
 def plot_map_from_saved_data(snapIndex, map_info, params):
     '''
     '''
@@ -686,7 +681,6 @@ def plot_map_from_saved_data(snapIndex, map_info, params):
     snap_time = get_snapshot_time(snapIndex, params)
 
     plot_map(map_data, map_params, map_info, snap_time, params, snap_data_filename)
-    
 #
 
 def plot_all_maps_for_snapshot_from_saved_data(snapIndex, params):
