@@ -1,4 +1,5 @@
 import os, sys, time
+import subprocess, shlex
 
 import numpy
 from numpy import log10
@@ -7,14 +8,13 @@ import pylab
 
 import time
 
-from IPython.parallel.util import interactive
-from IPython.parallel import Client
-
 from amuse.units import units, constants, nbody_system
 from amuse.datamodel import Particles
 from amuse.io import read_set_from_file, fi_io
 
+import meshUtils
 import lineDict
+import pdrDict
 
 from mylib.utils.histogram import hist_nd
 from mylib.utils.interpolation import sectioned_4D_interpolator 
@@ -156,7 +156,7 @@ def guess_metallicity(runDir):
         metallicity = 1.0
     return metallicity
 
-def gas_particle_emission(gas, map_key, arxvPDR, interp_funcs):
+def gas_particle_info_from_interp_func(gas, map_key, arxvPDR, interp_funcs):
     '''given a bunch of gas particles, returns the emission according to what is specied in the paramter
     map
     '''
@@ -205,7 +205,7 @@ def save_gas_particle_info_saperate_files(path_of_snapshot, gas, species):
         
         for attr in attr_list:
             
-            if 'em_' in attr and '__' not in attr:
+            if ('em_' in attr or 'empdr_' in attr) and '__' not in attr:
                 
                 lineStr = attr.split('_')[-1]
          
@@ -225,6 +225,28 @@ def save_gas_particle_info_saperate_files(path_of_snapshot, gas, species):
             print 'no emission info found for this species : %s' % specStr
     #
 
+    #saving the info related to the PDR (non emission stuff), i.e attributes which do not have 'em' in them
+    #but have the '_pdr_' as a sub string
+    attr_save_pdr = []
+        
+    for attr in attr_list:
+            
+        if ('pdr_' in attr and 'empdr_' not in attr) and '__' not in attr:
+                
+            attr_save_pdr.append(attr)
+        #
+    #
+        
+        
+    if len(attr_save_pdr) > 0:
+        print attr_save_pdr
+        filename_pdr = filename + '.pdr.npz'
+        save_gas_particle_info(filename_pdr, gas, attr_save_pdr)
+        print '\t\t\twrote file : %s ' % filename_pdr
+    else:
+        print 'no pdr info found'
+    #
+
 
 def save_gas_particle_info(filename, gas, attr_name_list):
     '''save the data of the sph particles into a file. Only the attributes in the list are saved. The
@@ -241,33 +263,40 @@ def save_gas_particle_info(filename, gas, attr_name_list):
         
     numpy.savez_compressed(filename, *attr_data_list, names=attr_arr)
 
-def load_gas_particle_info(filename):
-    '''save the data of the sph particles into a file. Only the attributes in the list 
-     are saved. The file is written into a npz file.
-    '''
+def load_gas_particle_info(filename, load_pdr=None):
+    '''load the particle states from the file'''
     
-    data = numpy.load(filename)
-    
+    data = numpy.load(filename)    
     n = data['arr_0'].size
 
     gas = Particles(n)
 
     for i, name in enumerate(data['names']):
         setattr(gas, name, data['arr_%d' % i])
+    
+    all_names = data['names'] 
+    
+    if load_pdr == True:
+        data_pdr = numpy.load(filename + '.pdr.npz')
+        for i, name in enumerate(data_pdr['names']):
+            setattr(gas, name, data_pdr['arr_%d' % i])
         
-    return gas, data['names']
+        all_names = numpy.hstack((all_names, data_pdr['names']))
 
-def load_gas_particle_info_with_em(filename, species):
+    return gas, all_names
+
+def load_gas_particle_info_with_em(filename, species, load_pdr=None):
     '''loads the specified file foo.states.npz, also looks for files
      foo.states.npz.em_XYZ.npz, where XYZ is an entry in the list of strings in species
     '''
     
     names_all = []
     
-    gas, names = load_gas_particle_info(filename)
+    #loading the states of the sph particles
+    gas, names = load_gas_particle_info(filename, load_pdr=load_pdr)
     print 'loaded file: \n\t\t %s' % filename
     
-    names_all.append(names.tolist())
+    names_all.append(names.tolist())     
     
     for specStr in species:
         filename_this = filename + '.em_%s.npz' % specStr
@@ -280,23 +309,23 @@ def load_gas_particle_info_with_em(filename, species):
         names_all.append(names_this.tolist())
         
         del gas_this
-        
+    
     print 'att attributes loaded are : ', names_all
     
     print 'warning: make sure the computed optical depths make sense!!! it doesnt seem so..'
     return gas
 
-def make_map(map_key, gas, hist, as_log10=None):
+def make_map(gas, hist, attr=None, as_log10=None, func=None, **kwargs):
     '''looping over the bins of the 2D histogram of the x,y coordinates and 
      computing the averages of the maps
     '''
 
     map_data = numpy.zeros((hist.nBins[0], hist.nBins[1]), dtype=numpy.float64)
 
-    if map_key not in dir(gas[0]):  
-        raise AttributeError('%s is not an attribute of the gas particles,' % map_key)
+    if attr not in dir(gas[0]):  
+        raise AttributeError('%s is not an attribute of the gas particles,' % attr)
         
-    attr_data = getattr(gas, map_key)
+    attr_data = getattr(gas, attr)
     
     for i in numpy.arange(hist.nBins[0]):
         
@@ -308,8 +337,7 @@ def make_map(map_key, gas, hist, as_log10=None):
             
             if inds_in_bin.size > 0:
                 
-                #map_data[i,j] = attr_data[inds_in_bin].sum()
-                map_data[i,j] = numpy.mean(attr_data[inds_in_bin])
+                map_data[i,j] = func(attr_data[inds_in_bin])
             #
         #
     #
@@ -318,19 +346,6 @@ def make_map(map_key, gas, hist, as_log10=None):
         map_data = numpy.log10(map_data)
 
     return map_data
-
-def funcRadex(mesh_radex, **kwargs):
-    
-    if mesh_radex == None:
-        return numpy.nan
-    else:
-        transition_info = mesh_radex[kwargs['transitionIdx']] 
-        quantity = transition_info[kwargs['quantity']]  #a radex quantity
-        
-        if kwargs['quantity'] == 'fluxcgs' or kwargs['quantity'] == 'fluxKkms':
-            return log10(quantity) 
-        else:
-            return quantity
 
 def funcPDR(meshObj, **kwargs):
     
@@ -341,30 +356,55 @@ def funcPDR(meshObj, **kwargs):
     
     return log10(value)
 
-'''
-def get_interpolation_function_pdr(**kwargs):
+def get_interpolation_function_pdr(arxvPDR, params, logger, **kwargs):
     """makes an interpolation function from a integrated PDR quantity"""
-    
-    v = arxvPDR.apply_function_to_all_meshes(funcPDR, func_kw = kwargs)
 
-    v = numpy.array(v)
-    inds_valid = numpy.isfinite(v)
-    v = v[inds_valid] 
+    Av_range = params['ranges']['interp']['Av']
+    Av_res   = params['ranges']['interp']['Av_res']
+
+    #computing the quantities at the desired location in Av, which will be used
+    #to construct the interpolation functions
+    Avs = numpy.linspace(Av_range[0], Av_range[1], (Av_range[1] - Av_range[0])/Av_res + 1) 
+
+    kwargs['up_to_Av'] = {}
+    func = kwargs.pop('func')
     
-    xGrd, yGrd, zGrd = arxvPDR.grid_x[inds_valid], arxvPDR.grid_y[inds_valid], arxvPDR.grid_z[inds_valid]
-    data = numpy.array([xGrd, yGrd, zGrd], dtype = numpy.float64).T
-    
-    t0 = time.time()
-    
-    if 'sectioned' in kwargs and kwargs['sectioned'] == True:
-        fInterp = sectioned_4D_interpolator(data, v, params['interpolator'])
-    else:
-        fInterp = params['interpolator'](data, v)
+    print '\t\tcomputing info from the PDR mesh at Av = : '
+    for i, Av in enumerate(Avs):
         
-    logger.debug('time contruncting interpolator for quantity %s %s in %.4f seconds.' % (kwargs['quantity'][1], kwargs['quantity'][3], time.time() - t0))
+        print '                                              %.2f' % Av
+        kwargs['up_to_Av'] = Av
+        
+        #getting the data corresponding to this Av
+        v = arxvPDR.apply_function_to_all_meshes(func, func_kw = kwargs)
+
+        #keeping the points which are useful (finite ones) 
+        v = numpy.array(v)
+        inds_valid = numpy.isfinite(v)
+        v = v[inds_valid]
+
+        xGrd, yGrd, zGrd = arxvPDR.grid_x[inds_valid], arxvPDR.grid_y[inds_valid], arxvPDR.grid_z[inds_valid]
+        AvGrd = numpy.ones(xGrd.shape, 'f')*Av
+        data = numpy.array([xGrd, yGrd, zGrd, AvGrd], dtype = numpy.float64).T
+                
+        #soting the x,y,z,t, and v into arrays to be used later to construct the interpoaltion function
+        if i == 0:
+            data_all_Av = data
+            v_all_Av = v
+        else:
+            data_all_Av = numpy.vstack( (data_all_Av, data) )
+            v_all_Av = numpy.hstack( (v_all_Av, v) )
+    #
+
+
+    t0 = time.time()
+    if 'sectioned' in kwargs and kwargs['sectioned'] == True:
+        fInterp = sectioned_4D_interpolator(data_all_Av, v_all_Av, params['interpolator'])
+    else:
+        fInterp = params['interpolator'](data_all_Av, v_all_Av)
+    logger.debug('time contruncting interpolation function for %s in %.4f seconds' % (kwargs['descr'], time.time() - t0))
 
     return fInterp
-'''
 
 
 def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
@@ -393,7 +433,7 @@ def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
         arxvPDR.use_radexDb(specStr=specStr, Av=Av)
         
         #getting the data corresponding to this Av
-        v = arxvPDR.apply_function_to_all_radex_meshes(funcRadex, func_kw = kwargs)
+        v = arxvPDR.apply_function_to_all_radex_meshes(meshUtils.radex_mesh_quantity, func_kw = kwargs)
                     
         #keeping the points which are useful (finite ones) 
         v = numpy.array(v)
@@ -442,19 +482,21 @@ def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
     logger.debug('time contruncting interpolation function for %s transition %d in %.4f seconds' % (specStr, kwargs['transitionIdx'], time.time() - t0))
     return fInterp
 
-def make_emission_interp_funcs(arxvPDR, em_keys, params, logger):
+def make_interp_funcs_from_arxv(arxvPDR, em_keys, pdr_keys, params, logger):
     '''returns a dictionary of functions with keys XYZ-UPPER-LOWER. Items in 'maps' which have
     _em_ are parsed and the transition is looked up (f_mean_em_C+-1-0 is parsed into C+-1-0) 
     and an interpolation function for C+-1-0 is computed.
     '''
+    print 'contructing interpolation functions'
     
     arxvPDR.logger = logger
 
-    em_interp_funcs = {}
+    em_interp_funcs  = {}
+    pdr_interp_funcs = {}
     
     for map_key in em_keys:
         
-        line = map_key.split('_')[-1] # BLABLA_SPECSTRUPPER-LOWER
+        line = map_key.split('_')[-1] # an entry in the dictionary lineDict.lines
                     
         if lineDict.lines[line]['type'] == 'radex-lvg':
             em_interp_funcs[map_key] = get_interpolation_function_radex(
@@ -466,18 +508,41 @@ def make_emission_interp_funcs(arxvPDR, em_keys, params, logger):
                                                                         transitionIdx = lineDict.lines[line]['radexIdx'],
                                                                         sectioned = True,
                                                                        )
-        '''
+        ''' (not tested)
         if lines_info[line]['type'] == 'pdr':
-            em_interp_funcs[line] = get_interpolation_function_pdr(
-                                                         quantity = lines_info[line]['quantity'],
-                                                         sectioned = True,
-                                                         )
+            em_interp_funcs[map_key] = get_interpolation_function_pdr(
+                                                                      quantity = lines_info[line]['quantity'],
+                                                                      sectioned = True,
+                                                                      )
         '''
-            
-    return em_interp_funcs
 
-def snapshot_emission(snap, arxvPDR, em_interp_funcs, em_keys, params, logger):
-    '''generates the maps from the sph gas particles
+    for map_key in pdr_keys:
+        
+        #getting interpolation function for column densities
+        print map_key
+        quantity = map_key.split('_')[-1] # an entry in the dictionary pdrDict.pdr
+        
+        pdr_interp_funcs[map_key] = get_interpolation_function_pdr(
+                                                                   arxvPDR,
+                                                                   params,
+                                                                   logger,
+                                                                   specStr = pdrDict.pdr[quantity]['specStr'],
+                                                                   quantity = pdrDict.pdr[quantity]['ismcpak'],
+                                                                   descr = pdrDict.pdr[quantity]['descr'],
+                                                                   func = pdrDict.pdr[quantity]['func'],
+                                                                   as_log10 = params['maps'][map_key]['log10_interp_func'], 
+                                                                   sectioned = True,
+                                                                  )
+
+        
+    print 'done making the interpolation functions'
+    
+    return em_interp_funcs, pdr_interp_funcs
+
+def snapshot_interpolated_data(snap, arxvPDR, em_interp_funcs, pdr_interp_funcs, em_keys, pdr_keys, params, logger):
+    '''get the emission info using supplied interpolation functions for a certain snapshot
+     Returns the requested emissions as a dict and also returnes the gas particles with those
+     set as attributes.
     '''
     
     #snapshot index
@@ -539,143 +604,104 @@ def snapshot_emission(snap, arxvPDR, em_interp_funcs, em_keys, params, logger):
     #computing the emissions of the SPH particles from the PDR interpolation functions
     print 'getting the emissions of each sph particle'    
 
-    em_sph = {}
-        
-    for em_key in em_keys: em_sph[em_key] = gas_particle_emission(gas, em_key, arxvPDR, em_interp_funcs)
-        
-    return em_sph, gas
+    em_sph = {}        
+    for em_key in em_keys: em_sph[em_key] = gas_particle_info_from_interp_func(gas, em_key, arxvPDR, em_interp_funcs)
 
+    pdr_sph = {}        
+    for pdr_key in pdr_keys: pdr_sph[pdr_key] = gas_particle_info_from_interp_func(gas, pdr_key, arxvPDR, pdr_interp_funcs)
+        
+    return em_sph, pdr_sph, gas
 
-def plot_maps(snapIndex, em_sph, gas, params, logger):
-    '''generates the maps from the sph gas particles
+def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_filename):
     '''
+    '''
+    bs_min, bs_max = map_params['ranges']['box_size'].number
     
-    #getting the time unit
-    conv = nbody_system.nbody_to_si(1 | units.kpc, 1e9 | units.MSun)
-    timeUnit = conv.to_si(1 | nbody_system.time).in_(units.Gyr)
+    #displaying all the maps in a single plot
+    
+    fig = pylab.figure(figsize=(8,8))
 
-    #getting the time of the snapshot
-    path = params['rundir'] + '/firun/runinfo'
-    runinfo = parse_old_runinfo_file(path)
-    snap_time = (float(runinfo['dtime'])*timeUnit.number) * (float(runinfo['noutbod']) * snapIndex)
+    ax = fig.add_axes([0.15, 0.085, 0.75, 0.75])
 
-    maps = params['maps']
+    ax.set_xlabel('x(kpc)', size='large')    
+    ax.set_ylabel('y(kpc)', size='large')
+    ax.set_xlim([bs_min, bs_max])
+    ax.set_ylim([bs_min, bs_max])
     
-    #---------------------------------------------------------------------------------------
-    # Done getting the distribution of mass, particle count as a function of number density
-    #---------------------------------------------------------------------------------------
-    print 'getting the spatial distrubutions'
-    
-    nBins = params['imres']    #mesh resolution use in binning
-    
-    for map_idx_key in maps:
-        maps[map_idx_key]['data'] = numpy.zeros((nBins, nBins), dtype=numpy.float64) 
-        maps[map_idx_key]['f_logn'] = None 
-    
-    x_sph, y_sph = gas.x, gas.y
-    m_sph, G0_sph, n_sph, Av_sph, gmech_sph, T_sph = gas.mass, gas.G0, gas.n, gas.Av, gas.gmech, gas.T
+    im = ax.imshow(map_data,
+                   extent=[bs_min, bs_max, bs_min, bs_max],
+                   vmin=map_info['v_rng'][0],  
+                   vmax=map_info['v_rng'][1], 
+                   interpolation='bessel', #intepolation used for imshow
+                   origin='lower')
 
-    bs_min, bs_max = params['ranges']['box_size'].number
-     
-    hist = hist_nd(numpy.vstack((x_sph, y_sph)), mn = bs_min, mx=bs_max, nbins=nBins, reverse_indicies=True, loc=True)
-    hist.info()
-
-    #looping over the bins of the 2D histogram of the x,y coordinates and computing the averages of the maps
-    for i in numpy.arange(nBins):
-        
-        for j in numpy.arange(nBins):
-            
-            inds_in_bin = hist.get_indicies([i,j])
-            
-            maps['f_n_part']['data'][i,j] = inds_in_bin.size
-            
-            if inds_in_bin.size > 0:
-                maps['f_mass']['data'][i,j]    = m_sph[inds_in_bin].sum()
-                maps['f_mean_n']['data'][i,j]  = numpy.mean(n_sph[inds_in_bin])
-                maps['f_mean_g0']['data'][i,j] = numpy.mean(G0_sph[inds_in_bin])
-                maps['f_mean_gm']['data'][i,j] = numpy.mean(gmech_sph[inds_in_bin])
-                maps['f_mean_Av']['data'][i,j] = numpy.mean(Av_sph[inds_in_bin])
-                maps['T_mean']['data'][i,j]    = numpy.mean(T_sph[inds_in_bin])
-
-                for key in em_sph:
-                    if '_em_' in key:
-                        maps[key]['data'][i,j] = numpy.mean(em_sph[key][inds_in_bin])    
-    #
-    #
-    def fetch_grid_data(map_key, do_log10 = None):
-        '''returns the data of a map given its key in parms['maps']. Basically this returns params['maps']['MAP_KEY]['data']'''
-        if do_log10 != None and do_log10 == True:
-            return log10(maps[map_key]['data'])
-        else:
-            return maps[map_key]['data']
-    #
-    #
+    ax.set_title(map_info['title'], size=30)
+    ax.tick_params(axis='both', which='major', labelsize=20)
     
-    #displaying all the maps in a single plot    
-    print 'done getting the spatial distributuions'
-    
-    fig, axs = pylab.subplots(4, 4, sharex=True, sharey=True, figsize=(12, 12), 
-                              subplot_kw = {'xlim':[bs_min, bs_max],
-                                            'ylim':[bs_min, bs_max],
-                                            'aspect':'equal',
-                                            'adjustable':'datalim',
-                                           })
-                              
-    for ax in axs[:,0]: ax.set_ylabel('y(kpc)')
-    for ax in axs[3,:]: ax.set_xlabel('x(kpc)')
-    
-    pylab.subplots_adjust(left=0.05, bottom=0.05, right=0.9, top=0.9, wspace=0.15, hspace=0.15)
-    
-    for map_key in maps:
-        
-        i, j = maps[map_key]['pos']
-        
-        im_map = maps[map_key]
-        
-        map_data = fetch_grid_data(map_key, do_log10 = im_map['log10']).T
-        
-        print 'idx = %d,%d quantity = %-30s max,min = %s,%s' % (im_map['pos'][0], im_map['pos'][1], map_key, map_data.min(), map_data.max()) 
+    cbar_ax = fig.add_axes([0.2, 0.97, 0.6, 0.02]) 
+    cbar_ax.tick_params(axis='both', which='major', labelsize=30)
 
-        #clipping the map values outside the specified colorbar ranges
-        map_data = numpy.clip(map_data, im_map['v_rng'][0], im_map['v_rng'][1])
-        
-        im = axs[i,j].imshow(map_data, 
-                             extent=[bs_min, bs_max, bs_min, bs_max],
-                             vmin=im_map['v_rng'][0], 
-                             vmax=im_map['v_rng'][1], 
-                             interpolation='bessel', #intepolation used for imshow
-                             origin='lower')
-        axs[i,j].set_title(im_map['title'], size='large')
-        
-        pylab.colorbar(im, ax=axs[i,j], orientation='vertical')
-        
-        axs[i,j].set_xlim([bs_min, bs_max])
-        axs[i,j].set_ylim([bs_min, bs_max])
-    #
     
-    #plotting the time string
-    pylab.figtext(0.05, 0.97, '%.3f %s' % (snap_time, timeUnit.unit.symbol), size='xx-large', color='k')
-    image_fname =  params['rundir'] + '/analysis/maps.%06f.%s' % (snapIndex, params['image_ext'])
+    pylab.colorbar(im, ax=ax, cax=cbar_ax, orientation='horizontal', 
+                   ticks=numpy.linspace(map_info['v_rng'][0], map_info['v_rng'][1], 5))
     
-    #saving the image
-    if params['image_save'] == True:
-        fig.savefig(image_fname)
-    print 'wrote image file : %s' % image_fname
+    pylab.figtext(0.01, 0.87, '%.2f' % snap_time + 'Gyr', 
+            color='black', size='xx-large', weight='bold')
 
-    #plotting the mesh of the histogram
-    pylab.Figure()
-    pylab.plot(hist.f.cntrd[0].flatten(), hist.f.cntrd[1].flatten(), '+')
+    filename_fig = processed_snap_filename + '.eps' 
+    fig.savefig(filename_fig)
+    print 'saved image file to :\n\t\t\t %s' % filename_fig
+    
+    #copy the saved image to the latex direcotry
+    if 'latex' in params:
 
-    #saving the computed info
-    if params['save_info'] == True:
-         
-        snap_filename = params['rundir'] + '/firun/fiout.%06d' % snapIndex  
-            
-        save_gas_particle_info_saperate_files(snap_filename, gas, params['save_secies'])
+        copy_to = os.path.join(params['latex'], '%s-%s-%s' % (os.path.split(os.path.split(params['rundir'])[-2])[-1],    
+                                                              os.path.split(params['rundir'])[-1],
+                                                              os.path.split(filename_fig)[-1]
+                                                              )
+                               )
+        command = 'cp %s %s' % (filename_fig, copy_to)
+        args = shlex.split(command)
+        subprocess.call(args)
         
-        #gas_loaded = fi_utils.load_gas_particle_info(filename) 
+        print 'copied %s to \n\t %s' % (filename_fig, copy_to) 
+    
+    
+    
+    
+    
+def plot_map_from_saved_data(snapIndex, map_info, params):
+    '''
+    '''
+    #path to processed fi snapshot  
+    snap_data_filename = os.path.join(params['rundir'],'analysis', 'fiout.%06d.%s.npz' % (snapIndex, map_info['attr']))  
 
-    return gas, hist
+    #loading the data from disk
+    loaded_data = numpy.load(snap_data_filename)
+
+    #the map data and the parameters used to generate the data
+    map_data, map_params = loaded_data['map_data'], loaded_data['params'].tolist()
+
+    #the time of the snapshot
+    snap_time = get_snapshot_time(snapIndex, params)
+
+    plot_map(map_data, map_params, map_info, snap_time, params, snap_data_filename)
+    
+#
+
+def plot_all_maps_for_snapshot_from_saved_data(snapIndex, params):
+    '''
+    '''    
+    #getting all the maps
+    for this_map in params['all_maps']:
+    
+        this_map_info = params['all_maps'][this_map]
+        
+        plot_map_from_saved_data(snapIndex, this_map_info, params)
+        
+    print '---------------------------------------------------------------'
+    pylab.show()
+#
 
 def get_useful_gas_attr_from_dview(dview, gas_var_name, view_num):
     '''
@@ -700,13 +726,38 @@ def get_useful_gas_attr_from_dview(dview, gas_var_name, view_num):
     
 
 def get_emission_only_keys(map_keys):
-    '''from the names of the map keys, all the keys with an em_ are filtered out 
+    '''from the names of the map keys, all the keys with an _em_ are filtered out 
      and returned as emission keys
     ''' 
 
     em_keys = []
     for map_key in map_keys:      
-        if '_em_' in map_key:
+        if '_em_' in map_key or '_empdr_' in map_key:
             em_keys.append(map_key) 
 
     return em_keys
+
+def get_pdr_only_keys(map_keys):
+    '''picks keys which have the tag _pdr_ in them and not _em_. i.e one which correspond to info from the pdr
+    which are not related to the emission.
+    '''
+    
+    pdr_keys = []
+    for map_key in map_keys:      
+        if '_pdr_' in map_key:
+            pdr_keys.append(map_key) 
+
+    return pdr_keys
+
+def get_snapshot_time(snapIndex, params):
+    
+    #getting the time unit
+    conv = nbody_system.nbody_to_si(1 | units.kpc, 1e9 | units.MSun)
+    timeUnit = conv.to_si(1 | nbody_system.time).in_(units.Gyr)
+
+    #getting the time of the snapshot
+    path = params['rundir'] + '/firun/runinfo'
+    runinfo = parse_old_runinfo_file(path)
+    snap_time = (float(runinfo['dtime'])*timeUnit.number) * (float(runinfo['noutbod']) * snapIndex)
+
+    return snap_time

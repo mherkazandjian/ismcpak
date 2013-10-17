@@ -1,49 +1,40 @@
 '''
- in this test file, we load a database of PDR meshes and extract information
- at conditions determined by the SPH simulations
-
-  - exclude sph particles which have densities below which the LVG model codes can handel 
-    (for example, one with n_gas < 1e-3))
-  - exlcude particle with alpha > 1 (unless for very high densities (get the densitiy of 
-    the specie whose  emission is to be computed and see if its abundance is too low, if 
-    if is too low, just set the emission of the sph particle corresponding to that specie
-    to zero.
-  - abundances of CO for PDR modesls with n < 0.1 cm^-3 are ~ 1e-10 (which is too low compared to the
-    high density modesl
-
+- load pdr meshes DB
+- make interpolation functions 
+- compute the emissions of particles 
+- store the emissions into files
 '''
 #########################################################################################################
-import sys
-
 import matplotlib
 matplotlib.use('Qt4Agg')
 
 import scipy
 import numpy
 import pylab
+import time
 
 from amuse.units import units
 
-from mylib.utils.misc  import xselect, default_logger
+from mylib.utils.misc  import default_logger
 
 import fi_utils
 import meshUtils
 
 #======================================================parameters=================================================
 
-
-snaps = numpy.arange(4, 4 + 1, 1)
-
 home = '/home/mher'
 
-params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',      # the path to the dir containing the PDR database
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
-          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2/',          # the path to the dir containing the PDR database          
-          'use_em' : True, 
+          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2/',          # the path to the dir containing the PDR database
+                    
+          'use_em'  : False, 
+          'use_pdr' : True,
           
+          'snaps'  : numpy.arange(20, 20 + 1, 1),           
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
                              'min_log_n_use'  : -3.0,      
@@ -61,19 +52,20 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                                     'log_G0'   : [-2.0 ,  3.0 ],
                                     'log_gmech': [-50.0, -20.0],
                                     'Av'       : [ 3.0 ,  30.0],
-                                    },
+                                    'Av_res'   : 1.0,   #resolution of constructing the interp funcs from the PDR data  
+                                    },   #Av_res is used only for quantities interpolated upon from PDR meshes 
                       },
           
-          'emission': {'f_mean_em_<q>fluxcgs</q>_CO<template>' : 2,
-                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 2,
-                      'f_mean_em_<q>Tex</q>_CO<template>'      : 2,
-                      'f_mean_em_<q>tau</q>_CO<template>'      : 2,
-                      
-                      'f_mean_em_<q>fluxcgs</q>_13CO<template>' : 3,
-                      'f_mean_em_<q>fluxKkms</q>_13CO<template>': 3,
-                      'f_mean_em_<q>Tex</q>_13CO<template>'     : 3,
-                      'f_mean_em_<q>tau</q>_13CO<template>'      : 3,
-
+          'emission': {
+#                        'f_mean_em_<q>fluxcgs</q>_CO<template>' : 2,
+#                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 2,
+#                      'f_mean_em_<q>Tex</q>_CO<template>'      : 2,
+#                      'f_mean_em_<q>tau</q>_CO<template>'      : 2,
+#                      
+#                      'f_mean_em_<q>fluxcgs</q>_13CO<template>' : 3,
+#                      'f_mean_em_<q>fluxKkms</q>_13CO<template>': 3,
+#                      'f_mean_em_<q>Tex</q>_13CO<template>'     : 3,
+#                      'f_mean_em_<q>tau</q>_13CO<template>'     : 3,
                       },
           
           'maps'   : {
@@ -99,27 +91,31 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       ##'f_mean_em_<q>fluxKkms</q>_13CO<template>'  : {'pos': [3,2], 'title': r'$f(L_{13CO(1-0})$'   , 'v_rng': [-10.0, -4.0] , 'log10': True},
                       ##'f_mean_em_<q>tau</q>_13CO<template>'      : {'pos': [3,3], 'title': r'$f(tau_{CO(1-0})$'   , 'v_rng': [0.0, 100.0], 'log10': False},
                       ########                                            
-                      'f_mean_em_<q>fluxcgs</q>_13CO<template>'   : {'pos': [3,0], 'title': r'$f(L_{13CO(1-0})$'   , 'v_rng': [-10.0, -4.0] , 'log10': True},
-                      'f_mean_em_<q>Tex</q>_13CO<template>'       : {'pos': [3,1], 'title': r'$f(Tex_{13CO(1-0})$' , 'v_rng': [0.0, 10000.0], 'log10': False},
-                      'f_mean_em_<q>fluxKkms</q>_13CO<template>'  : {'pos': [3,2], 'title': r'$f(L_{13CO(1-0})$'   , 'v_rng': [-10.0, -4.0] , 'log10': True},
-                      'f_mean_em_<q>tau</q>_13CO<template>'      : {'pos': [3,3], 'title': r'$f(tau_{CO(1-0})$'   , 'v_rng': [0.0, 100.0], 'log10': False},
+#                     'f_mean_em_<q>fluxcgs</q>_13CO<template>'   : {'pos': [3,0], 'title': r'$f(L_{13CO(1-0})$'   , 'v_rng': [-10.0, -4.0] , 'log10': True},
+#                     'f_mean_em_<q>Tex</q>_13CO<template>'       : {'pos': [3,1], 'title': r'$f(Tex_{13CO(1-0})$' , 'v_rng': [0.0, 10000.0], 'log10': False},
+#                     'f_mean_em_<q>fluxKkms</q>_13CO<template>'  : {'pos': [3,2], 'title': r'$f(L_{13CO(1-0})$'   , 'v_rng': [-10.0, -4.0] , 'log10': True},
+#                     'f_mean_em_<q>tau</q>_13CO<template>'      : {'pos': [3,3], 'title': r'$f(tau_{CO(1-0})$'   , 'v_rng': [0.0, 100.0], 'log10': False},
                       ########                                            
-                      'f_mean_em_<q>fluxcgs</q>_CO1-0'   : {'pos': [2,0], 'title': r'$f(L_{CO(1-0 [erg.cm^2.s-1]})$'       , 'v_rng': [-10.0, -4.0], 'log10': True},
-                      'f_mean_em_<q>fluxKkms</q>_CO1-0'  : {'pos': [2,1], 'title': r'$f(L_{CO(1-0}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
-                      'f_mean_em_<q>Tex</q>_CO1-0'       : {'pos': [2,2], 'title': r'$f(Tex_{CO(1-0} [K])$'                , 'v_rng': [0.0, 1000.0], 'log10': False},
-                      'f_mean_em_<q>tau</q>_CO1-0'       : {'pos': [2,3], 'title': r'$f(tau_{CO(1-0} [K])$'                , 'v_rng': [0.0, 100.0], 'log10': False},
+                     'f_mean_em_<q>fluxcgs</q>_CO1-0'   : {'pos': [2,0], 'title': r'$f(L_{CO(1-0 [erg.cm^2.s-1]})$'       , 'v_rng': [-10.0, -4.0], 'log10': True},
+#                      'f_mean_em_<q>fluxKkms</q>_CO1-0'  : {'pos': [2,1], 'title': r'$f(L_{CO(1-0}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
+#                      'f_mean_em_<q>Tex</q>_CO1-0'       : {'pos': [2,2], 'title': r'$f(Tex_{CO(1-0} [K])$'                , 'v_rng': [0.0, 1000.0], 'log10': False},
+#                      'f_mean_em_<q>tau</q>_CO1-0'       : {'pos': [2,3], 'title': r'$f(tau_{CO(1-0} [K])$'                , 'v_rng': [0.0, 100.0], 'log10': False},
                       #'f_mean_em_<q>fluxcgs</q>_13CO1-0'       : {'pos': [3,0], 'title': r'$f(L_{13CO(1-0})$'                 , 'v_rng': [-10.0, -7.0], 'log10': True},
                       #'f_mean_em_no_gm_HCN-1-0' : {'pos': [3,1], 'title': r'$f(L_{HCN(1-0)})$ $\Gamma_m = 0$' , 'v_rng': [-10.0, -7.0], 'log10': True},
                       #'f_mean_em_HCO+-1-0'      : {'pos': [3,2], 'title': r'$f(L_{HCO+(1-0})$'                , 'v_rng': [-10.0, -7.0], 'log10': True},
                       #'f_mean_em_no_gm_HCO+-1-0': {'pos': [3,3], 'title': r'$f(L_{HCO+(1-0)})$ $\Gamma_m = 0$', 'v_rng': [-10.0, -7.0], 'log10': True},
+                       'f_mean_pdr_NCO' : {'pos': [3,0], 'title': r'$log10 N(CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                       'f_mean_pdr_NH2' : {'pos': [3,1], 'title': r'$log10 N(H2) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      #'f_mean_empdr_C63' : {'pos': [3,0], 'title': r'$log10 N(CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      #the empdr thing is not implemented yet!!!
                       },
 
-          #'interpolator' : scipy.interpolate.NearestNDInterpolator, 
-          'interpolator' : scipy.interpolate.LinearNDInterpolator, 
+          'interpolator' : scipy.interpolate.NearestNDInterpolator, 
+          #'interpolator' : scipy.interpolate.LinearNDInterpolator, 
           'image_save'  : False,
           'image_ext'   : 'eps',
-          'save_info'   : True,
-          'save_secies' : ['CO', '13CO']
+          #'save_info'   : True,
+          #'save_secies' : ['CO', '13CO']
           }
 
 #fluxcgs, fluxKkms, tau, Tex, T_R
@@ -154,35 +150,48 @@ arxvPDR = meshUtils.meshArxv(dirPath = params['pdrDb'], readDb=True)
 #=============================================
 #loading the molecular specie radex database
 #arxvPDR.readDbsRadex(allDbs=True)
-#arxvPDR.readDbsRadex(species=['CO','HCN','HNC','HCO+'], Av=params['ranges']['interp']['Av'])
 #arxvPDR.readDbsRadex(species=['CO','HCN', 'HCO+'], in_Av_rng=params['ranges']['interp']['Av'])
 arxvPDR.readDbsRadex(species=['CO'], in_Av_rng=params['ranges']['interp']['Av'])
 ########################################################################################################
 
 #the keys of the emission maps only
-em_keys = fi_utils.get_emission_only_keys(params['maps'])
+if params['use_em'] == True:
+    em_keys = fi_utils.get_emission_only_keys(params['maps'])
+else:
+    print '\n\n\n\n\n\nflag to compute emissions is set to false, NOT computing emissions'
+    time.sleep(0.5)
+    em_keys = {}
 
-print 'contructing interpolation functions'
-em_interp_funcs = fi_utils.make_emission_interp_funcs(arxvPDR, em_keys, params, logger)
-print 'done making the interpolation functions'
+#the keys of the maps whose quantites will be extraceted from the PDR models
+if params['use_pdr'] == True:
+    pdr_keys = fi_utils.get_pdr_only_keys(params['maps'])
+else:
+    print '\n\n\n\n\n\nflag to compute info from PDR datase is set to false, NOT computing pdr info'
+    time.sleep(0.5)
+    em_keys = {}
 
-for snap in snaps:
+#making all the interpolation functions
+em_interp_funcs, pdr_interp_funcs = fi_utils.make_interp_funcs_from_arxv(arxvPDR, em_keys, pdr_keys, params, logger)
 
-    em_sph, gas = fi_utils.snapshot_emission(snap, arxvPDR, em_interp_funcs, em_keys, params, logger)
-        
+for snap in params['snaps']:
+
+    em_sph, pdr_sph, gas = fi_utils.snapshot_interpolated_data(snap, arxvPDR, 
+                                                               em_interp_funcs, pdr_interp_funcs, 
+                                                               em_keys, pdr_keys, 
+                                                               params, logger)
+       
     #setting the emission info as attributes to the 'gas' particle set
-    for key in em_sph:
-            
+    all_info = dict(em_sph.items() + pdr_sph.items()) 
+    for key in all_info:
+        print key
         attr_name = key.replace('f_mean_','').replace('</q>','').replace('<q>','')
         
-        setattr(gas, attr_name, em_sph[key])
-    
+        setattr(gas, attr_name, all_info[key])
+
+    #saving the info interpolated from the PDR grids
     if params['save_info'] == True:
-        
         snap_filename = params['rundir'] + '/firun/fiout.%06d' % snap  
         fi_utils.save_gas_particle_info_saperate_files(snap_filename, gas, params['save_secies'])
-    
-fi_utils.plot_maps(snap, em_sph, gas, params, logger)
+#
 
-
-pylab.show()
+####add a plotting routine here for the masp

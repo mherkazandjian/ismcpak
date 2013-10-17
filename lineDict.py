@@ -177,4 +177,3 @@ def get_default_specStr(specStr):
                     return lines[line]['specStr']
     
     return None
-

@@ -3953,16 +3953,6 @@ class meshArxv(object):
         return arxv_ret
     
 #############################################################################################
-def pdr_mesh_log_intensity(meshObj, **kwargs):
-    '''returns the log10 intentisty (per sr) emitting from a pdr mesh with a certain Av'''
-    
-    quantity = kwargs['quantity']
-    up_to_Av = kwargs['up_to_Av']
-    
-    value = meshObj.compute_integrated_quantity(quantity, Av_range = [0.0, up_to_Av])
-    
-    return numpy.log10(value)
-
 def radex_mesh_log_intensity(mesh_radex, **kwargs):
     '''returns the log10 intentisty emitted from a radex model applied on a pdr mesh with the Av of the current Db'''
     
@@ -3972,4 +3962,76 @@ def radex_mesh_log_intensity(mesh_radex, **kwargs):
         return numpy.nan
     else:
         return numpy.log10(mesh_radex[transitionIdx]['fluxcgs'])
+
+def pdr_mesh_log_intensity(meshObj, **kwargs):
+    '''returns the log10 intentisty (per sr) emitting from a pdr mesh with a certain Av
     
+    .. todo:: to be deprecated
+    '''
+    
+    quantity = kwargs['quantity']
+    up_to_Av = kwargs['up_to_Av']
+    
+    value = meshObj.compute_integrated_quantity(quantity, Av_range = [0.0, up_to_Av])
+    
+    return numpy.log10(value)
+
+
+def radex_mesh_quantity(mesh_radex, **kwargs):
+    '''This is a utility function which returns a quantity from a radex mesh. The log of the flux is returned, for the rest
+     of the quantites, the quantity as is is returned. If the mesh_radex is None, nan is returned. This function can be passed
+     to  meshArxv.apply_function_to_all_radex_meshes(radex_mesh_quantity, func_kw = kwargs)
+     where kwargs are transitionIdx = integer (the transition index) and quantity = string (the quantity in the gtype to be returned)  
+    '''
+    
+    if mesh_radex == None:
+        return numpy.nan
+    else:
+        transition_info = mesh_radex[kwargs['transitionIdx']] 
+        quantity = transition_info[kwargs['quantity']]  #a radex quantity
+        
+        if kwargs['quantity'] == 'fluxcgs' or kwargs['quantity'] == 'fluxKkms':
+            return numpy.log10(quantity) 
+        else:
+            return quantity    
+        
+def pdr_mesh_integrated_quantity(mesh_obj, **kwargs):
+    '''This is a utility function which returns an intgerated quantity from a mesh up to a certain Av. This function can be passed
+     to  meshArxv.apply_function_to_all_meshes(pdr_mesh_integrated_quantity, kwargs) where kwargs are the 'quantity' in a :data:`mesh.mesh`
+     object and 'up_to_Av', which is the Av upto which the integration will be done. Also the keyword 'as_log10' can be passed
+     so that the log10 of the quantity is retured (this keyword is optional).
+     mesh_obj should be an object of type :data:`mesh.mesh`.
+     
+     This is not so useful in computing column densities since there is not one quantity that points to the abundance of 
+     species, since they are stored in a 2D array. For that purpose use, pdr_mesh_column_density()
+     
+    .. todo:: this should be used instead of pdr_mesh_log_intensity. 
+    '''
+
+    quantity = kwargs['quantity']
+    up_to_Av = kwargs['up_to_Av']
+    
+    value = mesh_obj.compute_integrated_quantity(quantity, Av_range = [0.0, up_to_Av])
+    
+    if 'as_log10' in kwargs and kwargs['as_log10'] == True:
+        return numpy.log10(value)
+    else:
+        return value
+    
+def pdr_mesh_column_density(mesh_obj, **kwargs):
+    '''Same as pdr_mesh_integrated_quantity, but returns a column density of a certain species.
+    '''
+
+    specStr  = kwargs['specStr']
+    up_to_Av = kwargs['up_to_Av']
+
+    value = mesh_obj.getColumnDensity(specsStrs = [specStr], maxAv = up_to_Av)
+
+    
+    if len(value) == 1:
+        value = value[0]
+        
+    if 'as_log10' in kwargs and kwargs['as_log10'] == True:
+        return numpy.log10(value)
+    else:
+        return value

@@ -52,8 +52,8 @@ snaps = numpy.arange(4, 4 + 1, 1)
 
 home = '/home/mher'
 
-params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           'imres' : 50,                                                 # resolution of the maps to be produced imres x imres
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',      # the path to the dir containing the PDR database
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
@@ -70,7 +70,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
-                      'box_size' : [-8.0, 8.0] | units.kpc, #kpc
+                      'box_size' : [-2.0, 2.0] | units.kpc, #kpc
 
                        #modes in the PDR arxv which are within those ranges will be used in constructing interpolation functions 
                       'interp'   : {'log_n'    : [-10.0,  10.0],
@@ -92,8 +92,8 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       #'f_mean_em_no_gm_C+-1-0' : {'pos': [1,2], 'title': r'$f(L_{C^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
                       #'f_mean_em_CO-7-6'       : {'pos': [1,3], 'title': r'$f(L_{O^+ 158 \mu m})$ $\Gamma_m = 0$', 'v_rng': [-6.0, -2.0]  , 'log10': True},
                       #--------
-                      'f_mean_em_CO1-0'       : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'                  , 'v_rng': [-10.0, -4.0], 'log10': True},
-                      'f_mean_em_CO2-1'       : {'pos': [2,1], 'title': r'$f(L_{CO(1-0})$'                  , 'v_rng': [-10.0, -4.0], 'log10': True},
+                      'f_mean_em_<q>fluxcgs</q>_CO1-0' : {'pos': [2,0], 'title': r'$f(L_{CO(1-0} erg.cm2.s-1)$' , 'v_rng': [-10.0, -4.0], 'log10': True},
+                      'f_mean_em_<q>fluxKkms</q>_CO1-0' : {'pos': [2,1], 'title': r'$f(L_{CO(1-0} K.km.s-1)$'    , 'v_rng': [-10.0, -4.0], 'log10': True},
                       #'f_mean_em_no_gm_CO-1-0' : {'pos': [2,1], 'title': r'$f(L_{CO(1-0)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
                       #'f_mean_em_CO-3-2'       : {'pos': [2,2], 'title': r'$f(L_{CO(3-2})$'                  , 'v_rng': [-10.0, -2.0], 'log10': True},
                       #'f_mean_em_no_gm_CO-3-2' : {'pos': [2,3], 'title': r'$f(L_{CO(3-2)})$ $\Gamma_m = 0$'  , 'v_rng': [-10.0, -2.0], 'log10': True},
@@ -112,25 +112,6 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           }
 
 #those are the lines which will be computed
-'''
-lines_info = { #line str  transIdx    trans latex str               pdr|lvg
-              #'C+-1-0'  :  {          'latex': r'C$^+$ 158 $\mum$', 'type':'pdr', 'quantity':['fineStructureCoolingComponents','C+','rate','1-0']},
-              'CO-1-0'  :  {'idx':0,  'latex': r'CO(1-0)'         , 'type':'lvg', },
-              'CO-2-1'  :  {'idx':1,  'latex': r'CO(1-0)'         , 'type':'lvg', },
-              #'CO-3-2'  :  {'idx':2,  'latex': r'CO(3-2)'         , 'type':'lvg', },
-              #'CO-7-6'  :  {'idx':6,  'latex': r'CO(7-6)'         , 'type':'lvg', },
-              #'CO-16-15':  {'idx':15, 'latex': r'CO(7-6)'         , 'type':'lvg', },
-                          
-              #'HCN-1-0':   {'idx':0,  'latex': r'HCN(1-0)'        , 'type':'lvg', },
-              #'HCN-3-2':   {'idx':2,  'latex': r'HCN(3-2)'        , 'type':'lvg', },
- 
-              #'HNC-1-0':   {'idx':0,  'latex': r'HNC(1-0)'        , 'type':'lvg', },
-              #'HNC-3-2':   {'idx':2,  'latex': r'HNC(3-2)'        , 'type':'lvg', },
-
-              #'HCO+-1-0':  {'idx':0,  'latex': r'HCO$^{+}$(1-0)'  , 'type':'lvg', },
-              #'HCO+-3-2':  {'idx':2,  'latex': r'HCO$^{+}$(3-2)'  , 'type':'lvg', },
-             }
-'''
 lines_info = lineDict.lines
 
 #############################setting up the PDR databaseses and the interpolation function##################
@@ -269,114 +250,23 @@ def get_interpolation_function_radex(arxvPDR, params, **kwargs):
     logger.debug('time contruncting interpolation function for %s transition %d in %.4f seconds' % (specStr, kwargs['transitionIdx'], time.time() - t0))
     return fInterp
 
-def make_emission_interp_funcs(params):
-    '''returns a dictionary of functions with keys XYZ-UPPER-LOWER. Items in 'maps' which have
-    _em_ are parsed and the transition is looked up (f_mean_em_C+-1-0 is parsed into C+-1-0) 
-    and an interpolation function for C+-1-0 is computed.
-    '''
-        
-    em_interp_funcs = {}
-    
-    for map_key in params['maps']:
-        
-        if '_em_' in map_key:
-            line = map_key.split('_')[-1] # the line XYZ-UPPER-LOWER
-            
-            specStr= line.split('-')[0]   # XYZ
-            
-            if lines_info[line]['type'] == 'radex-lvg':
-                em_interp_funcs[line] = get_interpolation_function_radex(
-                                                               arxvPDR, 
-                                                               params,
-                                                               specStr  = lines_info[line]['specStr'],
-                                                               transitionIdx = lines_info[line]['radexIdx'],
-                                                               sectioned = True,
-                                                              )
-            '''
-            if lines_info[line]['type'] == 'pdr':
-                em_interp_funcs[line] = get_interpolation_function_pdr(
-                                                             quantity = lines_info[line]['quantity'],
-                                                             sectioned = True,
-                                                             )
-            '''
-            
-    return em_interp_funcs
-
 #getting the time unit
 conv = nbody_system.nbody_to_si(1 | units.kpc, 1e9 | units.MSun)
 timeUnit = conv.to_si(1 | nbody_system.time).in_(units.Gyr)
 
+#the keys of the emission maps only
+em_keys = fi_utils.get_emission_only_keys(params['maps'])
+
 #constructing all the interpolation functions
 if params['use_em']:
     logger.debug('getting interpolation functions of the emissions')
-    em_interp_funcs = make_emission_interp_funcs(params)
+    em_interp_funcs = fi_utils.make_interp_funcs_from_arxv(arxvPDR, em_keys, params, logger)
     logger.debug('done getting interpolation functions of the emissions')
 
-
 #############################done setting   up the PDR databaseses and the interpolation function##################
 #############################done setting   up the PDR databaseses and the interpolation function##################
 #############################done setting   up the PDR databaseses and the interpolation function##################
 #############################done setting   up the PDR databaseses and the interpolation function##################
-
-def plot_map_standalone(key, title, params):
-    '''plots one of the generated maps. The data of the map should be generated a priori and set in 
-    the apropriate params['maps'][]
-    '''
-    
-    """
-    plot_map_standalone('f_mean_gm'             , r'log$_{10}$ ${\Gamma_m}$ / erg cm$^{-3}$ s$^{-1}$')
-    plot_map_standalone('f_mean_n'              , r'log$_{10}$ n$_{gas}$ / cm$^{-3}$')
-    plot_map_standalone('f_mean_em_CO-1-0'      , r'log$_{10}$ CO(1-0) / erg cm$^{-2}$ s$^{-1}$')
-    plot_map_standalone('f_mean_em_no_gm_CO-1-0', r'log$_{10}$ CO(1-0) / erg cm$^{-2}$ s$^{-1}$  , ${\Gamma_m}$ = 0')
-    plot_map_standalone('f_mean_em_CO-3-2'      , r'log$_{10}$ CO(3-2) / erg cm$^{-2}$ s$^{-1}$')
-    plot_map_standalone('f_mean_em_no_gm-CO-3-2', r'log$_{10}$ CO(3-2) / erg cm$^{-2}$ s$^{-1}$  , ${\Gamma_m}$ = 0')
-    """
-    
-    fig = pylab.figure(figsize=(6,6))
-    
-    ax = fig.add_axes([0.10, 0.08, 0.8, 0.8])
-    #ax_cbar = fig.add_axes([0.15, 0.8, 0.7, 0.03]) 
-    
-    #setting labels and ticklabels
-    ax.set_xlabel('x(kpc)', size='x-large')
-    ax.set_ylabel('y(kpc)', size='x-large')
-
-    bs_min, bs_max = params['ranges']['box_size'].number     
-    ax.set_xlim([bs_min, bs_max])
-    ax.set_ylim([bs_min, bs_max])
-    
-    ticksv = numpy.linspace(bs_min, bs_max, 5)
-    ax.set_xticks(ticksv)
-    ax.set_yticks(ticksv)
-
-    ax.set_xticklabels(ticksv, size='x-large')
-    ax.set_yticklabels(ticksv, size='x-large')
-
-    im_map = params['maps'][key] 
-
-    im_data = log10(im_map['data']).T
-    
-    #clipping the map values outside the specified colorbar ranges
-    im_data = numpy.clip(im_data, im_map['v_rng'][0], im_map['v_rng'][1])
-
-    im = ax.imshow(im_data, 
-                   extent=[bs_min, bs_max, bs_min, bs_max],
-                   vmin=im_map['v_rng'][0],     
-                   vmax=im_map['v_rng'][1],     
-                   interpolation='bessel', #intepolation used for imshow
-                   origin='lower')
-    
-    cbar = pylab.colorbar(im, orientation = 'horizontal', format = '%.1f', shrink=0.8, 
-                          ax = ax, 
-                          ticks=numpy.linspace(im_map['v_rng'][0], im_map['v_rng'][1], 5))
-
-    if title == None:
-        title=''
-        
-    ax.set_title(title, size='x-large')
-    fig.savefig('/home/mher/' + key + '.eps')
-    
-    return ax, cbar
 
 
 def generate_maps(snap, params):
@@ -451,7 +341,8 @@ def generate_maps(snap, params):
     #computing the emissions of the SPH particles from the PDR interpolation functions
     print 'getting the emissions of each sph particle'    
     if params['use_em']:
-        em_sph = fi_utils.gas_particle_all_emissions(gas, maps, arxvPDR, em_interp_funcs)
+        em_sph, gas = fi_utils.snapshot_interpolated_data(snap, arxvPDR, em_interp_funcs, em_keys, params, logger)
+        #em_sph = fi_utils.gas_particle_all_emissions(gas, maps, arxvPDR, em_interp_funcs)
 
         #setting the emission info as attributes to the 'gas' particle set
         for key in em_sph:
@@ -493,9 +384,10 @@ def generate_maps(snap, params):
                 maps['f_mean_Av']['data'][i,j] = numpy.mean(Av_sph[inds_in_bin])
                 maps['T_mean']['data'][i,j]    = numpy.mean(T_sph[inds_in_bin])
 
-                for key in em_sph:
-                    if '_em_' in key:
-                        maps[key]['data'][i,j] = numpy.mean(em_sph[key][inds_in_bin])
+                if params['use_em'] == True:
+                    for key in em_sph:
+                        if '_em_' in key:
+                            maps[key]['data'][i,j] = numpy.mean(em_sph[key][inds_in_bin])
     #
     #
     """

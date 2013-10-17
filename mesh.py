@@ -956,7 +956,7 @@ class mesh(object):
             Av = self.data['state']['Av']
             inds =  numpy.where((Av >= Av_range[0])*(Av < Av_range[1]))
             integrated_quantity = numpy.sum(q[inds]*dxSlabs[inds])
-            
+        
         return integrated_quantity
     
     def copy(self):

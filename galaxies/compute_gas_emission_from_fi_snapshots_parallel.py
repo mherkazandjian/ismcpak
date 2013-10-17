@@ -65,15 +65,15 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
                                     },
                       },
           
-          'emission': {'f_mean_em_<q>fluxcgs</q>_CO<template>' : 20,
-                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 20,
-                      'f_mean_em_<q>Tex</q>_CO<template>'      : 20,
-                      'f_mean_em_<q>tau</q>_CO<template>'      : 20,
+          'emission': {'f_mean_em_<q>fluxcgs</q>_CO<template>' : 15,
+                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 15,
+                      'f_mean_em_<q>Tex</q>_CO<template>'      : 15,
+                      'f_mean_em_<q>tau</q>_CO<template>'      : 15,
                       
-                      'f_mean_em_<q>fluxcgs</q>_13CO<template>' : 20,
-                      'f_mean_em_<q>fluxKkms</q>_13CO<template>': 20,
-                      'f_mean_em_<q>Tex</q>_13CO<template>'     : 20,
-                      'f_mean_em_<q>tau</q>_13CO<template>'     : 20,
+                      'f_mean_em_<q>fluxcgs</q>_13CO<template>' : 15,
+                      'f_mean_em_<q>fluxKkms</q>_13CO<template>': 15,
+                      'f_mean_em_<q>Tex</q>_13CO<template>'     : 15,
+                      'f_mean_em_<q>tau</q>_13CO<template>'     : 15,
 
                       },
           
@@ -204,37 +204,37 @@ the tasks over the engines).
 print 'interpolating emissions....'
 t0 = time.time()
 dview.scatter('em_keys', em_keys)
-dview.execute('snap=4', block=True)
-dview.execute('output=fi_utils.snapshot_emission(snap, arxvPDR, em_interp_funcs, em_keys, params, logger)', block=True)
-dview.execute('em_sph=output[0]', block=True)
-dview.execute('gas=output[1]', block=True)
-print 'done interpolating all the emissions in %.2e seconds' % (time.time() - t0)
 
-#collecting all the computed emissions to the process    
-em_sph = {}
-for em_this_view in dview['em_sph']: #looping over the list of data from the views
-    for em in em_this_view: #looping over the dict items in each em info computed in this view 
-        em_sph[em] = em_this_view[em]
-
-#reading the sph gas info from the zeroth engine
-gas = fi_utils.get_useful_gas_attr_from_dview(dview, 'gas', 0)
-
-
-#setting the emission info as attributes to the 'gas' particle set
-for key in em_sph:
+for snap in snaps:
+    
+    dview.execute('snap=4', block=True)
+    dview.execute('output=fi_utils.snapshot_emission(snap, arxvPDR, em_interp_funcs, em_keys, params, logger)', block=True)
+    dview.execute('em_sph=output[0]', block=True)
+    dview.execute('gas=output[1]', block=True)
+    print 'done interpolating all the emissions in %.2e seconds' % (time.time() - t0)
+    
+    #collecting all the computed emissions to the process    
+    em_sph = {}
+    for em_this_view in dview['em_sph']: #looping over the list of data from the views
+        for em in em_this_view: #looping over the dict items in each em info computed in this view 
+            em_sph[em] = em_this_view[em]
+    
+    #reading the sph gas info from the zeroth engine
+    gas = fi_utils.get_useful_gas_attr_from_dview(dview, 'gas', 0)
+    
+    
+    #setting the emission info as attributes to the 'gas' particle set
+    for key in em_sph:
+            
+        attr_name = key.replace('f_mean_','').replace('</q>','').replace('<q>','')
         
-    attr_name = key.replace('f_mean_','').replace('</q>','').replace('<q>','')
+        setattr(gas, attr_name, em_sph[key])
     
-    setattr(gas, attr_name, em_sph[key])
-
-#saving the emissions into files
-if params['save_info'] == True:
-    
-    if parallel == True:
-        snap = dview['snap'][0]
-    
-    snap_filename = params['rundir'] + '/firun/fiout.%06d' % snap  
-    fi_utils.save_gas_particle_info_saperate_files(snap_filename, gas, params['save_secies'])
+    #saving the emissions into files
+    if params['save_info'] == True:
+        
+        snap_filename = params['rundir'] + '/firun/fiout.%06d' % snap  
+        fi_utils.save_gas_particle_info_saperate_files(snap_filename, gas, params['save_secies'])
     
 #plotting the emissions
 fi_utils.plot_maps(snap, em_sph, gas, params, logger)
