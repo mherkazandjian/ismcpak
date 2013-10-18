@@ -903,7 +903,7 @@ class chemicalNetwork(specie, reaction):
                        'CP': compute_CP_rxn_cst,    #umist06
                        #cosmic ray photon (CRPHOT)
                        'CR': compute_CR_rxn_cst,    #umist06
-                       } 
+                      }
 
         for rxn in self.reactions:
             rxn.compute_rxn_cst_func = compute_cst[rxn.type]

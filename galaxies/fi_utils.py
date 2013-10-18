@@ -173,7 +173,7 @@ def gas_particle_info_from_interp_func(gas, map_key, arxvPDR, interp_funcs):
     em_ret = 10.0**interp_funcs[map_key](data_use)
     dt = time.time() - t0
 
-    print 'time interpolating emission for map %s = %.3f seconds for %d points at %e points/sec' % (map_key, dt, data_use.shape[0], data_use.shape[0]/dt)
+    print 'time interpolating for %s = %.3f seconds for %d points at %e points/sec' % (map_key, dt, data_use.shape[0], data_use.shape[0]/dt)
 
     #setting emissions of particles with nan interpolated values to zero             
     indsNan = numpy.where(numpy.isnan(em_ret))[0]
@@ -633,7 +633,7 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
                    interpolation='bessel', #intepolation used for imshow
                    origin='lower')
 
-    ax.set_title(map_info['title'], size=30)
+    ax.set_title(map_info['title'], size=30, verticalalignment='bottom')
     ax.tick_params(axis='both', which='major', labelsize=20)
     
     cbar_ax = fig.add_axes([0.2, 0.97, 0.6, 0.02]) 

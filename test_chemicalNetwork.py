@@ -20,7 +20,7 @@ speciesNums      = 'data/species.inp'
 specAbunFname    = 'data/abun.out'            #file containing the abundances in the same ordfer of speciesNumAndName.inp 
 underAbunFile    = 'data/underabundant.inp'   #rxns with those species are scratched (moved to the removed list)
 manualRemoveList = ['13CH3']                  #rxns with those species are scratched (moved to the removed list)
-#-----------------------------------------------------------------e------------------
+#------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
 
