@@ -1,0 +1,28 @@
+import meshUtils
+
+pdr = {
+       'NCO'  : {'ismcpak' : None,
+                 'descr'   : 'column density of CO',
+                 'func'    : meshUtils.pdr_mesh_column_density,
+#                 'latex'   : r'[CII] 158$\mu m$',  
+#                 'latex2'  : r'C$^+$ 158$\mum$',
+                 'type'    : 'pdr',
+                 'specStr' : 'CO',
+                 },
+       'N13CO': {'ismcpak' : None,
+                 'func'    : meshUtils.pdr_mesh_column_density,
+                 'descr'   : 'column density of H2',
+#                 'latex'   : r'[CII] 158$\mu m$',  
+#                 'latex2'  : r'C$^+$ 158$\mum$',
+                 'type'    : 'pdr',
+                 'specStr' : '13CO',
+                 },
+       'NH2'  : {'ismcpak' : None,
+                 'descr'   : 'column density of H2',
+                 'func'    : meshUtils.pdr_mesh_column_density,
+#                 'latex'   : r'[CII] 158$\mu m$',  
+#                 'latex2'  : r'C$^+$ 158$\mum$',
+                 'type'    : 'pdr',
+                 'specStr' : 'H2',
+                 },       
+       }
