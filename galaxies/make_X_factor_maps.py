@@ -15,16 +15,13 @@ import fi_utils
 #-----------------------------------------------------------------------------
 home = '/home/mher'
 
-params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
-          'imres' : 25,                                                 # resolution of the maps to be produced imres x imres
-          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',      # the path to the dir containing the PDR database
-          'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
-          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2/',          # the path to the dir containing the PDR database          
+params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO'],
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
-          'snaps'   : numpy.arange(20, 20 + 1, 1),
+          'snaps'   : numpy.arange(4, 4 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
                              'min_log_n_use'  : -3.0,      
@@ -85,7 +82,7 @@ def generate_maps(snap_index, params):
     gas = fi_utils.select_particles(gas, params['ranges'])
     logger.debug('got the sph particles in the required ranges')
     logger.debug('number of gas particles in the specified ranages = %d' %  len(gas))
-
+    
     #making the 2D histogram
     print 'getting the spatial distrubutions'
     hist = hist_nd(numpy.vstack((gas.x, gas.y)), mn = bs_min, mx=bs_max, nbins=params['imres'], reverse_indicies=True, loc=True)
@@ -111,7 +108,10 @@ def generate_maps(snap_index, params):
                      )
 
     pylab.figure()
+    
     pylab.plot(map_CO_data.flatten(), map_NH2_data.flatten(), '.')
+    x = numpy.linspace(-20.0, 20.0, 100)
+    pylab.plot(x,numpy.log10(2.0e20) + x,'r')
     #
 #
 
