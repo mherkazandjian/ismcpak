@@ -664,7 +664,78 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
         subprocess.call(args)
         
         print 'copied %s to \n\t %s' % (filename_fig, copy_to) 
+
+def plot_cube_sections(data_cube, params):
+    '''given a cube, it plots the sections (in velocity channels) of the emission'''
+    
+    #parameters of a typical spectrum for the cube
+    v_min, v_max = params['cube']['spec_rng']
+    v_res = params['cube']['spec_res']
+    
+    #the velocity bins (.. todo:: xxx shift this to the centroid of the velcoty bins) 
+    v = numpy.linspace(v_min, v_max, v_res)
+    
+    v_sec_wdith = (v_max - v_min)/params['cube']['plot']['n_vsec_plt']
+    
+    nx = params['cube']['plot']['n_per_row']
+    ny = params['cube']['plot']['n_vsec_plt'] / nx
+    
+    fig, axs = pylab.subplots(ny, nx, sharex=True, sharey=True, figsize=(12.0*numpy.float(nx)/numpy.float(ny), 12), 
+                              subplot_kw = {'xlim':params['cube']['xy_rng'][0:2],
+                                            'ylim':params['cube']['xy_rng'][2:4],
+                                            'aspect':'equal',
+                                            'adjustable':'datalim',
+                                            })
+                                  
+    for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
+    for ax in axs[-1,:]: ax.set_xlabel('x(kpc)')
         
+    pylab.subplots_adjust(left=0.05, bottom=0.05, right=0.9, top=0.9, wspace=0.15, hspace=0.15)
+    
+    
+    #plotting the maps for all the velocity channels
+    for n in numpy.arange(params['cube']['plot']['n_vsec_plt']):
+     
+        #range in velocity for this velocity channel
+        v_from = n*v_sec_wdith + v_min
+        v_to   = v_from + v_sec_wdith
+        #inds in the z direction of the cube (along the spectrum for this channel)
+        v_inds = numpy.where( (v > v_from) * (v <= v_to ) )  
+    
+        #computing the map for this channel by adding all the spectra for this channel
+        this_map = data_cube[:,:, v_inds[0]]
+        this_map = numpy.log10(this_map.sum(axis=2)) 
+        
+        #plotting the map
+        j_plt = n / nx
+        i_plt = n % nx
+        
+        
+        print '(i,j) = %d, %d ' % (i_plt, j_plt), v_from, v_to
+        print this_map.shape
+        print '-------------------------'
+        
+        this_map = this_map.clip(*params['cube']['plot']['rng'])
+        
+        im = axs[j_plt, i_plt].imshow(this_map.T, 
+                                      extent=params['cube']['xy_rng'],
+                                      vmin=params['cube']['plot']['rng'][0], 
+                                      vmax=params['cube']['plot']['rng'][1], 
+                                      interpolation='bessel', #intepolation used for imshow
+                                      origin='lower')
+        
+        axs[j_plt, i_plt].text(-7, 7, '%.0f' % ((n + 0.5)*v_sec_wdith + v_min) + 'km/s', color='w')
+    #
+
+    cbar_ax = fig.add_axes([0.2, 0.95, 0.6, 0.01]) 
+    cbar_ax.tick_params(axis='both', which='major', labelsize=30)
+    cbar_ax.set_title(r'$\log_{10}$ [ T$_B$ / K.km.s$^{-1}$]', size=25)
+    
+    pylab.colorbar(im, ax=ax, cax=cbar_ax, orientation='horizontal', 
+                   ticks=numpy.linspace(params['cube']['plot']['rng'][0], params['cube']['plot']['rng'][1], 5))
+
+    pylab.show()
+    
 def plot_map_from_saved_data(snapIndex, map_info, params):
     '''
     '''

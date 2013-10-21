@@ -41,26 +41,26 @@ params = {
           #species data to be loaded
           'species': ['CO'],
           'pdr_sph': None,
-           
+        
           #cube info          
           'cube'   : {
                       'attr'     : 'em_fluxKkms_CO1-0'   , #the emission line to be made into a cube
                       'func'     : numpy.sum             , #function to be used to compute the total emission in the cell
                       'xy_rng'   : [-8.0, 8.0, -8.0, 8.0], #spatial bounds of the projected image (in kpc)
-                      'im_res'   : 25,                     #spatial resolution of the cube in each dimension over the domain
-                      'spec_rng' : [-300.0, 300.0],        #the range in the velocities in km/s
+                      'im_res'   : 100,                    #spatial resolution of the cube in each dimension over the domain
+                      'spec_rng' : [-100.0, 100.0],        #the range in the velocities in km/s
                       'spec_res' : 1000,                   #number of velocity bins of the spectra to be constructed for each pixel
                       
                       'plot'     : {
                                     'as_log10'   : True,         #plot the map values in log10 scale
                                     'rng'        : [-10.0, 6.0], #range of value of the map
-                                    'v_bin_sz'   : 50.0,         #the width of the velocity channel to be plotted
                                     'title'      : r'$f(L_{CO(1-0} K.km.s-1))$',
                                     #####info about the v channel maps
                                     'n_vsec_plt' : 20, #number of velocity channels maps
                                     'n_per_row'  : 5,  #number of maps per row 
                                    }, 
-                      'l_width_mc': 1.0   # Micro - Turbulance line width in km/s
+                      'l_width_mc': 1.0,   # Micro - Turbulance line width in km/s
+                      'save_cube' : True, 
                       },
          }
 #############################################################################################################################
@@ -234,10 +234,17 @@ for i in numpy.arange(params['cube']['im_res']):
     print 'constructed spectruma for this row of pixels in %.2e seconds (%.2f %% complete)' % (time.time() - t0, 100.0*numpy.double(i)/params['cube']['im_res'])
 
 #
+if params['cube']['save_cube'] == True:
+    numpy.savez_compressed(os.path.join(params['rundir'], 'analysis', 'fiout.%06d.cube' % params['snap_index']) , 
+                           [data_cube, params], 
+                           names=['data_cube','params'])
 
 ######################################### Plotting the data cube ##########################################
 # plotting the data cube in sections of velocity 
 ###########################################################################################################
+fi_utils.plot_cube_sections(data_cube, params)
+
+'''
 v_sec_wdith = (v_max - v_min)/params['cube']['plot']['n_vsec_plt']
 
 nx = params['cube']['plot']['n_per_row']
@@ -290,6 +297,7 @@ for n in numpy.arange(params['cube']['plot']['n_vsec_plt']):
     axs[j_plt, i_plt].text(-7, 7, '%.0f' % ((n + 0.5)*v_sec_wdith + v_min) + 'km/s', color='w')
 
 pylab.show()
+'''
 
 def plot_pixel_spectrum(i, j, data_cube, hist, params, zoom=None):
     '''
