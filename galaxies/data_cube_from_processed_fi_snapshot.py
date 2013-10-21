@@ -244,61 +244,6 @@ if params['cube']['save_cube'] == True:
 ###########################################################################################################
 fi_utils.plot_cube_sections(data_cube, params)
 
-'''
-v_sec_wdith = (v_max - v_min)/params['cube']['plot']['n_vsec_plt']
-
-nx = params['cube']['plot']['n_per_row']
-ny = params['cube']['plot']['n_vsec_plt'] / nx
-
-fig, axs = pylab.subplots(ny, nx, sharex=True, sharey=True, figsize=(12.0*numpy.float(nx)/numpy.float(ny), 12), 
-                          subplot_kw = {'xlim':params['cube']['xy_rng'][0:2],
-                                        'ylim':params['cube']['xy_rng'][2:4],
-                                        'aspect':'equal',
-                                        'adjustable':'datalim',
-                                        })
-                              
-for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
-for ax in axs[-1,:]: ax.set_xlabel('x(kpc)')
-    
-pylab.subplots_adjust(left=0.05, bottom=0.05, right=0.9, top=0.9, wspace=0.15, hspace=0.15)
-
-
-#plotting the maps for all the velocity channels
-for n in numpy.arange(params['cube']['plot']['n_vsec_plt']):
- 
-    #range in velocity for this velocity channel
-    v_from = n*v_sec_wdith + v_min
-    v_to   = v_from + v_sec_wdith
-    #inds in the z direction of the cube (along the spectrum for this channel)
-    v_inds = numpy.where( (v > v_from) * (v <= v_to ) )  
-
-    #computing the map for this channel by adding all the spectra for this channel
-    this_map = data_cube[:,:, v_inds[0]]
-    this_map = numpy.log10(this_map.sum(axis=2)) 
-    
-    #plotting the map
-    j_plt = n / nx
-    i_plt = n % nx
-    
-    
-    print '(i,j) = %d, %d ' % (i_plt, j_plt), v_from, v_to
-    print this_map.shape
-    print '-------------------------'
-    
-    this_map = this_map.clip(*params['cube']['plot']['rng'])
-    
-    axs[j_plt, i_plt].imshow(this_map.T, 
-                             extent=params['cube']['xy_rng'],
-                             vmin=params['cube']['plot']['rng'][0], 
-                             vmax=params['cube']['plot']['rng'][1], 
-                             interpolation='bessel', #intepolation used for imshow
-                             origin='lower')
-    
-    axs[j_plt, i_plt].text(-7, 7, '%.0f' % ((n + 0.5)*v_sec_wdith + v_min) + 'km/s', color='w')
-
-pylab.show()
-'''
-
 def plot_pixel_spectrum(i, j, data_cube, hist, params, zoom=None):
     '''
     '''
