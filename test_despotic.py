@@ -1,9 +1,8 @@
 from despotic import cloud
 import numpy
 import pylab
-from radex import radex
 
-specStr = 'HNC'
+specStr = 'CO'
 
 mycloud = cloud()
 mycloud.nH = 1.0e5          #gas density
@@ -21,7 +20,7 @@ mycloud.addEmitter(specStr, 1.0e-7)  #abudnace of the emitting species per H nuc
 mycloud.Tg = 40.0 
 lines1 = mycloud.lineLum(specStr)
 
-mycloud.Tg = 40.0 
+mycloud.Tg = 400.0 
 lines2 = mycloud.lineLum(specStr)
 
 

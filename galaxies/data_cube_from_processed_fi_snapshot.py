@@ -47,15 +47,18 @@ params = {
                       'attr'     : 'em_fluxKkms_CO1-0'   , #the emission line to be made into a cube
                       'func'     : numpy.sum             , #function to be used to compute the total emission in the cell
                       'xy_rng'   : [-8.0, 8.0, -8.0, 8.0], #spatial bounds of the projected image (in kpc)
-                      'im_res'   : 25,                    #spatial resolution of the cube in each dimension over the domain
+                      'im_res'   : 25,                     #spatial resolution of the cube in each dimension over the domain
                       'spec_rng' : [-300.0, 300.0],        #the range in the velocities in km/s
                       'spec_res' : 1000,                   #number of velocity bins of the spectra to be constructed for each pixel
                       
                       'plot'     : {
-                                    'as_log10' : True,         #plot the map values in log10 scale
-                                    'v_rng'    : [-10.0, 6.0], #range of value of the map
-                                    'v_bin_sz' : 50.0,         #the width of the velocity channel to be plotted
-                                    'title'    : r'$f(L_{CO(1-0} K.km.s-1))$', 
+                                    'as_log10'   : True,         #plot the map values in log10 scale
+                                    'rng'        : [-10.0, 6.0], #range of value of the map
+                                    'v_bin_sz'   : 50.0,         #the width of the velocity channel to be plotted
+                                    'title'      : r'$f(L_{CO(1-0} K.km.s-1))$',
+                                    #####info about the v channel maps
+                                    'n_vsec_plt' : 20, #number of velocity channels maps
+                                    'n_per_row'  : 5,  #number of maps per row 
                                    }, 
                       'l_width_mc': 1.0   # Micro - Turbulance line width in km/s
                       },
@@ -77,7 +80,7 @@ gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], 
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
-#plotting the particles in the processes snapshot
+#plotting the particles in the processed snapshot
 fig_part = pylab.figure(figsize=(8,8))
 ax = fig_part.add_axes([0.2, 0.2, 0.6, 0.6])
 pylab.plot(gas.x[::100], gas.y[::100], '.', markersize=1)
@@ -92,7 +95,7 @@ pylab.plot(gas_in_rng.x[::100], gas_in_rng.y[::100], 'r+', markersize=1)
 
 ######################################### CONSTRUCTING EMISSION MAP ##########################################
 
-#selecting the paticles in the field of view of the cube
+#selecting the particles in the field of view of the cube
 inds_in_map_spatial_ranges = numpy.where( 
                                          (gas_in_rng.x > params['cube']['xy_rng'][0])*(gas_in_rng.x < params['cube']['xy_rng'][1])*
                                          (gas_in_rng.y > params['cube']['xy_rng'][2])*(gas_in_rng.y < params['cube']['xy_rng'][3])
@@ -125,7 +128,8 @@ cube_map = numpy.zeros((params['cube']['im_res'],  params['cube']['im_res']), 'f
 
 gas_em = getattr(gas_in_cube, params['cube']['attr'])
 
-#looping over the bins of the 2D histogram of the x,y coordinates and computing the averages of the maps
+#looping over the bins of the 2D histogram of the x,y coordinates and computing 
+#total emission in each pixel
 for i in numpy.arange(params['cube']['im_res']):
         
     for j in numpy.arange(params['cube']['im_res']):
@@ -148,8 +152,8 @@ if params['cube']['plot']['as_log10'] == True:
     
 im = ax_map.imshow(cube_map.T, 
                    extent = params['cube']['xy_rng'],
-                   vmin   = params['cube']['plot']['v_rng'][0], 
-                   vmax   = params['cube']['plot']['v_rng'][1],
+                   vmin   = params['cube']['plot']['rng'][0], 
+                   vmax   = params['cube']['plot']['rng'][1],
                    interpolation='bessel', #intepolation used for imshow
                    origin='lower')
 
@@ -160,7 +164,7 @@ ax_map.set_title(params['cube']['plot']['title'], size=30, verticalalignment='bo
 ax_map.tick_params(axis='both', which='major', labelsize=20)
         
 pylab.colorbar(im, ax=ax_map, cax=cbar_ax_map, orientation='horizontal', 
-                   ticks=numpy.linspace(params['cube']['plot']['v_rng'][0], params['cube']['plot']['v_rng'][1], 5))
+                   ticks=numpy.linspace(params['cube']['plot']['rng'][0], params['cube']['plot']['rng'][1], 5))
     
 pylab.figtext(0.01, 0.87, '%.2f' % snap_time + 'Gyr', 
               color='black', size='xx-large', weight='bold')
@@ -174,10 +178,12 @@ ax_map.set_ylabel('y(kpc)', size='large')
 ######################################### CONSTRUCTING THE DATA CUBE ##########################################
 # this can be easily parallelized by broadcasting the x,y,vlos, em, hist??, 
 ###############################################################################################################
-data_cube = numpy.zeros((params['cube']['im_res'],  params['cube']['im_res'], params['cube']['spec_res']), 'f8')
+data_cube = numpy.zeros((params['cube']['im_res'],  
+                         params['cube']['im_res'], 
+                         params['cube']['spec_res']), 'f8')
 
 #getting the attributes of the gas which will be used to construct the data cube
-x, y, vlos, em = gas_in_cube.x, gas_in_cube.y, gas_in_cube.vz, getattr(gas_in_cube, params['cube']['attr'])
+x, y, vlos, em = gas_in_cube.x, gas_in_cube.y, -gas_in_cube.vz, getattr(gas_in_cube, params['cube']['attr'])
 
 #parameters of a typical spectrum for the cube
 v_min, v_max = params['cube']['spec_rng']
@@ -212,9 +218,10 @@ for i in numpy.arange(params['cube']['im_res']):
                 em_p = em[ind]
                 v_los_p = vlos[ind]
                 
+                #computing the shifted gaussian
                 spect_this = exp( - (v - v_los_p)**2 / (2.0*v_width**2) )
-                spect_this *= 1.0 / (v_width * sqrt(2.0 * pi) )
-                spect_this *= em_p
+                #scaling the gaussian 
+                spect_this *= (em_p / (v_width * sqrt(2.0 * pi) ))
                 
                 spect_pixel += spect_this
             #
@@ -227,6 +234,62 @@ for i in numpy.arange(params['cube']['im_res']):
     print 'constructed spectruma for this row of pixels in %.2e seconds (%.2f %% complete)' % (time.time() - t0, 100.0*numpy.double(i)/params['cube']['im_res'])
 
 #
+
+######################################### Plotting the data cube ##########################################
+# plotting the data cube in sections of velocity 
+###########################################################################################################
+v_sec_wdith = (v_max - v_min)/params['cube']['plot']['n_vsec_plt']
+
+nx = params['cube']['plot']['n_per_row']
+ny = params['cube']['plot']['n_vsec_plt'] / nx
+
+fig, axs = pylab.subplots(ny, nx, sharex=True, sharey=True, figsize=(12.0*numpy.float(nx)/numpy.float(ny), 12), 
+                          subplot_kw = {'xlim':params['cube']['xy_rng'][0:2],
+                                        'ylim':params['cube']['xy_rng'][2:4],
+                                        'aspect':'equal',
+                                        'adjustable':'datalim',
+                                        })
+                              
+for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
+for ax in axs[-1,:]: ax.set_xlabel('x(kpc)')
+    
+pylab.subplots_adjust(left=0.05, bottom=0.05, right=0.9, top=0.9, wspace=0.15, hspace=0.15)
+
+
+#plotting the maps for all the velocity channels
+for n in numpy.arange(params['cube']['plot']['n_vsec_plt']):
+ 
+    #range in velocity for this velocity channel
+    v_from = n*v_sec_wdith + v_min
+    v_to   = v_from + v_sec_wdith
+    #inds in the z direction of the cube (along the spectrum for this channel)
+    v_inds = numpy.where( (v > v_from) * (v <= v_to ) )  
+
+    #computing the map for this channel by adding all the spectra for this channel
+    this_map = data_cube[:,:, v_inds[0]]
+    this_map = numpy.log10(this_map.sum(axis=2)) 
+    
+    #plotting the map
+    j_plt = n / nx
+    i_plt = n % nx
+    
+    
+    print '(i,j) = %d, %d ' % (i_plt, j_plt), v_from, v_to
+    print this_map.shape
+    print '-------------------------'
+    
+    this_map = this_map.clip(*params['cube']['plot']['rng'])
+    
+    axs[j_plt, i_plt].imshow(this_map.T, 
+                             extent=params['cube']['xy_rng'],
+                             vmin=params['cube']['plot']['rng'][0], 
+                             vmax=params['cube']['plot']['rng'][1], 
+                             interpolation='bessel', #intepolation used for imshow
+                             origin='lower')
+    
+    axs[j_plt, i_plt].text(-7, 7, '%.0f' % ((n + 0.5)*v_sec_wdith + v_min) + 'km/s', color='w')
+
+pylab.show()
 
 def plot_pixel_spectrum(i, j, data_cube, hist, params, zoom=None):
     '''
@@ -274,5 +337,6 @@ def plot_pixel_spectrum(i, j, data_cube, hist, params, zoom=None):
     
 pylab.draw()
 pylab.show()
+
 
 print 'done'

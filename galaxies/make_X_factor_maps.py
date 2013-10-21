@@ -15,13 +15,13 @@ import fi_utils
 #-----------------------------------------------------------------------------
 home = '/home/mher'
 
-params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO'],
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
-          'snaps'   : numpy.arange(4, 4 + 1, 1),
+          'snaps'   : numpy.arange(20, 20 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
                              'min_log_n_use'  : -3.0,      
@@ -93,29 +93,78 @@ def generate_maps(snap_index, params):
     map_CO_info = params['all_maps']['map_CO1-0']
     map_CO_data = fi_utils.make_map(gas, hist, **map_CO_info)
 
+    #plotting the map of the X factor 
     map_NH2_info = params['all_maps']['map_NH2']
     map_NH2_data = fi_utils.make_map(gas, hist, **map_NH2_info)
     
-    map_X_factor = numpy.log10((10.0**map_CO_data) / 10.0**map_NH2_data)
+    map_X_factor = numpy.log10((10.0**map_NH2_data/10.0**map_CO_data))
 
-    map_X_factor_plot = {'v_rng'   : [-30.0, -10.0],
+    map_X_factor_plot = {'v_rng'   : [18.0, 22.0],
                          'title'   : 'X_factor',   
                         } 
+    
     fi_utils.plot_map(map_X_factor, params, map_X_factor_plot,
                       fi_utils.get_snapshot_time(snap_index, params), 
                       params,
                       snap_filename
                      )
 
+    #plottng the X factor relationship    
     pylab.figure()
+
+    LCO = map_CO_data.flatten()
+    NH2 = map_NH2_data.flatten()
     
-    pylab.plot(map_CO_data.flatten(), map_NH2_data.flatten(), '.')
-    x = numpy.linspace(-20.0, 20.0, 100)
-    pylab.plot(x,numpy.log10(2.0e20) + x,'r')
+    pylab.plot(LCO[::10], NH2[::10], '.')
+    x = numpy.linspace(-5.0, 5.0, 100)    
+    pylab.plot(x, numpy.log10(2.0e20*(1.0 - 0.3)) + x,'--r')
+    pylab.plot(x, numpy.log10(2.0e20) + x,'r')
+    pylab.plot(x, numpy.log10(2.0e20*(1.0 + 0.3)) + x,'--r')
+    pylab.xlim(-5,5)
+
+    ################################################################################
+    #checking how much of the emission is resulting from differnet section in L(CO) 
+    ################################################################################
+    LCO_sections = [ [1.0, 2.0], [2.0, 3.0], [3.0, 4.0], [4.0, numpy.Inf]]
+    
+    LCO10_total = numpy.sum(10.0**map_CO_data)
+    
+    for LCO_section in LCO_sections: 
+        
+        print LCO_section
+        
+        inds_ij = numpy.where( (map_CO_data >= LCO_section[0])*(map_CO_data < LCO_section[1]) )
+        
+        if inds_ij[0].size == 0:
+            continue
+        
+        inds_i, inds_j = inds_ij 
+            
+        print 'percent emission of selected particles', numpy.sum(10.0**map_CO_data[inds_ij])/LCO10_total
+        
+        gas_den_mean = 0.0
+        n_part = 0L
+        
+        for n, i in enumerate(inds_i):
+            
+            j = inds_j[n]
+            
+            inds_gas_in_bin = hist.get_indicies([i, j])
+        
+            gas_den_mean += numpy.sum(gas[inds_gas_in_bin].n)
+            n_part += inds_gas_in_bin.size
+        
+        gas_den_mean /= n_part
+        
+        #inds_gas = hist.get_indicies(i)
+        print 'number of particles in this section of luminosity = %e, mean density = %e' % (n_part, gas_den_mean)
+    #####################################
+    
+    return map_CO_data, map_NH2_data, hist, gas
     #
 #
 
 for snap in params['snaps']:    
-    generate_maps(snap, params)
-
+    map_CO_data, map_NH2_data, hist, gas = generate_maps(snap, params)
+    
 pylab.show()

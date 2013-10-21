@@ -15,7 +15,7 @@ import fi_utils
 
 home = '/home/mher'
 
-fig_save_path = '/data1/mher/ism/docs/paper02.5/src/figs/total_flux_vs_J.eps'
+fig_save_path = '/home/mher/ism/docs/paper02.5/src/figs/total_flux_vs_J.eps'
 
 #################################################the dwarf galaxy#####################################################
 params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
