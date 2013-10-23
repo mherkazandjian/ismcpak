@@ -10,6 +10,8 @@ import scipy.ndimage
 
 import pylab
 
+import pyfits
+
 from amuse.units import units
 from mylib.utils.misc  import default_logger
 from mylib.utils.histogram import hist_nd 
@@ -47,9 +49,9 @@ params = {
                       'attr'     : 'em_fluxKkms_CO1-0'   , #the emission line to be made into a cube
                       'func'     : numpy.sum             , #function to be used to compute the total emission in the cell
                       'xy_rng'   : [-8.0, 8.0, -8.0, 8.0], #spatial bounds of the projected image (in kpc)
-                      'im_res'   : 100,                    #spatial resolution of the cube in each dimension over the domain
+                      'im_res'   : 200,                    #spatial resolution of the cube in each dimension over the domain
                       'spec_rng' : [-100.0, 100.0],        #the range in the velocities in km/s
-                      'spec_res' : 1000,                   #number of velocity bins of the spectra to be constructed for each pixel
+                      'spec_res' : 200,                   #number of velocity bins of the spectra to be constructed for each pixel
                       
                       'plot'     : {
                                     'as_log10'   : True,         #plot the map values in log10 scale
@@ -60,7 +62,8 @@ params = {
                                     'n_per_row'  : 5,  #number of maps per row 
                                    }, 
                       'l_width_mc': 1.0,   # Micro - Turbulance line width in km/s
-                      'save_cube' : True, 
+                      'save_cube' : False, 
+                      'save_fits' : True, 
                       },
          }
 #############################################################################################################################
@@ -238,6 +241,11 @@ if params['cube']['save_cube'] == True:
     numpy.savez_compressed(os.path.join(params['rundir'], 'analysis', 'fiout.%06d.cube' % params['snap_index']) , 
                            [data_cube, params], 
                            names=['data_cube','params'])
+if params['cube']['save_fits'] == True:
+    cube_fits = data_cube.swapaxes(2,0)
+    pyfits.writeto(os.path.join(params['rundir'], 'analysis', 'fiout.%06d.cube' % params['snap_index']) + '.fits',
+                   cube_fits, 
+                   clobber=True) 
 
 ######################################### Plotting the data cube ##########################################
 # plotting the data cube in sections of velocity 
