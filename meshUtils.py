@@ -1256,7 +1256,7 @@ class meshArxv(object):
         #
         
         return values
-    
+
     def apply_function_to_all_meshes(self, func, func_kw = None):
         """Applies func to all the meshes in self.meshes. func_kw are passed to func. The results are 
         returned as a list which is the same length as self.nMeshes"""

@@ -156,11 +156,11 @@ def guess_metallicity(runDir):
         metallicity = 1.0
     return metallicity
 
-def gas_particle_info_from_interp_func(gas, map_key, arxvPDR, interp_funcs):
+def gas_particle_info_from_interp_func(gas, map_key, arxvPDR, interp_funcs, take_exp=None):
     '''given a bunch of gas particles, returns the emission according to what is specied in the paramter
     map
     '''
-        
+    
     #what points to use? with or witout gm
     if '_no_gm_' in map_key:
         data_use = numpy.array([log10(gas.n), log10(gas.G0), numpy.ones(len(gas))*arxvPDR.grid_z.min(), gas.Av]).T        
@@ -170,17 +170,20 @@ def gas_particle_info_from_interp_func(gas, map_key, arxvPDR, interp_funcs):
     print 'interpolating emissions of %s of the sph particles for %d particles' % (map_key, data_use.shape[0])
 
     t0 = time.time()
-    em_ret = 10.0**interp_funcs[map_key](data_use)
+    v_ret = interp_funcs[map_key](data_use)
     dt = time.time() - t0
+
+    if take_exp != None and take_exp == True:
+        v_ret = 10.0**v_ret
 
     print 'time interpolating for %s = %.3f seconds for %d points at %e points/sec' % (map_key, dt, data_use.shape[0], data_use.shape[0]/dt)
 
     #setting emissions of particles with nan interpolated values to zero             
-    indsNan = numpy.where(numpy.isnan(em_ret))[0]
+    indsNan = numpy.where(numpy.isnan(v_ret))[0]
     if indsNan.size != 0:
-        em_ret[indsNan] = 1e-30
+        v_ret[indsNan] = 1e-30
                 
-    return em_ret
+    return v_ret
 
 
 def save_gas_particle_info_saperate_files(path_of_snapshot, gas, species):
@@ -236,7 +239,6 @@ def save_gas_particle_info_saperate_files(path_of_snapshot, gas, species):
             attr_save_pdr.append(attr)
         #
     #
-        
         
     if len(attr_save_pdr) > 0:
         print attr_save_pdr
@@ -454,7 +456,7 @@ def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
     #
 
     if kwargs['quantity'] == 'Tex' or kwargs['quantity'] == 'T_R':
-        v_all_Av = v_all_Av.clip(0.0, 1e4)
+        v_all_Av = v_all_Av.clip(0.0, 10000.0)
     
     #using the subset of points in the radex databse specified by params['ranges']['interp']
     inds_keep = numpy.where( 
@@ -605,11 +607,11 @@ def snapshot_interpolated_data(snap, arxvPDR, em_interp_funcs, pdr_interp_funcs,
     print 'getting the emissions of each sph particle'    
 
     em_sph = {}        
-    for em_key in em_keys: em_sph[em_key] = gas_particle_info_from_interp_func(gas, em_key, arxvPDR, em_interp_funcs)
+    for em_key in em_keys: em_sph[em_key] = gas_particle_info_from_interp_func(gas, em_key, arxvPDR, em_interp_funcs, take_exp=params['maps'][em_key]['log10'])
 
     pdr_sph = {}        
-    for pdr_key in pdr_keys: pdr_sph[pdr_key] = gas_particle_info_from_interp_func(gas, pdr_key, arxvPDR, pdr_interp_funcs)
-        
+    for pdr_key in pdr_keys: pdr_sph[pdr_key] = gas_particle_info_from_interp_func(gas, pdr_key, arxvPDR, pdr_interp_funcs, take_exp=params['maps'][pdr_key]['log10'])
+    
     return em_sph, pdr_sph, gas
 
 def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_filename):

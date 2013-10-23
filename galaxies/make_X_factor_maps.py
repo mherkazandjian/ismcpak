@@ -15,13 +15,13 @@ import fi_utils
 #-----------------------------------------------------------------------------
 home = '/home/mher'
 
-params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO'],
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
-          'snaps'   : numpy.arange(20, 20 + 1, 1),
+          'snaps'   : numpy.arange(4, 4 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
                              'min_log_n_use'  : -3.0,      

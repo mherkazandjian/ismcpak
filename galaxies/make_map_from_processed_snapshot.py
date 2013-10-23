@@ -16,7 +16,7 @@ import fi_utils
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO', '13CO'],
@@ -54,14 +54,14 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                               'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
                               'as_log10': True,
                               'func'    : numpy.sum,
-                             },
-                  'map2'   : {
-                              'attr'    : 'pdr_NCO',
-                              'v_rng'   : [10.0, 30.0],
-                              'title'   : r'$N(CO)$', 
-                              'as_log10': True,
-                              'func'    : numpy.sum,
-                             },
+                             },                        
+#                  'map2'   : {
+#                              'attr'    : 'pdr_NCO',
+#                              'v_rng'   : [10.0, 30.0],
+#                              'title'   : r'$N(CO)$', 
+#                              'as_log10': True,
+#                              'func'    : numpy.sum,
+#                             },
                   'map3'   : {
                               'attr'    : 'pdr_NH2',
                               'v_rng'   : [10.0, 30.0],
@@ -69,13 +69,13 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                               'as_log10': True,
                               'func'    : numpy.sum,
                              },
-                  'map4'   : {
-                              'attr'    : 'pdr_N13CO',
-                              'v_rng'   : [10.0, 30.0],
-                              'title'   : r'$N(13CO)$', 
-                              'as_log10': True,
-                              'func'    : numpy.sum,
-                             },
+#                  'map4'   : {
+#                              'attr'    : 'pdr_N13CO',
+#                              'v_rng'   : [10.0, 30.0],
+#                              'title'   : r'$N(13CO)$', 
+#                              'as_log10': True,
+#                              'func'    : numpy.sum,
+#                             },
                         },
         'save_maps' : False,
         'save_image': False,
