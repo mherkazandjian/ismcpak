@@ -10,7 +10,7 @@ import pylab
 from amuse.units import units, nbody_system
 from mylib.utils.misc  import default_logger
 from mylib.utils.histogram import hist_nd 
-import fi_utils
+from galaxies import fi_utils
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 home = '/home/mher'
@@ -19,7 +19,7 @@ fig_save_path = '/home/mher/ism/docs/paper02.5/src/figs/x_factor.eps'
 ##########################################DISK GALAXY##################################################
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
           'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
-          'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
+          'imres' : 200,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO'],
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
@@ -34,7 +34,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
-                      'box_size' : [-2.0, 2.0] | units.kpc, #kpc
+                      'box_size' : [-4.0, 4.0] | units.kpc, #kpc
                       },
 
           'all_maps' : {  
@@ -43,14 +43,18 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                                      'v_rng'   : [-10.0, 4.0],
                                      'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
                                      'as_log10': True,
-                                     'func'    : numpy.sum,
+                                     #'func'    : numpy.mean,
+                                     'func'    : numpy.average,
+                                     'weights' : 'em_fluxKkms_CO1-0',                                     
                                      },
                         'map_NH2'  : {
                                      'attr'    : 'pdr_NH2',
                                      'v_rng'   : [10.0, 30.0],
                                      'title'   : r'$N(H2)$', 
                                      'as_log10': True,
-                                     'func'    : numpy.sum,
+                                     #'func'    : numpy.mean,
+                                     'func'    : numpy.average,
+                                     'weights' : 'em_fluxKkms_CO1-0',                                     
                                      },
                         },
         'save_maps' : False,
@@ -124,21 +128,39 @@ def generate_maps(snap_index, params):
     ax.plot(x, numpy.log10(2.0e20) + x,'k', alpha=0.3)
     ax.plot(x, numpy.log10(2.0e20*(1.0 + 0.3)) + x,'--k', alpha=0.3)
 
-    ax.plot([2, 2], [16, 25], '--g', alpha=0.3)
+    #ax.plot([1.0, 1.0], [16, 25], '--g', alpha=0.3)
     
     #plotting NH2 vs CO luminosity
     ax.plot(LCO[::10], NH2[::10], '.', markersize=2)
-    ax.set_xlabel(r'$\log_{10}$ [L$_{{\rm CO}(1-0)}$ / $K.km.s^{-1}$]', size=10)
-    ax.set_ylabel(r'$\log_{10}$ [N(${\rm H}_2)$ / cm$^{-2}$]'   , size=10)
-    ax.text(0, 22,r'N(${\rm H}_2)$ = $10^{20}$ L$_{{\rm CO}(1-0)}$', size=10, rotation=50.0)
+    ax.set_xlabel(r'$\log_{10}$ [<L$_{{\rm CO}(1-0)}$> / $K.km.s^{-1}$]', size=10)
+    ax.set_ylabel(r'$\log_{10}$ [<N(${\rm H}_2)$> / cm$^{-2}$]'   , size=10)
+    ax.text(-2, 20,r'N(${\rm H}_2)$ = $10^{20}$ L$_{{\rm CO}(1-0)}$', size=10, rotation=45.0)
+
+    ##
+    print 'getting the distribution as a function of L(CO)'
+    hist_LCO = hist_nd(LCO.clip(-5.0,LCO.max()).reshape((1,LCO.size)), nbins=50.0, reverse_indicies=True, loc=True)
+    hist_LCO.info()
+
+    mean_NH2_fact = numpy.zeros(hist_LCO.f.shape, 'f8')
+    for i in numpy.arange(hist_LCO.nBins[0]):
+        
+        inds_in_bin = hist_LCO.get_indicies([i])
+
+        if inds_in_bin.size > 0:
+            
+            mean_NH2_fact[i] = numpy.log10(numpy.mean(10.0**NH2[inds_in_bin])) 
+            
+    print 'done getting the distributuion as a function of L(CO)'
+
+    ax.plot(hist_LCO.f.cntrd.flatten(), mean_NH2_fact, 'g--', linewidth=2.5)
 
     ax.set_ylim(16, 25)    
-    ax.set_xlim(-5,5)
+    ax.set_xlim(-5,3)
 
     ################################################################################
     #checking how much of the emission is resulting from differnet section in L(CO) 
     ################################################################################
-    LCO_sections = [ [1.0, 2.0], [2.0, 3.0], [3.0, 4.0], [4.0, numpy.Inf]]
+    LCO_sections = [ [-1.0, 0.0], [0.0, 1.0], [2.0, 3.0], [3.0, 4.0], [4.0, numpy.Inf]]
     
     LCO10_total = numpy.sum(10.0**map_CO_data)
     
@@ -211,14 +233,14 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
                                      'v_rng'   : [-10.0, 4.0],
                                      'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
                                      'as_log10': True,
-                                     'func'    : numpy.sum,
+                                     'func'    : numpy.mean,
                                      },
                         'map_NH2'  : {
                                      'attr'    : 'pdr_NH2',
                                      'v_rng'   : [10.0, 30.0],
                                      'title'   : r'$N(H2)$', 
                                      'as_log10': True,
-                                     'func'    : numpy.sum,
+                                     'func'    : numpy.mean,
                                      },
                         },
         'save_maps' : False,

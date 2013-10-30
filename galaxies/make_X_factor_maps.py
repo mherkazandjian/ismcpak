@@ -16,8 +16,8 @@ import fi_utils
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
-          'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          'imres' : 200,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO'],
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
@@ -32,7 +32,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
-                      'box_size' : [-2.0, 2.0] | units.kpc, #kpc
+                      'box_size' : [-4.0, 4.0] | units.kpc, #kpc
                       },
 
           'all_maps' : {  
@@ -41,14 +41,17 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                                      'v_rng'   : [-10.0, 4.0],
                                      'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
                                      'as_log10': True,
-                                     'func'    : numpy.sum,
+                                     'func'    : numpy.average,
+                                     'weights' : 'em_fluxKkms_CO1-0',
                                      },
                         'map_NH2'  : {
                                      'attr'    : 'pdr_NH2',
                                      'v_rng'   : [10.0, 30.0],
                                      'title'   : r'$N(H2)$', 
                                      'as_log10': True,
-                                     'func'    : numpy.sum,
+                                     'func'    : numpy.mean,
+                                     #'func'    : numpy.average,
+                                     #'weights' : 'em_fluxKkms_CO1-0',
                                      },
                         },
         'save_maps' : False,
@@ -120,7 +123,8 @@ def generate_maps(snap_index, params):
     pylab.plot(x, numpy.log10(2.0e20*(1.0 - 0.3)) + x,'--r')
     pylab.plot(x, numpy.log10(2.0e20) + x,'r')
     pylab.plot(x, numpy.log10(2.0e20*(1.0 + 0.3)) + x,'--r')
-    pylab.xlim(-5,5)
+    pylab.xlim(-5.0, 3.0)
+    pylab.ylim(15.0, 23.0)
 
     ################################################################################
     #checking how much of the emission is resulting from differnet section in L(CO) 

@@ -40,21 +40,21 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                         },
           'em_unit'           : 'em_fluxKkms',
           'line_ratio_curves' : [
-                                ['CO2-1/CO1-0', 'CO3-2/CO1-0' , 'CO7-6/CO1-0' , 'CO10-9/CO1-0',
-                                 'CO3-2/CO2-1', 'CO7-6/CO2-1' , 'CO10-9/CO2-1',
-                                 'CO7-6/CO3-2', 'CO10-9/CO3-2',
-                                 'CO10-9/CO7-6',
-                                ],
-                                ['13CO2-1/13CO1-0', '13CO3-2/13CO1-0' , '13CO7-6/13CO1-0' , '13CO10-9/13CO1-0',
-                                 '13CO3-2/13CO2-1', '13CO7-6/13CO2-1' , '13CO10-9/13CO2-1',
-                                 '13CO7-6/13CO3-2', '13CO10-9/13CO3-2',
-                                 '13CO10-9/13CO7-6',
-                                ],
-                                ['13CO2-1/CO1-0' , '13CO3-2/CO1-0' , '13CO7-6/CO1-0' , '13CO10-9/CO1-0',
-                                 '13CO3-2/CO2-1' , '13CO7-6/CO2-1' , '13CO10-9/CO2-1',
-                                 '13CO7-6/CO3-2' , '13CO10-9/CO3-2',
-                                 '13CO10-9/CO7-6',
-                                ],
+                                  [
+                                   'CO2-1/CO1-0', 'CO3-2/CO1-0' , 'CO4-3/CO1-0' , 'CO6-5/CO1-0',
+                                   'CO3-2/CO2-1', 'CO4-3/CO2-1' , 'CO6-5/CO2-1',
+                                   'CO6-5/CO3-2'
+                                  ],
+                                  [
+                                   '13CO2-1/13CO1-0', '13CO3-2/13CO1-0' , '13CO4-3/13CO1-0' , '13CO6-5/13CO1-0',
+                                   '13CO3-2/13CO2-1', '13CO4-3/13CO2-1' , '13CO6-5/13CO2-1',
+                                   '13CO6-5/13CO3-2'
+                                  ],
+                                  [
+                                   '13CO2-1/CO1-0', '13CO3-2/CO1-0' , '13CO4-3/CO1-0' , '13CO6-5/CO1-0',
+                                   '13CO3-2/CO2-1', '13CO4-3/CO2-1' , '13CO6-5/CO2-1',
+                                   '13CO6-5/CO3-2'
+                                  ],
                                ],
           'plot' : {
                     'v_rng' : [-3.0, 1.0],
@@ -142,10 +142,9 @@ pylab.show()
  
 ################################################computing the emission###########################################   
 emissions_data = {}
+emissions_data_integrated = {}
 #computing the emission maps of the lines involved in the ratios
 print 'computing the emission from all the sectors...'
-
-area_secotrs = numpy.pi*(hist.f.epos**2 - hist.f.spos**2)
 
 for i, this_attr in enumerate(curve_attrs):
     
@@ -153,6 +152,7 @@ for i, this_attr in enumerate(curve_attrs):
     
     #curve which will hold the computed emission intensity in that sector
     emissions_data[this_attr] = numpy.zeros(hist.f.size, 'f8')
+    emissions_data_integrated[this_attr] = numpy.zeros(hist.f.size, 'f8')
 
     #emission data for this line for all the gas particles
     data_attr = getattr(gas, this_attr)
@@ -162,34 +162,72 @@ for i, this_attr in enumerate(curve_attrs):
 
         inds_in_bin = hist.get_indicies(i)
         
-        emissions_data[this_attr][i] = (data_attr[inds_in_bin].sum())
+        emissions_data[this_attr][i] = data_attr[inds_in_bin].sum()
+        
+        if i == 0:
+            emissions_data_integrated[this_attr][i] = emissions_data[this_attr][i]
+        else:
+            emissions_data_integrated[this_attr][i] = emissions_data[this_attr][i] + emissions_data_integrated[this_attr][i-1] 
     
     print '\t\t... done'
         
 print '\tfinished computing the emissions'
 
 #plotting the emission as a function of radius
-fig = pylab.figure()
-ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+fig1 = pylab.figure()
+ax1 = fig1.add_axes([0.1, 0.1, 0.8, 0.8])
 
-plts = []
+fig2 = pylab.figure()
+ax2 = fig2.add_axes([0.1, 0.1, 0.8, 0.8])
+
+plts1, plts2 = [], []
+area_secotrs = numpy.pi*(hist.f.epos**2 - hist.f.spos**2)
+
 for i, this_attr in enumerate(curve_attrs):
-    plt, = ax.plot(hist.f.cntrd, emissions_data[this_attr]/area_secotrs)
-    plts.append(plt)
-ax.legend(plts, curve_attrs, loc=0)
+    plt1, = ax1.plot(hist.f.cntrd, numpy.log10(emissions_data[this_attr]/area_secotrs))
+    plt2, = ax2.plot(hist.f.cntrd, numpy.log10(emissions_data_integrated[this_attr]))
+    plts1.append(plt1)
+    plts2.append(plt2)
+ax1.legend(plts1, curve_attrs, loc=0)
+ax2.legend(plts2, curve_attrs, loc=0)
 
 pylab.show()
 
-
 ############################################Plotting the line ratios versus r###########################################
-   
+
 v_min, v_max = params['plot']['v_rng']
 
-fig, axs = pylab.subplots(1, 3, sharex=False, sharey=False, figsize=(12.0, 4.0))
+fig1, axs1 = pylab.subplots(1, 3, sharex=False, sharey=False, figsize=(12.0, 4.0))
                                 
 #for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
-for ax in axs: ax.set_xlabel('R(kpc)', size=10)
-axs[0].set_ylabel(r'$\log_{10}$ [line ratio] ')
+for ax in axs1: ax.set_xlabel('R(kpc)', size=10)
+axs1[0].set_ylabel(r'$\log_{10}$ [$\int_0^R$ line ratio] ')
+
+pylab.subplots_adjust(left=0.10, bottom=0.15, right=0.9, top=0.9, wspace=0.15, hspace=0.15)
+titles = ['CO/CO', '13CO/13CO', '13CO/CO']
+syms = ['r-', 'g-', 'r--', 'g--', 'k-', 'b--', 'k--', 'r-.', 'g-.', 'b-.', 'k-.']
+
+for i, bunch in enumerate(curves):
+
+    for j, curve in enumerate(bunch):
+        print i, j, curve 
+        curve_data = numpy.log10(emissions_data_integrated[curve[1]] / emissions_data_integrated[curve[2]])
+        axs1[i].plot(hist.f.cntrd, curve_data, syms[j])
+    
+    print '-----------------' 
+    axs1[i].set_ylim(-5, 0)
+    axs1[i].set_title(titles[i])
+
+pylab.show()
+
+###################################################################
+v_min, v_max = params['plot']['v_rng']
+
+fig2, axs2 = pylab.subplots(1, 3, sharex=False, sharey=False, figsize=(12.0, 4.0))
+                                
+#for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
+for ax in axs2: ax.set_xlabel('R(kpc)', size=10)
+axs2[0].set_ylabel(r'$\log_{10}$ [line ratio] ')
 
 pylab.subplots_adjust(left=0.10, bottom=0.15, right=0.9, top=0.9, wspace=0.15, hspace=0.15)
 titles = ['CO/CO', '13CO/13CO', '13CO/CO']
@@ -200,9 +238,10 @@ for i, bunch in enumerate(curves):
     for j, curve in enumerate(bunch):
         print i, j, curve 
         curve_data = numpy.log10(emissions_data[curve[1]] / emissions_data[curve[2]])
-        axs[i].plot(hist.f.cntrd, curve_data, syms[j])
+        axs2[i].plot(hist.f.cntrd, curve_data, syms[j])
     
     print '-----------------' 
-    axs[i].set_ylim(-5, 0)
-    axs[i].set_title(titles[i])
+    axs2[i].set_ylim(-5, 0)
+    axs2[i].set_title(titles[i])
+
 pylab.show()

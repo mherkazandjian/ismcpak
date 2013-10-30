@@ -16,7 +16,7 @@ import fi_utils
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO', '13CO'],
@@ -33,7 +33,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
-                      'box_size' : [-20.0, 20.0] | units.kpc, #kpc
+                      'box_size' : [-8.0, 8.0] | units.kpc, #kpc
                       },
 #          'maps'   : {
 #                      'attr' : 'n', #'mass', 'G0', 'gmech', 'Av'
@@ -47,21 +47,21 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                      'title': r'$f(L_{CO(1-0})$', 
 #                      'log10': True                      
 #                     }, 
-          'all_maps' : {  
+          'all_maps' : {
                   'map1'   : {
-                              'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
+                              'attr'    : 'em_fluxKkms_13CO10-9', #'mass', 'G0', 'gmech', 'Av'
                               'v_rng'   : [-10.0, 4.0],
-                              'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
+                              'title'   : r'$f(L_{13CO(10-9} K.km.s-1))$', 
                               'as_log10': True,
                               'func'    : numpy.sum,
                              },                        
-#                  'map2'   : {
-#                              'attr'    : 'pdr_NCO',
-#                              'v_rng'   : [10.0, 30.0],
-#                              'title'   : r'$N(CO)$', 
-#                              'as_log10': True,
-#                              'func'    : numpy.sum,
-#                             },
+                  'map2'   : {
+                              'attr'    : 'pdr_NCO',
+                              'v_rng'   : [10.0, 30.0],
+                              'title'   : r'$N(CO)$', 
+                              'as_log10': True,
+                              'func'    : numpy.sum,
+                             },
                   'map3'   : {
                               'attr'    : 'pdr_NH2',
                               'v_rng'   : [10.0, 30.0],
@@ -69,13 +69,20 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                               'as_log10': True,
                               'func'    : numpy.sum,
                              },
-#                  'map4'   : {
-#                              'attr'    : 'pdr_N13CO',
-#                              'v_rng'   : [10.0, 30.0],
-#                              'title'   : r'$N(13CO)$', 
-#                              'as_log10': True,
-#                              'func'    : numpy.sum,
-#                             },
+                  'map4'   : {
+                              'attr'    : 'pdr_N13CO',
+                              'v_rng'   : [10.0, 30.0],
+                              'title'   : r'$N(13CO)$', 
+                              'as_log10': True,
+                              'func'    : numpy.sum,
+                             },
+                  'map5'   : {
+                              'attr'    : 'G0',
+                              'v_rng'   : [-2.0, 4.0],
+                              'title'   : r'$G_0$', 
+                              'as_log10': True,
+                              'func'    : numpy.mean,
+                             },
                         },
         'save_maps' : False,
         'save_image': False,

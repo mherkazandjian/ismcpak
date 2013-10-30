@@ -9,7 +9,7 @@ import pylab
 from amuse.units import units, nbody_system
 from mylib.utils.misc  import default_logger
 
-import fi_utils
+from galaxies import fi_utils
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 
@@ -133,13 +133,13 @@ logger.debug('number of gas particles in the specified ranages = %d' %  len(gas)
 Ju_all  = numpy.arange(params['J_max']) + 1
 flux_CO_disk = numpy.zeros(Ju_all.size, 'f8')
 flux_13CO_disk = numpy.zeros(Ju_all.size, 'f8')
-flux_CO_disk_nucleus = numpy.zeros(Ju_all.size, 'f8')
-flux_13CO_disk_nucleus = numpy.zeros(Ju_all.size, 'f8')
+flux_CO_disk_center = numpy.zeros(Ju_all.size, 'f8')
+flux_13CO_disk_center = numpy.zeros(Ju_all.size, 'f8')
 
 x = gas.x
 y = gas.y 
 R = numpy.sqrt(x**2.0 + y**2.0)
-inds_nucleus = numpy.where(R < 0.5)
+inds_center = numpy.where(R < 0.5)
 
 
 #getting the CO ladder for the whole galaxy 
@@ -148,12 +148,12 @@ for Ju in Ju_all:
     #emissions of CO of all the gas particles
     em_all_this_transition = getattr(gas, 'em_fluxKkms_CO%d-%d' % (Ju, Ju-1))
     flux_CO_disk[Ju-1] = em_all_this_transition.sum()
-    flux_CO_disk_nucleus[Ju-1] = em_all_this_transition[inds_nucleus].sum()
+    flux_CO_disk_center[Ju-1] = em_all_this_transition[inds_center].sum()
 
     #emissions of 13CO of all the gas particles
     em_all_this_transition = getattr(gas, 'em_fluxKkms_13CO%d-%d' % (Ju, Ju-1))
     flux_13CO_disk[Ju-1] = em_all_this_transition.sum()
-    flux_13CO_disk_nucleus[Ju-1] = em_all_this_transition[inds_nucleus].sum()
+    flux_13CO_disk_center[Ju-1] = em_all_this_transition[inds_center].sum()
     
     
 ###########################################plotting###########################################################
@@ -170,11 +170,11 @@ ax.text(Ju_all[6], flux_CO_disk[6], 'disk')
 plt13CO, = ax.semilogy(Ju_all, flux_13CO_disk, 'b--')
 ax.text(Ju_all[6], flux_13CO_disk[6], 'disk')
 
-ax.semilogy(Ju_all, flux_CO_disk_nucleus, 'r-o')
-ax.text(Ju_all[3], flux_CO_disk_nucleus[3], 'nucleus')
+ax.semilogy(Ju_all, flux_CO_disk_center, 'r-o')
+ax.text(Ju_all[3], flux_CO_disk_center[3], 'center')
 
-ax.semilogy(Ju_all, flux_13CO_disk_nucleus, 'b--o')
-ax.text(Ju_all[1], flux_13CO_disk_nucleus[1]/5.0, 'nucleus')
+ax.semilogy(Ju_all, flux_13CO_disk_center, 'b--o')
+ax.text(Ju_all[1], flux_13CO_disk_center[1]/5.0, 'center')
 
 ax.semilogy(Ju_all, flux_CO_dwarf, 'r-')
 ax.semilogy(Ju_all, flux_13CO_dwarf, 'b--')

@@ -328,6 +328,8 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, **kwargs):
         raise AttributeError('%s is not an attribute of the gas particles,' % attr)
         
     attr_data = getattr(gas, attr)
+    if 'weights' in kwargs:
+        w_data = getattr(gas, kwargs['weights'])
     
     for i in numpy.arange(hist.nBins[0]):
         
@@ -338,8 +340,16 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, **kwargs):
             map_data[i,j] = inds_in_bin.size
             
             if inds_in_bin.size > 0:
+
+                x = attr_data[inds_in_bin]
                 
-                map_data[i,j] = func(attr_data[inds_in_bin])
+                if 'weights' in kwargs:
+                    w = w_data[inds_in_bin]
+                    
+                if 'weights' in kwargs:
+                    map_data[i,j] = func(x, weights=w)
+                else:
+                    map_data[i,j] = func(x)
             #
         #
     #

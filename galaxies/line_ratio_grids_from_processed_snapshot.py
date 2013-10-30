@@ -13,14 +13,16 @@ import pylab
 from amuse.units import units
 from mylib.utils.misc  import default_logger
 from mylib.utils.histogram import hist_nd 
-import fi_utils
+from galaxies import fi_utils
 import lineDict
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          'rundir'  : home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          'latex'   : os.path.join(home, 'ism','docs', 'paper02.5', 'src', 'figs'), #None
+          'save_im' : True,
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
@@ -40,10 +42,10 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                         },
           'em_unit'          : 'em_fluxKkms',
           'line_ratio_grids' : [
-                                ['CO2-1/CO1-0'     , 'CO3-2/CO1-0'    ,      'CO7-6/CO1-0', 'CO10-9/CO1-0'],
-                                ['13CO3-2/13CO1-0' , 'CO3-2/CO2-1'    ,      'CO7-6/CO2-1', 'CO10-9/CO2-1'],
-                                ['13CO7-6/13CO1-0' , '13CO7-6/13CO2-1',      'CO7-6/CO3-2', 'CO10-9/CO3-2'],
-                                ['13CO10-9/13CO1-0', '13CO7-6/13CO2-1', '13CO10-9/13CO2-1', 'CO10-9/CO7-6'],
+                                ['CO2-1/CO1-0'    , 'CO3-2/CO1-0'    , 'CO4-3/CO1-0'    , 'CO6-5/CO1-0'],
+                                ['13CO2-1/13CO1-0', 'CO3-2/CO2-1'    , 'CO4-3/CO2-1'    , 'CO6-5/CO2-1'],
+                                ['13CO3-2/13CO1-0', '13CO3-2/13CO2-1', 'CO4-3/CO3-2'    , 'CO6-5/CO3-2'],
+                                ['13CO6-5/13CO1-0', '13CO6-5/13CO2-1', '13CO6-5/13CO3-2', 'CO6-5/CO4-3'],
                                ],
           'plot' : {
                     'v_rng' : [-3.0, 1.0],
@@ -120,7 +122,8 @@ maps = {}
 #computing the emission maps of the lines involved in the ratios
 print 'making the maps of all the lines...'
 for i, this_attr in enumerate(map_attrs):
-    maps[this_attr] = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.sum)
+    maps[this_attr] = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights=this_attr)
+    #maps[this_attr] = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.sum)
 print '\t\tfinished making the maps'
 
 ################################################PLOTTING########################################################
@@ -161,9 +164,15 @@ for r in numpy.arange(n_rows):
         axs[r, c].set_title(maps_grid[r,c][0])
             
 cbar_ax = fig.add_axes([0.2, 0.95, 0.6, 0.01]) 
-cbar_ax.tick_params(axis='both', which='major', labelsize=30)
-cbar_ax.set_title(r'$\log_{10}$ [line_ratio]', size=25)
+cbar_ax.tick_params(axis='both', which='major', labelsize=20)
+cbar_ax.set_title(r'$\log_{10}$ [line_ratio]', size=20)
     
 pylab.colorbar(im, ax=ax, cax=cbar_ax, orientation='horizontal', ticks=numpy.linspace(v_min, v_max, 5))
 
+if params['save_im'] == True and params['latex'] != None:
+    filename_fig = os.path.join(params['latex'],'line_ratio_maps.eps') 
+    fig.savefig(filename_fig)
+    print 'saved image file to :\n\t\t\t %s' % filename_fig
+    
 pylab.show()
+

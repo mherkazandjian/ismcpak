@@ -32,7 +32,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',  # the path to the dir containing the PDR database          
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
                
-          'use_em'  : True, 
+          'use_em'  : False, 
           'use_pdr' : True,          
           
           'snaps'  : numpy.arange(4, 4 + 1, 1),
