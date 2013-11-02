@@ -3620,12 +3620,15 @@ class meshArxv(object):
         if line['type'] == 'radex-lvg':
 
             self.use_radexDb(Av=Av_use, specStr=lineInfo['specStr'], load_if_not_in_memory=True)
-    
+
+            func_kw = {}
+            func_kw['transitionIdx'] = lineInfo['radexIdx']
+            if 'em_unit' in line:
+                func_kw['em_unit'] = line['em_unit'] 
+            
             v = self.apply_function_to_all_radex_meshes(
                                                         radex_mesh_log_intensity, 
-                                                        func_kw = {
-                                                                   'transitionIdx': lineInfo['radexIdx'],
-                                                                  }
+                                                        func_kw = func_kw,
                                                        )
         return  np.array(v, 'f8') 
     
@@ -3687,11 +3690,16 @@ def radex_mesh_log_intensity(mesh_radex, **kwargs):
     '''returns the log10 intentisty emitted from a radex model applied on a pdr mesh with the Av of the current Db'''
     
     transitionIdx = kwargs['transitionIdx']
+    if 'em_unit' in kwargs:        
+        quantity = 'flux' + kwargs['em_unit']
+    else:
+        quantity = 'fluxcgs'         
+        
     
     if mesh_radex == None:
         return numpy.nan
     else:
-        return numpy.log10(mesh_radex[transitionIdx]['fluxcgs'])
+        return numpy.log10(mesh_radex[transitionIdx][quantity])
 
 def pdr_mesh_log_intensity(meshObj, **kwargs):
     '''returns the log10 intentisty (per sr) emitting from a pdr mesh with a certain Av

@@ -156,7 +156,7 @@ import line_ratio_utils
 
 
 ''' 
-#----------------------reading line ration---------------------------------------------
+#----------------------reading line ratio---------------------------------------------
 #path to the excel sheet containing the data
 data_sheet = '/home/mher/ism/marissa/NGC_253_data/NGC_253_Fluxes_Master_newsheet.xlsx' 
 ratios = (

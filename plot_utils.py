@@ -994,6 +994,7 @@ class line_ratio_grid_of_grid():
                            #'strs'   : ['0.01',  '0.1', '1', '10', '30', '100'],
                           }, 
                  Av_use=10.0, #: the Av of the grid
+                 em_unit = 'cgs',
                  res=[100,100],  #: the resolution of the interpolated image
                  image_save_dir=None, 
                  removeNans=None, 
@@ -1011,6 +1012,7 @@ class line_ratio_grid_of_grid():
         self.zsecType = zsecType
         self.Av_use = Av_use
         self.ranges = ranges
+        self.em_unit = em_unit
         self.cmap = cmap
         self.cbar = cbar
         self.c_levels = c_levels
@@ -1163,8 +1165,8 @@ class line_ratio_grid_of_grid():
                 z_sec = numpy.log10(self.zsecs[c])
                 code1, code2 = ratio.split('/') 
                 lr = line_ratio(self.arxvPDR, 
-                                line1={'code':code1, 'type':'radex-lvg'},
-                                line2={'code':code2, 'type':'radex-lvg'},
+                                line1={'code':code1, 'type':'radex-lvg', 'em_unit':self.em_unit},
+                                line2={'code':code2, 'type':'radex-lvg', 'em_unit':self.em_unit},
                                 z_sec=z_sec,
                                 Av_use=self.Av_use,
                                 res=self.res,
@@ -1177,7 +1179,7 @@ class line_ratio_grid_of_grid():
             #
         #
         
-        mylib.utils.removeAxesLabels.removeSubplotLabels(self.nx, self.ny, self.axs, keep_first_last_labels=True)
+        mylib.utils.removeAxesLabels.removeSubplotLabels(self.axs, keep_first_last_labels=True)
         
     def plot_grids(self):
         '''plot the images in the subplots'''
@@ -1301,7 +1303,6 @@ class line_ratio_grid_of_grid():
                     if ratio == '%s/%s' % (lr.line1['code'],lr.line2['code']):
                         v, e = obs_ratios[ratio]['v'], obs_ratios[ratio]['e']
                         truth_grids[c] *= ((lr.grd >= numpy.log10(v-e)) *  (lr.grd <= numpy.log10(v+e)))
-                
             #
         #
 

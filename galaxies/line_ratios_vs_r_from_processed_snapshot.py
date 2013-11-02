@@ -65,10 +65,10 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #############################################################################################################
 #############################################################################################################
 
-#setting up the logger object
+## setting up the logger object
 logger = default_logger()
 
-#setting up the line ratio map grid
+## setting up the line ratio map grid
 curves = [[],[],[]]
 attrs = {}
 for i, bunch in enumerate(params['line_ratio_curves']):
@@ -87,35 +87,35 @@ for i, bunch in enumerate(params['line_ratio_curves']):
         attrs[attr1] = True
         attrs[attr2] = True
 
-#getting the unique transitions whose maps will be constructed
+## getting the unique transitions whose maps will be constructed
 curve_attrs = attrs.keys()
 print 'emissions to be extracted from the processed snapshopt'
 for attr in curve_attrs: print '\t%s' % attr
 
-#getting the species involved in those emissions
+## getting the species involved in those emissions
 species = {}
 for key in curve_attrs:
     species[lineDict.lines[key.replace(params['em_unit'] + '_', '')]['specStr']] = True
 print 'Species invloved = ', species.keys()
 
-#path to processed fi snapshot  
+## path to processed fi snapshot  
 snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % params['snap_index'] + '.states.npz'  
 
-#loading the processed sph simulation data with the emissions 
+## loading the processed sph simulation data with the emissions 
 logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
 gas = fi_utils.load_gas_particle_info_with_em(snap_filename, species, load_pdr=params['pdr_sph'])    
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
-#keeping gas particles within the specified ranges
+## keeping gas particles within the specified ranges
 gas = fi_utils.select_particles(gas, params['ranges'])
 logger.debug('got the sph particles in the required ranges')
 logger.debug('number of gas particles in the specified ranages = %d' %  len(gas))
 
-#keeping the gas particles within a radius R = bs_max
+## keeping the gas particles within a radius R = bs_max
 bs_min, bs_max = params['ranges']['box_size'].number
 
-#making the 1D histogram as a function of R
+## making the 1D histogram as a function of R
 x, y = gas.x, gas.y
 r = numpy.sqrt(x**2 + y**2)
 
@@ -123,7 +123,7 @@ print 'getting the spatial distrubutions....'
 hist = hist_nd(r.reshape(1, r.size), mn = 0.0, mx=bs_max, nbins=params['r_res'], reverse_indicies=True, loc=True)
 hist.info()
 
-#keeping the gas particles which are withing the ranges of the histogram
+## keeping the gas particles which are withing the ranges of the histogram
 gas = gas[hist.inds_in]
 
 print '\t\tdone getting the spatial distributuions'
@@ -133,7 +133,7 @@ ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
 x, y = gas.x, gas.y
 
-#plotting the points
+## plotting the points
 for i in numpy.arange(hist.nBins):
     inds_in_bin = hist.get_indicies(i)
     ax.plot(x[inds_in_bin], y[inds_in_bin], '.')
@@ -143,21 +143,23 @@ pylab.show()
 ################################################computing the emission###########################################   
 emissions_data = {}
 emissions_data_integrated = {}
-#computing the emission maps of the lines involved in the ratios
+
+## computing the emission maps of the lines involved in the ratios
 print 'computing the emission from all the sectors...'
 
 for i, this_attr in enumerate(curve_attrs):
     
     print 'computing the emission as a function of radius for %s' % this_attr
     
-    #curve which will hold the computed emission intensity in that sector
+    ## curve which will hold the computed emission intensity in that sector
     emissions_data[this_attr] = numpy.zeros(hist.f.size, 'f8')
     emissions_data_integrated[this_attr] = numpy.zeros(hist.f.size, 'f8')
 
-    #emission data for this line for all the gas particles
+    ## emission data for this line for all the gas particles
     data_attr = getattr(gas, this_attr)
 
-    #looping over the sectors and getting the emissions for this sector    
+    ## looping over the sectors and getting the emissions for this sector as well as in the total emission
+    ## from the beam up to the corresponding sector    
     for i in numpy.arange(hist.nBins):
 
         inds_in_bin = hist.get_indicies(i)
@@ -173,7 +175,7 @@ for i, this_attr in enumerate(curve_attrs):
         
 print '\tfinished computing the emissions'
 
-#plotting the emission as a function of radius
+## plotting the emission as a function of radius
 fig1 = pylab.figure()
 ax1 = fig1.add_axes([0.1, 0.1, 0.8, 0.8])
 
@@ -193,13 +195,13 @@ ax2.legend(plts2, curve_attrs, loc=0)
 
 pylab.show()
 
-############################################Plotting the line ratios versus r###########################################
+################################## Plotting the line for different beam sizes #####################################
 
 v_min, v_max = params['plot']['v_rng']
 
 fig1, axs1 = pylab.subplots(1, 3, sharex=False, sharey=False, figsize=(12.0, 4.0))
-                                
-#for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
+
+## for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
 for ax in axs1: ax.set_xlabel('R(kpc)', size=10)
 axs1[0].set_ylabel(r'$\log_{10}$ [$\int_0^R$ line ratio] ')
 
@@ -210,17 +212,27 @@ syms = ['r-', 'g-', 'r--', 'g--', 'k-', 'b--', 'k--', 'r-.', 'g-.', 'b-.', 'k-.'
 for i, bunch in enumerate(curves):
 
     for j, curve in enumerate(bunch):
-        print i, j, curve 
-        curve_data = numpy.log10(emissions_data_integrated[curve[1]] / emissions_data_integrated[curve[2]])
-        axs1[i].plot(hist.f.cntrd, curve_data, syms[j])
+        
+        print i, j, curve
+         
+        curve_data = emissions_data_integrated[curve[1]] / emissions_data_integrated[curve[2]]
+        axs1[i].loglog(hist.f.cntrd, curve_data, syms[j])
+        axs1[i].text(
+                     hist.f.cntrd[hist.nBins/2], curve_data[hist.nBins/2], 
+                     '%s/%s' % (
+                                curve[1].replace('em_fluxKkms_',''), 
+                                curve[2].replace('em_fluxKkms_','')
+                               ),
+                     size=7,
+                    )
+    print '-----------------'
     
-    print '-----------------' 
-    axs1[i].set_ylim(-5, 0)
+    axs1[i].set_ylim(5e-3, 1.0)
     axs1[i].set_title(titles[i])
 
 pylab.show()
 
-###################################################################
+################## Plotting the line ratios as a function of radial distance from the center ########################
 v_min, v_max = params['plot']['v_rng']
 
 fig2, axs2 = pylab.subplots(1, 3, sharex=False, sharey=False, figsize=(12.0, 4.0))
