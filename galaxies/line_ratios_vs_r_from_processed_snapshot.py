@@ -203,22 +203,23 @@ fig1, axs1 = pylab.subplots(1, 3, sharex=False, sharey=False, figsize=(12.0, 4.0
 
 ## for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
 for ax in axs1: ax.set_xlabel('R(kpc)', size=10)
-axs1[0].set_ylabel(r'$\log_{10}$ [$\int_0^R$ line ratio] ')
+axs1[0].set_ylabel(r'$\log_{10}$ [line ratio]')
 
 pylab.subplots_adjust(left=0.10, bottom=0.15, right=0.9, top=0.9, wspace=0.15, hspace=0.15)
 titles = ['CO/CO', '13CO/13CO', '13CO/CO']
 syms = ['r-', 'g-', 'r--', 'g--', 'k-', 'b--', 'k--', 'r-.', 'g-.', 'b-.', 'k-.']
+yranges = [[0.1, 1.0], [0.03, 1.0], [0.005, 0.3]]
 
 for i, bunch in enumerate(curves):
 
     for j, curve in enumerate(bunch):
         
         print i, j, curve
-         
+        
         curve_data = emissions_data_integrated[curve[1]] / emissions_data_integrated[curve[2]]
         axs1[i].loglog(hist.f.cntrd, curve_data, syms[j])
         axs1[i].text(
-                     hist.f.cntrd[hist.nBins/2], curve_data[hist.nBins/2], 
+                     hist.f.cntrd[0], curve_data[0], 
                      '%s/%s' % (
                                 curve[1].replace('em_fluxKkms_',''), 
                                 curve[2].replace('em_fluxKkms_','')
@@ -227,12 +228,12 @@ for i, bunch in enumerate(curves):
                     )
     print '-----------------'
     
-    axs1[i].set_ylim(5e-3, 1.0)
+    axs1[i].set_ylim(*yranges[i])
     axs1[i].set_title(titles[i])
 
 pylab.show()
 
-################## Plotting the line ratios as a function of radial distance from the center ########################
+################## Plotting the line ratios as a function of radial distance from the center (within annuli) ########################
 v_min, v_max = params['plot']['v_rng']
 
 fig2, axs2 = pylab.subplots(1, 3, sharex=False, sharey=False, figsize=(12.0, 4.0))
@@ -251,9 +252,10 @@ for i, bunch in enumerate(curves):
         print i, j, curve 
         curve_data = numpy.log10(emissions_data[curve[1]] / emissions_data[curve[2]])
         axs2[i].plot(hist.f.cntrd, curve_data, syms[j])
+    #
     
     print '-----------------' 
     axs2[i].set_ylim(-5, 0)
     axs2[i].set_title(titles[i])
-
+    
 pylab.show()
