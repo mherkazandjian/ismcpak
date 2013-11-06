@@ -638,7 +638,7 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
     ax.set_xlim([bs_min, bs_max])
     ax.set_ylim([bs_min, bs_max])
     
-    im = ax.imshow(map_data,
+    im = ax.imshow(map_data,  #i think the transopse of map_data should be taken here
                    extent=[bs_min, bs_max, bs_min, bs_max],
                    vmin=map_info['v_rng'][0],  
                    vmax=map_info['v_rng'][1], 

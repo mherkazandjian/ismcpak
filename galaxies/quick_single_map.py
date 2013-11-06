@@ -18,8 +18,8 @@ import fi_utils
 #===========================================================================================================
 home = '/home/mher'
 
-params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',   # the path of the dir containing the simulation
-          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',   # the path of the dir containing the simulation
+params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',   # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',   # the path of the dir containing the simulation
           'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
@@ -28,11 +28,11 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',   # the 
                              'min_log_gm_use' : -50.0,
                             },
                       #the size of the box to be displayed (particles outside the range are discarded)
-                      'box_size' : [-4, 4] | units.kpc,
+                      'box_size' : [-8, 8] | units.kpc,
                       },          
           }
 
-snap_index   = 20
+snap_index   = 4
 vMin, vMax   = [0, 5]
 plot_map     = True
 plot_n_gm_g0 = True

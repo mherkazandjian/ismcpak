@@ -49,7 +49,7 @@ params = {
                       'attr'     : 'em_fluxKkms_CO1-0'   , #the emission line to be made into a cube
                       'func'     : numpy.sum             , #function to be used to compute the total emission in the cell
                       'xy_rng'   : [-8.0, 8.0, -8.0, 8.0], #spatial bounds of the projected image (in kpc)
-                      'im_res'   : 200,                    #spatial resolution of the cube in each dimension over the domain
+                      'im_res'   : 50,                    #spatial resolution of the cube in each dimension over the domain
                       'spec_rng' : [-100.0, 100.0],        #the range in the velocities in km/s
                       'spec_res' : 200,                   #number of velocity bins of the spectra to be constructed for each pixel
                       
@@ -63,7 +63,7 @@ params = {
                                    }, 
                       'l_width_mc': 1.0,   # Micro - Turbulance line width in km/s
                       'save_cube' : False, 
-                      'save_fits' : True, 
+                      'save_fits' : False, 
                       },
          }
 #############################################################################################################################

@@ -112,6 +112,85 @@ class ratios(collections.OrderedDict):
             
         return specStrs.keys(), codes.keys()
     
+    def get_all_values(self):
+        '''returns the values of all the ratios'''
+        return [self[ratio_str]['v'] for ratio_str in self.keys()]
+    
+    def get_all_errors(self):
+        '''returns the values of all the ratios'''
+        return [self[ratio_str]['e'] for ratio_str in self.keys()]
+
+    def get_all_values_and_error(self, line_ratios):
+        '''returns all the line ratio values and errors for the specified ratios in the list'''
+        
+        return self.get_all_values(line_ratios), self.get_all_errors(line_ratios)
+    
+    def get_values(self, line_ratios):
+        '''returns a list of line ratio values for the specified ratios in the list'''
+        
+        v_ratios = []
+        for line_ratio in line_ratios:
+            v_ratios.append(self[line_ratio]['v'])
+            
+        return numpy.array(v_ratios, 'f8')
+
+    def get_errors(self, line_ratios):
+        '''returns a list of line ratio errors for the specified ratios in the list'''
+        
+        e_ratios = []
+        for line_ratio in line_ratios:
+            e_ratios.append(self[line_ratio]['e'])
+            
+        return numpy.array(e_ratios, 'f8')
+    
+    def get_values_by_species(self, spec1, spec2):
+        '''returns the line ratios of all the lines where the ratios involve spec1 and spec2 in the num and denom respectively'''
+        
+        line_ratios = self.get_ratios_by_species(spec1, spec2)
+        
+        v = self.get_values(line_ratios)
+        
+        return v
+
+    def get_errors_by_species(self, spec1, spec2):
+        '''returns the line ratios of all the lines where the ratios involve spec1 and spec2 in the num and denom respectively'''
+        
+        line_ratios = self.get_ratios_by_species(spec1, spec2)
+        
+        v = self.get_errors(line_ratios)
+        
+        return v
+
+    def get_values_and_errors_by_species(self, spec1, spec2):
+        '''returns the line ratios values and errors of all the lines where the ratios involve spec1 and spec2 in the num and denom respectively'''
+        
+        return self.get_values_by_species(spec1, spec2), self.get_errors_by_species(spec1, spec2) 
+        
+    def get_values_and_error(self, line_ratios):
+        '''returns the line ratio values and errors for the specified ratios in the list'''
+        
+        return self.get_values(line_ratios), self.get_errors(line_ratios)
+
+    def get_ratios_by_species(self, spec1, spec2):
+        '''returns the line ratios string of the line ratios whose numerator involves spec1 and denominator spec2
+        For example 
+        
+            get_values_by_species('13CO', 'CO')
+        
+        returns a list of line ratio strings such as 13CO2-1/CO1-0    
+        '''
+        
+        ret = []
+        
+        for line_ratio in self:
+            
+            line1, line2 = lines_involved(line_ratio)
+            
+            if lineDict.lines[line1]['specStr'] == spec1 and lineDict.lines[line2]['specStr'] == spec2:
+                ret.append(line_ratio)
+                
+        return ret
+    
     #def get_
     def show(self):
         
@@ -305,4 +384,23 @@ def plot_single_model_ratios(arxvPDR, x, y, z, t, obs_ratios):
 
     pylab.title('Xi2 = %f' % Xi2.sum() )
     
+def same_species_ratio(line_ratio):
+    '''returns true if the lines involved are for the same species. 
+        13CO2-1/13CO1-0 ruturns True,
+        13CO2-1/CO1-0 ruturns False
+    '''
+    line1, line2 = lines_involved(line_ratio)
     
+    if lineDict.lines[line1]['specStr'] == lineDict.lines[line2]['specStr']:
+        return True
+    else:
+        return False
+    
+
+def lines_involved(line_ratio):
+    '''returns the lines involved in the line ratio. 
+        13CO2-1/13CO1-0 ruturns 13CO2-1, 13CO1-0
+    '''
+    line1, line2 = line_ratio.split('/')
+    
+    return line1, line2

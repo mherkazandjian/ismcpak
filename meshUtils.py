@@ -926,7 +926,6 @@ class meshArxv(object):
     def query_available_radex_dbs(self):
         """method which looks for the available radex dbs, and for each Av returns a dict of the 
         available dbs in the dirpath"""
-        pass
     
         sourceDir = os.path.join(self.dirPath, 'radexDbs')
         lookFor   = 'meshesRadex.db.*'
@@ -3631,6 +3630,65 @@ class meshArxv(object):
                                                         func_kw = func_kw,
                                                        )
         return  np.array(v, 'f8') 
+
+    def get_emission_from_all_radex_dbs_for_Av_range(self, line=None, Avs=None, quantity=None, keep_nans=None):
+        '''gets the emissions from the pdr database or radex models determined by the keyword line for
+         the specified Avs in the Avs array. line should be an entry for a radex line in lineDict.lines
+        
+        .. code-block:: python
+        
+            v, data = arxv.get_emission_from_all_databases_for_Av_range(
+                                                                        line = '13CO1-0',
+                                                                        Avs  = [1.0, 2.0, 5.0, 10.0],
+                                                                        quantity = 'fluxKkms',  
+                                                                       )
+        '''
+        
+        specStr   = lineDict.lines[line]['specStr']
+        radex_idx = lineDict.lines[line]['radexIdx']
+        
+        if type(Avs) == type(''):
+            Avs_use = self.query_available_radex_dbs()
+        else:
+            Avs_use = numpy.array(Avs)
+        
+        ## collecting the data from the database corresponding to all the data in Av avaiable
+        for i, Av in enumerate(Avs_use):
+            
+            #using the database of the specific Av
+            self.use_radexDb(specStr=specStr, Av=Av)
+            
+            #getting the data corresponding to this Av
+            v = self.apply_function_to_all_radex_meshes(
+                                                        radex_mesh_quantity, 
+                                                        func_kw = {
+                                                                   'transitionIdx':radex_idx,
+                                                                   'quantity' : quantity
+                                                                   }
+                                                        )
+
+            v = numpy.array(v)
+                        
+            if keep_nans != None and keep_nans == True: 
+                xGrd, yGrd, zGrd = self.grid_x, self.grid_y, self.grid_z
+            else:
+                #keeping the points which are useful (finite ones)
+                inds_valid = numpy.isfinite(v)
+                v = v[inds_valid]
+                xGrd, yGrd, zGrd = self.grid_x[inds_valid], self.grid_y[inds_valid], self.grid_z[inds_valid]
+
+            AvGrd = numpy.ones(xGrd.shape, 'f')*Av
+            data = numpy.array([xGrd, yGrd, zGrd, AvGrd], dtype = numpy.float64).T
+                    
+            #soting the x,y,z,t, and v into arrays to be used later to construct the interpoaltion function
+            if i == 0:
+                data_all_Av = data
+                v_all_Av = v
+            else:
+                data_all_Av = numpy.vstack( (data_all_Av, data) )
+                v_all_Av = numpy.hstack( (v_all_Av, v) )
+
+        return v_all_Av, data_all_Av
     
     def get_emission_grid_from_databases(self, line=None, Av_use=None, ranges=None, res=None, z_sec=None, f_interp_dim=None, **kwargs):
         '''gets an interpolated grid from the database for a pdr or radex models determined by the keyword line'''
