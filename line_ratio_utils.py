@@ -109,7 +109,10 @@ class ratios(collections.OrderedDict):
             specStr2 = lineDict.lines[code2]['specStr']            
             specStrs[specStr1] = True        
             specStrs[specStr2] = True
-            
+        
+        self.specStrs = specStrs.keys()
+        self.codes = codes.keys()
+        
         return specStrs.keys(), codes.keys()
     
     def get_all_values(self):

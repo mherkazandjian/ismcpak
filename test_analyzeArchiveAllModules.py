@@ -26,13 +26,13 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy2/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
-         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',
+         #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',
          # 'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-test/',
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
-         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
+         'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
                    
          #------------------------------------------
          #'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)

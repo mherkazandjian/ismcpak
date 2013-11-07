@@ -28,7 +28,8 @@ parameters = {
              'emissions'   : (
                               ['lvg', 'radex' , 'CO'  , '1-0'],   
                               ['lvg', 'radex' , 'CO'  , '2-1'],        
-                              ['lvg', 'radex' , 'CO'  , '3-2'],   
+                              ['lvg', 'radex' , 'CO'  , '3-2'],
+                                 
                               ['lvg', 'radex' , 'CO'  , '4-3'],   
                               ['lvg', 'radex' , 'CO'  , '5-4'],  
                               ['lvg', 'radex' , 'CO'  , '6-5'], 
@@ -50,7 +51,7 @@ parameters = {
                               ['lvg', 'radex' , 'CO'  , '22-21'], 
                               ['lvg', 'radex' , 'CO'  , '23-22'], 
                               ['lvg', 'radex' , 'CO'  , '24-23'], 
-                              #
+                             #
                               ['lvg', 'radex' , '13CO', '1-0'],   
                               ['lvg', 'radex' , '13CO', '2-1'],   
                               ['lvg', 'radex' , '13CO', '3-2'],   
@@ -82,8 +83,17 @@ parameters = {
                                 ), 
              #quantities at a certain Av
              'quantities_at_AV' : (
-                                   ['T_kin', ['state', 'gasT']],                                   
+                                   ['T_kin', ['state', 'gasT']],                                      
                                   ),
+              
+             #parameters used by radex for emission of                                
+             'quantities_used_by_radex' : (
+                                           ['CO', 'TMean'],
+                                           ['CO', 'N_COL'],
+                                           ['13CO', 'TMean'],
+                                           ['13CO', 'N_COL'],
+                                          ),
+
              'outFname'    : home + '/tmp/test.txt',
              }
 
@@ -119,6 +129,8 @@ def main(parms):
         fObj.write('%s ' % q[0])
     for i, q in enumerate(parms['quantities_at_AV']):
         fObj.write('%s ' % q[0])
+    for i, q in enumerate(parms['quantities_used_by_radex']):
+        fObj.write('%s-%s ' % (q[0], q[1]))
     fObj.write('\n')
 
     idx = 0 #an index written at the beginning of each line
@@ -207,7 +219,21 @@ def main(parms):
                 outStr += '%+10.3e ' % q
             #
                         
-            
+            ## getting the input parameters used by Radex to compute the emission
+            for quantity in parms['quantities_used_by_radex']:
+                arxv.mshTmp.setData(msh)
+                
+                specStr,q = quantity
+                
+                TMean, nDenseColl, N_specLVG, Av_range = arxv.mshTmp.get_radex_parameters(specStr, threshold=-1, Av_range=[0, Av])
+
+                if q == 'TMean':
+                    v = TMean
+                if q == 'N_COL':
+                    v = N_specLVG
+                 
+                outStr += '%+10.3e ' % v 
+
             outStr += '\n'
             fObj.write(outStr)
             

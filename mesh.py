@@ -679,11 +679,19 @@ class mesh(object):
         :param float threshold: only slabs with an abundance bigger than threshold are considered
           in computing the column density anf the Tmean. Set this to a negative number to make sure
           all the slabs are considered.
+        :param Av_range: a list [Av_min, Av_max] specifiying the range of Avs to be used. i.e only slabs
+         within that range would be used.
         :return: (TMean, nDenseColl, N_specLVG, Av_range)\n  
           TMean (flaot)\n
           nDenseColl (dict) : the number density of the colliders e-, H+, H, He, H2 which are the keys
             of the dict holding the corresponding number densities.\n
           N_spcLVG (float)
+          
+        .. code-block:: python
+                
+                
+                TMean, nDenseColl, N_specLVG, Av_range, = pdr_mesh.get_radex_parameters('CO', threshold=-1, Av_range=[0,10])
+
         """
         spec = speciesStr
         xMin = threshold
@@ -766,7 +774,7 @@ class mesh(object):
                      }
         
         return (
-                TMean, 
+                TMean,
                 nDenseColl,
                 N_specLVG,
                 Av_range,
