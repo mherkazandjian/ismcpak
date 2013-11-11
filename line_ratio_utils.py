@@ -54,17 +54,22 @@ class ratios(collections.OrderedDict):
         
         self[rStr] = r 
     
-    def make_ratios(self, lines, ratios):
+    def make_ratios(self, lines, ratios, em_unit=None):
         '''takes a dict of lines ('CO1-0', 'HCN4-3'...ect) and ratio string ('HCN4-3/CO1-0',...)
         and adds the ratios as dict keys and computes the errors using propagation of error
         for ratios (assuming the errors in line[SPEC_STR]['err'] exist)
         '''
         
+        if em_unit == None:
+            unit = 'fluxcgs'
+        else:
+            unit = 'fluxKkms'
+            
         for ratio in ratios:
             code1, code2 = codes_from_ratio(ratio)
             
-            v1, e1 = lines[code1]['fluxcgs'], lines[code1]['err']
-            v2, e2 = lines[code2]['fluxcgs'], lines[code2]['err'] 
+            v1, e1 = lines[code1][unit], lines[code1]['err']
+            v2, e2 = lines[code2][unit], lines[code2]['err'] 
              
             #the value of the line ratio
             v = v1 / v2
