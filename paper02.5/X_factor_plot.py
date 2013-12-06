@@ -14,47 +14,49 @@ from galaxies import fi_utils
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 home = '/home/mher'
+
 fig_save_path = '/home/mher/ism/docs/paper02.5/src/figs/x_factor.eps'
+#fig_save_path = None
 
 ##########################################DISK GALAXY##################################################
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
           'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
-          'imres' : 200,                                                 # resolution of the maps to be produced imres x imres
+          'imres' : 400,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO'],
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
           'snaps'   : numpy.arange(4, 4 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
-                             'min_log_n_use'  : -3.0,      
+                             'min_log_n_use'  : -3.0,
                              'min_log_G0_use' : -3.0,
                              'min_log_gm_use' : -50.0,
                              'Av_use'         :  [0.0, 200.0],
-                             'Av_clip'        :  [3.0, 29.9],  #sph particles with Av higher than this are clipped to this value                             
+                             'Av_clip'        :  [0.01, 29.9],  #sph particles with Av higher than this are clipped to this value                             
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
-                      'box_size' : [-4.0, 4.0] | units.kpc, #kpc
+                      'box_size' : [-8.0, 8.0] | units.kpc, #kpc
                       },
 
-          'all_maps' : {  
+          'all_maps' : {
                         'map_CO1-0': {
                                      'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
                                      'v_rng'   : [-10.0, 4.0],
                                      'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
                                      'as_log10': True,
-                                     #'func'    : numpy.mean,
-                                     'func'    : numpy.average,
-                                     'weights' : 'em_fluxKkms_CO1-0',                                     
+                                     'func'    : numpy.mean,
+                                     #'func'    : numpy.average,
+                                     #'weights' : 'em_fluxKkms_CO1-0',                                     
                                      },
                         'map_NH2'  : {
                                      'attr'    : 'pdr_NH2',
                                      'v_rng'   : [10.0, 30.0],
                                      'title'   : r'$N(H2)$', 
                                      'as_log10': True,
-                                     #'func'    : numpy.mean,
-                                     'func'    : numpy.average,
-                                     'weights' : 'em_fluxKkms_CO1-0',                                     
+                                     'func'    : numpy.mean,
+                                     #'func'    : numpy.average,
+                                     #'weights' : 'em_fluxKkms_CO1-0',                                     
                                      },
                         },
         'save_maps' : False,
@@ -209,7 +211,7 @@ for snap in params['snaps']:
 ##########################################DWARF GALAXY##################################################
 params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
-          'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
+          'imres' : 200,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO'],
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
@@ -220,7 +222,7 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
                              'min_log_G0_use' : -3.0,
                              'min_log_gm_use' : -50.0,
                              'Av_use'         :  [0.0, 200.0],
-                             'Av_clip'        :  [3.0, 29.9],  #sph particles with Av higher than this are clipped to this value                             
+                             'Av_clip'        :  [0.01, 29.9],  #sph particles with Av higher than this are clipped to this value                             
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
@@ -233,14 +235,18 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
                                      'v_rng'   : [-10.0, 4.0],
                                      'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
                                      'as_log10': True,
-                                     'func'    : numpy.mean,
+                                     #'func'    : numpy.mean,
+                                     'func'    : numpy.average,
+                                     'weights' : 'em_fluxKkms_CO1-0',                                     
                                      },
                         'map_NH2'  : {
                                      'attr'    : 'pdr_NH2',
                                      'v_rng'   : [10.0, 30.0],
                                      'title'   : r'$N(H2)$', 
                                      'as_log10': True,
-                                     'func'    : numpy.mean,
+                                     #'func'    : numpy.mean,
+                                     'func'    : numpy.average,
+                                     'weights' : 'em_fluxKkms_CO1-0',                                     
                                      },
                         },
         'save_maps' : False,
@@ -299,9 +305,10 @@ for snap in params['snaps']:
 
 LCO = map_CO_data_dwarf.flatten()
 NH2 = map_NH2_data_dwarf.flatten()
-ax.plot(LCO[::2], NH2[::2], 'r.', markersize=1)
+ax.plot(LCO[::2], NH2[::2], 'r.', markersize=4)
 
-fig.savefig(fig_save_path)
+if fig_save_path != None:
+    fig.savefig(fig_save_path)
 print 'saved image file to :\n\t\t\t %s' % fig_save_path
 
 pylab.show()

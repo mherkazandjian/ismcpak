@@ -268,21 +268,26 @@ def save_gas_particle_info(filename, gas, attr_name_list):
 def load_gas_particle_info(filename, load_pdr=None):
     '''load the particle states from the file'''
     
-    data = numpy.load(filename)    
+    data = numpy.load(filename)
+    print '\tloaded file:\n\t\t%s' % filename    
     n = data['arr_0'].size
 
     gas = Particles(n)
 
     for i, name in enumerate(data['names']):
         setattr(gas, name, data['arr_%d' % i])
-    
+        print '\t\tattr_name = %-30s [%d elements]' % (name, data['arr_%d' %i].size)
+        
     all_names = data['names'] 
     
     if load_pdr == True:
-        data_pdr = numpy.load(filename + '.pdr.npz')
+        filename_pdr = filename + '.pdr.npz'
+        data_pdr = numpy.load(filename_pdr)
+        print '\tloaded file:\n\t\t%s' % filename_pdr
         for i, name in enumerate(data_pdr['names']):
             setattr(gas, name, data_pdr['arr_%d' % i])
-        
+            print '\t\tattr_name = %-30s [%d elements]' % (name, data['arr_%d' %i].size)
+            
         all_names = numpy.hstack((all_names, data_pdr['names']))
 
     return gas, all_names
@@ -296,14 +301,12 @@ def load_gas_particle_info_with_em(filename, species, load_pdr=None):
     
     #loading the states of the sph particles
     gas, names = load_gas_particle_info(filename, load_pdr=load_pdr)
-    print 'loaded file: \n\t\t %s' % filename
     
     names_all.append(names.tolist())     
     
     for specStr in species:
         filename_this = filename + '.em_%s.npz' % specStr
         gas_this, names_this = load_gas_particle_info(filename_this)
-        print '\tloaded file:\n\t\t\t %s' % filename_this
         for name_this in names_this:
             attr_data_this = getattr(gas_this, name_this)
             setattr(gas, name_this, attr_data_this)
@@ -378,6 +381,9 @@ def get_interpolation_function_pdr(arxvPDR, params, logger, **kwargs):
     #to construct the interpolation functions
     Avs = numpy.linspace(Av_range[0], Av_range[1], (Av_range[1] - Av_range[0])/Av_res + 1) 
 
+    if 'extra_Av_sec' in params['ranges']['interp']:
+        Avs = numpy.hstack((params['ranges']['interp']['extra_Av_sec'], Avs))
+    
     kwargs['up_to_Av'] = {}
     func = kwargs.pop('func')
     
@@ -436,7 +442,12 @@ def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
                             (available_Avs_for_radex_dbs <= Av_range[1])
                            )[0]
     Avs_read = available_Avs_for_radex_dbs[inds_read]
+    
+    if 'extra_Av_sec' in params['ranges']['interp']:
+        Avs_read = numpy.hstack((params['ranges']['interp']['extra_Av_sec'], Avs_read))
 
+    Av_min, Av_max = numpy.min(Avs_read), numpy.max(Avs_read)
+        
     #collecting the data from the database corresponding to all the data
     #in Av avaiable
     for i, Av in enumerate(Avs_read):
@@ -479,10 +490,10 @@ def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
                              (data_all_Av[:,2] >= params['ranges']['interp']['log_gmech'][0])* 
                              (data_all_Av[:,2] <= params['ranges']['interp']['log_gmech'][1])*
                              
-                             (data_all_Av[:,3] >= params['ranges']['interp']['Av'][0])*
-                             (data_all_Av[:,3] <= params['ranges']['interp']['Av'][1])
+                             (data_all_Av[:,3] >= Av_min)*
+                             (data_all_Av[:,3] <= Av_max)
                            )[0]
-    data_all_Av = data_all_Av[inds_keep,:] 
+    data_all_Av = data_all_Av[inds_keep,:]
     v_all_Av    = v_all_Av[inds_keep] 
     #
     
@@ -617,7 +628,7 @@ def snapshot_interpolated_data(snap, arxvPDR, em_interp_funcs, pdr_interp_funcs,
     print 'getting the emissions of each sph particle'    
 
     em_sph = {}        
-    for em_key in em_keys: em_sph[em_key] = gas_particle_info_from_interp_func(gas, em_key, arxvPDR, em_interp_funcs, take_exp=params['maps'][em_key]['log10'])
+    for em_key in em_keys: em_sph[em_key]     = gas_particle_info_from_interp_func(gas, em_key,  arxvPDR, em_interp_funcs, take_exp=params['maps'][em_key]['log10'])
 
     pdr_sph = {}        
     for pdr_key in pdr_keys: pdr_sph[pdr_key] = gas_particle_info_from_interp_func(gas, pdr_key, arxvPDR, pdr_interp_funcs, take_exp=params['maps'][pdr_key]['log10'])
@@ -638,6 +649,9 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
     ax.set_xlim([bs_min, bs_max])
     ax.set_ylim([bs_min, bs_max])
     
+    inds_nan = numpy.where(numpy.isfinite(map_data) == False)
+    map_data[inds_nan] = map_info['v_rng'][0]
+    
     im = ax.imshow(map_data,  #i think the transopse of map_data should be taken here
                    extent=[bs_min, bs_max, bs_min, bs_max],
                    vmin=map_info['v_rng'][0],  
@@ -645,7 +659,7 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
                    interpolation='bessel', #intepolation used for imshow
                    origin='lower')
 
-    ax.set_title(map_info['title'], size=30, verticalalignment='bottom')
+    ax.set_title(map_info['title'], size=25, verticalalignment='bottom')
     ax.tick_params(axis='both', which='major', labelsize=20)
     
     cbar_ax = fig.add_axes([0.2, 0.97, 0.6, 0.02]) 
@@ -666,11 +680,13 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
     #copy the saved image to the latex direcotry
     if 'latex' in params and params['latex'] == True:
 
-        copy_to = os.path.join(params['latex'], '%s-%s-%s' % (os.path.split(os.path.split(params['rundir'])[-2])[-1],    
-                                                              os.path.split(params['rundir'])[-1],
-                                                              os.path.split(filename_fig)[-1]
-                                                              )
-                               )
+        copy_to = os.path.join(
+                               params['latex_dir'], '%s-%s-%s' % (
+                                                                  os.path.split(os.path.split(params['rundir'])[-2])[-1],    
+                                                                  os.path.split(params['rundir'])[-1],
+                                                                  os.path.split(filename_fig)[-1],
+                                                                 )
+                              )
         command = 'cp %s %s' % (filename_fig, copy_to)
         args = shlex.split(command)
         subprocess.call(args)

@@ -16,7 +16,7 @@ import fi_utils
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO'],#, '13CO'],
@@ -29,7 +29,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                              'min_log_G0_use' : -3.0,
                              'min_log_gm_use' : -50.0,
                              'Av_use'         :  [0.0, 20000000.0],
-                             'Av_clip'        :  [3.0, 28.0],  #sph particles with Av higher than this are clipped to this value                             
+                             'Av_clip'        :  [0.01, 28.0],  #sph particles with Av higher than this are clipped to this value                             
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
@@ -41,7 +41,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                               'v_rng'   : [-10.0, 4.0],
                               'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
                               'as_log10': True,
-                              'func'    : numpy.sum,
+                              'func'    : numpy.mean,
                              },
                         },
         'save_maps' : False,
@@ -120,6 +120,8 @@ for snap in params['snaps']:
                 
                 map_Tex[i,j] = numpy.average(Tex[inds_in_bin], weights=em[inds_in_bin])
                 map_gmech_per_H[i,j] = numpy.mean(gmech[inds_in_bin]/ncm3[inds_in_bin])
+                #map_Tex[i,j] = numpy.mean(Tex[inds_in_bin])#, weights=em[inds_in_bin])
+                #map_gmech_per_H[i,j] = numpy.mean(gmech[inds_in_bin]/ncm3[inds_in_bin])
             #
         #
     #

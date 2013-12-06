@@ -1,3 +1,6 @@
+'''
+The datacube can be visualized with QFitsview
+'''
 import time, sys, os
 
 import matplotlib
@@ -33,7 +36,7 @@ params = {
                              'min_log_G0_use' : -3.0,
                              'min_log_gm_use' : -50.0,
                              'Av_use'         :  [0.0, 20000000.0],
-                             'Av_clip'        :  [3.0, 28.0],  #sph particles with Av higher than this are clipped to this value                             
+                             'Av_clip'        :  [0.01, 28.0],  #sph particles with Av higher than this are clipped to this value                             
                             },
 
                       #the size of the box to be displayed (particles outside the range are discarded)
@@ -47,23 +50,24 @@ params = {
           #cube info          
           'cube'   : {
                       'attr'     : 'em_fluxKkms_CO1-0'   , #the emission line to be made into a cube
-                      'func'     : numpy.sum             , #function to be used to compute the total emission in the cell
+                      'func'     : numpy.average         , #function to be used to compute the total emission in the cell
+                      'weights'  : 'em_fluxKkms_CO1-0'   , 
                       'xy_rng'   : [-8.0, 8.0, -8.0, 8.0], #spatial bounds of the projected image (in kpc)
-                      'im_res'   : 50,                    #spatial resolution of the cube in each dimension over the domain
+                      'im_res'   : 100,                    #spatial resolution of the cube in each dimension over the domain
                       'spec_rng' : [-100.0, 100.0],        #the range in the velocities in km/s
                       'spec_res' : 200,                   #number of velocity bins of the spectra to be constructed for each pixel
                       
                       'plot'     : {
                                     'as_log10'   : True,         #plot the map values in log10 scale
-                                    'rng'        : [-10.0, 6.0], #range of value of the map
+                                    'rng'        : [-8.0, 4.0], #range of value of the map
                                     'title'      : r'$f(L_{CO(1-0} K.km.s-1))$',
                                     #####info about the v channel maps
                                     'n_vsec_plt' : 20, #number of velocity channels maps
                                     'n_per_row'  : 5,  #number of maps per row 
                                    }, 
                       'l_width_mc': 1.0,   # Micro - Turbulance line width in km/s
-                      'save_cube' : False, 
-                      'save_fits' : False, 
+                      'save_cube' : True, 
+                      'save_fits' : True, 
                       },
          }
 #############################################################################################################################
@@ -141,7 +145,10 @@ for i in numpy.arange(params['cube']['im_res']):
             
         if inds_in_bin.size > 0:
             
-            cube_map[i,j] = params['cube']['func'](gas_em[inds_in_bin])
+            if params['cube']['func'] == numpy.average:
+                cube_map[i,j] = params['cube']['func'](gas_em[inds_in_bin], weights=gas_em[inds_in_bin])
+            elif params['cube']['func'] == numpy.sum:
+                cube_map[i,j] = params['cube']['func'](gas_em[inds_in_bin])
         #
     #
 #
@@ -208,17 +215,20 @@ for i in numpy.arange(params['cube']['im_res']):
             
         inds_in_pixel = hist.get_indicies([i,j])
             
-        if inds_in_bin.size > 0:
+        if inds_in_pixel.size > 0:
             
             n = inds_in_pixel.size
 
             #the spectrum of all the particles in the pixel 
             spect_pixel = numpy.zeros(v.size, 'f8')
 
+            #weights of each particle
+            w = em[inds_in_pixel] / em[inds_in_pixel].sum()
+            
             #constructing the spectrum for a pixel
             for l, ind in enumerate(inds_in_pixel):
                   
-                em_p = em[ind]
+                em_p = w[l]*em[ind]
                 v_los_p = vlos[ind]
                 
                 #computing the shifted gaussian
@@ -226,7 +236,7 @@ for i in numpy.arange(params['cube']['im_res']):
                 #scaling the gaussian 
                 spect_this *= (em_p / (v_width * sqrt(2.0 * pi) ))
                 
-                spect_pixel += spect_this
+                spect_pixel += spect_this                
             #
             dt = time.time() - t0
             

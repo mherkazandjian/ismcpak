@@ -32,28 +32,29 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',  # the path to the dir containing the PDR database          
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
                
-          'use_em'  : False, 
-          'use_pdr' : True,          
+          'use_em'  : True, 
+          'use_pdr' : True,
           
-          'snaps'  : numpy.arange(4, 4 + 1, 1),
+          'snaps'  : numpy.arange(0, 3+1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
                              'min_log_n_use'  : -3.0,      
                              'min_log_G0_use' : -3.0,
                              'min_log_gm_use' : -50.0,
                              'Av_use'         :  [0.0, 2000000.0],
-                             'Av_clip'        :  [3.0, 28.0],  #sph particles with Av higher than this are clipped to this value                             
+                             'Av_clip'        :  [0.01, 28.0],  #sph particles with Av higher than this are clipped to this value                             
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
                       'box_size' : [-20.0, 20.0] | units.kpc, #kpc
 
                        #modes in the PDR arxv which are within those ranges will be used in constructing interpolation functions 
-                      'interp'   : {'log_n'    : [-10.0,  10.0],
-                                    'log_G0'   : [-2.0 ,  3.0 ],
-                                    'log_gmech': [-50.0, -20.0],
-                                    'Av'       : [ 3.0 ,  28.0],
-                                    'Av_res'   : 1.0,   #resolution of constructing the interp funcs from the PDR data  
+                      'interp'   : {'log_n'        : [-10.0,  5.0 ],
+                                    'log_G0'       : [-2.0 ,  3.0 ],
+                                    'log_gmech'    : [-50.0, -20.0],
+                                    'Av'           : [ 1.0,  28.0],
+                                    'Av_res'       : 1.0,   #resolution of constructing the interp funcs from the PDR data  
+                                    'extra_Av_sec' : [0.01, 0.1],
                                     }, #Av_res is used only for quantities interpolated upon from PDR meshes 
                       },
           
@@ -102,8 +103,9 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       #'f_mean_em_no_gm_HCN-1-0' : {'pos': [3,1], 'title': r'$f(L_{HCN(1-0)})$ $\Gamma_m = 0$' , 'v_rng': [-10.0, -7.0], 'log10': True},
                       #'f_mean_em_HCO+-1-0'      : {'pos': [3,2], 'title': r'$f(L_{HCO+(1-0})$'                , 'v_rng': [-10.0, -7.0], 'log10': True},
                       #'f_mean_em_no_gm_HCO+-1-0': {'pos': [3,3], 'title': r'$f(L_{HCO+(1-0)})$ $\Gamma_m = 0$', 'v_rng': [-10.0, -7.0], 'log10': True},
+                      'f_mean_pdr_NH'    : {'pos': [3,1], 'title': r'$log10 N(H) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_NH2'   : {'pos': [3,1], 'title': r'$log10 N(H2) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},                      
                       'f_mean_pdr_NCO'   : {'pos': [3,0], 'title': r'$log10 N(CO) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
-                      'f_mean_pdr_NH2'   : {'pos': [3,1], 'title': r'$log10 N(H2) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
                       'f_mean_pdr_N13CO' : {'pos': [3,2], 'title': r'$log10 N(13CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
                       },
 

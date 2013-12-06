@@ -17,8 +17,8 @@ import lineDict
 home = '/home/mher'
 
 parameters = {
-             #'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
-             'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
+             'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
+             #'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
              'range_logn'  : [0.0, 6.0],    #range in log n of models to be considered
              'range_logG0' : [0.0, 6.0],    #range in log G0 of models to be considered
              'range_alpha' : [0.0, 1],      #range in alpha of models to be considered (not in log10)
@@ -141,6 +141,9 @@ def main(parms):
         hdr = msh['hdr']
         n, G0, gm = hdr['nGas'], hdr['G0'], hdr['gammaMech']
         alpha = 10.0**arxv.grid_z[i]
+        
+        if log10(n) == 5.0 and log10(G0) == 5.0:
+            print  log10(n), log10(G0), gm
         
         ## selecting models with specified ranges        
         if log10(n) < parms['range_logn'][0] or log10(n) > parms['range_logn'][1]:

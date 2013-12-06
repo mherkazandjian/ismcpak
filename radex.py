@@ -765,7 +765,7 @@ class radex():
         pylab.subplots_adjust(left=0.1, bottom=0.15, right=0.95, top=0.95, wspace=0.0, hspace=0.0)
         self.setAxes(fig, axs)
         
-    def plotModelInFigureColumn(self, allTrans = None, inAxes = None, title = None):
+    def plotModelInFigureColumn(self, allTrans = None, inAxes = None, title = None, em_unit='fluxcgs'):
         """Plots the output of a certain model in a certain column in a predefined figure
         
           :param allTrans (integer list or numpy.int32): The indicies of the transitions in self.#transitions whose
@@ -793,7 +793,7 @@ class radex():
             xPlot[i] = thisTrans
 
             transition = self.getTransition( thisTrans )
-            yThis = transition['fluxcgs']
+            yThis = transition[em_unit]
              
             yPlot[i] = yThis
             
@@ -814,9 +814,14 @@ class radex():
 
         #plotting the intensities    
         axes.semilogy(xPlot, yPlot, 'b')
-        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-15, 1e-1])
+        if em_unit == 'fluxcgs':
+            axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-15, 1e-1])
+        if em_unit == 'fluxKkms':
+            axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-4, 1e4])            
         axes.set_xticks( allTrans, minor = False )
-        axes.set_yticks( [1e-15, 1e-12, 1e-9, 1e-6, 1e-3, 1e-1], minor = False )
+        yticks = 10.0**numpy.linspace(numpy.log10(axes.get_ylim()[0]), numpy.log10(axes.get_ylim()[1]), 5)
+        print yticks
+        axes.set_yticks(yticks , minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
         ##numpy.savetxt('/home/mher/ism/tmp/intensities.out', numpy.array([xPlot, yPlot]).T, '%e')
         ##print '-----------> saved the file /home/mher/intensities.out'
@@ -894,7 +899,9 @@ class radex():
         axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-16, 1])
         axes.set_xticks( allTrans, minor = False )
         axes.set_xticklabels( xticksStrs, rotation = -45 )
-
+        
+        self.setLabels(em_unit=em_unit)
+        
     def clearCurves(self):
         """Clears the curves in an axes column. This is usually used when radex fails
         and the data in a certain column need to be removed. Here it is assumes there
@@ -903,7 +910,7 @@ class radex():
         for ax in self.axs:            
             ax.lines = []
                 
-    def setLabels(self):
+    def setLabels(self, em_unit=None):
         """Set the appropriate labels of all the axes"""
 
         axs = self.axs
@@ -938,8 +945,11 @@ class radex():
         for ax in axsBotm[1:]:
             removeAll_yLabels(ax)
                     
-        # plotting the ylabels of the axes            
-        axsLeft[0].set_ylabel('Flux')
+        # plotting the ylabels of the axes
+        if em_unit == None:
+            axsLeft[0].set_ylabel('Flux')
+        else:
+            axsLeft[0].set_ylabel(em_unit)            
         axsLeft[1].set_ylabel('Tex, Trot')
         axsLeft[2].set_ylabel('tau')
         axsLeft[3].set_ylabel('pop dens')

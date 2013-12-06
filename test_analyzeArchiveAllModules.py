@@ -11,8 +11,8 @@ import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
 
-specStr_PDR   = 'CO'
-specStr_Radex = 'CO'
+specStr_PDR   = '13CO'
+specStr_Radex = '13CO'
 
 parms = {
          #path to the database files
@@ -27,12 +27,12 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',
-         # 'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',
+         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-test/',
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
-         'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
+         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
                    
          #------------------------------------------
          #'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
@@ -81,7 +81,7 @@ parms = {
                                      'quantity'       : 'fluxKkms', #,'fluxcgs',
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
-                                     'Av_max'         : 10.0,  #the maximum Av to be used  
+                                     'Av_max'         : 0.1,  #the maximum Av to be used  
                                     },
                            },
          'gridsRes'      : 100,
@@ -94,7 +94,7 @@ parms = {
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
-                             'Av_range'             : [0.0, 30.0],  #range which will be used in extracting data needed by radex from the PDR models
+                             'Av_range'             : [0.0, 0.1],  #range which will be used in extracting data needed by radex from the PDR models
                                                                     #(only relevent to constructing databases)
                              'path'                 : home + '/ism/code/radex/Radex/bin-gcc/radex',  
                              'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
@@ -110,6 +110,7 @@ parms = {
                              'lineWidth'            : 1.0,
                              'verbose'              : False,
                              'maxDisplayTranistion' : 20,
+                             'quantity'             : 'fluxKkms', 
                              ###----------extra convergence params-----------------------
                              'checkOutputIntegrity'       : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'         : 1.0, 
@@ -145,12 +146,17 @@ if False:
 
 if False:
     """construct radex databases for a bunch of species for a bunch of Avs"""
+
+    parms['radex']['compute'] = True
+    parms['radex']['writeDb'] = True
     
     #for Av in numpy.arange(5.0, 10.0, 30.0):
-    for Av in numpy.array([5.0, 10.0, 30.0]):
+    #for Av in numpy.array([0.1, 1.0, 2.0]):
+    for Av in numpy.array([0.01]):
         parms['radex']['Av_range'][1] = Av
         #species = ['CO', 'CS', 'HCN', 'HNC', 'HCO+',]
-        species = ['13CO']
+        #species = ['CO', '13CO']
+        species = ['CO', '13CO'] 
         for specStr in species:
             parms['radex']['specStr'] = specStr
             arxv.constructRadexDatabase(writeDb = True)

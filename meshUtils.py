@@ -2351,6 +2351,7 @@ class meshArxv(object):
                 #updating the title of ['ax2d']['axes']
                 strng = '$\log_{10} n_{gas} = $ %4.2f\n$\log_{10} G_0 =$ %4.2f\n$\log_{10} \Gamma_{mech} = $  %5.2f\n' %  (np.log10(self.mshTmp.data['hdr']['nGas']), np.log10(self.mshTmp.data['hdr']['G0']), np.log10(self.mshTmp.data['hdr']['gammaMech']))
                 strng += '$\Gamma_{mech}$ = %.2e\n' % self.mshTmp.data['hdr']['gammaMech']   
+                
                 self.gui['ax2d']['axes'].set_title(strng)
                 
                 self.gui['ax2d']['pts2'].set_xdata( self.grid_x[indMin] )
@@ -2574,9 +2575,12 @@ class meshArxv(object):
             if compute_only == None:
                 # plotting the data (even if it does not converge)                
                 if radex_obj.flag_is_set('SUCCESS'):
-                    radex_obj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
-                                                     inAxes = self.pltRadex,     
-                                                     title = '')                             
+                    radex_obj.plotModelInFigureColumn(
+                                                      allTrans = np.arange(radex_parms['maxDisplayTranistion']),
+                                                      inAxes = self.pltRadex,     
+                                                      title = '',
+                                                      em_unit=radex_parms['quantity']
+                                                     )                             
                 radex_obj.setLabels()
             else:
                 radex_obj.print_warnings() #printing the warnings
@@ -3448,7 +3452,7 @@ class meshArxv(object):
         #set the abundances at that slab
         self.chemNet.set_abundances(fromArray = abun_use) 
         self.chemNet.compute_rxn_constants()
-        self.chemNet.compute_rxn_rates()
+        self.chemNet.compute_rxn_rates() 
         
     def plot_rxns_rates_vs_Av(self, rxnIDs = None, Avs = None, ylim = None):
         """plots the reaction rates for the reactions whose IDs are passed in the list
@@ -3500,8 +3504,71 @@ class meshArxv(object):
         
         if ylim != None:
             pylab.ylim(ylim)
-        pylab.show()    
+        pylab.show()
+    
+    def plot_single_grid(self):
+        
+        #z_sec = -10.0
+        z_sec = numpy.log10(1e-10)
+        
+        ## getting all the emission for a certain line at a certain Av
+        v = self.get_emissions_from_databases(
+                                              line={
+                                                     'type'    : 'radex-lvg', 
+                                                     'code'    : 'CO1-0',
+                                                     'em_unit' : 'cgs',
+                                                   }, 
+                                              Av_use=10.0
+                                             )
+        
+        ## the coordinates of the modesl in the DB (log10(n), log10(G0), log10(gmech))
+        x, y, z = self.grid_x, self.grid_y, self.grid_z
+        
+        ## keeping only a section in z
+        inds = numpy.where( (z >= (z_sec - 1e-6))*(z <= (z_sec + 1e-6)) )
+        
+        x_in, y_in, v_in = x[inds], y[inds], v[inds]
+        
+        ## constructing the interpolation function
+        data = np.array([x_in, y_in]).T
+        f_interp = interpolate.LinearNDInterpolator(data, v_in)
+        
+        xi, yi = numpy.mgrid[0.0:6.0:13j, 0.0:6.0:13j]
+        
+        data_i = np.array( [xi.flatten(), yi.flatten()] ).T
+        
+        vi = f_interp(data_i)
+        
+        pylab.figure()
+        pylab.imshow(vi.reshape(xi.shape).T, origin='lower', vmin=-15.0, vmax=-6.0)
+        
+        inds_nan = numpy.where(numpy.isfinite(vi) == False)[0]
+        if inds_nan.size > 0:
+            vi[inds_nan] = numpy.nanmin(v_in)
+        
+        
+        ############
+        #vi = vi.reshape(xi.shape)
+        #f_cubic = interpolate.RectBivariateSpline(numpy.unique(xi), numpy.unique(yi), vi)
+        
+        #f_cubic = interpolate.SmoothBivariateSpline(xi.flatten(), yi.flatten(), vi.flatten(), w=None,
+        #                                            kx=3, ky=3, s=0.05, eps=1e-2)
+        
+        f_cubic = interpolate.LSQBivariateSpline(xi.flatten(), yi.flatten(), vi, [0,1],[0,1], w=None,
+                                                 kx=3, ky=3, eps=1e-3)
+        ###########
 
+        #xic, yic = numpy.linspace(0.0, 6.0, 100), numpy.linspace(0.0, 6.0, 100), 
+        xic, yic = numpy.mgrid[0.0:6.0:100j, 0.0:6.0:100j] 
+        
+        #if using RectBivariateSpline
+        vic = f_cubic.ev(xic.flatten(), yic.flatten())   
+        vic = vic.reshape(xic.shape)
+        pylab.figure()
+        pylab.imshow(vic.T, origin='lower', vmin=-15.0, vmax=-6.0)
+        
+        #asdad
+    
     def plot_grid_n_G0_standalone(self, maps2d_idx, title = None, levels = None):
         """Plots a grid in a new standalone figure instead of the main gui. One of the maps2d index
         (tuple) (for (0,0), or (0,1), (1,0), (1,1) ) ... sould be passed."""
@@ -3582,11 +3649,8 @@ class meshArxv(object):
                 print '%-8s ' % key_specStr,
             print 
         
-    def get_emissions_from_databases(self, line=None, Av_use=None, z_sec=None):
+    def get_emissions_from_databases(self, line=None, Av_use=None):
         '''gets the emissions from the pdr database or radex models determined by the keyword line
-        
-        .. todo:: i dont know why the z_sec keyword is there, it is redundant. remove it and make sure
-            everything still works.  
         
         .. code-block:: python
         
@@ -3691,14 +3755,17 @@ class meshArxv(object):
         return v_all_Av, data_all_Av
     
     def get_emission_grid_from_databases(self, line=None, Av_use=None, ranges=None, res=None, z_sec=None, f_interp_dim=None, **kwargs):
-        '''gets an interpolated grid from the database for a pdr or radex models determined by the keyword line'''
+        '''returns an interpolated grid from the database for a pdr or radex models determined by the 
+         keyword line
+        '''
     
-        v = self.get_emissions_from_databases(line, Av_use, z_sec)
+        ## the emission extracted from the database for the specified line
+        v = self.get_emissions_from_databases(line, Av_use)
         
         data=np.array([self.grid_x, self.grid_y, self.grid_z], 'f8').T
         
         if f_interp_dim != None and f_interp_dim == '2D':
-            inds = numpy.where(data[:,2]==z_sec)[0] 
+            inds = numpy.where(data[:,2]==z_sec)[0]
             data, v = data[inds, 0:2], v[inds]
             fInterp = self.construct3DInterpolationFunction(data=data, values=v, remove_nan_inf=True, f_interp_dim='2D')  #interpolator='nearest',
             grd, grd_x, grd_y = self.computeInterpolated2DGrid(ranges=ranges, res=res, fInterp=fInterp)

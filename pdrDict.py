@@ -1,6 +1,14 @@
 import meshUtils
 
 pdr = {
+       'NH'   : {'ismcpak' : None,
+                 'descr'   : 'column density of H',
+                 'func'    : meshUtils.pdr_mesh_column_density,
+#                 'latex'   : r'[CII] 158$\mu m$',  
+#                 'latex2'  : r'C$^+$ 158$\mum$',
+                 'type'    : 'pdr',
+                 'specStr' : 'H',
+                 },              
        'NCO'  : {'ismcpak' : None,
                  'descr'   : 'column density of CO',
                  'func'    : meshUtils.pdr_mesh_column_density,

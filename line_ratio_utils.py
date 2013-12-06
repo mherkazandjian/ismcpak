@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import numpy
+import pylab
+import itertools
+
 from xlrd import open_workbook
 import collections
 
 import lineDict
-import numpy
-import pylab
 
 def codes_from_ratio(ratio_str):
     '''gets the line codes from a ratio string '''
@@ -179,13 +181,13 @@ class ratios(collections.OrderedDict):
         
         return self.get_values(line_ratios), self.get_errors(line_ratios)
 
-    def get_ratios_by_species(self, spec1, spec2):
+    def get_ratios_by_species(self, spec1, spec2, in_num=None, in_denom=None, sort_num=None):
         '''returns the line ratios string of the line ratios whose numerator involves spec1 and denominator spec2
         For example 
         
             get_values_by_species('13CO', 'CO')
         
-        returns a list of line ratio strings such as 13CO2-1/CO1-0    
+        returns a list of line ratio strings such as 13CO2-1/CO1-0, 13CO2-1/CO2-1 ... 13COX_Y/COM-N    
         '''
         
         ret = []
@@ -194,10 +196,32 @@ class ratios(collections.OrderedDict):
             
             line1, line2 = lines_involved(line_ratio)
             
+            if in_num != None and in_num not in line1:
+                continue 
+
+            if in_denom != None and in_denom not in line2:
+                continue 
+             
             if lineDict.lines[line1]['specStr'] == spec1 and lineDict.lines[line2]['specStr'] == spec2:
                 ret.append(line_ratio)
+        
+        ret = numpy.array(ret)
+        
+        if sort_num != None:
+            '''sort the line ratio strings with increasing transition index of the line in the numerator'''
+            idx_num = []
+            for line_ratio in ret:
                 
-        return ret
+                line1, line2 = lines_involved(line_ratio)
+                
+                idx1 = lineDict.lines[line1]
+                
+                idx_num.append(idx1)
+            
+            inds = numpy.argsort(numpy.array(idx_num))
+            ret = ret[inds]
+            
+        return list(ret)
     
     #def get_
     def show(self):
@@ -412,3 +436,41 @@ def lines_involved(line_ratio):
     line1, line2 = line_ratio.split('/')
     
     return line1, line2
+
+def line_ratio_combinations(lines, combinations=None):
+
+    x = list(itertools.permutations(lines, 2))
+    
+    line_ratios = {}
+    
+    for line1, line2 in x:
+        
+        spec1, spec2 = lineDict.lines[line1]['specStr'], lineDict.lines[line2]['specStr']
+        
+        idx1, idx2 = lineDict.lines[line1]['radexIdx'], lineDict.lines[line2]['radexIdx']
+        
+        if spec1 == spec2 and idx1 < idx2:
+            continue
+        
+        if combinations != None:
+
+            dont_consider = True
+                        
+            for combination in combinations:
+                
+                spec_num, spec_denom = combination.split('/')
+                
+                if spec1 == spec_num and spec2 == spec_denom:
+                    dont_consider = False
+
+            if dont_consider == True:
+                continue
+            
+        line_ratio = '%s/%s' % (line1, line2)
+        line_ratio_inv = '%s/%s' % (line2, line1)
+        
+        if line_ratio_inv not in line_ratios:
+            line_ratios[line_ratio] = True
+        
+    return line_ratios.keys()
+
