@@ -20,6 +20,7 @@ imageSaveDir = '/home/mher/tmp'
 arxvPDR = meshUtils.meshArxv(dirPath = dirPath, readDb=True)
 
 #--------------------------------------------------------------------------------------------------------------------------
+'''
 parms = {
         'line' : {
                    'code' : 'C+158',
@@ -30,7 +31,28 @@ parms = {
         'relGmech_ref' : -10.0,
         'relGmech'     : [[1e-3, 1e-2, 5e-2], [0.1, 0.5, 1.0 ] ],
         'v_range'      : [-1, 1], # range of the values, also that of the cbar
-        'res'          : [100.0, 100.0],
+        'res'          : [20.0, 20.0],
+        'ranges'       : [[0.0, 6.0], [0.0, 6.0]],
+        'cmap'         : matplotlib.cm.jet,
+        'cLevels'      : [0],
+        'clip'         : None,
+        'removeNans'   : False,
+#        'f_interp_dim' : '2D',     
+#        'interp'       : 'linear',
+#        'zoom'         : 20,
+        }
+'''
+parms = {
+        'line' : {
+                   'code' : 'CN1_0.5-0_0.5',
+                   'type' : 'radex-lvg'
+                 },
+         
+        'Av_use'       :  10.0,
+        'relGmech_ref' : -10.0,
+        'relGmech'     : [[1e-3, 1e-2, 5e-2], [0.1, 0.5, 1.0 ] ],
+        'v_range'      : [-2, 2], # range of the values, also that of the cbar
+        'res'          : [10.0, 10.0],
         'ranges'       : [[0.0, 6.0], [0.0, 6.0]],
         'cmap'         : matplotlib.cm.jet,
         'cLevels'      : [0],

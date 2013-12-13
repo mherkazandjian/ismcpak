@@ -14,6 +14,7 @@ import sys
 import collections
 import mylib.utils.removeAxesLabels
 from leidenLambda import molData
+from mylib.utils import templates
 
 try:    
     from PyQt4 import QtGui, QtCore
@@ -23,25 +24,116 @@ try:
 except:
     print 'can not use radex in gui mode..failed to import PyQt4, or matplotlib.backends.backend_qt4agg'
 
+def plot_intensity_grid2(grd, line=None, ranges=None, cmap=None, cLevels=None, 
+                             cbarTicks=None, imageSaveDir=None, removeNans=None, 
+                             clip=None, clip_max_n=None, f_interp_dim=None,                              
+                             figure=None, xticks=None, yticks=None, 
+                             cbar_range=None, **kwargs):
+    '''plots and saves an intensity grid''' 
+
+    fw, fh = 3.55, 3.7
+    text_size = 'small'
+    clabel_font_size = 8.0
+    
+    fig = templates.subplots_grid(1, 1, hspace=0.0, wspace=0.0, sharex=True, sharey=True,
+                                   fig = {'kwargs':{
+                                               'figsize' : (fw, fh),
+                                               },
+                                          },
+                                   axs = {
+                                          'left':0.1, 'bottom':0.1, 'w':0.88, 'h':0.78*fw/fh
+                                          },
+                                   cbar = {'range' : cbar_range,
+                                           'scale' : 0.7,
+                                           'sz'    : 0.02,
+                                           'space' : 0.01,
+                                      },
+                                   )
+    
+    fig.sub_setp('xlim', ranges[0], 'ylim', ranges[1])
+    fig.set_xticks(xticks, labels=xticks, size=text_size)
+    fig.set_yticks(yticks, labels=yticks, size=text_size)
+    fig.set_xlabel('$\log_{10}$ [n$_{gas}$ / cm$^{-3}$]', size=text_size, space=-0.06)
+    fig.set_ylabel('$\log_{10}$ [G$_0$]'                , size=text_size, space=-0.050)
+    #fig.set_title(r'$\log_{10}$(%s / erg cm$^{-2}$ s$^{-1}$)' %  lineDict.lines[line['code']]['latex'], 
+    #              space=[-0.2, 0.0],
+    #              size=text_size)
+    pylab.figtext(0.02, 0.95, r'$\log_{10}$(%s / erg cm$^{-2}$ s$^{-1}$)' %  lineDict.lines[line['code']]['latex'], 
+                  size=text_size)
+    
+    fig.set_cbar_ticks(cbarTicks, labels=cbarTicks, size=text_size)
+
+    ## setting the ranges of the grids as a single list
+    rangesLst = (ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]) 
+    
+    ## printing the min and max (excluding nans and infs)
+    #indsNotInf = numpy.where(numpy.invert(numpy.isinf(grd)))
+    #print 'min-max log10 intensities = ', numpy.nanmin(grd[indsNotInf]), numpy.nanmax(grd[indsNotInf]) 
+
+    ## discarding and cliping the value ranges
+    xrng, yrng = ranges[0], ranges[1]
+    grdShape = grd.shape
+    grdPts = numpy.meshgrid(numpy.linspace(0, grdShape[0]-1, grdShape[0]),
+                            numpy.linspace(0, grdShape[1]-1, grdShape[1]))
+    grdPts[0] = grdPts[0].T
+    grdPts[1] = grdPts[1].T
+    
+    if removeNans != None and removeNans==True:
+        cond = True
+        
+        cond = numpy.bitwise_and(numpy.isnan(grd), cond)   #mask of points which are nans (true => point is nan)
+        
+        if clip_max_n != None:
+            cond = numpy.bitwise_and(grdPts[0] < clip_max_n*(grdShape[0]/xrng[1]), cond) #mask of points which are nans for n <
+         
+        cond = numpy.bitwise_or(grd >= -1.0, cond)
+        indsNan = numpy.where(cond)
+        grd[indsNan] = -18.0
+
+
+    if clip != None:
+        grd = grd.clip(clip[0], clip[1])
+    else:
+        grd = grd.clip(*cbar_range)
+        
+    fig.sub[0,0].imshow(grd.T, extent = rangesLst, origin='lower', cmap = cmap, aspect='auto', 
+                        interpolation='bicubic', vmin=cbar_range[0], vmax=cbar_range[1])
+    
+    CS = fig.sub[0,0].contour(grd.T, cLevels, 
+                              extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), 
+                              origin='lower', colors = 'black')
+    
+    pylab.clabel(CS, fmt = '%.1f', inline=True, fontsize=clabel_font_size )
+
+    imageSavePath = os.path.join(imageSaveDir,line['code']+'-base.eps')    
+    fig.fig.savefig(imageSavePath)
+    print 'wrote image : %s' % imageSavePath
+    #fig.preview('aa')
+
+    pylab.show()
+
+    print 'done'
+
 def plot_intensity_grid(grd, line=None, ranges=None, cmap=None, cLevels=None, 
                              cbarTicks=None, imageSaveDir=None, removeNans=None, 
-                             clip=None, clip_max_n=None, 
-                             f_interp_dim=None, **kwargs):
+                             clip=None, clip_max_n=None, f_interp_dim=None, 
+                             figure=None, **kwargs):
     '''plots and saves an intensity grid''' 
     
-    width  = 3    #figure width (non normalized) 
-    height = 3.4  #figure heigh (non normalized)
-    as_rat = width/height #aspect ratio of the figure
+    width  = figure['width']  if figure != None and 'width'  in figure else 0.3 # figure width (non normalized) 
+    height = figure['height'] if figure != None and 'height' in figure else 3.4 # figure heigh (non normalized)
+    as_rat = width/height # aspect ratio of the figure
     
-    ax_xs  = 0.19 #axses x start (normalized)
-    ax_ys  = 0.19 #axses y start (normalized)
-    ax_sz  = 0.75 #axses size (normalized)
+    ax_xs  = figure['ax_xs'] if figure != None and 'ax_xs' in figure else 0.19 # axses x start (normalized)
+    ax_ys  = figure['ax_ys'] if figure != None and 'ax_ys' in figure else 0.19 # axses y start (normalized)
+    ax_sz  = figure['ax_sz'] if figure != None and 'ax_sz' in figure else 0.75 # axses size (normalized)
     
-    cbar_xs = ax_xs        #colorbar x start
-    cbar_ys = ax_sz + 0.15 #colorbar x start
-    cbar_sc = 0.99         #scale of the width of the cbar (relative to the width of ax)
-    cbar_w  = 0.02         #width of the cbar (normalized)
-    
+    cbar_vspace = figure['cbar_vspace'] if figure != None and 'cbar_vspace' in figure else 0.15 # vertical space between colorbar and axis 
+    cbar_xs = ax_xs               # colorbar x start
+    cbar_ys = ax_sz + cbar_vspace # colorbar x start
+    cbar_sc = figure['cbar_sc'] if figure != None and 'cbar_sc' in figure else 0.99 # scale of the width of the cbar (relative to the width of ax)
+    cbar_w  = figure['cbar_w']  if figure != None and 'cbar_w'  in figure else 0.02 # width of the cbar (normalized)
+
     fig    = pylab.figure(figsize = (width, height) )
     fig.set_facecolor('white')
     ax1    = fig.add_axes([ax_xs, ax_ys*as_rat, ax_sz, ax_sz*as_rat])
@@ -55,7 +147,7 @@ def plot_intensity_grid(grd, line=None, ranges=None, cmap=None, cLevels=None,
     rangesLst = (ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]) 
 
     #---------------discarding and cliping the value ranges---------------------------
-    xrange, yrange = ranges[0], ranges[1]
+    xrng, yrng = ranges[0], ranges[1]
     grdShape = grd.shape
     grdPts = numpy.meshgrid(numpy.linspace(0, grdShape[0]-1, grdShape[0]),
                             numpy.linspace(0, grdShape[1]-1, grdShape[1]))
@@ -68,7 +160,7 @@ def plot_intensity_grid(grd, line=None, ranges=None, cmap=None, cLevels=None,
         cond = numpy.bitwise_and(numpy.isnan(grd), cond)   #mask of points which are nans (true => point is nan)
         
         if clip_max_n != None:
-            cond = numpy.bitwise_and(grdPts[0] < clip_max_n*(grdShape[0]/xrange[1]), cond) #mask of points which are nans for n <
+            cond = numpy.bitwise_and(grdPts[0] < clip_max_n*(grdShape[0]/xrng[1]), cond) #mask of points which are nans for n <
          
         cond = numpy.bitwise_or(grd >= -1.0, cond)
         indsNan = numpy.where(cond)
@@ -108,7 +200,7 @@ def plot_relative_change_intensity_grid(arxvPDR, line=None, ranges=None, relGmec
                                         relGmech=None, v_range=None, cLevels=None, 
                                         cmap=None, imageSaveDir=None, removeNans=None,
                                         clip=None, clip_max_n=None, Av_use=None, res=None, 
-                                        f_interp_dim=None, **kwargs):
+                                        f_interp_dim=None, interp=None, zoom=None, **kwargs):
     '''plots 6 grids showing the relative change in the intesitiy as a function of the relative mechanical
     heating in the grids
     '''
@@ -136,8 +228,10 @@ def plot_relative_change_intensity_grid(arxvPDR, line=None, ranges=None, relGmec
 
     rangesLst = (ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]) 
 
+    ## the reference grid
     ref_grd = arxvPDR.get_emission_grid_from_databases(line=line, Av_use=Av_use, ranges=ranges, 
-                                                       res=res, z_sec=relGmech_ref, f_interp_dim=f_interp_dim)
+                                                       res=res, z_sec=relGmech_ref, 
+                                                       f_interp_dim=f_interp_dim, interp=interp, zoom=zoom)
 
     # setting the grids to be displayed with the desired mechanical heating percentages         
     dataGrds = [[None,None,None   ], [None,None,None] ]
@@ -160,7 +254,8 @@ def plot_relative_change_intensity_grid(arxvPDR, line=None, ranges=None, relGmec
             print 'relative gmech = ', rGmech
     
             grd = arxvPDR.get_emission_grid_from_databases(line=line, Av_use=Av_use, ranges=ranges, 
-                                                           res=res, z_sec=numpy.log10(rGmech), f_interp_dim=f_interp_dim)
+                                                           res=res, z_sec=numpy.log10(rGmech),  
+                                                           f_interp_dim=f_interp_dim, interp=interp, zoom=zoom)
     
             #taking the ratios of the base grid with the current one                
             data = numpy.log10(10.0**grd / 10.0**ref_grd)
@@ -193,7 +288,7 @@ def plot_relative_change_intensity_grid(arxvPDR, line=None, ranges=None, relGmec
     im = axCbar.imshow(cbarv, aspect = 'auto', vmin= 0, vmax = 1, cmap = cmap,
                        extent = [v_range[0], v_range[1], 0, 1])
     axCbar.axes.get_yaxis().set_ticks([])
-
+    
     plotTitle = r'$\log_{10}$[R(%s)]' %  lineDict.lines[line['code']]['latex']
     axCbar.set_title(plotTitle, size='large')
     #----------------------done plotting the colorbar-----------------------------------
@@ -222,16 +317,23 @@ def plot_relative_change_intensity_grid(arxvPDR, line=None, ranges=None, relGmec
     
             grdScaled = scale(grd, 0.0, 1.0, v_range[0], v_range[1]) 
             ax = panelAxs[i][j]
-                    
+            
+            #import scipy.misc
+            
+            #grdScaled = scipy.misc.imresize(grdScaled, [100, 100], interp='bicubic') 
+            
+            #adsadsads
+            
             im = ax.imshow(grdScaled.T, extent = rangesLst, origin='lower', cmap = cmap,
-                           vmin = 0.0, vmax = 1.0, norm = None)
+                           vmin = 0.0, vmax = 1.0, norm = None, interpolation='bicubic')
             
             cLevelsScaled = scale(cLevels, 0.0, 1.0, v_range[0], v_range[1])
             
             CS = ax.contour(grdScaled.T, cLevelsScaled, 
-                    extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), 
-                    origin='lower', 
-                    colors = 'black')
+                            extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), 
+                            origin='lower', 
+                            colors = 'black',
+                            linestyles='dashed')
             #pylab.clabel(CS, fmt = '%.1f' )
     
         print '-----------------------------'

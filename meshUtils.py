@@ -3530,17 +3530,18 @@ class meshArxv(object):
         x_in, y_in, v_in = x[inds], y[inds], v[inds]
         
         ## constructing the interpolation function
-        data = np.array([x_in, y_in]).T
-        f_interp = interpolate.LinearNDInterpolator(data, v_in)
+        f_interp = interpolate.LinearNDInterpolator(np.array([x_in, y_in]).T, v_in)
         
-        xi, yi = numpy.mgrid[0.0:6.0:13j, 0.0:6.0:13j]
+        xu, yu = numpy.unique(x_in), numpy.unique(y_in)
         
-        data_i = np.array( [xi.flatten(), yi.flatten()] ).T
+        xx, yy = numpy.meshgrid(xu, yu, indexing='ij')
+        
+        data_i = np.array( [xx.flatten(), yy.flatten()] ).T
         
         vi = f_interp(data_i)
-        
+        v_xy = vi.reshape(xx.shape).T
         pylab.figure()
-        pylab.imshow(vi.reshape(xi.shape).T, origin='lower', vmin=-15.0, vmax=-6.0)
+        pylab.imshow(v_xy, origin='lower', vmin=-15.0, vmax=-6.0)
         
         inds_nan = numpy.where(numpy.isfinite(vi) == False)[0]
         if inds_nan.size > 0:
@@ -3554,7 +3555,7 @@ class meshArxv(object):
         #f_cubic = interpolate.SmoothBivariateSpline(xi.flatten(), yi.flatten(), vi.flatten(), w=None,
         #                                            kx=3, ky=3, s=0.05, eps=1e-2)
         
-        f_cubic = interpolate.LSQBivariateSpline(xi.flatten(), yi.flatten(), vi, [0,1],[0,1], w=None,
+        f_cubic = interpolate.LSQBivariateSpline(xx.flatten(), yy.flatten(), vi, [0,1],[0,1], w=None,
                                                  kx=3, ky=3, eps=1e-3)
         ###########
 
@@ -3754,22 +3755,58 @@ class meshArxv(object):
 
         return v_all_Av, data_all_Av
     
-    def get_emission_grid_from_databases(self, line=None, Av_use=None, ranges=None, res=None, z_sec=None, f_interp_dim=None, **kwargs):
+    def get_emission_grid_from_databases(self, 
+                                         line=None, Av_use=None, ranges=None, res=None, z_sec=None, dz=None,
+                                         f_interp_dim=None, interp='linear', zoom=5, **kwargs):
         '''returns an interpolated grid from the database for a pdr or radex models determined by the 
          keyword line
         '''
     
-        ## the emission extracted from the database for the specified line
-        v = self.get_emissions_from_databases(line, Av_use)
-        
-        data=np.array([self.grid_x, self.grid_y, self.grid_z], 'f8').T
+        ## the emission extracted from the database for the specified line for a certain AV
+        v = self.get_emissions_from_databases(line, Av_use)        
         
         if f_interp_dim != None and f_interp_dim == '2D':
-            inds = numpy.where(data[:,2]==z_sec)[0]
-            data, v = data[inds, 0:2], v[inds]
-            fInterp = self.construct3DInterpolationFunction(data=data, values=v, remove_nan_inf=True, f_interp_dim='2D')  #interpolator='nearest',
-            grd, grd_x, grd_y = self.computeInterpolated2DGrid(ranges=ranges, res=res, fInterp=fInterp)
-        else:            
+
+            # the coordinates of the models for ex: log10(n), log10(G0), log10(gmech)
+            x, y, z = self.grid_x, self.grid_y, self.grid_z
+ 
+            #selecting a section in z
+            if dz != None:
+                inds = numpy.where( (z >= (z_sec - dz))*(z <= (z_sec + dz)) )
+            else:
+                inds = numpy.where(z == z_sec)[0]
+            
+            #keeping only the points withing the z section
+            x_in, y_in, v_in = x[inds], y[inds], v[inds]
+                        
+            if interp in ['cubic', 'linear', 'nearest']:
+                
+                # getting the coordinates of the grid in each dime
+                xx, yy = numpy.unique(x_in), numpy.unique(y_in)
+                xxc = numpy.linspace(xx.min(), xx.max(), res[0])
+                yyc = numpy.linspace(yy.min(), yy.max(), res[1])
+                xxGrdc, yyGrdc = numpy.meshgrid(xxc, yyc, indexing='ij')
+                
+                # removing all nan's from the data
+                inds_not_nan = numpy.isfinite(v_in)
+                x_in_finite, y_in_finite, vi_in_finite = x_in[inds_not_nan], y_in[inds_not_nan], v_in[inds_not_nan] 
+                
+                # interpolating
+                grd = interpolate.griddata(
+                                           numpy.vstack((x_in_finite, y_in_finite)).T, vi_in_finite,
+                                           (xxGrdc, yyGrdc), 
+                                           method=interp, 
+                                           fill_value=numpy.nan
+                                           )
+                
+                grd_x, grd_y = xxGrdc, yyGrdc
+            
+
+            
+        else:
+            ## gettomg the data interpolated from a 3D interpolator
+            data=np.array([self.grid_x, self.grid_y, self.grid_z], 'f8').T
+            
             fInterp = self.construct3DInterpolationFunction(data=data, values=v, remove_nan_inf=True)  #interpolator='nearest',
             grd, grd_x, grd_y = self.computeInterpolated2DGrid(ranges=ranges, res=res, zSec=z_sec, fInterp = fInterp)            
     
