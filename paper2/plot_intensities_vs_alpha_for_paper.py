@@ -157,7 +157,7 @@ parms = {
         'show_contours' : [[True, True, True], [True, True, True] ],
         'f_interp_dim' : '2D',
         'interp'    : 'cubic',
-        'get_section_data_using' : '3d-interp',        
+#        'get_section_data_using' : '3d-interp',        
 #        'get_section_data_using' : 'select',        
         }
 
