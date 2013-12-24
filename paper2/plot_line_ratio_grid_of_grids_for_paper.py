@@ -56,9 +56,25 @@ if True:
                            #'strs'   : ['0.01',  '0.1', '1', '10', '30', '100'],
                           },
             'clip'      : None,
+            'fig'       :  {'kwargs':{
+                                      'figsize' : (5, 9),
+                                      },
+                            },
+            'axs'       :   {
+                             'left':0.09, 'bottom':0.05, 'w':0.5, 'h':0.8
+                            },
+            'cbar'      :  {
+                            'range' : [-2, 2],
+                            'scale' : 0.7,
+                            'sz'    : 0.02,
+                            'space' : 0.04,
+                            'ticks' : [-2, -1, 0, 1, 2],
+                           }, 
+            'xticks'    : [1, 3, 5],
+            'yticks'    : [1, 3, 5],            
             }
     
-    p = plot_utils.line_ratio_grid_of_grid(arxvPDR, image_save_dir=image_save_dir, **parms)
+    p = plot_utils.line_ratio_grid_of_grid2(arxvPDR, image_save_dir=image_save_dir, **parms)
 #--------------------------------------------------------------------------------------------------------------------------
 if True:
     parms = {
@@ -88,9 +104,25 @@ if True:
                            #'strs'   : ['0.01',  '0.1', '1', '10', '30', '100'],
                           },
             'clip'      : None,
+            'fig'       :  {'kwargs':{
+                                      'figsize' : (5, 5),
+                                      },
+                            },
+            'axs'       :   {
+                             'left':0.145, 'bottom':0.135, 'w':0.6, 'h':0.67
+                            },
+            'cbar'      :  {
+                            'range' : [-2, 2],
+                            'scale' : 0.7,
+                            'sz'    : 0.02,
+                            'space' : 0.08,
+                            'ticks' : [-2, -1, 0, 1, 2],
+                           }, 
+            'xticks'    : [1, 3, 5],
+            'yticks'    : [1, 3, 5],
             }
     
-    p = plot_utils.line_ratio_grid_of_grid(arxvPDR, image_save_dir=image_save_dir, **parms)
+    p = plot_utils.line_ratio_grid_of_grid2(arxvPDR, image_save_dir=image_save_dir, **parms)
 
 #--------------------------------------------------------------------------------------------------------------------------
 if True:

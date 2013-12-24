@@ -81,13 +81,13 @@ parms = {
           'HCO+1-0/CO1-0',
           'HCN1-0/CO1-0',
           'HNC1-0/CO1-0',
-          'CO1-0/HNC1-0',
-          'CO1-0/HCN1-0' , 'CO3-2/HCN3-2' , 'CO4-3/HCN4-3',
-          'HCN1-0/HNC1-0',
-          'HCN1-0/HCO+1-0',
-          'HNC1-0/HCO+1-0',
-          'HCN4-3/HCO+4-3',
-          'HCO+4-3/HCO+1-0',
+#          'CO1-0/HNC1-0',
+#          'CO1-0/HCN1-0' , 'CO3-2/HCN3-2' , 'CO4-3/HCN4-3',
+#          'HCN1-0/HNC1-0',
+#          'HCN1-0/HCO+1-0',
+#          'HNC1-0/HCO+1-0',
+#          'HCN4-3/HCO+4-3',
+#          'HCO+4-3/HCO+1-0',
           #'HCO+7-6/HCO+1-0',
           #'CO2-1/CO1-0', 
           #'CO3-2/CO1-0', 
@@ -100,7 +100,7 @@ parms = {
           #'CO11-10/CO3-2', 
           #'CO12-11/CO3-2',
           #'CO13-12/CO3-2',
-          'HCO+4-3/CO1-0',
+#          'HCO+4-3/CO1-0',
          ),
         'zsecs': (1e-10, 0.01, 0.05, 0.1, 0.25, 0.5, 1.0),
          
@@ -126,10 +126,10 @@ parms = {
                        'log'     : True,
                       }, 
         'res'       : [100, 100],
-        'cbar'      : {
-                       'ticks'  : numpy.linspace(-2, 2, 5),
-                       'format' : '10^x',  # None, '10^x', '%e' (or any format)
-                      },
+#        'cbar'      : {
+#                       'ticks'  : numpy.linspace(-2, 2, 5),
+#                       'format' : '10^x',  # None, '10^x', '%e' (or any format)
+#                      },
         'Av_use'       :  5.0,
         'c_levels'  : {
                        #'values' : numpy.log10([0.1, 0.5, 1, 2, 4, 6, 8, 10, 50]),
@@ -138,12 +138,28 @@ parms = {
                        #'strs'   : ['0.01',  '0.1', '1', '10', '30', '100'],
                       },
         'clip'      : None,
+        'fig'       :  {'kwargs':{
+                                  'figsize' : (3.55*2, 5),
+                                  },
+                        },
+        'axs'       :   {
+                         'left':0.145, 'bottom':0.135, 'w':0.6, 'h':0.67
+                        },
+        'cbar'      :  {
+                        'range' : [-2, 2],
+                        'scale' : 0.7,
+                        'sz'    : 0.02,
+                        'space' : 0.08,
+                        'ticks' : [-2, -1, 0, 1, 2],
+                       }, 
+        'xticks'    : [3, 4, 5],
+        'yticks'    : [3, 4, 5],
         }
 
-p1 = plot_utils.line_ratio_grid_of_grid(arxvPDR, imageSaveDir=imageSaveDir, **parms)
+p1 = plot_utils.line_ratio_grid_of_grid2(arxvPDR, imageSaveDir=imageSaveDir, **parms)
 
 parms['Av_use'] = 10.0
-p2 = plot_utils.line_ratio_grid_of_grid(arxvPDR, imageSaveDir=imageSaveDir, **parms)
+p2 = plot_utils.line_ratio_grid_of_grid2(arxvPDR, imageSaveDir=imageSaveDir, **parms)
 
 parms['Av_use'] = 30.0
 p3 = plot_utils.line_ratio_grid_of_grid(arxvPDR, imageSaveDir=imageSaveDir, **parms)

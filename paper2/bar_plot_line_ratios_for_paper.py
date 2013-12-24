@@ -13,8 +13,8 @@ import meshUtils
 import plot_utils
 
 home           = '/home/mher'
-image_save_dir = os.path.join(home, 'ism/docs/paper02/src/figs')
-#image_save_dir = '/home/mher/tmp/figs'
+#image_save_dir = os.path.join(home, 'ism/docs/paper02/src/figs')
+image_save_dir = '/home/mher/tmp/figs'
 
 #########################################parameters##########################################################
 dirPath        = os.path.join(home, 'ism/runs/oneSided/dynamicMesh-z-1.0/')
@@ -63,7 +63,7 @@ plot_utils.bar_plot_line_ratios(
                                 names          = [ 'MA1', 'MA2', 'M1', 'M2', 'M3', 'M4'], 
                                 names_pos      = [0.6, 0.1],
                                 grid_coords    = [ [1.0, 2.0], [2.0, 1.0], [3.0, 3.0], [3.0, 5.0], [5.5, 3.0], [5.5, 5.0] ],
-                                line_ratios    = ['13CO1-0/CO1-0', '13CO2-1/CO2-1', '13CO3-2/CO3-2', '13CO4-3/CO4-3', '13CO7-6/CO7-6'],
+                                line_ratios    = ['13CO1-0/CO1-0', '13CO2-1/CO2-1', '13CO3-2/CO3-2', '13CO4-3/CO4-3', '13CO7-6/CO7-6', '13CO16-15/CO16-15'],
                                 Av_max         = 10.0,
                                 image_save_dir = image_save_dir,
                                 plot_title     = 'bar-plots-lineRatios-13CO-CO-z-%.1f' % arxvPDR.metallicity,

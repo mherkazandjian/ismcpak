@@ -20,7 +20,7 @@ imageSaveDir = '/home/mher/tmp'
 arxvPDR = meshUtils.meshArxv(dirPath = dirPath, readDb=True)
 
 #--------------------------------------------------------------------------------------------------------------------------
-'''
+
 parms = {
         'line' : {
                    'code' : 'C+158',
@@ -31,16 +31,68 @@ parms = {
         'relGmech_ref' : -10.0,
         'relGmech'     : [[1e-3, 1e-2, 5e-2], [0.1, 0.5, 1.0 ] ],
         'v_range'      : [-1, 1], # range of the values, also that of the cbar
-        'res'          : [20.0, 20.0],
+        'res'          : [100.0, 100.0],
         'ranges'       : [[0.0, 6.0], [0.0, 6.0]],
         'cmap'         : matplotlib.cm.jet,
         'cLevels'      : [0],
         'clip'         : None,
         'removeNans'   : False,
 #        'f_interp_dim' : '2D',     
-#        'interp'       : 'linear',
+#        'interp'       : 'linear', #'linear'|'cubic'
 #        'zoom'         : 20,
         }
+plot_utils.plot_relative_change_intensity_grid2(arxvPDR, imageSaveDir=imageSaveDir, **parms)
+
+
+parms = {
+        'line' : {
+                   'code' : 'CO1-0',
+                   'type' : 'radex-lvg'
+                 },
+         
+        'Av_use'       :  10.0,
+        'relGmech_ref' : -10.0,
+        'relGmech'     : [[1e-3, 1e-2, 5e-2], [0.1, 0.5, 1.0 ] ],
+        'v_range'      : [-1, 1], # range of the values, also that of the cbar
+        'res'          : [100.0, 100.0],
+        'ranges'       : [[0.0, 6.0], [0.0, 6.0]],
+        'cmap'         : matplotlib.cm.jet,
+        'cLevels'      : [0],
+        'clip'         : None,
+        'removeNans'   : False,
+        'f_interp_dim' : '2D',     
+        'interp'       : 'cubic', #'linear'|'cubic'
+#        'zoom'         : 20,
+        }
+plot_utils.plot_relative_change_intensity_grid2(arxvPDR, imageSaveDir=imageSaveDir, **parms)
+
+parms = {
+        'line' : {
+                   'code' : 'CO1-0',
+                   'type' : 'radex-lvg'
+                 },
+         
+        'Av_use'       :  10.0,
+        'relGmech_ref' : -10.0,
+        'relGmech'     : [[1e-3, 1e-2, 5e-2], [0.1, 0.5, 1.0 ] ],
+        'v_range'      : [-2, 2], # range of the values, also that of the cbar
+        'res'          : [100.0, 100.0],
+        'ranges'       : [[0.0, 6.0], [0.0, 6.0]],
+        'cmap'         : matplotlib.cm.jet,
+        'cLevels'      : [0],
+        'clip'         : None,
+        'removeNans'   : False,
+        'cbar_range': [-1, 1],  
+        'cbarTicks' : [-1, -0.5, 0.0, 0.5, 1.0],
+        'xticks'    : [0, 1, 2, 3, 4, 5],
+        'yticks'    : [0, 1, 2, 3, 4, 5],
+        'f_interp_dim' : '2D',
+        'interp'    : 'cubic',
+        }
+
+plot_utils.plot_relative_change_intensity_grid2(arxvPDR, imageSaveDir=imageSaveDir, **parms)
+
+
 '''
 parms = {
         'line' : {
@@ -61,5 +113,5 @@ parms = {
         }
 
 plot_utils.plot_relative_change_intensity_grid(arxvPDR, imageSaveDir=imageSaveDir, **parms)
-
+'''
 print 'done'

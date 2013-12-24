@@ -31,17 +31,17 @@ def plot_intensity_grid2(grd, line=None, ranges=None, cmap=None, cLevels=None,
                              cbar_range=None, **kwargs):
     '''plots and saves an intensity grid''' 
 
-    fw, fh = 3.55, 3.7
-    text_size = 'small'
+    fw, fh = 2.35, 2.7
+    text_size = 10.0
     clabel_font_size = 8.0
     
     fig = templates.subplots_grid(1, 1, hspace=0.0, wspace=0.0, sharex=True, sharey=True,
                                    fig = {'kwargs':{
-                                               'figsize' : (fw, fh),
-                                               },
+                                                   'figsize' : (fw, fh),
+                                                   },
                                           },
                                    axs = {
-                                          'left':0.1, 'bottom':0.1, 'w':0.88, 'h':0.78*fw/fh
+                                          'left':0.145, 'bottom':0.135, 'w':0.82, 'h':0.67
                                           },
                                    cbar = {'range' : cbar_range,
                                            'scale' : 0.7,
@@ -53,12 +53,9 @@ def plot_intensity_grid2(grd, line=None, ranges=None, cmap=None, cLevels=None,
     fig.sub_setp('xlim', ranges[0], 'ylim', ranges[1])
     fig.set_xticks(xticks, labels=xticks, size=text_size)
     fig.set_yticks(yticks, labels=yticks, size=text_size)
-    fig.set_xlabel('$\log_{10}$ [n$_{gas}$ / cm$^{-3}$]', size=text_size, space=-0.06)
-    fig.set_ylabel('$\log_{10}$ [G$_0$]'                , size=text_size, space=-0.050)
-    #fig.set_title(r'$\log_{10}$(%s / erg cm$^{-2}$ s$^{-1}$)' %  lineDict.lines[line['code']]['latex'], 
-    #              space=[-0.2, 0.0],
-    #              size=text_size)
-    pylab.figtext(0.02, 0.95, r'$\log_{10}$(%s / erg cm$^{-2}$ s$^{-1}$)' %  lineDict.lines[line['code']]['latex'], 
+    fig.set_xlabel('$\log_{10}$ [n$_{gas}$ / cm$^{-3}$]', size=text_size, space=-0.095)
+    fig.set_ylabel('$\log_{10}$ [G$_0$]'                , size=text_size, space=-0.085)
+    pylab.figtext(0.02, 0.935, r'$\log_{10}$(%s / erg cm$^{-2}$ s$^{-1}$)' %  lineDict.lines[line['code']]['latex'], 
                   size=text_size)
     
     fig.set_cbar_ticks(cbarTicks, labels=cbarTicks, size=text_size)
@@ -118,7 +115,10 @@ def plot_intensity_grid(grd, line=None, ranges=None, cmap=None, cLevels=None,
                              cbarTicks=None, imageSaveDir=None, removeNans=None, 
                              clip=None, clip_max_n=None, f_interp_dim=None, 
                              figure=None, **kwargs):
-    '''plots and saves an intensity grid''' 
+    '''plots and saves an intensity grid
+    
+    .. deprecate:: replaced with plot_intensity_grid2
+    ''' 
     
     width  = figure['width']  if figure != None and 'width'  in figure else 0.3 # figure width (non normalized) 
     height = figure['height'] if figure != None and 'height' in figure else 3.4 # figure heigh (non normalized)
@@ -342,7 +342,8 @@ def plot_relative_change_intensity_grid(arxvPDR, line=None, ranges=None, relGmec
     fig.text(0.02, 0.55, '$\log_{10}$ [G$_0$]', size='large', rotation = 'vertical')
     
     imageSavePath = os.path.join(imageSaveDir, line['code']+'-gMech.eps') 
-    fig.savefig(imageSavePath)
+    fig.savefig(imageSavePath, facecolor='w')
+    print 'saved image to:\n\t%s' % imageSavePath
     
     fig.canvas.set_window_title(line['code'])
     
@@ -350,7 +351,193 @@ def plot_relative_change_intensity_grid(arxvPDR, line=None, ranges=None, relGmec
     print 'done'
     
 
+def plot_relative_change_intensity_grid2(arxvPDR, line=None, ranges=None, relGmech_ref=None,
+                                         relGmech=None, v_range=None, cLevels=None, 
+                                         cmap=None, imageSaveDir=None, removeNans=None,
+                                         clip=None, clip_max_n=None, Av_use=None, res=None, 
+                                         f_interp_dim=None, interp=None, zoom=None, 
+                                         cbarTicks=None, figure=None, xticks=None, yticks=None, cbar_range=None, 
+                                         show_contours=None,
+                                         **kwargs):
+    '''plots 6 grids showing the relative change in the intesitiy as a function of the relative mechanical
+    heating in the grids
+    '''
 
+    nx, ny = 3, 2
+    
+    # the indicies on the plot (x,y), x = horizontal pos, y = vertical position
+    panelInds = ( 
+                 ((0,0),(0,1),(0,2)),
+                 ((1,0),(1,1),(1,2)),
+                ) 
+
+    fw, fh = 3.55, 3.0
+    text_size = 10.0
+    clabel_font_size = 8.0
+    
+    fig = templates.subplots_grid(ny, nx, hspace=0.0, wspace=0.0, sharex=True, sharey=True,
+                                   fig = {'kwargs':{
+                                                   'figsize' : (fw, fh),
+                                                   },
+                                          },
+                                   axs = {
+                                          'left':0.105, 'bottom':0.135, 'w':0.88, 'h':0.67
+                                          },
+                                   cbar = {'range' : cbar_range,
+                                           'scale' : 0.7,
+                                           'sz'    : 0.02,
+                                           'space' : 0.01,
+                                      },
+                                   )
+    
+    fig.sub_setp('xlim', ranges[0], 'ylim', ranges[1])
+    fig.set_xticks(xticks, labels=xticks, size=text_size)
+    fig.set_yticks(yticks, labels=yticks, size=text_size)
+    fig.set_xlabel('$\log_{10}$ [n$_{gas}$ / cm$^{-3}$]', size=text_size, space=-0.095)
+    fig.set_ylabel('$\log_{10}$ [G$_0$]'                , size=text_size, space=-0.055)
+         
+    pylab.figtext(0.02, 0.935, r'$\log_{10}$[R(%s)]' %  lineDict.lines[line['code']]['latex'], 
+                  size=text_size)
+    fig.set_cbar_ticks(cbarTicks, labels=cbarTicks, size=text_size)
+    fig.clean_subplot_labels()
+    
+    
+
+    ## setting the ranges of the grids as a single list
+    rangesLst = (ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]) 
+
+    ## the reference grid
+    ref_grd = arxvPDR.get_emission_grid_from_databases(line=line, 
+                                                       Av_use=Av_use,
+                                                       z_sec=relGmech_ref,
+                                                       res=res,                                                        
+                                                       ranges=ranges, 
+                                                       f_interp_dim=f_interp_dim, 
+                                                       interp=interp,
+                                                       zoom=zoom,
+                                                       **kwargs)
+
+
+    # setting the grids to be displayed with the desired mechanical heating percentages         
+    dataGrds = [[None,None,None   ], [None,None,None] ]
+    
+    mn = -1.0 #initializing the mn, mx to defaults before finding them
+    mx =  1.0
+    
+    ##
+    percentage_strngs = numpy.array([[r'0.1%', r'1%', r'5%'], [r'10%', r'50%', r'100%']])
+    
+    #---------------------------------------------------------------------------------
+    # looping over the indicies in the image to be plotted
+    # and gettting the data for each panel
+    #---------------------------------------------------------------------------------
+    for r in panelInds: # looping over the rows (r)
+        for inds in r:  # looping over each entry in r
+            
+            i, j = inds
+            print inds
+            rGmech = relGmech[i][j] # relative gMech of the grid to be displayed
+            
+            print 'indicies = ', i,j
+            print 'relative gmech = ', rGmech
+    
+            grd = arxvPDR.get_emission_grid_from_databases(line=line, 
+                                                           Av_use=Av_use, 
+                                                           ranges=ranges, 
+                                                           res=res, 
+                                                           z_sec=numpy.log10(rGmech),  
+                                                           f_interp_dim=f_interp_dim, 
+                                                           interp=interp, 
+                                                           zoom=zoom,
+                                                           **kwargs)
+    
+            #taking the ratios of the base grid with the current one                
+            data = numpy.log10(10.0**grd / 10.0**ref_grd)
+            dataGrds[i][j] = data
+            
+            #ax = panelAxs[i][j]
+            #im = ax.imshow(dataGrds[i][j], extent = rangesLst, origin='lower')
+            
+            fig.sub[i,j].text(1, 5, percentage_strngs[i,j], size=text_size)
+                    
+            indsFinit = numpy.where(numpy.fabs(data) != numpy.inf)
+            dataTmp = data[indsFinit]
+            currMin = numpy.nanmin(dataTmp)
+            currMax = numpy.nanmax(dataTmp)
+            print 'min = %e, max = %e' % (currMin, currMax)
+    
+            mn = numpy.min([mn, currMin])
+            mx = numpy.max([mx, currMax])
+            
+            print '##########################'
+            
+    print 'global min = %f, global max = %f' % (mn,mx)
+    #-----------------------done getting the data for the panels------------------------
+
+
+    #-----------------------------------------------------------------------------------
+    # now the we have the data for each panel
+    #looping over the indicies of the figure to be plotted (the panels in the plot)
+    # and showin the panel in the image
+    for r in panelInds:
+        for inds in r:
+            
+            i, j = inds
+            print inds
+            rGmech = relGmech[i][j]
+            grd = dataGrds[i][j]
+            
+            print 'indicies = ', i,j
+            print 'relative gmech = ', rGmech
+    
+            #setting the values which are outside the allowed ranges to the max 
+            #allowed ranges
+            indsBelow = numpy.where( grd < v_range[0])
+            grd[indsBelow] = v_range[0]
+            indsAbove = numpy.where( grd > v_range[1])
+            grd[indsAbove] = v_range[1]
+    
+            grdScaled = scale(grd, 0.0, 1.0, v_range[0], v_range[1]) 
+            #ax = panelAxs[i][j]
+            ax = fig.sub[i,j]
+            
+            #import scipy.misc
+            
+            #grdScaled = scipy.misc.imresize(grdScaled, [100, 100], interp='bicubic') 
+            
+            #adsadsads
+            
+            im = ax.imshow(grdScaled.T, extent = rangesLst, origin='lower', cmap = cmap,
+                           vmin = 0.0, vmax = 1.0, norm = None, interpolation='bicubic',
+                           aspect='auto',
+                           )
+            
+            cLevelsScaled = scale(cLevels, 0.0, 1.0, v_range[0], v_range[1])
+
+            if show_contours != None and show_contours[i][j] == True:
+                
+                CS = ax.contour(grdScaled.T, cLevelsScaled, 
+                                extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), 
+                                origin='lower', 
+                                colors = 'black',
+                                linestyles='dashed')
+
+            #pylab.clabel(CS, fmt = '%.1f' )
+    
+        print '-----------------------------'
+    
+    imageSavePath = os.path.join(imageSaveDir, line['code']+'-gMech.eps') 
+    fig.fig.savefig(imageSavePath, facecolor='grey')
+    print 'saved image to:\n\t%s' % imageSavePath
+    
+    fig.fig.canvas.set_window_title(line['code'])
+    
+    #fig.preview('aa')
+
+    pylab.show()
+    print 'done'
+    
+    
 class line_ratio(object):
     
     def __init__(self, 
@@ -1395,6 +1582,370 @@ class line_ratio_grid_of_grid():
         #getting the truth grids (product of the grids which satisfy the observed 
         #ranges in the grids)            
         for r, row in enumerate(self.axs):
+            for c, sub_ax in enumerate(row):
+                
+                lr = self.line_ratio_objs[r][c]
+                
+                #getting the line ratio from the 
+                for i, ratio in enumerate(obs_ratios):
+                    
+                    if ratio == '%s/%s' % (lr.line1['code'],lr.line2['code']):
+                        v, e = obs_ratios[ratio]['v'], obs_ratios[ratio]['e']
+                        truth_grids[c] *= ((lr.grd >= numpy.log10(v-e)) *  (lr.grd <= numpy.log10(v+e)))
+            #
+        #
+
+        fig, panelAxs = pylab.subplots(1, n_col, sharex = True, sharey = True, figsize = (6, 1.5),
+                                       subplot_kw = {'xlim':[self.ranges[0][0], self.ranges[0][1] ],  #keywords passed to figure.add_subplot()     
+                                                     'ylim':[self.ranges[1][0], self.ranges[1][1] ],
+                                                     'aspect':'equal',
+                                                     'adjustable':'datalim',
+                                                     'autoscale_on' : False,                                                     
+                                                     }
+                                       )
+
+        pylab.subplots_adjust(left=0.2, bottom=0.25, right=0.8, top=0.7, wspace=0.0, hspace=0.0)        
+        fig.set_facecolor('white')
+
+        rangesLst = (self.ranges[0][0], self.ranges[0][1], self.ranges[1][0], self.ranges[1][1])
+        
+        for i in numpy.arange(n_col):
+            
+            panelAxs[i].imshow(truth_grids[i].T, origin='lower', extent = rangesLst)
+
+            if rangesLst[0] == 0.0 and rangesLst[2] == 0.0:
+                panelAxs[i].set_xticks([1,3,5])
+                panelAxs[i].set_yticks([1,3,5])
+
+            if rangesLst[0] == 3.0 and rangesLst[2] == 3.0:                
+                panelAxs[i].set_xticks([3, 4, 5])
+                panelAxs[i].set_yticks([3, 4, 5])
+                    
+        #making the string to be printed at the top of the plot
+        '''
+        strng = ''
+        strng += 'Av = %.1f' % self.Av_use
+        for r in obs_ratios:
+            strng += ' %s' % r
+        pylab.figtext(0.1, 0.9, strng)
+        '''
+        pylab.show()
+        
+        return fig, panelAxs
+    
+class line_ratio_grid_of_grid2():
+    
+    def __init__(self,
+                 arxvPDR,       #: an PDR mesh database object
+                 ratios=None,   #: a dict holding the ratios to be plotted (y-axis of the grid of the grids). for ex, ratios = ('CO2-1/CO1-0', 'CO2-1/CO1-0', 'CO3-2/CO1-0', 'CO4-3/CO1-0')
+                 zsecs=None,   #: a dict holding the section ins mechanical heating to be displayed (as the x-axis of the grid of grids). For ex, zsecs= (1e-10, 0.01, 0.05, 0.1, 0.25)
+                 zsecType='alpha', #: a string specifying what is on the zaxis. choices are  'alpha' or 'CR'  
+                 ranges=[[0.0, 6.0], [0.0, 6.0]],  #ranges in n and G0 for each grid
+                 cmap={#: a dict holding the colormap, its range and whether the colors correpond to log quantities or not
+                       'obj'     : matplotlib.cm.jet,
+                       'v_range' : [-2, 2],
+                       'log'     : True,
+                      },
+#                 cbar={#: a dict holding the info about the ticks of the colorbar and their format
+#                       'ticks'  : numpy.linspace(-2, 2, 5),
+#                       'format' : '%.1f',  # None, '10^x', '%e' (or any format)
+#                      },
+                 c_levels={#: a dict holding the info about the countour lines their format
+                           'values' : numpy.log10([0.01, 0.03,  0.1,  0.3, 1,  3,  10,    30,   100]),
+                           'format' : '%.1f',  # None, '10^x', '%e' (or any format), 'strs'
+                           #'strs'   : ['0.01',  '0.1', '1', '10', '30', '100'],
+                          }, 
+                 Av_use=10.0, #: the Av of the grid
+                 em_unit = 'cgs',
+                 res=[100,100],  #: the resolution of the interpolated image
+                 image_save_dir=None, 
+                 removeNans=None, 
+                 clip=None, 
+                 clip_max_n=None, 
+                 f_interp_dim=None, 
+                 only_init=None, 
+                 fname=None,         
+                 fig=None,  
+                 axs=None, 
+                 cbar=None,
+                 xticks=None,
+                 yticks=None,
+                 **kwargs):
+
+        #setting the parameters and keywords as attributes
+        self.arxvPDR = arxvPDR
+        self.ratios = ratios
+        self.zsecs = zsecs
+        self.zsecType = zsecType
+        self.Av_use = Av_use
+        self.ranges = ranges
+        self.em_unit = em_unit
+        self.cmap = cmap
+        self.cbar = cbar
+        self.c_levels = c_levels
+        self.res = res
+        self.clip = clip
+        self.clip_max = clip_max_n
+        self.f_interp_dim = f_interp_dim
+        self.image_save_dir = image_save_dir
+        self.fname = fname
+        self.fig = fig
+        self.axs = axs
+        self.xticks=xticks
+        self.yticks=yticks
+        
+        #attributes related to the gui and where things will be plotted
+        self.nx = None
+        self.ny = None
+        self.figure  = None
+#        self.axs     = None
+        self.cbar_ax = None
+        
+        self.line_ratio_objs = None #:holds the grids of grids of the line ratios
+        self.obs_ratios = None #: holds the observed ratios (set using set_obs_ratios method) 
+        
+        self.im = None
+        self.cbar_im = None
+        self.contours = None
+        
+        #defining and setting the values of the above attributes
+        self.init_plot()
+
+        self.line_ratio_objs = numpy.ndarray(self.fig2.sub.shape, dtype='object') 
+        
+        #getting the data for all the subplots
+        self.get_data_all()
+
+        #plot the data in the suplots
+        self.plot_grids()
+
+        if self.fname != None and self.image_save_dir != None:
+            imageSavePath = os.path.join(self.image_save_dir, self.fname) 
+            self.figure.fig.savefig(imageSavePath)
+            print 'wrote image : %s' % imageSavePath
+        
+        #self.figure.preview('aa')
+        
+    def init_plot(self):
+        '''initialized the plotting reigon, the colorbar and the axes'''
+
+        self.nx = len(self.zsecs)
+        self.ny = len(self.ratios)
+        
+        text_size = 8.0
+        clabel_font_size = 8.0
+
+        fig2 = templates.subplots_grid(self.ny, self.nx, hspace=0.0, wspace=0.0, sharex=True, sharey=True,
+                                       fig = self.fig,
+                                       axs = self.axs,
+                                       cbar = self.cbar,
+                                       )
+        
+        fig2.sub_setp('xlim', self.ranges[0], 'ylim', self.ranges[1])
+        fig2.set_xticks(self.xticks, labels=self.xticks, size=text_size)
+        fig2.set_yticks(self.yticks, labels=self.yticks, size=text_size)
+        fig2.set_xlabel('$\log_{10}$ [n$_{gas}$ / cm$^{-3}$]'  , size=text_size, space=-0.03)
+        fig2.set_ylabel('$\log_{10}$ [G$_0$]'                  , size=text_size, space=-0.04)
+        fig2.set_title(r'$\log_{10}$[line ratio]', space=[-0.25, 0.0])
+        fig2.clean_subplot_labels()
+        
+        fig2.set_cbar_ticks(self.cbar['ticks'], labels=self.cbar['ticks'], size=text_size)
+        
+        pylab.figtext(0.6,  0.9, r'A$_V$' + '\n %.2f' % self.Av_use)      
+        
+        self.fig2 = fig2
+        
+        #plottuing the colorbar
+        '''
+        def plot_colorbar():
+            
+            dummy_cbar_data = numpy.zeros(numpy.array((50, 500), 'i'))
+             
+            cbar_ax = fig.add_axes([cbar_xs + (0.5*(1.0-cbar_sc))*ax_xsz, cbar_ys, cbar_sc*ax_xsz - (0.5*(1.0-cbar_sc))*ax_xsz, cbar_w])
+            cbar_ax.set_title(r'$\log_{10}$[line ratio]')
+            cbar_im = cbar_ax.imshow(dummy_cbar_data, aspect='auto', vmin=0, vmax=1, 
+                                     cmap=self.cmap['obj'], 
+                                     extent = [self.cmap['v_range'][0], self.cmap['v_range'][1], 0.0, 1.0])
+            
+            cbar_ax.axes.get_yaxis().set_ticks([]) #removing y ticklabels
+            
+            cbarData = numpy.linspace(0, 1, 500)
+            cbarv = []
+            for i in numpy.arange(50):
+                cbarv.append( cbarData.copy() )
+            cbarv = numpy.array(cbarv)
+            
+            cbar_im.set_data(cbarv)
+    
+            cbar_ax.set_xticks( self.cbar['ticks'] )
+            
+            #emphasising the contour line styles on the colorbar
+            for i, v in enumerate(self.c_levels['values']):
+                if i % 2 == 0:
+                    cbar_ax.plot([v,v], [0,1], linestyle='solid', linewidth=2, color='k')
+                else:
+                    cbar_ax.plot([v,v], [0,1], linestyle='dashed', linewidth=2, color='k')
+            
+            #setting the labels of the colorbar    
+            cbarLabeslStrs = []
+            
+            for tickv in self.cbar['ticks']:
+                if self.cbar['format'] == '10^x':
+                    cbarLabeslStrs.append(r'$10^{%.1f}$' % tickv)
+                elif self.cbar['format'] == None:
+                    cbarLabeslStrs.append(tickv)
+                else:
+                    cbarLabeslStrs.append(self.cbar['format'] % tickv)
+            
+            cbar_ax.set_xticklabels( cbarLabeslStrs )
+        #
+        '''
+        #cbar_ax = plot_colorbar()
+        
+        self.figure = fig2
+        #self.axs = axs
+        #self.cbar_ax = cbar_ax
+        
+        self.figure.fig.set_facecolor('white')
+        
+        #return fig, axs, None #cbar_ax
+    
+    def get_data_all(self):
+        '''gets and sets all the data for all the grids'''
+        
+        for r, row in enumerate(self.fig2.sub):
+            for c, sub_ax in enumerate(row):
+                
+                ratio = self.ratios[r]
+                z_sec = numpy.log10(self.zsecs[c])
+                code1, code2 = ratio.split('/') 
+                lr = line_ratio(self.arxvPDR, 
+                                line1={'code':code1, 'type':'radex-lvg', 'em_unit':self.em_unit},
+                                line2={'code':code2, 'type':'radex-lvg', 'em_unit':self.em_unit},
+                                z_sec=z_sec,
+                                Av_use=self.Av_use,
+                                res=self.res,
+                                cmap=self.cmap,
+                                ranges=self.ranges,
+                                only_get_data=True,
+                                )
+                
+                self.line_ratio_objs[r][c] = lr
+            #
+        #
+        
+        #mylib.utils.removeAxesLabels.removeSubplotLabels(self.axs, keep_first_last_labels=True)
+        
+    def plot_grids(self):
+        '''plot the images in the subplots'''
+
+        rangesLst = (self.ranges[0][0], self.ranges[0][1], self.ranges[1][0], self.ranges[1][1])
+
+        for r, row in enumerate(self.fig2.sub):
+            for c, sub_ax in enumerate(row):
+                
+                grd = self.line_ratio_objs[r][c].grd
+                grd_scaled = self.line_ratio_objs[r][c].grd_scaled
+                
+                if rangesLst[0] == 0.0 and rangesLst[2] == 0.0:
+                    sub_ax.set_xticks([1,3,5])
+                    sub_ax.set_yticks([1,3,5])
+
+                if rangesLst[0] == 3.0 and rangesLst[2] == 3.0:                
+                    sub_ax.set_xticks([3, 4, 5])
+                    sub_ax.set_yticks([3, 4, 5])
+                
+                self.fig2.sub[r,c].imshow(grd_scaled.T, extent=rangesLst, origin='lower', aspect='auto',    
+                                          cmap=self.cmap['obj'], vmin=0.0, vmax=1.0, norm=None)
+                
+                clines = self.fig2.sub[r,c].contour(grd.T, self.c_levels['values'], 
+                                                    extent=(self.ranges[0][0], self.ranges[0][1], self.ranges[1][0], self.ranges[1][1]), 
+                                                    origin='lower', 
+                                                    colors = 'black')
+                
+                #making every other contour line dashed
+                for cline in clines.collections:
+                    pylab.setp(cline, linestyle='solid', color='k')
+
+                #making every other contour line dashed
+                for cline in clines.collections[1::2]:
+                    pylab.setp(cline, linestyle='dashed')
+                     
+                #displaying the title at the top of the subplots in the top row 
+                if r == 0:
+                    
+                    if self.zsecType == 'alpha':
+                        title_str = r'  $\alpha$' + '\n' + '%.2f' % self.zsecs[c] #alpha string
+                    if self.zsecType == 'zeta':
+                        title_str = r'  $\zeta$' + '\n' + '%.1e' % self.zsecs[c]  #alpha string
+                        
+                    sub_ax.set_title(title_str, 
+                                     size='small', rotation=0, 
+                                     horizontalalignment='center', 
+                                     verticalalignment='bottom')
+
+                #printing the label for each row (line1/line2) 
+                if c+1==self.nx:
+                    text_x = self.axs['left'] + self.axs['w'] + 0.05
+                    text_y = self.axs['bottom'] + self.axs['h'] - (self.axs['h']/self.figure.sub.shape[0])*(r+0.5)
+                    pylab.figtext(text_x, text_y, 
+                                  self.ratios[r],
+                                  rotation='horizontal', 
+                                  size='small',
+                                  horizontalalignment='left', verticalalignment='center'
+                                 )
+    
+
+    def set_obs_ratios(self, obs_ratios):
+        '''sets the obseravations object to the attribute and checks if all the line ratios 
+         grids are available in self.line_ratio_objs
+        ''' 
+        
+        #array holding the boolean as a check if the obs_ratios are in the 
+        #self.line_ratio_objs
+        check = numpy.zeros(len(obs_ratios),'b') 
+
+        for r, row in enumerate(self.fig2.sub):
+            for c, sub_ax in enumerate(row):
+                lr = self.line_ratio_objs[r][c]
+                
+                for i, ratio in enumerate(obs_ratios):
+                    if ratio == lr.line1['code'] + '/' + lr.line2['code']:
+                        check[i] = True
+                        break
+        
+        if numpy.prod(check) == False:
+            strng = 'line ratios below are not in the grid of grids: \n   '
+            inds = numpy.where(check == False)
+            for i, ind in enumerate(inds):
+                strng += (obs_ratios.keys()[ind] + ' ')
+            
+            raise ValueError(strng)
+        else:
+            print 'all input ratio grids are available' 
+        
+        #all ok, setting the observerd ratios as an attribute
+        self.obs_ratios = obs_ratios
+        
+    def fit_observations_visual(self, obs_ratios=None):
+        
+        if obs_ratios != None:
+            self.set_obs_ratios(obs_ratios)
+        else:
+            obs_ratios=self.obs_ratios
+
+        #number of columns
+        n_col = self.axs.shape[1]
+        
+        #making the truth grids
+        truth_grids = numpy.ndarray((n_col), 'object')
+        
+        #intializing the truth grids
+        for i in numpy.arange(n_col): truth_grids[i] = numpy.ones((self.res[0],self.res[1]), 'b') 
+
+        #getting the truth grids (product of the grids which satisfy the observed 
+        #ranges in the grids)            
+        for r, row in enumerate(self.fig2.sub):
             for c, sub_ax in enumerate(row):
                 
                 lr = self.line_ratio_objs[r][c]

@@ -1414,7 +1414,7 @@ class meshArxv(object):
             zNew[:] = zSec      # all the grid points have the same mechanical heating
             dataNew = np.array( [xNew, yNew, zNew] ).T            
         else:
-            dataNew = np.array( [xNew, yNew] ).T            
+            dataNew = np.array( [xNew, yNew] ).T
 
         ti = time()
         tNew = fInterp(dataNew)
@@ -3757,43 +3757,102 @@ class meshArxv(object):
     
     def get_emission_grid_from_databases(self, 
                                          line=None, Av_use=None, ranges=None, res=None, z_sec=None, dz=None,
-                                         f_interp_dim=None, interp='linear', zoom=5, **kwargs):
+                                         f_interp_dim=None, interp='linear', zoom=5, 
+                                         get_section_data_using='select',
+                                         **kwargs):
         '''returns an interpolated grid from the database for a pdr or radex models determined by the 
-         keyword line
+         keyword line.
+         
+        :param string get_section_data_using: 'select' or '3d-interpolation'. gets the values section in z either by 
+         selecting poitns in the 3D grid and interpolating over that 2D surfrace. Or gets the values at the 
+         section first by interpolating at that section using 3D interpolation. Once the data in that z section
+         is available, a 2D interpolation is done over that data to get an interpolated values at that z section. 
+         
         '''
-    
-        ## the emission extracted from the database for the specified line for a certain AV
-        v = self.get_emissions_from_databases(line, Av_use)        
-        
-        if f_interp_dim != None and f_interp_dim == '2D':
 
-            # the coordinates of the models for ex: log10(n), log10(G0), log10(gmech)
-            x, y, z = self.grid_x, self.grid_y, self.grid_z
- 
+        ## the coordinates of the models for ex: log10(n), log10(G0), log10(gmech)
+        x, y, z = self.grid_x, self.grid_y, self.grid_z
+
+        ## the emission extracted from the database for the specified line for a certain AV
+        v = self.get_emissions_from_databases(line, Av_use)
+
+        def get_coords_inds_in_sec():
+            '''returns the indicies of x,y coordinates of the available data withing a section in z '''
+            
             #selecting a section in z
             if dz != None:
                 inds = numpy.where( (z >= (z_sec - dz))*(z <= (z_sec + dz)) )
             else:
                 inds = numpy.where(z == z_sec)[0]
             
+            return inds
+        #
+        
+        def get_z_section_within_z_range():
+            '''returns the x,y,v of valid points in a z section in databse within a z section''' 
+        
+            inds = get_coords_inds_in_sec() 
+                
             #keeping only the points withing the z section
             x_in, y_in, v_in = x[inds], y[inds], v[inds]
-                        
+            
+            return x_in, y_in, v_in
+        #
+
+        def get_z_section_by_3D_interpolation():
+            '''constructing the 3D interpolation function which will be used to interpolate at the 
+               grid points of this section.  Only the points which do not return an nan are kept.
+            '''
+            data=np.array([x, y, z], 'f8').T
+            fInterp = self.construct3DInterpolationFunction(data=data, values=v, remove_nan_inf=True)
+
+            inds = get_coords_inds_in_sec() 
+
+            ## grids in x and y in the z section with the same resolution as the original points
+            xxGrdc, yyGrdc = numpy.meshgrid(numpy.unique(x[inds]), numpy.unique(y[inds]), indexing='ij')
+            
+            v_new = fInterp(
+                           np.array(
+                                    [
+                                     xxGrdc.flatten(), 
+                                     yyGrdc.flatten(), 
+                                     numpy.ones(xxGrdc.size, 'f8')*z_sec
+                                    ]
+                                   ).T
+                          )
+            
+            return xxGrdc.flatten(), yyGrdc.flatten(), v_new 
+        #
+        
+        if f_interp_dim != None and f_interp_dim == '2D':
+ 
+            ## getting a section of values in z by keeping only the points withing the z section
+            if get_section_data_using == 'select':
+                x_sec, y_sec, v_sec = get_z_section_within_z_range()
+            elif get_section_data_using == '3d-interp':
+                x_sec, y_sec, v_sec = get_z_section_by_3D_interpolation()
+            else:
+                raise ValueError("invalid z selection method, use 'select' or '3d-interp'")
+            
             if interp in ['cubic', 'linear', 'nearest']:
-                
+
                 # getting the coordinates of the grid in each dime
-                xx, yy = numpy.unique(x_in), numpy.unique(y_in)
+                xx, yy = numpy.unique(x_sec), numpy.unique(y_sec)
                 xxc = numpy.linspace(xx.min(), xx.max(), res[0])
                 yyc = numpy.linspace(yy.min(), yy.max(), res[1])
                 xxGrdc, yyGrdc = numpy.meshgrid(xxc, yyc, indexing='ij')
-                
+
                 # removing all nan's from the data
-                inds_not_nan = numpy.isfinite(v_in)
-                x_in_finite, y_in_finite, vi_in_finite = x_in[inds_not_nan], y_in[inds_not_nan], v_in[inds_not_nan] 
+                inds_not_nan = numpy.isfinite(v_sec)
+                x_sec_finite, y_sec_finite, v_sec_finite = x_sec[inds_not_nan], y_sec[inds_not_nan], v_sec[inds_not_nan] 
+
+                '''
+                x_sec_finite, y_sec_finite, v_sec_finite = x_new, y_new, v_new 
+                '''
                 
                 # interpolating
                 grd = interpolate.griddata(
-                                           numpy.vstack((x_in_finite, y_in_finite)).T, vi_in_finite,
+                                           numpy.vstack((x_sec_finite, y_sec_finite)).T, v_sec_finite,
                                            (xxGrdc, yyGrdc), 
                                            method=interp, 
                                            fill_value=numpy.nan

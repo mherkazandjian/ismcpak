@@ -25,7 +25,7 @@ parms = {
                    'type' : 'radex-lvg'
                  },
         'Av_use'    : 10.0,
-        'z_sec'     : -10.0,
+        'z_sec'     : numpy.log10(1e-10), #-10.0,
         'res'       : [200.0, 200.0],
         'ranges'    : [[0.0, 6.0], [0.0, 6.0]],
         'cmap'      : matplotlib.cm.jet,
@@ -36,6 +36,7 @@ parms = {
         'yticks'    : [0, 1, 2, 3, 4, 5, 6],
         'clip'      : None,
         'removeNans': False,
+        'get_section_data_using' : '3d-interp',
         'f_interp_dim' : '2D',
         'interp'    : 'cubic',
 #        'zoom'      : 10,
