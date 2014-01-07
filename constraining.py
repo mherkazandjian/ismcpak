@@ -4,14 +4,12 @@ import pylab
 
 class Xi2_line_ratios_single_component(object):
     
-    def __init__(self, obs_data, model_data, model_parms, line_ratios):
+    def __init__(self, obs_data=None, model_data=None, model_parms=None, line_ratios=None):
          
-        self.model_em = model_data
-        self.model_parms = model_parms
-
-        self.obs_ratios = obs_data
-        
-        self.line_ratios_use = line_ratios
+        self.model_em = model_data  #: the model emission of the input PDR models (dict, line_ratio_string:values pairs)
+        self.model_parms = model_parms  #: the model parameters of the input PDR models (n_models ndarray x 4 ndarray)
+        self.obs_ratios = obs_data   #: the observed (measured) line ratios corresponding to self.line_ratios_use
+        self.line_ratios_use = line_ratios   #: the line ratio strings (list of strings)
         
         self.model_line_ratios = None
         
@@ -20,8 +18,8 @@ class Xi2_line_ratios_single_component(object):
         self.Xi2 = None
         self.Xi2_valid = None
         self.inds_valid = None
-        self.model_parms_valid = None
-        self.model_line_ratios_valid = {}
+        self.model_parms_valid = None      #: the model emission of the input PDR models which hold valid data self.model_parms
+        self.model_line_ratios_valid = {}  #: the model line ratios of the input PDR models which hold valid data 
         
         self.ind_global_min = None
 
@@ -64,47 +62,78 @@ class Xi2_line_ratios_single_component(object):
         for line_ratio in self.obs_ratios:
             self.model_line_ratios_valid[line_ratio] = self.model_line_ratios[line_ratio][inds_valid]
 
+    def model_inds_for_min_Xi2(self):
         
-    def print_minima(self):
-           
+        ## the index of the model which minimum Xi2 for all n,G0,Av,gmech
         ind_global_min = numpy.argmin(self.Xi2_valid)
         ind_model_orig = self.inds_orig[ind_global_min]
-        print 'global minimum : Xi2 = ', numpy.min(self.Xi2_valid)
-        print ' \tn, g0, gm, Av = ', self.model_parms_valid[ind_global_min,:]
-
-        for line in self.obs_ratios.species_and_codes()[1]:
-            print '\t%10s : %e' % (line, self.model_em[line][self.inds_orig[ind_global_min]])
-        print '\tline ratio                model        observed'
-        for line_ratio in self.line_ratios_use:
-            print '\t%-20s : %e  %e' % (line_ratio, self.model_line_ratios[line_ratio][ind_model_orig], self.obs_ratios[line_ratio]['v'])
-
+        
         self.ind_global_min = ind_global_min
         self.ind_global_min_orig = ind_model_orig
 
-        #######################
-                
+        ## the index of the model with minimum Xi2 for all n,G0,Av,gmech=0
         inds_zero_gm = numpy.where(self.model_parms_valid[:,2] == numpy.min(self.model_parms_valid[:,2]) )[0]
         inds_orig_zero_gm = self.inds_orig[numpy.arange(self.Xi2_valid.size)[inds_zero_gm]]
-        grid_coords_valid_zero_gm = self.model_parms_valid[inds_zero_gm,:]
+
         Xi2_valid_zero_gm = self.Xi2_valid[inds_zero_gm]
         ind_min_zero_gm = numpy.argmin(Xi2_valid_zero_gm)
-        print '--------------------------------------------------------------------------------------------------'
         
-        print 'global minimum (no gmech): Xi2 = ', numpy.min(Xi2_valid_zero_gm)
-        print '     n, g0, gm, Av = ', grid_coords_valid_zero_gm[ind_min_zero_gm,:]
-        print '     n, g0, gm, Av = ', self.model_parms[inds_orig_zero_gm[ind_min_zero_gm],:]
-        
-        for line in self.obs_ratios.species_and_codes()[1]:
-            print '\t%10s : %e' % (line, self.model_em[line][inds_orig_zero_gm[ind_min_zero_gm]])
-        print '---------------------------------------------------------'
-        print '\tline ratio                model        observed'
         ind_model_orig = inds_orig_zero_gm[ind_min_zero_gm]
-        for line_ratio in self.line_ratios_use:
-            print '\t%-20s : %e  %e' % (line_ratio, self.model_line_ratios[line_ratio][ind_model_orig], self.obs_ratios[line_ratio]['v'])
-                        
         
         self.ind_global_min_no_gmech = ind_min_zero_gm
         self.ind_global_min_no_gmech_orig = ind_model_orig
+
+        return self.ind_global_min, self.ind_global_min_orig,\
+               self.ind_global_min_no_gmech, self.ind_global_min_no_gmech_orig
+
+    def get_model_parms_for_min_Xi2(self):
+
+        ## parms of the model with the gloab Xi2 min
+        model_parms_for_global_Xi2_min = self.model_parms_valid[self.ind_global_min,:]
+
+        ## getting the params of model with the min Xi2 for gmech = 0 
+        inds_zero_gm = numpy.where(self.model_parms_valid[:,2] == numpy.min(self.model_parms_valid[:,2]) )[0]
+        grid_coords_valid_zero_gm = self.model_parms_valid[inds_zero_gm,:]
+        Xi2_valid_zero_gm = self.Xi2_valid[inds_zero_gm]
+        ind_min_zero_gm = numpy.argmin(Xi2_valid_zero_gm)
+        model_parms_for_zero_gmech_Xi2_min = grid_coords_valid_zero_gm[ind_min_zero_gm,:]
+        
+        
+        return model_parms_for_global_Xi2_min, numpy.min(self.Xi2_valid),\
+               model_parms_for_zero_gmech_Xi2_min, numpy.min(Xi2_valid_zero_gm) 
+    
+    def print_minima(self):
+
+        model_parms_for_global_Xi2_min, Xi2_min_global, model_parms_for_zero_gmech_Xi2_min, Xi2_min_zero_gm = self.get_model_parms_for_min_Xi2()
+        
+        print 'global minimum : Xi2 = ', Xi2_min_global
+        print ' \tn, g0, gm, Av = ', model_parms_for_global_Xi2_min
+
+        for line in self.obs_ratios.species_and_codes()[1]:
+            print '\t%10s : %e' % (line, self.model_em[line][self.inds_orig[self.ind_global_min]])
+            
+        print '\tline ratio                model        observed'
+        for line_ratio in self.line_ratios_use:
+            print '\t%-20s : %e  %e' % (line_ratio, self.model_line_ratios[line_ratio][self.ind_global_min_orig],\
+                                        self.obs_ratios[line_ratio]['v'])
+
+        #######################
+                
+        inds_models_zero_gm = numpy.where(self.model_parms_valid[:,2] == numpy.min(self.model_parms_valid[:,2]) )[0]
+        inds_models_orig_zero_gm = self.inds_orig[numpy.arange(self.Xi2_valid.size)[inds_models_zero_gm]]
+        print '--------------------------------------------------------------------------------------------------'
+         
+        print 'global minimum (no gmech): Xi2 = ', Xi2_min_zero_gm
+        print '     n, g0, gm, Av = ', model_parms_for_zero_gmech_Xi2_min 
+        
+        for line in self.obs_ratios.species_and_codes()[1]:
+            print '\t%10s : %e' % (line, self.model_em[line][inds_models_orig_zero_gm[self.ind_global_min_no_gmech]])
+        print '---------------------------------------------------------'
+        print '\tline ratio                model        observed'
+        for line_ratio in self.line_ratios_use:
+            print '\t%-20s : %e  %e' % (line_ratio, self.model_line_ratios[line_ratio][self.ind_global_min_no_gmech_orig],\
+                                        self.obs_ratios[line_ratio]['v'])                        
+    
 
     def plot_results(self, no_gmech=False):
         ## plotting the line ratios and the modelled ones

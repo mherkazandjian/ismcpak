@@ -40,7 +40,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                      'attr' : 'n', #'mass', 'G0', 'gmech', 'Av'
 #                      'v_rng': [-3.0, 4.0],
 #                      'title': r'$f(\bar{n})$', 
-#                      'log10': True                      
+#                      'log10': True
 #                     },
 #          'maps'   : {
 #                      'attr' : 'em_fluxcgs_CO1-0', #'mass', 'G0', 'gmech', 'Av'
@@ -143,7 +143,7 @@ bs_min, bs_max = params['ranges']['box_size'].number
 def generate_maps(snap_index, params):
     
     #path to processed fi snapshot  
-    snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % snap_index + '.states.npz'  
+    snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % snap_index + '.states.npz'
     
     #loading the processed sph simulation data with the emissions 
     logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
