@@ -44,7 +44,7 @@ class Xi2_line_ratios_single_component(object):
             obs = self.obs_ratios[line_ratio]['v']
             err = self.obs_ratios[line_ratio]['e']
         
-            mod = self.model_line_ratios[line_ratio]  
+            mod = self.model_line_ratios[line_ratio]
             
             Xi2 += ((obs - mod)**2.0)/err**2 # goodness of fit
             #Xi2 += ((obs - mod)**2)/mod  # pearsons chi squared test
