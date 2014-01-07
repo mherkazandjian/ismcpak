@@ -60,6 +60,9 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           }
 #############################################################################################################
 
+## reading and setting up the pdr database
+arxvPDR = meshUtils.meshArxv(dirPath = params['pdrDb'], readDb=True)
+
 if 'line_ratios' in params:
     line_ratios = params['line_ratios']
 elif 'lines' in params:
@@ -83,40 +86,32 @@ ind = numpy.argmin(numpy.fabs(beam_sizes - params['beam_size']))
 print 'available beam size used : %e' % beam_sizes[ind]
 for line_ratio in line_ratios:
 
-    ## line involved in the ratio
     line1, line2 = line_ratio_utils.lines_involved(line_ratio)
     
-    ## the intensity of the lines at the given beam size  
     v1, v2 = luminosity['lum_r'][line1][ind], luminosity['lum_r'][line2][ind]
     
-    ## computing the line ratio taking into account the error bars
     obs_mock_ratios.make_ratios(
                                 {
-                                  line1:{'fluxKkms':v1, 'err':params['error_bars']*v1}, 
-                                  line2:{'fluxKkms':v2, 'err':params['error_bars']*v2}
+                                  line1:{'fluxKkms': v1, 'err': params['error_bars']*v1}, 
+                                  line2:{'fluxKkms': v2, 'err': params['error_bars']*v2}
                                 },
-                                ratios=[line_ratio],
-                                em_unit='fluxKkms'
+                                ratios = [line_ratio],
+                                em_unit = 'fluxKkms'
                                )
 
     print line_ratio, obs_mock_ratios[line_ratio]
     
 obs_mock_ratios.species_and_codes()
 
-## reading and setting up the pdr database
-arxvPDR = meshUtils.meshArxv(dirPath = params['pdrDb'], readDb=True)
-
 ## loading the emission info from all the models for all Avs (also check for the consistenscy of the 
 ## number of models...i.e same number of models for all the lines)
 model_em = {}
 for i, line in enumerate(obs_mock_ratios.codes):
-    
-    ## getting the emission for all the PDR meshes in the database of on line at a time for all Avs in the DB
     v, grid_coords = arxvPDR.get_emission_from_all_radex_dbs_for_Av_range(
-                                                                          line=line, 
-                                                                          Avs='all', 
-                                                                          quantity=params['em_unit'],
-                                                                          keep_nans=True,
+                                                                          line = line, 
+                                                                          Avs = 'all', 
+                                                                          quantity = params['em_unit'],
+                                                                          keep_nans = True,
                                                                          )
     model_em[line] = 10.0**v
     print line, v.size, grid_coords.shape
@@ -132,12 +127,11 @@ for i, line in enumerate(obs_mock_ratios.codes):
         if nModels != v.size:
             raise ValueError('the number of elements for this line differes at least from that of one of the other lines')
 
-f = constraining.Xi2_line_ratios_single_component(
-                                                  obs_data = obs_mock_ratios, 
+f = constraining.Xi2_line_ratios_single_component(obs_data = obs_mock_ratios, 
                                                   model_data = model_em, 
                                                   model_parms = grid_coords, 
                                                   line_ratios = line_ratios
-                                                 )
+                                                  )
 
 f.compute_model_line_ratios()
 
@@ -146,12 +140,10 @@ f.compute_Xi2()
 f.print_minima()
 
 f.plot_results()
+f.plot_results(True)
 
-f.plot_results(no_gmech=True)
-
-## getting the best fit model parameters with and without gmech
-model_parms_best, model_parms_best_no_gmech = f.get_model_parms_for_min_Xi2() 
-
+## making the interpolator for the Xi2 statistic as a function of the model coordinates
+#fInterp = sectioned_4D_interpolator(grid_coords, Xi2, params['interpolator'])
 
 #################
 '''
@@ -196,14 +188,3 @@ im = pylab.imshow(
 pylab.colorbar()
 pylab.show()
 '''
-
-
-
-
-
-
-
-
-
-
-

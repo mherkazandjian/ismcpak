@@ -88,9 +88,11 @@ class Xi2_line_ratios_single_component(object):
 
     def get_model_parms_for_min_Xi2(self):
 
+        self.model_inds_for_min_Xi2()
+        
         ## parms of the model with the gloab Xi2 min
         model_parms_for_global_Xi2_min = self.model_parms_valid[self.ind_global_min,:]
-
+        
         ## getting the params of model with the min Xi2 for gmech = 0 
         inds_zero_gm = numpy.where(self.model_parms_valid[:,2] == numpy.min(self.model_parms_valid[:,2]) )[0]
         grid_coords_valid_zero_gm = self.model_parms_valid[inds_zero_gm,:]
@@ -104,6 +106,9 @@ class Xi2_line_ratios_single_component(object):
     
     def print_minima(self):
 
+        self.get_model_parms_for_min_Xi2()
+        
+        ## minimum infor for 4D parameter space
         model_parms_for_global_Xi2_min, Xi2_min_global, model_parms_for_zero_gmech_Xi2_min, Xi2_min_zero_gm = self.get_model_parms_for_min_Xi2()
         
         print 'global minimum : Xi2 = ', Xi2_min_global
@@ -117,8 +122,7 @@ class Xi2_line_ratios_single_component(object):
             print '\t%-20s : %e  %e' % (line_ratio, self.model_line_ratios[line_ratio][self.ind_global_min_orig],\
                                         self.obs_ratios[line_ratio]['v'])
 
-        #######################
-                
+        ## minimum infor for 4D parameter space (no gmech)                
         inds_models_zero_gm = numpy.where(self.model_parms_valid[:,2] == numpy.min(self.model_parms_valid[:,2]) )[0]
         inds_models_orig_zero_gm = self.inds_orig[numpy.arange(self.Xi2_valid.size)[inds_models_zero_gm]]
         print '--------------------------------------------------------------------------------------------------'
