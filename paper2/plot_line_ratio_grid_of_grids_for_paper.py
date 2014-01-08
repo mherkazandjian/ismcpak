@@ -14,8 +14,8 @@ import plot_utils
 
 home         = '/home/mher'
 dirPath      = os.path.join(home, 'ism/runs/oneSided/dynamicMesh-z-1.0/')
-image_save_dir = '/home/mher/ism/docs/paper02/src/figs'
-#image_save_dir = '/home/mher/tmp/figs/'
+#image_save_dir = '/home/mher/ism/docs/paper02/src/figs'
+image_save_dir = '/home/mher/tmp/figs/'
 
 #---------------------------------------------------------------------------------------
 #reading and setting up the pdr database
