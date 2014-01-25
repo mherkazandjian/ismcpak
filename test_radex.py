@@ -16,10 +16,10 @@ inFile = { 'specStr'                : 'CO'                              ,
            'freqRange'              : [0, 0]                              ,
            'tKin'                   : 100.0                                    ,
            'collisionPartners'      : ['H2']                              ,
-           'nDensCollisionPartners' : [1e6]                                   ,
+           'nDensCollisionPartners' : [1e3]                                   ,
            'tBack'                  : 2.73                                    ,
-           'molnDens'               : 1e14                                    ,
-           'lineWidth'              : 1.0                                     ,
+           'molnDens'               : 1e16                                    ,
+           'lineWidth'              : 10.0                                     ,
            'runAnother'             : 1                                       }
 
 """

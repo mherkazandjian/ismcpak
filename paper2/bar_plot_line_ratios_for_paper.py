@@ -13,8 +13,8 @@ import meshUtils
 import plot_utils
 
 home           = '/home/mher'
-#image_save_dir = os.path.join(home, 'ism/docs/paper02/src/figs')
-image_save_dir = '/home/mher/tmp/figs'
+image_save_dir = os.path.join(home, 'ism/docs/paper02/src/figs')
+#image_save_dir = '/home/mher/tmp/figs'
 
 #########################################parameters##########################################################
 dirPath        = os.path.join(home, 'ism/runs/oneSided/dynamicMesh-z-1.0/')

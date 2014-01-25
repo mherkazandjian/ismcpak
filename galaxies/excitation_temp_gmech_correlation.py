@@ -153,25 +153,29 @@ gm_per_h = map_gmech_per_H.flatten()
 Tex = map_Tex.flatten()
 
 #######
-inds = numpy.where( (r > 0.0)*(r < 1.0) )
-axs[0].semilogy(r[inds][::2]       , gm_per_h[inds][::2], 'r.')
-axs[1].semilogx(gm_per_h[inds], Tex[inds], 'r.')
-axs[2].plot(r[inds], Tex[inds], 'r.')
-
-inds = numpy.where( (r > 1.0)*(r < 2.0) )
-axs[0].semilogy(r[inds][::2]       , gm_per_h[inds][::2], 'g.')
-axs[1].semilogx(gm_per_h[inds], Tex[inds], 'g.')
-axs[2].plot(r[inds], Tex[inds], 'g.')
+inds = numpy.where( (r > 3.0)*(r < 10.0) )
+axs[0].semilogy(r[inds][::5]       , gm_per_h[inds][::5], 'c.')
+axs[1].semilogx(gm_per_h[inds], Tex[inds], 'c.')
+axs[2].plot(r[inds], Tex[inds], 'c.')
 
 inds = numpy.where( (r > 2.0)*(r < 3.0) )
 axs[0].semilogy(r[inds][::3]       , gm_per_h[inds][::3], 'b.')
 axs[1].semilogx(gm_per_h[inds], Tex[inds], 'b.')
 axs[2].plot(r[inds], Tex[inds], 'b.')
 
-inds = numpy.where( (r > 3.0)*(r < 10.0) )
-axs[0].semilogy(r[inds][::5]       , gm_per_h[inds][::5], 'c.')
-axs[1].semilogx(gm_per_h[inds], Tex[inds], 'c.')
-axs[2].plot(r[inds], Tex[inds], 'c.')
+inds = numpy.where( (r > 1.0)*(r < 2.0) )
+axs[0].semilogy(r[inds][::2]       , gm_per_h[inds][::2], 'g.')
+axs[1].semilogx(gm_per_h[inds], Tex[inds], 'g.')
+axs[2].plot(r[inds], Tex[inds], 'g.')
+
+inds = numpy.where( (r > 0.0)*(r < 1.0) )
+axs[0].semilogy(r[inds][::2]       , gm_per_h[inds][::2], 'r.')
+axs[1].semilogx(gm_per_h[inds], Tex[inds], 'r.')
+axs[2].plot(r[inds], Tex[inds], 'r.')
+
+
+
+
 
 #######
 axs[0].set_xlim([0, 8])
@@ -179,11 +183,11 @@ axs[0].set_ylim([1e-28, 1e-25])
 axs[0].set_yticks(axs[0].get_yticks()[::2])
 
 axs[1].set_xlim([1e-28, 1e-25])
-axs[1].set_ylim([10.0, 100.0])
+axs[1].set_ylim([1.0, 100.0])
 axs[1].set_xticks(axs[1].get_xticks()[::2])
 
 axs[2].set_xlim([0, 8])
-axs[2].set_ylim([10.0, 100.0])
+axs[2].set_ylim([1.0, 100.0])
 
 
 ###########plotting the mean Tex as a function of distance from the center###########

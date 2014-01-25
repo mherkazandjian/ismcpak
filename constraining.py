@@ -22,7 +22,7 @@ class Xi2_line_ratios_single_component(object):
         self.model_line_ratios_valid = {}  #: the model line ratios of the input PDR models which hold valid data 
         
         self.ind_global_min = None
-
+        
     def compute_model_line_ratios(self):
         ## computing the model line ratios
         model_ratios = {}
@@ -104,6 +104,22 @@ class Xi2_line_ratios_single_component(object):
         return model_parms_for_global_Xi2_min, numpy.min(self.Xi2_valid),\
                model_parms_for_zero_gmech_Xi2_min, numpy.min(Xi2_valid_zero_gm) 
     
+    def get_model_em_for_min_Xi2(self):
+
+        print 'emission intensities for the best fit model'
+        print '\t     line     intensity model     intensity observed '
+        for line in self.obs_ratios.species_and_codes()[1]:
+            print '\t%10s :   %e         %e' % (line, 
+                                                self.model_em[line][self.inds_orig[self.ind_global_min]],
+                                                1
+                                               )
+            
+        print '\tline ratio                model        observed'
+        for line_ratio in self.line_ratios_use:
+            print '\t%-20s : %e  %e' % (line_ratio, self.model_line_ratios[line_ratio][self.ind_global_min_orig],\
+                                        self.obs_ratios[line_ratio]['v'])
+        
+       
     def print_minima(self):
 
         self.get_model_parms_for_min_Xi2()
@@ -114,6 +130,7 @@ class Xi2_line_ratios_single_component(object):
         print 'global minimum : Xi2 = ', Xi2_min_global
         print ' \tn, g0, gm, Av = ', model_parms_for_global_Xi2_min
 
+        """
         for line in self.obs_ratios.species_and_codes()[1]:
             print '\t%10s : %e' % (line, self.model_em[line][self.inds_orig[self.ind_global_min]])
             
@@ -121,15 +138,17 @@ class Xi2_line_ratios_single_component(object):
         for line_ratio in self.line_ratios_use:
             print '\t%-20s : %e  %e' % (line_ratio, self.model_line_ratios[line_ratio][self.ind_global_min_orig],\
                                         self.obs_ratios[line_ratio]['v'])
-
+        """
+        
         ## minimum infor for 4D parameter space (no gmech)                
         inds_models_zero_gm = numpy.where(self.model_parms_valid[:,2] == numpy.min(self.model_parms_valid[:,2]) )[0]
         inds_models_orig_zero_gm = self.inds_orig[numpy.arange(self.Xi2_valid.size)[inds_models_zero_gm]]
-        print '--------------------------------------------------------------------------------------------------'
+        #print '--------------------------------------------------------------------------------------------------'
          
         print 'global minimum (no gmech): Xi2 = ', Xi2_min_zero_gm
         print '     n, g0, gm, Av = ', model_parms_for_zero_gmech_Xi2_min 
         
+        """
         for line in self.obs_ratios.species_and_codes()[1]:
             print '\t%10s : %e' % (line, self.model_em[line][inds_models_orig_zero_gm[self.ind_global_min_no_gmech]])
         print '---------------------------------------------------------'
@@ -137,13 +156,15 @@ class Xi2_line_ratios_single_component(object):
         for line_ratio in self.line_ratios_use:
             print '\t%-20s : %e  %e' % (line_ratio, self.model_line_ratios[line_ratio][self.ind_global_min_no_gmech_orig],\
                                         self.obs_ratios[line_ratio]['v'])                        
-    
+        """
 
-    def plot_results(self, no_gmech=False):
+    def plot_results(self, fig=None, ax=None, no_gmech=False):
         ## plotting the line ratios and the modelled ones
 
-        fig = pylab.figure()
-        ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+        if fig == None:
+            fig = pylab.figure(figsize=(4,8))
+        if ax == None:
+            ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
         
         if no_gmech == False:
             ind_model = self.ind_global_min_orig
@@ -155,7 +176,7 @@ class Xi2_line_ratios_single_component(object):
         
         ## plotting the observed ratios for CO/CO line ratios
         line_ratios = obs.get_ratios_by_species('CO','CO', in_denom='1-0', sort_num=True)
-        print 'plotting line ratios:', line_ratios
+        print 'plotting line ratios CO/CO     :', line_ratios
                 
         vo, eo = obs.get_values_and_error(line_ratios)
         Jup = numpy.arange(len(vo))+1
@@ -169,7 +190,7 @@ class Xi2_line_ratios_single_component(object):
         #-----------------------------------------------------
         ## plotting the observed ratios for 13CO/13CO line ratios
         line_ratios = obs.get_ratios_by_species('13CO','13CO', in_denom='1-0', sort_num=True)        
-        print 'plotting line ratios:', line_ratios
+        print 'plotting line ratios  13CO/13CO:', line_ratios
 
         vo, eo = obs.get_values_and_error(line_ratios)
         Jup = numpy.arange(len(vo))+1
@@ -182,8 +203,8 @@ class Xi2_line_ratios_single_component(object):
         ax.plot(Jup, vm,'r--')
         #-----------------------------------------------------
         ## plotting the observed ratios for 13CO/CO line ratios
-        line_ratios = obs.get_ratios_by_species('13CO','CO', in_denom='1-0', sort_num=True)
-        print 'plotting line ratios:', line_ratios
+        line_ratios = obs.get_ratios_by_species('13CO','CO', sort_num=True)
+        print 'plotting line ratios 13CO/CO   :', line_ratios
         
         vo, eo = obs.get_values_and_error(line_ratios)
         Jup = numpy.arange(len(vo))
@@ -198,10 +219,11 @@ class Xi2_line_ratios_single_component(object):
         #-----------------------------------------------------
         
         ax.set_xlim(-1, 6)
-        ax.set_ylim(0.001, 2.0)
+        ax.set_ylim(0.0001, 2.0)
         
         ax.set_xticklabels(['', 'i=0', 'i=1', 'i=2', 'i=3', 'i=4', 'i=5'])
         ax.set_ylabel('line ratio')
         ax.set_xlabel('J = i + 1/ J = 1-0')
-        pylab.yscale('log')
-        pylab.show()
+        ax.set_yscale('log')
+        #pylab.show()
+        

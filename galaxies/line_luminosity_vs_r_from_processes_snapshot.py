@@ -33,7 +33,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
-          'snap_index': numpy.arange(0, 0 + 1, 1),
+          'snap_index': numpy.arange(4, 4 + 1, 1),
           'ranges'    : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                          'sph':{
                                'min_log_n_use'  : -3.0,      
@@ -52,7 +52,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                          '13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3', '13CO5-4', '13CO6-5',
                         ],
           'beam_radii': numpy.linspace(0.2, 8.0, 60),
-          'save' : True,
+          'save' : False,
         }
 
 #############################################################################################################
@@ -109,7 +109,7 @@ gas = gas[hist.inds_in]
 
 ## getting the luminosity maps for each line
 luminosity = {
-              'lines' : numpy.array(params['lines'],'S'),
+              'lines' : numpy.array(params['lines'], 'S'),
               'beam_r': params['beam_radii'],
               'lum_r' : {},
               'maps'  : {},
@@ -133,7 +133,7 @@ for i, this_attr in enumerate(attrs):
     line = this_attr.replace(params['em_unit']+'_','')
     
     luminosity['maps'][line] = this_map_luminosity
-
+    
     luminosity['lum_r'][line] = numpy.zeros(params['beam_radii'].size,'f8')
     
 print '\t\tfinished making the luminosity maps'

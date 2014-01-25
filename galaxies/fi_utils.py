@@ -2,7 +2,9 @@ import os, sys, time
 import subprocess, shlex
 
 import numpy
-from numpy import log10
+from numpy import log10, where, argmin, fabs
+
+from scipy.ndimage import zoom
 
 import pylab
 
@@ -15,9 +17,16 @@ from amuse.io import read_set_from_file, fi_io
 import meshUtils
 import lineDict
 import pdrDict
+import line_ratio_utils
+import constraining
 
+from mylib.constants import M_SUN_SI
 from mylib.utils.histogram import hist_nd
 from mylib.utils.interpolation import sectioned_4D_interpolator 
+import mylib.units
+from mylib.constants import M_SUN_SI
+from mylib.utils.ndmesh import ndmesh
+from mylib.utils.misc import scale
 
 def parse_old_runinfo_file(path):
     """parses the old runinfo file and returns its contetnts as a dict"""
@@ -101,18 +110,18 @@ def convert_units_to_pdr_units(gas, metallicity):
 
 def select_particles(gas, ranges):
     '''
-    returns the sph particle set  which have attributes withing the specied radges'''
+    returns the SPH particle set  which have attributes withing the specied radges'''
 
     #selecting particles within a spatial range and within the 
     #density and g0 range of the database
-    inds = numpy.where(
-                       (numpy.log10(gas.n)  >= ranges['sph']['min_log_n_use'])*
-                       (numpy.log10(gas.G0) >= ranges['sph']['min_log_G0_use'])*
-                       (numpy.log10(gas.gmech) >= ranges['sph']['min_log_gm_use'])*                   
-                       (gas.x >= ranges['box_size'][0].number)*(gas.x <= ranges['box_size'][1].number)*
-                       (gas.y >= ranges['box_size'][0].number)*(gas.y <= ranges['box_size'][1].number)*
-                       (gas.Av >= ranges['sph']['Av_use'][0])*(gas.Av <= ranges['sph']['Av_use'][1])                       
-                      )[0]
+    inds = where(
+                 (numpy.log10(gas.n)  >= ranges['sph']['min_log_n_use'])*
+                 (numpy.log10(gas.G0) >= ranges['sph']['min_log_G0_use'])*
+                 (numpy.log10(gas.gmech) >= ranges['sph']['min_log_gm_use'])*                   
+                 (gas.x >= ranges['box_size'][0].number)*(gas.x <= ranges['box_size'][1].number)*
+                 (gas.y >= ranges['box_size'][0].number)*(gas.y <= ranges['box_size'][1].number)*
+                 (gas.Av >= ranges['sph']['Av_use'][0])*(gas.Av <= ranges['sph']['Av_use'][1])                       
+                 )[0]
 
     #using a minimum Av according to the speciecied range
     #Av_mean = Av_mean.clip(params['ranges']['sph']['Av'][0], params['ranges']['sph']['Av'][1])
@@ -121,7 +130,7 @@ def select_particles(gas, ranges):
     return gas[inds]
     
 def compute_alpha(gas, arxvPDR):
-    """Computes the ratio of the mechanical heating of an sph particle to the surface heating of
+    """Computes the ratio of the mechanical heating of an SPH particle to the surface heating of
     a pure PDR with the same n,G0.
     """
     
@@ -142,7 +151,7 @@ def compute_alpha(gas, arxvPDR):
     gammaSurf_sph_from_pdr = 10.0**f_log_gamma_surf(dataNew)
     gas.alpha = gas.gmech/gammaSurf_sph_from_pdr
     
-    indsNan = numpy.where(numpy.isnan(gammaSurf_sph_from_pdr))[0]
+    indsNan = where(numpy.isnan(gammaSurf_sph_from_pdr))[0]
     if indsNan.size != 0:
         err_strng = 'interpolated variable Tkin_sph_from_pdf has %d nans values in it!!' % indsNan.size
         err_strng += '\n\t\tgMechMin = %e' % lgMechMin                 
@@ -158,16 +167,15 @@ def guess_metallicity(runDir):
 
 def gas_particle_info_from_interp_func(gas, map_key, arxvPDR, interp_funcs, take_exp=None):
     '''given a bunch of gas particles, returns the emission according to what is specied in the paramter
-    map
+     map_key
     '''
     
     #what points to use? with or witout gm
     if '_no_gm_' in map_key:
-        data_use = numpy.array([log10(gas.n), log10(gas.G0), numpy.ones(len(gas))*arxvPDR.grid_z.min(), gas.Av]).T        
+        data_use = numpy.array([log10(gas.n), log10(gas.G0), numpy.ones(len(gas))*arxvPDR.grid_z.min(), gas.Av]).T
     else:
         data_use = numpy.array([log10(gas.n), log10(gas.G0), log10(gas.gmech), gas.Av]).T
-
-    print 'interpolating emissions of %s of the sph particles for %d particles' % (map_key, data_use.shape[0])
+    print 'interpolating emissions of %s of the SPH particles for %d particles' % (map_key, data_use.shape[0])
 
     t0 = time.time()
     v_ret = interp_funcs[map_key](data_use)
@@ -179,7 +187,7 @@ def gas_particle_info_from_interp_func(gas, map_key, arxvPDR, interp_funcs, take
     print 'time interpolating for %s = %.3f seconds for %d points at %e points/sec' % (map_key, dt, data_use.shape[0], data_use.shape[0]/dt)
 
     #setting emissions of particles with nan interpolated values to zero             
-    indsNan = numpy.where(numpy.isnan(v_ret))[0]
+    indsNan = where(numpy.isnan(v_ret))[0]
     if indsNan.size != 0:
         v_ret[indsNan] = 1e-30
                 
@@ -187,7 +195,7 @@ def gas_particle_info_from_interp_func(gas, map_key, arxvPDR, interp_funcs, take
 
 
 def save_gas_particle_info_saperate_files(path_of_snapshot, gas, species):
-    '''save the data of the sph particles into a files. Only the attributes in the list are saved. The
+    '''save the data of the SPH particles into a files. Only the attributes in the list are saved. The
      file is written into a npz file.
     '''
 
@@ -251,7 +259,7 @@ def save_gas_particle_info_saperate_files(path_of_snapshot, gas, species):
 
 
 def save_gas_particle_info(filename, gas, attr_name_list):
-    '''save the data of the sph particles into a file. Only the attributes in the list are saved. The
+    '''save the data of the SPH particles into a file. Only the attributes in the list are saved. The
      file is written into a npz file.
     '''
     
@@ -299,7 +307,7 @@ def load_gas_particle_info_with_em(filename, species, load_pdr=None):
     
     names_all = []
     
-    #loading the states of the sph particles
+    #loading the states of the SPH particles
     gas, names = load_gas_particle_info(filename, load_pdr=load_pdr)
     
     names_all.append(names.tolist())     
@@ -437,10 +445,10 @@ def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
     
     #reading only the radex databases which are within the specified range in Av
     available_Avs_for_radex_dbs = numpy.sort(numpy.array(arxvPDR.radexDbs.keys(), dtype='f8'))
-    inds_read = numpy.where(
-                            (available_Avs_for_radex_dbs >= Av_range[0])*
-                            (available_Avs_for_radex_dbs <= Av_range[1])
-                           )[0]
+    inds_read = where(
+                      (available_Avs_for_radex_dbs >= Av_range[0])*
+                      (available_Avs_for_radex_dbs <= Av_range[1])
+                     )[0]
     Avs_read = available_Avs_for_radex_dbs[inds_read]
     
     if 'extra_Av_sec' in params['ranges']['interp']:
@@ -480,19 +488,19 @@ def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
         v_all_Av = v_all_Av.clip(0.0, 10000.0)
     
     #using the subset of points in the radex databse specified by params['ranges']['interp']
-    inds_keep = numpy.where( 
-                             (data_all_Av[:,0] >= params['ranges']['interp']['log_n'][0])* 
-                             (data_all_Av[:,0] <= params['ranges']['interp']['log_n'][1])*
+    inds_keep = where( 
+                      (data_all_Av[:,0] >= params['ranges']['interp']['log_n'][0])* 
+                      (data_all_Av[:,0] <= params['ranges']['interp']['log_n'][1])*
                              
-                             (data_all_Av[:,1] >= params['ranges']['interp']['log_G0'][0])*
-                             (data_all_Av[:,1] <= params['ranges']['interp']['log_G0'][1])*
+                      (data_all_Av[:,1] >= params['ranges']['interp']['log_G0'][0])*
+                      (data_all_Av[:,1] <= params['ranges']['interp']['log_G0'][1])*
                              
-                             (data_all_Av[:,2] >= params['ranges']['interp']['log_gmech'][0])* 
-                             (data_all_Av[:,2] <= params['ranges']['interp']['log_gmech'][1])*
+                      (data_all_Av[:,2] >= params['ranges']['interp']['log_gmech'][0])* 
+                      (data_all_Av[:,2] <= params['ranges']['interp']['log_gmech'][1])*
                              
-                             (data_all_Av[:,3] >= Av_min)*
-                             (data_all_Av[:,3] <= Av_max)
-                           )[0]
+                      (data_all_Av[:,3] >= Av_min)*
+                      (data_all_Av[:,3] <= Av_max)
+                     )[0]
     data_all_Av = data_all_Av[inds_keep,:]
     v_all_Av    = v_all_Av[inds_keep] 
     #
@@ -568,18 +576,18 @@ def snapshot_interpolated_data(snap, arxvPDR, em_interp_funcs, pdr_interp_funcs,
      set as attributes.
     '''
     
-    #snapshot index
+    ## snapshot index
     snapIndex = snap
     
     suffix = '%06d' % snapIndex
-    #path to fi snapshots
+    ## path to fi snapshots
     snapName = 'fiout.%s' % suffix 
     snap_filename = params['rundir'] + '/firun/' + snapName 
 
-    #extracting/guessing the metallicity from the name of the directory of the run
+    ## extracting/guessing the metallicity from the name of the directory of the run
     metallicity = guess_metallicity(params['rundir'])
     
-    #loading the sph simulation data
+    ## loading the SPH simulation data
     logger.debug('loading snapshot %s : ' % snap_filename)
     t0 = time.time()
     gas, dark, stars = read_set_from_file(snap_filename, format = fi_io.FiFileFormatProcessor)
@@ -587,12 +595,12 @@ def snapshot_interpolated_data(snap, arxvPDR, em_interp_funcs, pdr_interp_funcs,
     file_size_bytes = os.stat(snap_filename).st_size
     dt = time.time() - t0
     logger.debug('done reading fi snapshot : %s \n\t\t\t time reading = %.2e seconds @ %.2e MB/s' % (snap_filename, dt, (file_size_bytes/dt)/1024.0**2) )
-    logger.debug('number of sph particles in snapshot = %d' %  len(gas))
+    logger.debug('number of SPH particles in snapshot = %d' %  len(gas))
     
-    #getting a new particle set for the gas particles with the attributes we will be using later
-    #and converting the units to the same as those of the PDR models    
+    ## getting a new particle set for the gas particles with the attributes we will be using later
+    ## and converting the units to the same as those of the PDR models    
     gas = convert_units_to_pdr_units(gas, metallicity)
-    logger.debug('converted and computed stuff from sph data (in units compatible with the pdr models)')
+    logger.debug('converted and computed stuff from SPH data (in units compatible with the pdr models)')
     
     print 'quantity          min              max  '
     print 'n_gas         %e     %e   '  % (gas.n.min()     , gas.n.max())
@@ -600,38 +608,46 @@ def snapshot_interpolated_data(snap, arxvPDR, em_interp_funcs, pdr_interp_funcs,
     print 'g_mech        %e     %e   '  % (gas.gmech.min() , gas.gmech.max())
     print 'Av_gas        %e     %e   '  % (gas.Av.min()    , gas.Av.max())
     
-    #keeping gas particles within the specified ranges
+    ## keeping gas particles within the specified ranges
     gas = select_particles(gas, params['ranges'])
-    logger.debug('got the sph particles in the required ranges')
+    logger.debug('got the SPH particles in the required ranges')
 
     lgMechMin = arxvPDR.grid_z.min()
 
-    #setting the lower bound of the mechanical heating of the sph particles of the 
+    #setting the lower bound of the mechanical heating of the SPH particles of the 
     #minimum of the pdr database which is almost negligable (since some of the 
-    #sph particles have a zero gmech, their log would be -inf, so we clip it to the
+    #SPH particles have a zero gmech, their log would be -inf, so we clip it to the
     #mininmum of the pdr database
     gas.gmech = numpy.clip(gas.gmech, 10.0**lgMechMin, numpy.Infinity)
     #########################done setting up the snapshot data######################    
     
-    #computing alpha for each sph particle (amount of gm wrt surface heating for the PDR model)
+    #computing alpha for each SPH particle (amount of gm wrt surface heating for the PDR model)
     #and selecting particles which have alpha < 1.0
     compute_alpha(gas, arxvPDR)
-    logger.debug('computed the alpha for the sph particles')
-    inds = numpy.where( gas.alpha < 1.0 )
+    logger.debug('computed the alpha for the SPH particles')
+    inds = where( gas.alpha < 1.0 )
     gas = gas[inds]
      
-    #setting the maximum Av of the sph particles to a predifined value (usually 
+    #setting the maximum Av of the SPH particles to a predifined value (usually 
     #the emissions do not increase after some Av bec of the optical depth of the lines)
     gas.Av = numpy.clip(gas.Av, params['ranges']['sph']['Av_clip'][0], params['ranges']['sph']['Av_clip'][1])
     
     #computing the emissions of the SPH particles from the PDR interpolation functions
-    print 'getting the emissions of each sph particle'    
+    print 'getting the emissions of each SPH particle'    
 
-    em_sph = {}        
-    for em_key in em_keys: em_sph[em_key]     = gas_particle_info_from_interp_func(gas, em_key,  arxvPDR, em_interp_funcs, take_exp=params['maps'][em_key]['log10'])
+    em_sph = {}
+    for em_key in em_keys: em_sph[em_key] = gas_particle_info_from_interp_func(gas, 
+                                                                               em_key,  
+                                                                               arxvPDR, 
+                                                                               em_interp_funcs, 
+                                                                               take_exp=params['maps'][em_key]['log10'])
 
     pdr_sph = {}        
-    for pdr_key in pdr_keys: pdr_sph[pdr_key] = gas_particle_info_from_interp_func(gas, pdr_key, arxvPDR, pdr_interp_funcs, take_exp=params['maps'][pdr_key]['log10'])
+    for pdr_key in pdr_keys: pdr_sph[pdr_key] = gas_particle_info_from_interp_func(gas, 
+                                                                                   pdr_key, 
+                                                                                   arxvPDR, 
+                                                                                   pdr_interp_funcs, 
+                                                                                   take_exp=params['maps'][pdr_key]['log10'])
     
     return em_sph, pdr_sph, gas
 
@@ -649,7 +665,7 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
     ax.set_xlim([bs_min, bs_max])
     ax.set_ylim([bs_min, bs_max])
     
-    inds_nan = numpy.where(numpy.isfinite(map_data) == False)
+    inds_nan = where(numpy.isfinite(map_data) == False)
     map_data[inds_nan] = map_info['v_rng'][0]
     
     im = ax.imshow(map_data,  #i think the transopse of map_data should be taken here
@@ -708,18 +724,19 @@ def plot_cube_sections(data_cube, params):
     nx = params['cube']['plot']['n_per_row']
     ny = params['cube']['plot']['n_vsec_plt'] / nx
     
-    fig, axs = pylab.subplots(ny, nx, sharex=True, sharey=True, figsize=(12.0*numpy.float(nx)/numpy.float(ny), 12), 
+    fig_height = 2.5*ny
+    fig_width = 7 #fig_height*numpy.float(nx)/numpy.float(ny)
+    fig, axs = pylab.subplots(ny, nx, sharex=True, sharey=True, figsize=(fig_width, fig_height), 
                               subplot_kw = {'xlim':params['cube']['xy_rng'][0:2],
                                             'ylim':params['cube']['xy_rng'][2:4],
-                                            'aspect':'equal',
-                                            'adjustable':'datalim',
+                                            'aspect':'auto',
+                                            'adjustable': 'datalim',
                                             })
-                                  
+    axs = axs.reshape(ny, nx)
     for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
     for ax in axs[-1,:]: ax.set_xlabel('x(kpc)')
         
-    pylab.subplots_adjust(left=0.05, bottom=0.05, right=0.9, top=0.9, wspace=0.15, hspace=0.15)
-    
+    pylab.subplots_adjust(left=0.10, bottom=0.20, right=0.99, top=0.7, wspace=0.05, hspace=0.15)
     
     #plotting the maps for all the velocity channels
     for n in numpy.arange(params['cube']['plot']['n_vsec_plt']):
@@ -728,11 +745,11 @@ def plot_cube_sections(data_cube, params):
         v_from = n*v_sec_wdith + v_min
         v_to   = v_from + v_sec_wdith
         #inds in the z direction of the cube (along the spectrum for this channel)
-        v_inds = numpy.where( (v > v_from) * (v <= v_to ) )  
+        v_inds = where( (v > v_from) * (v <= v_to ) )  
     
         #computing the map for this channel by adding all the spectra for this channel
         this_map = data_cube[:,:, v_inds[0]]
-        this_map = numpy.log10(this_map.sum(axis=2)) 
+        this_map = numpy.log10( this_map.mean(axis=2) ) 
         
         #plotting the map
         j_plt = n / nx
@@ -755,9 +772,9 @@ def plot_cube_sections(data_cube, params):
         axs[j_plt, i_plt].text(-7, 7, '%.0f' % ((n + 0.5)*v_sec_wdith + v_min) + 'km/s', color='w')
     #
 
-    cbar_ax = fig.add_axes([0.2, 0.95, 0.6, 0.01]) 
-    cbar_ax.tick_params(axis='both', which='major', labelsize=30)
-    cbar_ax.set_title(r'$\log_{10}$ [ T$_B$ / K.km.s$^{-1}$]', size=25)
+    cbar_ax = fig.add_axes([0.2, 0.85, 0.6, 0.03]) 
+    cbar_ax.tick_params(axis='both', which='major', labelsize=12)
+    cbar_ax.set_title(r'$\log_{10}$ [ <T$_B$> / K ]', size=12)
     
     pylab.colorbar(im, ax=ax, cax=cbar_ax, orientation='horizontal', 
                    ticks=numpy.linspace(params['cube']['plot']['rng'][0], params['cube']['plot']['rng'][1], 5))
@@ -854,3 +871,501 @@ def get_snapshot_time(snapIndex, params):
     snap_time = (float(runinfo['dtime'])*timeUnit.number) * (float(runinfo['noutbod']) * snapIndex)
 
     return snap_time
+
+class galaxy_gas_mass_estimator(object):
+    
+    def __init__(self, luminosity_maps=None, gas=None, params=None, hist=None, 
+                 line_ratios=None, arxvPDR=None, **kwargs):
+    
+        self.luminosity_maps = luminosity_maps #: the dict containing the luminosity maps
+        self.gas = gas #: the object of gas particles
+        self.params = params #: the parameters used in controlling everything
+        self.hist = hist
+        self.line_ratios = line_ratios
+        self.arxvPDR = arxvPDR
+        
+        #####################
+        self.hist_obs = None
+        self.H2_mass_mesh = None
+        self.H_mass_mesh = None
+        self.H2_mass_no_gmech_mesh = None
+        self.H_mass_no_gmech_mesh = None    
+        self.fig = None        
+        self.axs = None
+        self.contraining = None
+        
+    def get_model_emission_from_involved_line_ratios(self):
+        '''loading the emission info from all the models for all Avs (also we check for 
+        the consistenscy of the number of models...i.e same number of models 
+        for all the lines)
+        '''
+        
+        ## make line ratios from the mock luminosities 
+        obs_mock_ratios_template = line_ratio_utils.ratios()
+        
+        for line_ratio in self.line_ratios:
+        
+            line1, line2 = line_ratio_utils.lines_involved(line_ratio)
+            
+            v1, v2 = 1, 1
+            
+            obs_mock_ratios_template.make_ratios(
+                                                 {
+                                                   line1:{'fluxKkms': 1, 'err': 1.0}, 
+                                                   line2:{'fluxKkms': 1, 'err': 1.0},
+                                                 },
+                                                 ratios = [line_ratio],
+                                                 em_unit = 'fluxKkms'
+                                                )
+        
+        ## determin the species and the line codes in the line ratios
+        obs_mock_ratios_template.species_and_codes()
+        
+        ## getting the emission of the lines involved in the ratios from the PDR archive
+        print 'getting the emission from the PDR models...'
+        model_em = {}
+        for i, line in enumerate(obs_mock_ratios_template.codes):
+            v, grid_coords = self.arxvPDR.get_emission_from_all_radex_dbs_for_Av_range(
+                                                                                       line = line,
+                                                                                       Avs = 'all', 
+                                                                                       quantity = 'fluxKkms',
+                                                                                       keep_nans = True,
+                                                                                      )
+            model_em[line] = 10.0**v
+            print '\t%-12s %d' % (line, v.size), grid_coords.shape
+        
+            ## some checks of the sizes
+            if v.size != grid_coords.shape[0]:
+                raise ValueError('number of elements in the emission values is different from the number of modesl.')
+            
+            if i == 0:
+                nModels = v.size
+            else:
+                if nModels != v.size:
+                    raise ValueError('the number of elements for this line differes at least from that of one of the other lines')
+        
+        self.mode_em = model_em
+        self.grid_coords = grid_coords
+        
+    def setup_observed_grid(self):
+        '''sets up the observed mesh. A lower resolution mesh than the synthetica map'''
+        
+        bs_min, bs_max = self.params['ranges']['box_size'].number
+
+        fig = pylab.figure(0, (8,8))
+        
+        axs = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+        
+        self.fig, self.axs = fig, axs
+        
+        pylab.imshow(log10(self.luminosity_maps['maps']['CO1-0']), 
+                     extent=[bs_min, bs_max, bs_min, bs_max], 
+                     origin='lower')
+
+        #pylab.plot(self.gas.x[::100], self.gas.y[::100], '.', markersize=1)
+        
+        #pylab.plot(self.hist.f.spos[0], self.hist.f.spos[1], 'w+', markersize=10)
+
+        hist_obs = hist_nd(numpy.vstack((self.gas.x, self.gas.y)), 
+                           mn = bs_min, mx = bs_max, 
+                           nbins = self.params['obs_res'], 
+                           reverse_indicies = True, loc = True)
+        hist_obs.info()
+        
+        obs_mesh = hist_obs.f 
+        
+        pylab.plot(obs_mesh.spos[0], obs_mesh.spos[1], 'k+', markersize=100, linewidth=20)
+
+        fig.canvas.mpl_connect('button_press_event', self.inspect_estimation)
+            
+        pylab.show()
+
+        self.hist_obs = hist_obs
+        self.H2_mass_mesh = numpy.zeros(hist_obs.f.shape, 'f8')
+        self.H_mass_mesh = numpy.zeros(hist_obs.f.shape, 'f8')
+        self.H2_mass_no_gmech_mesh = numpy.zeros(hist_obs.f.shape, 'f8')
+        self.H_mass_no_gmech_mesh = numpy.zeros(hist_obs.f.shape, 'f8')
+ 
+    def inspect_estimation(self, event):
+
+        bs_min, bs_max = self.params['ranges']['box_size'].number
+        obs_res = self.params['obs_res']
+        
+        # get the x and y coords, flip y from top to bottom
+        xd, yd = event.xdata, event.ydata
+        
+        if event.button == 1:
+    
+            if self.axs.contains(event)[0]:
+                
+                print 'cursor x,y = ', xd, yd
+ 
+                ## plotting the centroid of the pixel clicked in the coarse grid 
+                x_ind = numpy.floor(scale(xd, 0.0, obs_res, bs_min, bs_max))
+                y_ind = numpy.floor(scale(yd, 0.0, obs_res, bs_min, bs_max))
+                
+                self.estimate_mass_in_pixel(x_ind, y_ind, plot_fits=True)
+                
+    def estimate_mass_in_all_pixels(self):
+        
+        res_x, res_y = self.hist_obs.f.shape
+        
+        for i in numpy.arange(res_x):
+            for j in numpy.arange(res_y):
+                
+                masses_in_pixel = self.estimate_mass_in_pixel(x_ind = i, y_ind = j)
+                #mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun
+                
+                self.H_mass_mesh[i,j] = masses_in_pixel[0]
+                self.H2_mass_mesh[i,j] = masses_in_pixel[1]
+                self.H_mass_no_gmech_mesh[i,j] = masses_in_pixel[2]
+                self.H2_mass_no_gmech_mesh[i,j] = masses_in_pixel[3]
+                
+    
+    def estimate_mass_in_pixel(self, x_ind=None, y_ind=None, plot_fits=False):
+       
+        hist = self.hist
+        hist_obs = self.hist_obs
+        obs_mesh = self.hist_obs.f
+        line_ratios = self.line_ratios
+        luminosity = self.luminosity_maps
+        params = self.params
+        model_em = self.mode_em 
+        grid_coords = self.grid_coords 
+        arxvPDR = self.arxvPDR 
+        m_gas = self.gas.mass
+        ######################################################
+        
+        area_obs_pixel = numpy.product(obs_mesh.dl)
+        
+        if plot_fits == True:
+            pylab.plot(obs_mesh.cntrd[0][x_ind, y_ind], 
+                       obs_mesh.cntrd[1][x_ind, y_ind], 
+                       'r+', markersize=10)
+
+        ## plotting the centroids of the pixels of the pixel of the map inside the clicked pixel
+        inds = where(
+                     (hist.f.cntrd[0] >= obs_mesh.spos[0][x_ind, y_ind])*\
+                     (hist.f.cntrd[0] <= obs_mesh.epos[0][x_ind, y_ind])*\
+                     (hist.f.cntrd[1] >= obs_mesh.spos[1][x_ind, y_ind])*\
+                     (hist.f.cntrd[1] <= obs_mesh.epos[1][x_ind, y_ind])
+                    )
+         
+        if plot_fits == True:
+            pylab.plot(hist.f.cntrd[0][inds], hist.f.cntrd[1][inds], 'c+')
+        
+        inds_gas = hist_obs.get_indicies([x_ind, y_ind])
+
+        if plot_fits == True:
+            
+            pylab.plot(self.gas.x[inds_gas], self.gas.y[inds_gas], 'o')
+        
+            pylab.draw()
+        
+        ## make line ratios from the mock luminosities 
+        obs_mock_ratios = line_ratio_utils.ratios()                
+
+        for line_ratio in line_ratios:
+        
+            line1, line2 = line_ratio_utils.lines_involved(line_ratio)
+            
+            print line1, line2
+
+            lum1, lum2 = luminosity['maps'][line1][inds].sum(), luminosity['maps'][line2][inds].sum() 
+
+            int1, int2 = lum1/area_obs_pixel, lum2/area_obs_pixel
+            
+            print '--------------'
+            
+            obs_mock_ratios.make_ratios(
+                                        {
+                                          line1:{'fluxKkms': int1, 'err': params['error_bars']*int1}, 
+                                          line2:{'fluxKkms': int2, 'err': params['error_bars']*int2}
+                                        },
+                                        ratios = [line_ratio],
+                                        em_unit = 'fluxKkms',
+                                        lum = {line1: lum1, line2: lum2}
+                                       )
+            '''
+            print line_ratio, obs_mock_ratios[line_ratio]
+            
+            obs_mock_ratios.species_and_codes()
+            '''
+        #
+        
+        ## fitting
+        f = constraining.Xi2_line_ratios_single_component(obs_data = obs_mock_ratios, 
+                                                          model_data = model_em, 
+                                                          model_parms = grid_coords,
+                                                          line_ratios = line_ratios
+                                                          )
+
+        f.compute_model_line_ratios()
+
+        f.compute_Xi2()
+        
+        f.print_minima()
+
+        if plot_fits == True:
+            
+            fig = pylab.figure(figsize=(16,8))
+            ax1 = fig.add_axes([0.1, 0.5, 0.15, 0.4])
+            ax2 = fig.add_axes([0.3, 0.5, 0.15, 0.4])
+            
+            ax3 = fig.add_axes([0.1, 0.1, 0.15, 0.3])
+            ax4 = fig.add_axes([0.3, 0.1, 0.15, 0.3])
+            ax5 = fig.add_axes([0.5, 0.1, 0.15, 0.3])
+            ax6 = fig.add_axes([0.7, 0.1, 0.15, 0.3])
+
+            f.plot_results(fig = fig, ax = ax1)
+            print '-------------------------'
+            f.plot_results(fig = fig, ax = ax2, no_gmech=True)
+            
+            #plotting the emission distribution in the pixel 
+            #g.em_fluxKkms_CO1-0, pdr_NH2, pdr_NH, pdr_NCO, pdr_N13CO
+            gas_in_pixel = self.gas[inds_gas]
+            
+            # getting the emission distriubtion as a function of gas density
+            #----------------------------------------------------------------------------------------
+            log_n_gas = log10(gas_in_pixel.n).reshape((1, len(gas_in_pixel)))
+            n_dist = hist_nd(log_n_gas, nbins=50.0, mn=-3.0, mx=4.0, loc=True, reverse_indicies=True)
+            
+            # the gas particles within the ranges of the distribution histogram 
+            gas_in_pixel_in_hist = gas_in_pixel[n_dist.inds_in]
+            
+            #getting the emission distribution (a selection of lines)
+            dist_0 = numpy.zeros(n_dist.totalBins, 'f8') 
+            
+            for i in numpy.arange(n_dist.totalBins):
+                
+                inds_in_bin = n_dist.get_indicies(i)
+                
+                if inds_in_bin.size != 0:
+                    
+                    gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
+ 
+                    dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').sum()
+                    #dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_13CO1-0').sum()
+                #
+            #
+            
+            x, y = n_dist.f.cntrd, n_dist.f
+            
+            ## ploting the locations in density where the cumilitive particle 
+            ## mass (number) distribution sum is 10%, 50%, 90%
+            ## also getting the CDF for the emission
+            ax3.plot(zoom(x, 20, order=2), zoom(y / numpy.max(y), 20, order=3), 'b')
+            ax3.plot(zoom(n_dist.f.cntrd, 20, order=3), 
+                     zoom(dist_0 / numpy.max(dist_0), 20, order=3), 'r')
+
+            # CDF of the mass 
+            f_CDF_n = (y / y.sum()).cumsum()
+            n_i = numpy.linspace(-3.0, 4.0, 1000.0)[::-1]
+            f_CDF_n_i = numpy.interp(n_i, x, f_CDF_n)
+
+            # CDF of the emission
+            f_CDF_em = ((dist_0 / dist_0.sum())[::-1]).cumsum()[::-1]
+            f_CDF_em_i = numpy.interp(n_i, x, f_CDF_em)
+            
+            # plotting the 10, 50, 90% indicators for the SPH mass CDF
+            ind90percent = argmin(fabs(f_CDF_n_i - 0.9))
+            ax3.plot([n_i[ind90percent], n_i[ind90percent]], [0, 2.5], 'b--')
+            ax3.text(n_i[ind90percent] - 1.1, 2.35, '90%', color = 'b')
+            ax3.text(n_i[ind90percent] - 1.1, 2.35 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind90percent]*100) + '%', 
+                     color = 'r')
+
+            ind50percent = argmin(fabs(f_CDF_n_i - 0.5))            
+            ax3.plot([n_i[ind50percent], n_i[ind50percent]], [0, 2.2], 'b--', linewidth=1)
+            ax3.text(n_i[ind50percent] - 1.1, 2.05, '50%' , color = 'b')
+            ax3.text(n_i[ind50percent] - 1.1, 2.05 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind50percent]*100)  + '%', 
+                     color = 'r')
+            
+            ind10percent = argmin(fabs(f_CDF_n_i - 0.1))
+            ax3.plot([n_i[ind10percent], n_i[ind10percent]], [0, 1.85], 'b--', linewidth=1)
+            ax3.text(n_i[ind10percent] - 1.1, 1.7 , '10%', color = 'b')
+            ax3.text(n_i[ind10percent] - 1.1, 1.7 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind10percent]*100) + '%', 
+                     color = 'r')
+
+            
+            # plotting the 10, 50, 90% indicators for the emission CDF
+            ind10percent = argmin(fabs(f_CDF_em_i - 0.1))
+            ax3.plot([n_i[ind10percent], n_i[ind10percent]], [0, 1.55], 'r--', linewidth=1)
+            ax3.text(n_i[ind10percent], 1.4, '10%', color = 'r')
+            ax3.text(n_i[ind10percent], 1.25, '%d' % (100.0 - f_CDF_n_i[ind10percent]*100) + '%', 
+                     color = 'b')
+
+
+            ind50percent = argmin(fabs(f_CDF_em_i - 0.5))
+            ax3.plot([n_i[ind50percent], n_i[ind50percent]], [0, 1.25], 'r--', linewidth=1)
+            ax3.text(n_i[ind50percent], 1.1, '50%', color = 'r')
+            ax3.text(n_i[ind50percent], 0.95, '%d' % (100.0 - f_CDF_n_i[ind50percent]*100) + '%', 
+                     color = 'b')
+            
+            ind90percent = argmin(fabs(f_CDF_em_i - 0.90))
+            ax3.plot([n_i[ind90percent], n_i[ind90percent]], [0, 0.95], 'r--', linewidth=1)
+            ax3.text(n_i[ind90percent], 0.8, '90%', color = 'r')
+            ax3.text(n_i[ind90percent], 0.65, '%d' % (100.0 - f_CDF_n_i[ind90percent]*100) + '%', 
+                     color = 'b')
+
+            ax3.set_ylim([0, 2.5])
+            ax3.set_xlabel(r'$\log_{10}$[n$_{\rm gas}$]')
+            ax3.set_ylabel(r'$f$')
+            
+            
+            # getting the emission distriubtion as a function of G0
+            #----------------------------------------------------------------------------------------
+            log_G0_gas = log10(gas_in_pixel.G0).reshape((1, len(gas_in_pixel)))
+
+            G0_dist = hist_nd(log_G0_gas, nbins=50.0, mn=-3.0, mx=4.0, loc=True, reverse_indicies=True)
+            
+            # the gas particles within the ranges of the distribution histogram 
+            gas_in_pixel_in_hist = gas_in_pixel[G0_dist.inds_in]
+            
+            #getting the emission distribution (a selection of lines)
+            dist_0 = numpy.zeros(G0_dist.totalBins, 'f8') 
+            
+            for i in numpy.arange(G0_dist.totalBins):
+                
+                inds_in_bin = G0_dist.get_indicies(i) 
+                
+                if inds_in_bin.size != 0:
+                    
+                    gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
+ 
+                    dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').mean()
+                #
+            #
+            
+            ax4.plot(G0_dist.f.cntrd, G0_dist.f / numpy.max(G0_dist.f))
+
+            ax4.plot(G0_dist.f.cntrd, dist_0 / dist_0.sum(), 'k--')
+                         
+            ax4.set_ylim([0, 1.4])
+            ax4.set_xlabel('log G0 gas')
+            ax4.set_ylabel('f')
+            
+            
+            # getting the emission distriubtion as a function of gmech
+            #----------------------------------------------------------------------------------------
+            log_gmech_gas = log10(gas_in_pixel.gmech).reshape((1, len(gas_in_pixel)))
+
+            gmech_dist = hist_nd(log_gmech_gas, nbins=50.0, mn=-30.0, mx=-20.0, loc=True, reverse_indicies=True)
+            
+            # the gas particles within the ranges of the distribution histogram 
+            gas_in_pixel_in_hist = gas_in_pixel[gmech_dist.inds_in]
+            
+            #getting the emission distribution (a selection of lines)
+            dist_0 = numpy.zeros(gmech_dist.totalBins, 'f8') 
+            
+            for i in numpy.arange(gmech_dist.totalBins):
+                
+                inds_in_bin = gmech_dist.get_indicies(i) 
+                
+                if inds_in_bin.size != 0:
+                    
+                    gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
+ 
+                    dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').mean()
+                #
+            #
+            
+            ax5.plot(gmech_dist.f.cntrd, gmech_dist.f / numpy.max(gmech_dist.f))
+
+            ax5.plot(gmech_dist.f.cntrd, dist_0 / dist_0.sum(), 'k--')
+                         
+            ax5.set_ylim([0, 1.4])
+            ax5.set_xlabel('log gmech gas')
+            ax5.set_ylabel('f')
+
+            # getting the emission distriubtion as a function of gmech
+            #----------------------------------------------------------------------------------------
+            Av_gas = (gas_in_pixel.Av).reshape((1, len(gas_in_pixel)))
+
+            Av_dist = hist_nd(Av_gas, nbins=50.0, mn=0.0, mx=30.0, loc=True, reverse_indicies=True)
+            
+            # the gas particles within the ranges of the distribution histogram 
+            gas_in_pixel_in_hist = gas_in_pixel[Av_dist.inds_in]
+            
+            #getting the emission distribution (a selection of lines)
+            dist_0 = numpy.zeros(Av_dist.totalBins, 'f8') 
+            
+            for i in numpy.arange(Av_dist.totalBins):
+                
+                inds_in_bin = Av_dist.get_indicies(i) 
+                
+                if inds_in_bin.size != 0:
+                    
+                    gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
+ 
+                    dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').mean()
+                #
+            #
+            
+            ax6.plot(Av_dist.f.cntrd, Av_dist.f / numpy.max(Av_dist.f))
+
+            ax6.plot(Av_dist.f.cntrd, dist_0 / dist_0.sum(), 'k--')
+                         
+            ax6.set_ylim([0, 1.4])
+            ax6.set_xlabel('Av gas')
+            ax6.set_ylabel('f')            
+        ##  computing the masses in the pixel
+        
+        ## estimating the mass of H and H2 from the fitted PDR model (with and without gmech)
+        PDR_parms, Xi2_min, PDR_parms_no_gmech, Xi2_min_no_gmech = f.get_model_parms_for_min_Xi2()
+        
+        area_kpc2 = area_obs_pixel
+        area_cm2 = area_kpc2 * 1000.0**2 * mylib.units.PC2CM**2.0
+        
+        ## getting the column densities of H and H2
+        log10_n, log10_G0, log10_gmech, Av = PDR_parms
+
+        mesh_index = arxvPDR.get_mesh_index(x = log10_n, y = log10_G0, z = log10_gmech)
+        
+        arxvPDR.mshTmp.setData(arxvPDR.meshes[mesh_index])
+        
+        NH, NH2 = arxvPDR.mshTmp.getColumnDensity(specsStrs = ['H', 'H2'], maxAv = Av)
+        
+        mH_1e9_m_sun = (NH * area_cm2 * 1.67e-27) / (1e9 * M_SUN_SI)
+        mH2_1e9_m_sun = (NH2 * area_cm2 * (2.0*1.67e-27)) / (1e9 * M_SUN_SI)  
+                             
+        ## getting the column densities of H and H2 (when no gmech is assumed)
+        log10_n_no_gmech, log10_G0_no_gmech, log10_gmech_no_gmech, Av_no_gmech = PDR_parms_no_gmech
+        
+        mesh_index_no_gmech = arxvPDR.get_mesh_index(x = log10_n_no_gmech,
+                                                     y = log10_G0_no_gmech,
+                                                     z = log10_gmech_no_gmech)
+        
+        arxvPDR.mshTmp.setData(arxvPDR.meshes[mesh_index_no_gmech])
+        
+        NH_no_gmech, NH2_no_gmech = arxvPDR.mshTmp.getColumnDensity(specsStrs = ['H', 'H2'], maxAv = Av_no_gmech)
+        
+        mH_no_gmech_1e9_m_sun = (NH_no_gmech * area_cm2 * 1.67e-27) / (1e9 * M_SUN_SI)
+        mH2_no_gmech_1e9_m_sun = (NH2_no_gmech * area_cm2 * (2.0*1.67e-27)) / (1e9 * M_SUN_SI)  
+
+        print 'm(H)             = %.5f  m(H2) = %.5f m(H + H2) = %.5f' % (mH_1e9_m_sun, mH2_1e9_m_sun, mH_1e9_m_sun + mH2_1e9_m_sun)
+        print 'm(H)  (no gmech) = %.5f  m(H2) = %.5f m(H + H2) = %.5f' % (mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun, mH_no_gmech_1e9_m_sun + mH2_no_gmech_1e9_m_sun)
+        print '                                      m_gas_sim       = %.5f' % ((m_gas[inds_gas].sum()/100.0)  / (1e9 * M_SUN_SI))
+
+        if plot_fits == True:
+            strng = '     with gmech : '
+            strng += r'$\log_{10}$[n$_{\rm gas}]$ = %-+.2f' % log10_n + ' '
+            strng += r'$\log_{10}$[G$_0]$ = %-+.2f' % log10_G0 + ' '
+            strng += r'$\log_{10}$[$\Gamma_{\rm mech}$] = %-+.2f' % log10_gmech + ' '
+            strng += r'$A_V$ = %-+.2f' % Av + '\n'
+
+            strng += 'without gmech : '
+            strng += r'$\log_{10}$[n$_{\rm gas}]$ = %-+.2f' % log10_n_no_gmech + ' '
+            strng += r'$\log_{10}$[G$_0]$ = %-+.2f' % log10_G0_no_gmech + ' '
+            strng += r'$\log_{10}$[$\Gamma_{\rm mech}$] = %-+.2f' % log10_gmech_no_gmech + ' '
+            strng += r'$A_V$ = %-+.2f' % Av_no_gmech + '\n'
+             
+            ax1.set_title('with gmech')
+            ax2.set_title('no gmech')
+            
+            pylab.figtext(0.5, 0.8, strng)
+            
+        
+        f.get_model_em_for_min_Xi2()
+        self.contraining = f
+        
+        return mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun  

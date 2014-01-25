@@ -134,9 +134,9 @@ def generate_maps(snap_index, params):
     
     #plotting NH2 vs CO luminosity
     ax.plot(LCO[::10], NH2[::10], '.', markersize=2)
-    ax.set_xlabel(r'$\log_{10}$ [<L$_{{\rm CO}(1-0)}$> / $K.km.s^{-1}$]', size=10)
+    ax.set_xlabel(r'$\log_{10}$ [<W$_{{\rm CO}(1-0)}$> / K km s$^{-1}$]', size=10)
     ax.set_ylabel(r'$\log_{10}$ [<N(${\rm H}_2)$> / cm$^{-2}$]'   , size=10)
-    ax.text(-2, 20,r'N(${\rm H}_2)$ = $10^{20}$ L$_{{\rm CO}(1-0)}$', size=10, rotation=45.0)
+    ax.text(-2.5, 20,r'N(${\rm H}_2)$ = $10^{20}$ W$({{\rm CO}(1-0)})$', size=10, rotation=42.0)
 
     ##
     print 'getting the distribution as a function of L(CO)'
@@ -152,9 +152,11 @@ def generate_maps(snap_index, params):
             
             mean_NH2_fact[i] = numpy.log10(numpy.mean(10.0**NH2[inds_in_bin])) 
             
-    print 'done getting the distributuion as a function of L(CO)'
+    print 'done getting the distributuion as a function of W(CO)'
 
     ax.plot(hist_LCO.f.cntrd.flatten(), mean_NH2_fact, 'g--', linewidth=2.5)
+    #ax.plot([1, 1], [16, 25], 'k-.')
+    ax.plot([0, 0], [16, 25], 'k-.')
 
     ax.set_ylim(16, 25)    
     ax.set_xlim(-5,3)

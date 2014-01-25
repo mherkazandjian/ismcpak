@@ -20,6 +20,14 @@ def reverse_ratio_str(ratio_str):
     code1, code2 = codes_from_ratio(ratio_str)
     return '%s/%s' % (code2, code1)
 
+def line_ratio_latex(ratio_str):
+    
+    code1, code2 = codes_from_ratio(ratio_str) 
+
+    latex_ratio_str = r'%s/%s' % (lineDict.lines[code1]['latex'], lineDict.lines[code2]['latex']) 
+    
+    return latex_ratio_str  
+
 class ratios(collections.OrderedDict):
     '''A class (based on a dict object) which provides utilities and storage for 
     line ratio observatios
@@ -33,6 +41,10 @@ class ratios(collections.OrderedDict):
         super(ratios, self).__init__()
         
         self.codes = None #: all the unique codes of the lines in the dict 
+        self.lines = {'luminosity' : {}, # the luminosity of the lines
+                      'intensity'  : {}, # the intensity  of the lines
+                      } #: a dict holding the emission of the lines corresponding to self.codes
+        
         self.specStrs = None #: all the unique species string in the dict
 
     def add_ratio(self, rStr, v=None, e=None, mn=None, mx=None):
@@ -56,7 +68,7 @@ class ratios(collections.OrderedDict):
         
         self[rStr] = r 
     
-    def make_ratios(self, lines, ratios, em_unit=None):
+    def make_ratios(self, lines, ratios, em_unit=None, lum=None):
         '''takes a dict of lines ('CO1-0', 'HCN4-3'...ect) and ratio string ('HCN4-3/CO1-0',...)
         and adds the ratios as dict keys and computes the errors using propagation of error
         for ratios (assuming the errors in line[SPEC_STR]['err'] exist)
@@ -68,6 +80,7 @@ class ratios(collections.OrderedDict):
             unit = 'fluxKkms'
             
         for ratio in ratios:
+            
             code1, code2 = codes_from_ratio(ratio)
             
             v1, e1 = lines[code1][unit], lines[code1]['err']
@@ -83,7 +96,13 @@ class ratios(collections.OrderedDict):
             
             self[ratio]['v'] = v  
             self[ratio]['e'] = e 
-            
+        
+            self.lines['intensity'][code1]  = lines[code1]
+            self.lines['intensity'][code2]  = lines[code2]
+            if lum != None:
+                self.lines['luminosity'][code1] = lum[code1]
+                self.lines['luminosity'][code2] = lum[code2]
+        
     def species_and_codes(self):
         '''returns the species and the line codes from a list of line ration passed as strings
         

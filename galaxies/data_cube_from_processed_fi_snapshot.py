@@ -47,62 +47,62 @@ params = {
           'species': ['CO'],
           'pdr_sph': None,
         
-          #cube info          
+          #cube info
           'cube'   : {
                       'attr'     : 'em_fluxKkms_CO1-0'   , #the emission line to be made into a cube
                       'func'     : numpy.average         , #function to be used to compute the total emission in the cell
                       'weights'  : 'em_fluxKkms_CO1-0'   , 
                       'xy_rng'   : [-8.0, 8.0, -8.0, 8.0], #spatial bounds of the projected image (in kpc)
                       'im_res'   : 100,                    #spatial resolution of the cube in each dimension over the domain
-                      'spec_rng' : [-100.0, 100.0],        #the range in the velocities in km/s
+                      'spec_rng' : [-50.0, 50.0],        #the range in the velocities in km/s
                       'spec_res' : 200,                   #number of velocity bins of the spectra to be constructed for each pixel
                       
                       'plot'     : {
-                                    'as_log10'   : True,         #plot the map values in log10 scale
-                                    'rng'        : [-8.0, 4.0], #range of value of the map
-                                    'title'      : r'$f(L_{CO(1-0} K.km.s-1))$',
+                                    'as_log10'   : True,        #plot the map values in log10 scale
+                                    'rng'        : [-3.0, 2.0], #range of value of the map
+                                    'title'      : r'$f(W_{CO(1-0} {\rm K km s}^{-1}))$',
                                     #####info about the v channel maps
-                                    'n_vsec_plt' : 20, #number of velocity channels maps
+                                    'n_vsec_plt' : 5, #number of velocity channels maps
                                     'n_per_row'  : 5,  #number of maps per row 
                                    }, 
                       'l_width_mc': 1.0,   # Micro - Turbulance line width in km/s
-                      'save_cube' : True, 
-                      'save_fits' : True, 
+                      'save_cube' : False, 
+                      'save_fits' : False, 
                       },
          }
 #############################################################################################################################
 
-#setting up the logger object
+## setting up the logger object
 logger = default_logger()
 
-#path to processed fi snapshot  
-snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % params['snap_index'] + '.states.npz'  
+## path to processed fi snapshot  
+snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % params['snap_index'] + '.states.npz'
 
-#getting the time of the snapshot
+## getting the time of the snapshot
 snap_time = fi_utils.get_snapshot_time(params['snap_index'], params)
 
-#loading the processed sph simulation data with the emissions 
-logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
+## loading the processed sph simulation data with the emissions
+logger.debug('loading proccessed snapshot %s : ' % snap_filename)
 gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], load_pdr=params['pdr_sph'])    
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
-#plotting the particles in the processed snapshot
+## plotting the particles in the processed snapshot
 fig_part = pylab.figure(figsize=(8,8))
 ax = fig_part.add_axes([0.2, 0.2, 0.6, 0.6])
 pylab.plot(gas.x[::100], gas.y[::100], '.', markersize=1)
 
-#keeping gas particles within the specified ranges
+## keeping gas particles within the specified ranges
 gas_in_rng = fi_utils.select_particles(gas, params['ranges'])
 logger.debug('got the sph particles in the required ranges')
 logger.debug('number of gas particles in the specified ranages = %d' %  len(gas))
 
-#plotting the particles in the ranges specified by params['ranges']
+## plotting the particles in the ranges specified by params['ranges']
 pylab.plot(gas_in_rng.x[::100], gas_in_rng.y[::100], 'r+', markersize=1)
 
 ######################################### CONSTRUCTING EMISSION MAP ##########################################
 
-#selecting the particles in the field of view of the cube
+## selecting the particles in the field of view of the cube
 inds_in_map_spatial_ranges = numpy.where( 
                                          (gas_in_rng.x > params['cube']['xy_rng'][0])*(gas_in_rng.x < params['cube']['xy_rng'][1])*
                                          (gas_in_rng.y > params['cube']['xy_rng'][2])*(gas_in_rng.y < params['cube']['xy_rng'][3])
@@ -110,11 +110,11 @@ inds_in_map_spatial_ranges = numpy.where(
 
 gas_in_cube = gas_in_rng[inds_in_map_spatial_ranges]
 
-#plotting the particles in field of view of the cube
+## plotting the particles in field of view of the cube
 pylab.plot(gas_in_cube.x[::100], gas_in_cube.y[::100], 'g+', markersize=1)
 
 
-#binning the particles
+## binning the particles
 hist = hist_nd(
                numpy.vstack((gas_in_cube.x, gas_in_cube.y)), 
                mn = [params['cube']['xy_rng'][0], params['cube']['xy_rng'][2]],   
@@ -130,13 +130,13 @@ if len(gas_in_cube) != hist.data.shape[1]:
 pylab.draw()
 pylab.show()
 
-#declaring the array holding the emission
+## declaring the array holding the emission
 cube_map = numpy.zeros((params['cube']['im_res'],  params['cube']['im_res']), 'f8')
 
 gas_em = getattr(gas_in_cube, params['cube']['attr'])
 
-#looping over the bins of the 2D histogram of the x,y coordinates and computing 
-#total emission in each pixel
+## looping over the bins of the 2D histogram of the x,y coordinates and computing
+## total emission in each pixel
 for i in numpy.arange(params['cube']['im_res']):
         
     for j in numpy.arange(params['cube']['im_res']):
@@ -179,7 +179,7 @@ pylab.colorbar(im, ax=ax_map, cax=cbar_ax_map, orientation='horizontal',
 pylab.figtext(0.01, 0.87, '%.2f' % snap_time + 'Gyr', 
               color='black', size='xx-large', weight='bold')
 
-#plotting the pixel boundaries
+## plotting the pixel boundaries
 ax_map.plot(hist.f.spos[0], hist.f.spos[1], 'w+', markersize=100)
 
 ax_map.set_xlabel('x(kpc)', size='large')
@@ -192,17 +192,17 @@ data_cube = numpy.zeros((params['cube']['im_res'],
                          params['cube']['im_res'], 
                          params['cube']['spec_res']), 'f8')
 
-#getting the attributes of the gas which will be used to construct the data cube
+## getting the attributes of the gas which will be used to construct the data cube
 x, y, vlos, em = gas_in_cube.x, gas_in_cube.y, -gas_in_cube.vz, getattr(gas_in_cube, params['cube']['attr'])
 
-#parameters of a typical spectrum for the cube
+## parameters of a typical spectrum for the cube
 v_min, v_max = params['cube']['spec_rng']
 v_res = params['cube']['spec_res']
 
-#the line width due to micro turbulance
+## the line width due to micro turbulance
 v_width = params['cube']['l_width_mc']
 
-#the velocity bins (.. todo:: xxx shift this to the centroid of the velcoty bins) 
+## the velocity bins (.. todo:: xxx shift this to the centroid of the velcoty bins) 
 v = numpy.linspace(v_min, v_max, v_res)
 
 for i in numpy.arange(params['cube']['im_res']):
@@ -298,7 +298,7 @@ def plot_pixel_spectrum(i, j, data_cube, hist, params, zoom=None):
     pylab.step(v_new, spect_pixel_new, 'b')
     pylab.plot(params['cube']['spec_rng'], [0.0,0.0], 'b--')
     
-    pylab.xlabel(r'$v (km s^{-1})$')
+    pylab.xlabel(r'$v ({\rm km s}^{-1})$')
     pylab.ylabel(r'T$_{\rm antenna}$')
         
     pylab.draw()

@@ -9,6 +9,7 @@ import matplotlib
 
 from mylib.utils.misc import scale as scale
 import lineDict
+import line_ratio_utils
 import meshUtils
 import sys
 import collections
@@ -1105,7 +1106,7 @@ class bar_plot_line_ratios(object):
         self.n_subplots = len(names)
         
         fig, axs = pylab.subplots(self.n_subplots, 1, sharex = True, sharey = False, figsize = (6,12))
-        pylab.subplots_adjust(left = 0.15, bottom = 0.1, right = 0.98, top = 0.9,
+        pylab.subplots_adjust(left = 0.15, bottom = 0.12, right = 0.98, top = 0.91,
                              wspace = 0.0, hspace = 0.03) 
         
         #####################################################################################
@@ -1119,7 +1120,14 @@ class bar_plot_line_ratios(object):
             
             if i == 0: 
                 #setting the tick labels 
-                pylab.gca().set_xticklabels(info['ratios'].keys(), rotation = 45, fontsize = 10)
+                labels = [line_ratio_utils.line_ratio_latex(key) for key in info['ratios'].keys()]
+                
+                print labels
+                
+                #removing \mum from the labels to make them shorter
+                #labels = [label.replace('$\\mu m$','') for label in labels]
+                
+                pylab.gca().set_xticklabels(labels, rotation = 45, fontsize = 9)
             else:
                 mylib.utils.removeAxesLabels.removeAll_xLabels(pylab.gca())
             
@@ -1137,9 +1145,11 @@ class bar_plot_line_ratios(object):
         pylab.show()
 
         if self.image_save_dir != None:
-            image_save_path = os.path.join(self.image_save_dir, self.plot_title + '.eps') 
+            image_save_path = os.path.join(self.image_save_dir, self.plot_title + '.eps')
+ 
             fig.savefig(image_save_path)
-
+            
+            print 'saved to \n\t:%s' % image_save_path
         
     
     def get_intensities_and_ratios(self, idx, pdrMeshObj):

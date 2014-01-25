@@ -35,7 +35,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'use_em'  : True, 
           'use_pdr' : True,
           
-          'snaps'  : numpy.arange(0, 3+1, 1),
+          'snaps'  : numpy.arange(3, 3+1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
                              'min_log_n_use'  : -3.0,      
@@ -111,7 +111,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 
           #'interpolator' : scipy.interpolate.NearestNDInterpolator,     
           'interpolator' : scipy.interpolate.LinearNDInterpolator, 
-          'save_info'   : True,
+          'save_info'   : False,
           'save_secies' : ['CO', '13CO']
           }
 
