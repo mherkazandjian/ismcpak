@@ -54,8 +54,8 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the p
                         },
           'em_unit'   : 'em_fluxKkms',
           'lines'     : [
-                         'CO1-0'  , 'CO2-1'  , 'CO3-2'  , 'CO4-3'  , 'CO5-4'  , 'CO6-5'  ,
-                         '13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3', '13CO5-4', '13CO6-5',
+                         'CO1-0'  , 'CO2-1'  , 'CO3-2'  , 'CO4-3'  ,# 'CO5-4'  , 'CO6-5'  ,
+                         '13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3',# '13CO5-4', '13CO6-5',
                         ],
           'beam_radii': numpy.linspace(0.2, 8.0, 30),
           'fig_save'  : False,
@@ -174,7 +174,7 @@ ladder_disk_13CO_8kpc = []
 ladder_disk_CO_1kpc = []  
 ladder_disk_13CO_1kpc = [] 
 
-for i in range(6):
+for i in range(4):
     CO_line_str = 'CO%d-%d' % (i+1,i)
     CO13_line_str = '13CO%d-%d' % (i+1,i)
 
@@ -207,8 +207,8 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the pa
                         },
           'em_unit'   : 'em_fluxKkms',
           'lines'     : [
-                         'CO1-0'  , 'CO2-1'  , 'CO3-2'  , 'CO4-3'  , 'CO5-4'  , 'CO6-5'  ,
-                         '13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3', '13CO5-4', '13CO6-5',
+                         'CO1-0'  , 'CO2-1'  , 'CO3-2'  , 'CO4-3'  , #'CO5-4'  , 'CO6-5'  ,
+                         '13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3', #'13CO5-4', '13CO6-5',
                         ],
           'beam_radii': numpy.linspace(0.2, 2.0, 30),
           'fig_save'  : False,
@@ -321,7 +321,7 @@ print 'available beam size used : %e' % beam_radii[ind_2kpc]
 ladder_dwarf_CO_2kpc = []  
 ladder_dwarf_13CO_2kpc = [] 
 
-for i in range(6):
+for i in range(4):
     CO_line_str = 'CO%d-%d' % (i+1,i)
     CO13_line_str = '13CO%d-%d' % (i+1,i)
 
@@ -331,43 +331,44 @@ for i in range(6):
 ############################plotting the image to be saved #################################
 
 fig = pylab.figure(figsize=(4,4))
-ax = fig.add_axes([0.15, 0.15, 0.8, 0.8])
+ax = fig.add_axes([0.18, 0.15, 0.8, 0.8])
 
-Ju_all = [1,2,3,4,5,6]
+Ju_all = [1,2,3,4]#,5,6]
 
-ax.set_xlim([1, 6])
+ax.set_xlim([1, 4])
 
 ladder_disk_CO_8kpc = numpy.array(ladder_disk_CO_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2 
-pltCO, = ax.semilogy(Ju_all, ladder_disk_CO_8kpc, 'r-')
-ax.text(Ju_all[4], ladder_disk_CO_8kpc[4], 'disk')
+pltCO, = ax.semilogy(Ju_all, ladder_disk_CO_8kpc, 'k')
+ax.text(Ju_all[2], ladder_disk_CO_8kpc[2], 'disk')
 
 ladder_disk_13CO_8kpc = numpy.array(ladder_disk_13CO_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
-plt13CO, = ax.semilogy(Ju_all, ladder_disk_13CO_8kpc, 'b--')
-ax.text(Ju_all[4], ladder_disk_13CO_8kpc[4], 'disk')
+plt13CO, = ax.semilogy(Ju_all, ladder_disk_13CO_8kpc, 'k--')
+ax.text(Ju_all[2], ladder_disk_13CO_8kpc[2], 'disk')
 
 ladder_disk_CO_1kpc = numpy.array(ladder_disk_CO_1kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
-ax.semilogy(Ju_all, ladder_disk_CO_1kpc, 'r-o')
-ax.text(Ju_all[3], ladder_disk_CO_1kpc[3], 'center')
+ax.semilogy(Ju_all, ladder_disk_CO_1kpc, 'r-')
+ax.text(Ju_all[1], ladder_disk_CO_1kpc[1], 'center')
 
 ladder_disk_13CO_1kpc = numpy.array(ladder_disk_13CO_1kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
-ax.semilogy(Ju_all, ladder_disk_13CO_1kpc, 'b--o')
+ax.semilogy(Ju_all, ladder_disk_13CO_1kpc, 'r--')
 ax.text(Ju_all[1], ladder_disk_13CO_1kpc[1], 'center')
 
 ladder_dwarf_CO_2kpc = numpy.array(ladder_dwarf_CO_2kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
 ladder_dwarf_13CO_2kpc = numpy.array(ladder_dwarf_13CO_2kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
-ax.semilogy(Ju_all, ladder_dwarf_CO_2kpc, 'r-')
+ax.semilogy(Ju_all, ladder_dwarf_CO_2kpc, 'b-')
 ax.semilogy(Ju_all, ladder_dwarf_13CO_2kpc, 'b--')
 
 ax.text(Ju_all[1], ladder_dwarf_CO_2kpc[1], 'dwarf')
 ax.text(Ju_all[1], ladder_dwarf_13CO_2kpc[1], 'dwarf')
 
-ax.legend([pltCO, plt13CO], ['CO', '13CO'], loc=0)
+ax.legend([pltCO, plt13CO], ['CO', r'$^{13}$CO'], loc=0)
 
-ax.set_xlabel(r'J$_{\rm upper}$', size=10)
+ax.set_xlabel(r'J$_{\rm up}$', size=10)
 ax.set_ylabel(r'luminosity [K.km.s$^{-1}$.pc$^2$]', size=10)
 
 ax.tick_params(axis='both', which='major', labelsize=10)
-
+ax.set_xticks(Ju_all)
+ax.set_xticklabels(Ju_all, '%d')
 
 pylab.draw()
 pylab.show()

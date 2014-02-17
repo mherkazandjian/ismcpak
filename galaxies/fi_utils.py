@@ -2,11 +2,12 @@ import os, sys, time
 import subprocess, shlex
 
 import numpy
-from numpy import log10, where, argmin, fabs
+from numpy import log10, where, argmin, fabs, linspace
 
 from scipy.ndimage import zoom
 
 import pylab
+from matplotlib import ticker
 
 import time
 
@@ -27,6 +28,8 @@ import mylib.units
 from mylib.constants import M_SUN_SI
 from mylib.utils.ndmesh import ndmesh
 from mylib.utils.misc import scale
+
+import collections
 
 def parse_old_runinfo_file(path):
     """parses the old runinfo file and returns its contetnts as a dict"""
@@ -328,7 +331,7 @@ def load_gas_particle_info_with_em(filename, species, load_pdr=None):
     print 'warning: make sure the computed optical depths make sense!!! it doesnt seem so..'
     return gas
 
-def make_map(gas, hist, attr=None, as_log10=None, func=None, **kwargs):
+def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, **kwargs):
     '''looping over the bins of the 2D histogram of the x,y coordinates and 
      computing the averages of the maps
     '''
@@ -368,6 +371,17 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, **kwargs):
     if as_log10 != None and as_log10 == True:
         map_data = numpy.log10(map_data)
 
+    if show!=False:
+        
+        if show == 'log10':
+            data_show = numpy.log10(map_data).T
+        else:
+            data_show = map_data
+             
+        pylab.figure()
+        pylab.imshow(data_show, origin='lower')
+        pylab.colorbar()
+        
     return map_data
 
 def funcPDR(meshObj, **kwargs):
@@ -387,7 +401,7 @@ def get_interpolation_function_pdr(arxvPDR, params, logger, **kwargs):
 
     #computing the quantities at the desired location in Av, which will be used
     #to construct the interpolation functions
-    Avs = numpy.linspace(Av_range[0], Av_range[1], (Av_range[1] - Av_range[0])/Av_res + 1) 
+    Avs = linspace(Av_range[0], Av_range[1], (Av_range[1] - Av_range[0])/Av_res + 1) 
 
     if 'extra_Av_sec' in params['ranges']['interp']:
         Avs = numpy.hstack((params['ranges']['interp']['extra_Av_sec'], Avs))
@@ -668,25 +682,30 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
     inds_nan = where(numpy.isfinite(map_data) == False)
     map_data[inds_nan] = map_info['v_rng'][0]
     
+    import matplotlib.cm as cm
+    
     im = ax.imshow(map_data,  #i think the transopse of map_data should be taken here
                    extent=[bs_min, bs_max, bs_min, bs_max],
-                   vmin=map_info['v_rng'][0],  
-                   vmax=map_info['v_rng'][1], 
+                   vmin=map_info['v_rng'][0],
+                   vmax=map_info['v_rng'][1],
                    interpolation='bessel', #intepolation used for imshow
+                   cmap = cm.OrRd,
                    origin='lower')
 
     ax.set_title(map_info['title'], size=25, verticalalignment='bottom')
-    ax.tick_params(axis='both', which='major', labelsize=20)
+    ax.tick_params(axis='both', which='major')#, labelsize=20)
     
     cbar_ax = fig.add_axes([0.2, 0.97, 0.6, 0.02]) 
-    cbar_ax.tick_params(axis='both', which='major', labelsize=30)
+    xticks=linspace(map_info['v_rng'][0], map_info['v_rng'][1], 8)
+    pylab.colorbar(im, ax=ax, cax=cbar_ax, orientation='horizontal',
+                   ticks=xticks)
+    
+    xticks_strs = [r'$10^{%d}$' % v for v in xticks]
+    cbar_ax.set_xticklabels(xticks_strs, size='large')
 
     
-    pylab.colorbar(im, ax=ax, cax=cbar_ax, orientation='horizontal', 
-                   ticks=numpy.linspace(map_info['v_rng'][0], map_info['v_rng'][1], 5))
-    
     pylab.figtext(0.01, 0.87, '%.2f' % snap_time + 'Gyr', 
-            color='black', size='xx-large', weight='bold')
+            color='black', size='large', weight='bold')
 
     if 'save_image' in params and params['save_image'] == True:
         filename_fig = processed_snap_filename + '.eps' 
@@ -709,6 +728,8 @@ def plot_map(map_data, map_params, map_info, snap_time, params, processed_snap_f
         
         print 'copied %s to \n\t %s' % (filename_fig, copy_to) 
 
+    return fig
+
 def plot_cube_sections(data_cube, params):
     '''given a cube, it plots the sections (in velocity channels) of the emission'''
     
@@ -717,7 +738,7 @@ def plot_cube_sections(data_cube, params):
     v_res = params['cube']['spec_res']
     
     #the velocity bins (.. todo:: xxx shift this to the centroid of the velcoty bins) 
-    v = numpy.linspace(v_min, v_max, v_res)
+    v = linspace(v_min, v_max, v_res)
     
     v_sec_wdith = (v_max - v_min)/params['cube']['plot']['n_vsec_plt']
     
@@ -729,6 +750,8 @@ def plot_cube_sections(data_cube, params):
     fig, axs = pylab.subplots(ny, nx, sharex=True, sharey=True, figsize=(fig_width, fig_height), 
                               subplot_kw = {'xlim':params['cube']['xy_rng'][0:2],
                                             'ylim':params['cube']['xy_rng'][2:4],
+                                            'xticks' : params['cube']['plot']['xticks'],
+                                            'yticks' : params['cube']['plot']['yticks'],
                                             'aspect':'auto',
                                             'adjustable': 'datalim',
                                             })
@@ -774,13 +797,21 @@ def plot_cube_sections(data_cube, params):
 
     cbar_ax = fig.add_axes([0.2, 0.85, 0.6, 0.03]) 
     cbar_ax.tick_params(axis='both', which='major', labelsize=12)
-    cbar_ax.set_title(r'$\log_{10}$ [ <T$_B$> / K ]', size=12)
+    cbar_ax.set_title(r'$\log_{10}$ [ <T$_{\rm B}$> / K ]', size=12)
+    
+
+    cbar_ticks = numpy.linspace(params['cube']['plot']['rng'][0], 
+                                params['cube']['plot']['rng'][1], 6)
+    xticks_strs = [r'$10^{%d}$' % v for v in cbar_ticks]
     
     pylab.colorbar(im, ax=ax, cax=cbar_ax, orientation='horizontal', 
-                   ticks=numpy.linspace(params['cube']['plot']['rng'][0], params['cube']['plot']['rng'][1], 5))
-
+                   ticks=cbar_ticks)
+    cbar_ax.set_xticklabels(xticks_strs)
+    
     pylab.show()
     
+    return fig 
+
 def plot_map_from_saved_data(snapIndex, map_info, params):
     '''
     '''
@@ -796,21 +827,30 @@ def plot_map_from_saved_data(snapIndex, map_info, params):
     #the time of the snapshot
     snap_time = get_snapshot_time(snapIndex, params)
 
-    plot_map(map_data, map_params, map_info, snap_time, params, snap_data_filename)
+    fig = plot_map(map_data, map_params, map_info, snap_time, params, snap_data_filename)
+    
+    return fig
 #
 
 def plot_all_maps_for_snapshot_from_saved_data(snapIndex, params):
     '''
-    '''    
+    '''
+    
+    figs = []
+        
     #getting all the maps
     for this_map in params['all_maps']:
     
         this_map_info = params['all_maps'][this_map]
         
-        plot_map_from_saved_data(snapIndex, this_map_info, params)
+        fig = plot_map_from_saved_data(snapIndex, this_map_info, params)
+        
+        figs.append(fig)
         
     print '---------------------------------------------------------------'
     pylab.show()
+    
+    return figs
 #
 
 def get_useful_gas_attr_from_dview(dview, gas_var_name, view_num):
@@ -893,6 +933,8 @@ class galaxy_gas_mass_estimator(object):
         self.fig = None        
         self.axs = None
         self.contraining = None
+        self.means = None
+        self.sdev = None
         
     def get_model_emission_from_involved_line_ratios(self):
         '''loading the emission info from all the models for all Avs (also we check for 
@@ -1022,6 +1064,90 @@ class galaxy_gas_mass_estimator(object):
                 self.H2_mass_no_gmech_mesh[i,j] = masses_in_pixel[3]
                 
     
+    def estimate_mass_in_pixels_at_radius(self, r=None):
+        '''constrains using line ratios the parameters of clouds with and without gmech for 
+        pixels within r - dr, r + dr, where dr is the diagonal of a pixel
+        
+        pixels_info = estimator.estimate_mass_in_pixels_at_radius(r=2.0)
+        
+        #info of the first pixel in the list
+        constraining_0, means_0 = pixels_info[0]
+        #the fit parms for a certain pixel
+        parms, xi, parms_no_gm, xi_no_gm = constraining_0.get_model_parms_for_min_Xi2()
+        
+        ''' 
+        
+        hist_obs = self.hist_obs
+
+        x, y = hist_obs.f.cntrd
+
+        # the radial distance of the pixel from the center of the map
+        r_pixels = numpy.sqrt(x**2 + y**2)
+        
+        # the diagonal width of a pixel
+        dr = numpy.sqrt(hist_obs.szBins[0]**2 + hist_obs.szBins[1]**2)
+        
+        # indicies of pixels within a radial range
+        inds = numpy.where( (r_pixels < (r + dr/2)) * (r_pixels > (r - dr/2))  )
+        
+        pixels_info = []
+        
+        # doing the fits for all the pixels within the radial range
+        for x_ind, y_ind in numpy.vstack(inds).T:
+            
+            x_this = hist_obs.f.cntrd[0][x_ind, y_ind]
+            y_this = hist_obs.f.cntrd[1][x_ind, y_ind]
+              
+            pylab.plot(x_this, y_this, 'o')
+            
+            masses_in_pixel = self.estimate_mass_in_pixel(x_ind = x_ind, 
+                                                          y_ind = y_ind)
+            
+            #mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun
+                
+            #self.H_mass_mesh[i,j] = masses_in_pixel[0]
+            #self.H2_mass_mesh[i,j] = masses_in_pixel[1]
+            #self.H_mass_no_gmech_mesh[i,j] = masses_in_pixel[2]
+            #self.H2_mass_no_gmech_mesh[i,j] = masses_in_pixel[3]
+        
+            pixels_info.append([self.contraining, self.means])
+
+        #getting the mean value of the fit parameters
+        parms_all, xi_all, parms_all_no_gm, xi_all_no_gm = [], [], [], []
+        means_all = []
+        for constr, means, in pixels_info:
+            parms, xi, parms_no_gm, xi_no_gm = constr.get_model_parms_for_min_Xi2()
+            parms_all.append(parms)
+            xi_all.append(xi)
+            parms_all_no_gm.append(parms_no_gm)
+            xi_all_no_gm.append(xi_no_gm)
+            means_all.append(means.values())
+        
+        #degrees of freedom        
+        DOF = numpy.float64(len(constr.model_em.keys()) - 4)
+ 
+        print '#########################################################'
+        print '####means of pixels at R = %-.2f kpc                   ###' % r 
+        print '#########################################################'
+        fit_means = tuple(numpy.array(parms_all).mean(axis=0))
+        fit_sdev  = tuple(numpy.array(parms_all).std(axis=0))
+        print 'mean fit parms          = %-+8.3f %-+8.3f %-+8.3f %-+8.3f' % fit_means 
+        print 'std  fit parms          = %-+8.3f %-+8.3f %-+8.3f %-+8.3f' % fit_sdev
+        print 'mean Xi2 per DOF        = %-+8.3f' % (numpy.array(xi_all).mean() / DOF)
+        print 'std  Xi2 per DOF        = %-+8.3f' % (numpy.array(xi_all).std()  / DOF)
+        print '-----------------------------------------------------------------------------------------'
+        print 'mean fit parms   (pure) = %-+8.3f %-+8.3f %-+8.3f %-+8.3f' % tuple(numpy.array(parms_all_no_gm).mean(axis=0))
+        print 'std  fit parms   (puer) = %-+8.3f %-+8.3f %-+8.3f %-+8.3f' % tuple(numpy.array(parms_all_no_gm).std(axis=0))
+        print 'mean Xi2 per DOF (pure) = %-+8.3f' % (numpy.array(xi_all_no_gm).mean() / (DOF + 1.0))
+        print 'std  Xi2 per DOF (pure) = %-+8.3f' % (numpy.array(xi_all_no_gm).std()  / (DOF + 1.0))
+        print '-----------------------------------------------------------------------------------------'
+        print 'actual mean cloud parameter values at '
+        print '-----------------------------------------------------------------------------------------'
+        print 'mean parms SPH          = %-+8.3f %-+8.3f %-+8.3f %-+8.3f' % tuple(numpy.array(means_all).mean(axis=0))
+        print 'sdev parms SPH          = %-+8.3f %-+8.3f %-+8.3f %-+8.3f' % tuple(numpy.array(means_all).std(axis=0))
+        
+        return pixels_info
+    
     def estimate_mass_in_pixel(self, x_ind=None, y_ind=None, plot_fits=False):
        
         hist = self.hist
@@ -1032,8 +1158,9 @@ class galaxy_gas_mass_estimator(object):
         params = self.params
         model_em = self.mode_em 
         grid_coords = self.grid_coords 
-        arxvPDR = self.arxvPDR 
+        arxvPDR = self.arxvPDR
         m_gas = self.gas.mass
+        
         ######################################################
         
         area_obs_pixel = numpy.product(obs_mesh.dl)
@@ -1160,7 +1287,7 @@ class galaxy_gas_mass_estimator(object):
 
             # CDF of the mass 
             f_CDF_n = (y / y.sum()).cumsum()
-            n_i = numpy.linspace(-3.0, 4.0, 1000.0)[::-1]
+            n_i = linspace(-3.0, 4.0, 1000.0)[::-1]
             f_CDF_n_i = numpy.interp(n_i, x, f_CDF_n)
 
             # CDF of the emission
@@ -1303,11 +1430,33 @@ class galaxy_gas_mass_estimator(object):
             
             ax6.plot(Av_dist.f.cntrd, Av_dist.f / numpy.max(Av_dist.f))
 
-            ax6.plot(Av_dist.f.cntrd, dist_0 / dist_0.sum(), 'k--')
+            ax6.plot(Av_dist.f.cntrd, dist_0 / dist_0.max(), 'k--')
                          
             ax6.set_ylim([0, 1.4])
             ax6.set_xlabel('Av gas')
             ax6.set_ylabel('f')            
+
+            
+        #computing the averages of the physical parameters of the particles inside the pixel 
+        #-----------------------------------------------------------------------------------
+        gas_in_pixel = self.gas[inds_gas]
+        
+        # getting the emission distriubtion as a function of gas density
+        #---------------------------------------------------------------
+        log_n_gas = log10(gas_in_pixel.n).reshape((1, len(gas_in_pixel)))
+        n_dist = hist_nd(log_n_gas, nbins=50.0, mn=-3.0, mx=4.0, loc=True, reverse_indicies=True)
+        
+        # the gas particles within the ranges of the distribution histogram 
+        gas_in_pixel_in_hist = gas_in_pixel[n_dist.inds_in]
+        
+        means = collections.OrderedDict()
+        
+        means['n']  = log10(gas_in_pixel.n.mean())
+        means['G0'] = log10(gas_in_pixel.G0.mean())
+        means['gm'] = log10(gas_in_pixel.gmech.mean())
+        means['Av'] = gas_in_pixel.Av.mean()
+        #-----------------------------------------------------------------------------------
+                    
         ##  computing the masses in the pixel
         
         ## estimating the mass of H and H2 from the fitted PDR model (with and without gmech)
@@ -1367,5 +1516,6 @@ class galaxy_gas_mass_estimator(object):
         
         f.get_model_em_for_min_Xi2()
         self.contraining = f
+        self.means = means
         
         return mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun  

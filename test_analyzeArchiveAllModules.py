@@ -26,8 +26,8 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy2/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
-         #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',
-         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',
+         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',
+         #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-test/',
@@ -49,7 +49,7 @@ parms = {
          #'grid_qz'       : ['from_meshes_info', 'parms', 3, 'CR_rate'],  # 3 indicates the 4th column in self.infoAll['parms']
          
          #-----------------------------------         
-         'plot'          : True, 
+         'plot'          : False, 
          'showGrids'     : True,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
@@ -200,8 +200,8 @@ if False:
     #makes a copy by selecting every other slice in the grid in each dimension
     #(i.e half the resolution)
     arxv.make_copy(dirName='/home/mher/ism/runs/oneSided/sph-db-z-1.0-low-res/', 
-                   x = arxv.grid_x_unique[::2], 
-                   y = arxv.grid_y_unique[::2], 
+                   x = arxv.grid_x_unique[::2],
+                   y = arxv.grid_y_unique[::2],
                    z = arxv.grid_z_unique
                   )
 
@@ -214,7 +214,29 @@ if False:
                    )
     """
     
+if False:
+    '''
+    construct and save interpolation functions for various quantities and save these 
+    interpolation function onto the disk.
+    '''
     
+    ## interpolation functions for emission in Kkms
+    lines  = ('13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3',)
+    lines += ('CO1-0', 'CO2-1', 'CO3-2', 'CO4-3',)
+ 
+    #lines = ['13CO1-0'] 
+    for line in lines:
+        print 'making interpolation function for %s' % line
+        F = arxv.get_4D_interp_quantity(
+                                        info={'source':'radex'},
+                                        save=True,
+                                        sectioned=True,
+                                        line = line,
+                                        Avs  = 'all',
+                                        quantity = 'fluxKkms',
+                                       )
     
-    
+    ## interpolation functions for intergrated quantities (N(x), gamma, lamda..)
+    pass
+
 print 'done'

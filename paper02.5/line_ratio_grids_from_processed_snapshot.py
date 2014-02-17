@@ -9,6 +9,7 @@ matplotlib.use('Qt4Agg')
 
 import numpy
 import pylab
+from scipy.interpolate import griddata as gdata
 
 from amuse.units import units
 from mylib.utils.misc  import default_logger
@@ -21,7 +22,7 @@ home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
           'rundir'  : home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
-          'latex'   : os.path.join(home, 'ism','docs', 'paper02.5', 'src', 'figs'), #None
+          'latex'   : os.path.join(home, 'ism','docs', 'paper02.5', 'src', 'figs', 'line_ratio_maps'), #None
           'save_im' : True,
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
@@ -30,25 +31,27 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'snap_index': numpy.arange(4, 4 + 1, 1),
           'ranges'    : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                          'sph':{
-                               'min_log_n_use'  : -3.0,      
+                               'min_log_n_use'  : -3.0,
                                'min_log_G0_use' : -3.0,
                                'min_log_gm_use' : -50.0,
                                'Av_use'         :  [0.0, 20000000.0],
-                               'Av_clip'        :  [3.0, 28.0],  #sph particles with Av higher than this are clipped to this value                             
+                               'Av_clip'        :  [0.01, 28.0],  #sph particles with Av higher than this are clipped to this value                             
                                },
                       
                         #the size of the box to be displayed (particles outside the range are discarded)
                         'box_size' : [-8.0, 8.0] | units.kpc, 
                         },
           'em_unit'          : 'em_fluxKkms',
-          'line_ratio_grids' : [
-                                ['CO2-1/CO1-0'    , 'CO3-2/CO1-0'    , 'CO4-3/CO1-0'    , 'CO6-5/CO1-0'],
-                                ['13CO2-1/13CO1-0', 'CO3-2/CO2-1'    , 'CO4-3/CO2-1'    , 'CO6-5/CO2-1'],
-                                ['13CO3-2/13CO1-0', '13CO3-2/13CO2-1', 'CO4-3/CO3-2'    , 'CO6-5/CO3-2'],
-                                ['13CO6-5/13CO1-0', '13CO6-5/13CO2-1', '13CO6-5/13CO3-2', 'CO6-5/CO4-3'],
+          'line_ratio_grids' : [     #1-0               2-1              3-2                 4-3  
+                                ['13CO1-0/CO1-0' , 'CO2-1/CO1-0'    , 'CO3-2/CO1-0'    , 'CO4-3/CO1-0']  , #1-0                                 
+                                ['13CO1-0/CO2-1' , '13CO2-1/CO2-1'  , 'CO3-2/CO2-1'    , 'CO4-3/CO2-1']  , #2-1
+                                ['13CO1-0/CO3-2' , '13CO2-1/CO3-2'  , '13CO3-2/CO3-2'  , 'CO4-3/CO3-2']  , #3-2
+                                ['13CO1-0/CO4-3' , '13CO2-1/CO4-3'  , '13CO3-2/CO4-3'  , '13CO4-3/CO4-3'], #4-3
                                ],
           'plot' : {
-                    'v_rng' : [-3.0, 1.0],
+                    'v_rng'  : [-3.0, 1.0],
+                    'xticks' : [-5, 0, 5],
+                    'yticks' : [-5, 0, 5],                    
                     }
         }
 
@@ -122,7 +125,8 @@ maps = {}
 #computing the emission maps of the lines involved in the ratios
 print 'making the maps of all the lines...'
 for i, this_attr in enumerate(map_attrs):
-    maps[this_attr] = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights=this_attr)
+    #maps[this_attr] = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights=this_attr)
+    maps[this_attr] = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average)
     #maps[this_attr] = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.sum)
 print '\t\tfinished making the maps'
 
@@ -135,7 +139,10 @@ fig, axs = pylab.subplots(n_rows, n_col, sharex=True, sharey=True,
                                         'ylim':[bs_min, bs_max],
                                         'aspect':'equal',
                                         'adjustable':'datalim',
-                                        })
+                                        'xticks' : params['plot']['xticks'],
+                                        'yticks' : params['plot']['yticks'],                             
+                                        },
+                          )
                                  
 for ax in axs[:,0] : ax.set_ylabel('y(kpc)')
 for ax in axs[-1,:]: ax.set_xlabel('x(kpc)')
@@ -147,31 +154,46 @@ for r in numpy.arange(n_rows):
         
         print 'making the line ratio map for'
         print '\t\t', maps_grid[r,c][0]
+
+        em_map_numer = maps[maps_grid[r,c][1]]
+        inds = numpy.where(em_map_numer < 1e-10)
+        em_map_numer[inds] = numpy.nan
         
-        ratio_map = maps[maps_grid[r,c][1]]/maps[maps_grid[r,c][2]]
+        em_map_denom = maps[maps_grid[r,c][2]]
+        inds = numpy.where(em_map_denom < 1e-10)
+        em_map_denom[inds] = numpy.nan
+        
+        ratio_map = em_map_numer/em_map_denom
         
         ratio_map = numpy.log10(ratio_map)
         
-        #ratio_map = ratio_map.clip(-3,3)
-        
+        ratio_map = ratio_map.clip(-3,1)
+
+        #ratio_map = fill_nans(ratio_map)
+                
         im = axs[r,c].imshow(ratio_map.T,   
                              extent=[bs_min, bs_max, bs_min, bs_max],
                              vmin=v_min,     
                              vmax=v_max, 
-                             interpolation='bessel', #intepolation used for imshow
+                             interpolation='bicubic', #intepolation used for imshow
                              origin='lower')
     
         axs[r, c].set_title(maps_grid[r,c][0])
-            
+        
 cbar_ax = fig.add_axes([0.2, 0.95, 0.6, 0.01]) 
 cbar_ax.tick_params(axis='both', which='major', labelsize=20)
 cbar_ax.set_title(r'$\log_{10}$ [line_ratio]', size=20)
     
-pylab.colorbar(im, ax=ax, cax=cbar_ax, orientation='horizontal', ticks=numpy.linspace(v_min, v_max, 5))
+pylab.colorbar(im, ax=ax, cax=cbar_ax, orientation='horizontal', 
+               ticks=numpy.linspace(v_min, v_max, 5))
+
+pylab.figtext(0.01, 0.5, r'$^{13}$CO')
+pylab.figtext(0.01, 0.8, r'CO')
 
 if params['save_im'] == True and params['latex'] != None:
-    filename_fig = os.path.join(params['latex'],'line_ratio_maps.eps') 
-    fig.savefig(filename_fig)
+    #filename_fig = os.path.join(params['latex'],'line_ratio_maps.eps') 
+    filename_fig = os.path.join(params['latex'],'line_ratio_maps.svg') 
+    fig.savefig(filename_fig, dpi=300)
     print 'saved image file to :\n\t\t\t %s' % filename_fig
     
 pylab.show()

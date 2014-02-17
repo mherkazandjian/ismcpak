@@ -159,7 +159,7 @@ def generate_maps(snap_index, params):
     ax.plot([0, 0], [16, 25], 'k-.')
 
     ax.set_ylim(16, 25)    
-    ax.set_xlim(-5,3)
+    ax.set_xlim(-8,3)
 
     ################################################################################
     #checking how much of the emission is resulting from differnet section in L(CO) 

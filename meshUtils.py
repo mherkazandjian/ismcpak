@@ -1,5 +1,6 @@
 import os, glob, fnmatch, sys, pickle
 import numpy as np
+from numpy import array, vstack, save, load
 import pylab as pyl
 import logging
 from matplotlib.widgets import Slider, Button, RadioButtons
@@ -18,15 +19,20 @@ import chemicalNetwork
 import lineDict
 from despotic import cloud
 from multiprocessing import Process, Pipe
-
+from mylib.utils.interpolation import interpolator_sectioned
 
 class meshArxv(object):
     """ this class generates and manipulates archives of PDR meshes. By defaults self.set_default attributes and self.set_grid_axes_quantity_values are called upon intialization.
-       
+    
      :param bool readDb: if this is set, the database is read during initialization.
       
      :param bool no_init_from_run_parms: if this is passed as a keyword, nothing is initialized from used_parms.pkl.                
 
+     .. code-block:: python
+     
+         ## basic usage
+         arxvPDR = meshUtils.meshArxv(dirPath = '/home/mher/ism/runs/oneSidedDB-z-1.0')
+         
      FILES AND THEIR FORMATS: by default, the prefix name of the individual mesh files is assumed to be
       mesh.dat-id-xxxxxx
      
@@ -278,6 +284,27 @@ class meshArxv(object):
         self.parms_used_in_PDR_models = None
         """a dictionary holding the parameters used in modeling the PDRs.  This is read
         from self.dirPath/used_parms.pkl""" 
+
+        #sections in gm within which saperate interpolation functions will be built.
+        # .. note:: make sure there are enough points in the database within each section
+        self.intervals_z = [ 
+                         [-50.0, -35.0],  
+                         [-35.0, -34.0], [-34.0, -33.0], [-33.0, -32.0], [-32.0, -31.0], [-31.0, -30.0],    
+                         [-30.0, -29.0], [-29.0, -28.0], [-28.0, -27.0], [-27.0, -26.0], [-26.0, -25.0],    
+                         [-25.0, -24.0], [-24.0, -23.0], [-23.0, -22.0], [-22.0, -21.0], [-21.0, -20.0],    
+                         #[-20.0, -13.0],
+                       ]
+        self.ghost_z = 1e-6 #1.1
+    
+        #sections in Av within which saperate interpolation functions will be built.
+        # .. note:: make sure there are enough points in the database within each section
+        self.intervals_t = [  [0.01, 1.0],  [1.0, 2.0],   [2.0, 3.0],
+                         [3.0, 4.0],   [4.0, 5.0],   [5.0, 6.0],   [6.0, 7.0],   [7.0, 8.0],   [8.0, 9.0], [9.0, 10.0],
+                         [10.0, 12.0], [12.0, 14.0], [14.0, 16.0], [16.0, 18.0], [18.0, 20.0], 
+                         [20.0, 22.0], [22.0, 24.0], [24.0, 26.0], [26.0, 28.0], #, [28.0, 30.0],
+                       ] 
+    
+        self.ghost_t = 1e-6 #1.1
         
         if 'no_init' not in kwargs:
 
@@ -3700,6 +3727,9 @@ class meshArxv(object):
         '''gets the emissions from the pdr database or radex models determined by the keyword line for
          the specified Avs in the Avs array. line should be an entry for a radex line in lineDict.lines
         
+        :param Avs: array specifiying the Avs to use, or 'all' indicating the 
+         use of all available Avs. 
+        
         .. code-block:: python
         
             v, data = arxv.get_emission_from_all_databases_for_Av_range(
@@ -3707,12 +3737,19 @@ class meshArxv(object):
                                                                         Avs  = [1.0, 2.0, 5.0, 10.0],
                                                                         quantity = 'fluxKkms',  
                                                                        )
+        The available Avs can be queried using :    
+        
+            self.print_available_radex_dbs()  # print available DB on disk for all species 
+            self.query_available_radex_dbs()  # pring the available Avs for the current DB
+                              
+        see also get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range()
         '''
         
         specStr   = lineDict.lines[line]['specStr']
         radex_idx = lineDict.lines[line]['radexIdx']
         
         if type(Avs) == type(''):
+            assert(Avs == 'all')
             Avs_use = self.query_available_radex_dbs()
         else:
             Avs_use = numpy.array(Avs)
@@ -3754,6 +3791,144 @@ class meshArxv(object):
                 v_all_Av = numpy.hstack( (v_all_Av, v) )
 
         return v_all_Av, data_all_Av
+
+    def get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range(self,
+                                                                    sectioned=False,                                                                     
+                                                                    **kwargs):
+        '''Retuns an interpolation function of the emission from radex DBs.  This method takes the same
+         parmaeters as get_emission_from_all_radex_dbs_for_Av_range and takes the same keywords.  The 
+         returned interpolation function returns the emission info give logn, logG0, logGmech and Av.  
+        
+        .. code-block:: python
+        
+            F = arxv.get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range(
+                                                                                line = '13CO1-0',
+                                                                                Avs  = [1.0, 2.0, 5.0, 10.0],
+                                                                                quantity = 'fluxKkms',  
+                                                                                )
+
+            # the quantity for a given set of parameters can be returned
+            #        logn  logG0 logGM   Av  
+            parms = [ 0.0, 0.0  , -50.0, 9.0]
+            q = F(array(parms).reshape(1,4))
+
+            #or for a vector of inputs using
+            logn  = array([0.0  ,   1.0,   2.0,   3.0,   4.0])
+            logG0 = array([3.0  ,   3.1,   3.2,   3.3,   3.4])
+            logGM = array([-30.0, -29.0, -28.0, -27.0, -26.0])
+            Avs   = array([1.0  ,   2.0,   3.0,   4.0,   5.0])
+            qv = F.get(vstack((logn, logG0, logGM, Avs)).T)
+            
+            #constructing the interpolation might take about 10 seconds depending on the amount of 
+            #points in the DBs, so the constructed function can be saved into a file and loaded later 
+            #using
+            save('/home/mher/foo.npy', F)
+            #or
+            numpy.savez_compressed('/home/mher/tmp/foo.npz', F)
+
+            F = load('/home/mher/foo.npy')
+             
+        see also get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range
+        '''
+        ## getting the data
+        v, data = self.get_emission_from_all_radex_dbs_for_Av_range(**kwargs)
+
+        ## constructing the linear interpolation function        
+        if sectioned == False:
+            F = interpolate.LinearNDInterpolator(data, v)
+            setattr(F, 'get', F) 
+        else:
+            F = interpolator_sectioned(data, v, ## not tested
+                                       intervals_z=self.intervals_z,     
+                                       ghost_z=self.ghost_z,
+                                       intervals_t=self.intervals_t,
+                                       ghost_t=self.ghost_t,
+                                       scipy_interpolator=interpolate.LinearNDInterpolator)
+
+        return F
+     
+    def get_4D_interp_quantity(self, info=None, save=None, **kwargs):
+        ''' returns an interpolation function for different quantities defined by the info
+        keyword.  
+        
+        :param dict info: a dict holding the neccessary info which is used to extract data from
+         the meshes or the DBs to construct the interpolation function.
+          
+        .. code-block:: python
+        
+            # uses get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range to get the data
+            info = {'source' : 'radex' }
+             
+        .. code-block:: python
+        F = self.get_4D_interp_quantity(
+                                        info={'source':'radex', 
+                                        save=False,
+                                        line='13CO1-0',
+                                        Avs='all',
+                                        quantity='fluxKkms'
+                                        sectioned=False,
+                                       )
+        '''
+        
+        if info['source'] == 'radex':
+            F = self.get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range(**kwargs)
+            
+
+        ## saving the interpolation function to the disk            
+        if save == True:
+
+            fpath = self.get_interp_func_path(info, **kwargs)
+                        
+            ## if the object is of type scipy interpolator....
+            '''
+            numpy.savez_compressed(fpath, 'not_sectioned', F)
+            print 'interpolation function saved to \n\t%s:' % fpath
+            '''
+            
+            ## if the object is of type interpolator_sectioned
+            if type(F) == interpolator_sectioned:
+                F.save(fpath)
+                        
+        return F
+       
+    def load_interp_func(self, info=None, **kwargs):
+        '''reads a the saved interpolation function and returns it
+        
+        .. code-block:: python
+
+            arxvPDR.load_interp_func(info={'source':'radex'}, 
+                                     line='13CO1-0', 
+                                     quantity='fluxKkms')
+
+        '''
+        
+        fpath = self.get_interp_func_path(info, **kwargs) + '.npz'
+        
+        fd = numpy.load(fpath)
+        
+        method = fd['method'].flatten()[0]
+ 
+        if method == 'not_sectioned':
+            F =  fd['data'].flatten()[0]
+            
+        if method == 'sectioned':
+            F = interpolator_sectioned(None, None, load_from = fpath)
+ 
+        return F
+    
+    def get_interp_func_path(self, info=None, **kwargs):
+        '''sets up the path of the interpolation function based on the 
+        quantities it provides'''
+        
+        if info['source'] == 'radex':
+            
+            fpath =  os.path.join(self.dirPath, 'radexDbs', 'interp', 
+                                    '%s__%s' % (kwargs['line'],  
+                                                kwargs['quantity'])
+                                 )
+        
+         
+        return fpath
     
     def get_emission_grid_from_databases(self, 
                                          line=None, Av_use=None, ranges=None, res=None, z_sec=None, dz=None,
