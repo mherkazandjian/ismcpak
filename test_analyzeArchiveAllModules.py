@@ -11,8 +11,8 @@ import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
 
-specStr_PDR   = '13CO'
-specStr_Radex = '13CO'
+specStr_PDR   = 'HCO+'
+specStr_Radex = 'HCO+'
 
 parms = {
          #path to the database files
@@ -49,7 +49,7 @@ parms = {
          #'grid_qz'       : ['from_meshes_info', 'parms', 3, 'CR_rate'],  # 3 indicates the 4th column in self.infoAll['parms']
          
          #-----------------------------------         
-         'plot'          : False, 
+         'plot'          : True, 
          'showGrids'     : True,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
@@ -81,7 +81,7 @@ parms = {
                                      'quantity'       : 'fluxKkms', #,'fluxcgs',
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
-                                     'Av_max'         : 0.1,  #the maximum Av to be used  
+                                     'Av_max'         : 3.0,  #the maximum Av to be used  
                                     },
                            },
          'gridsRes'      : 100,

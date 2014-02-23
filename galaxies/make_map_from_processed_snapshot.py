@@ -127,7 +127,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           
 
                         },
-        'save_maps' : True,
+        'save_maps' : False,
         'save_image': False,
         }
 
@@ -151,6 +151,7 @@ def generate_maps(snap_index, params):
     logger.debug('done reading fi snapshot : %s' % snap_filename)
     logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
+    
     #keeping gas particles within the specified ranges
     gas = fi_utils.select_particles(gas, params['ranges'])
     logger.debug('got the sph particles in the required ranges')
@@ -182,9 +183,10 @@ def generate_maps(snap_index, params):
                           snap_filename
                           )
     #
+    return gas
 #
 
-for snap in params['snaps']:    
-    generate_maps(snap, params)
+for snap in params['snaps']:
+    info = generate_maps(snap, params)
 
 pylab.show()
