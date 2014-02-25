@@ -25,17 +25,20 @@ import meshUtils
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std-test', # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std-test', # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
-          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
-          'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',          # the path to the dir containing the PDR database
-                    
+          'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
+          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',          # the path to the dir containing the PDR database
+          
           'use_em'  : True, 
           'use_pdr' : False,
+
+          'use_sampled_set' : True,
           
-          'snaps'  : numpy.arange(20, 20+1, 1),
+          'snaps'  : numpy.arange(4, 4+1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
                              'min_log_n_use'  : -3.0,      
@@ -48,12 +51,12 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       #the size of the box to be displayed (particles outside the range are discarded)
                       'box_size' : [-20.0, 20.0] | units.kpc, #kpc
 
-                       #modes in the PDR arxv which are within those ranges will be used in constructing interpolation functions 
+                       #models in the PDR arxv which are within those ranges will be used in constructing interpolation functions 
                       'interp'   : {'log_n'        : [-10.0,  10.0],
                                     'log_G0'       : [-2.0 ,  3.0 ],
                                     'log_gmech'    : [-50.0, -20.0],
                                     'Av'           : [ 1.0,  28.0],
-                                    'Av_res'       : 1.0,   #resolution of constructing the interp funcs from the PDR data  
+                                    'Av_res'       : 1.0,   #resolution of constructing the interp funcs from the PDR data
                                     'extra_Av_sec' : [0.01, 0.1],
                                     },   #Av_res is used only for quantities interpolated upon from PDR meshes 
                       },
@@ -61,7 +64,9 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'emission': {
 #                      'f_mean_em_<q>fluxcgs</q>_CO<template>'  : 0,
 #                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 1,
-                      'f_mean_em_no_gm_<q>fluxKkms</q>_CO<template>' : 1,                      
+#                      'f_mean_em_no_gm_<q>fluxKkms</q>_CO<template>' : 1,                      
+#                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 1,
+                      'f_mean_em_<q>fluxKkms</q>_HCN<template>' : 1,
 #                      'f_mean_em_<q>Tex</q>_CO<template>'      : 0,
 #                      'f_mean_em_<q>tau</q>_CO<template>'      : 0,
 ##                      
@@ -86,7 +91,8 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       #--------
 #                      'f_mean_em_<q>fluxcgs</q>_CO<template>'   : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
 #                      'f_mean_em_<q>fluxKkms</q>_CO<template>'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
-                      'f_mean_em_no_gm_<q>fluxKkms</q>_CO<template>'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0}_{no_gm})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
+                      'f_mean_em_<q>fluxKkms</q>_HCN<template>'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
+#                      'f_mean_em_no_gm_<q>fluxKkms</q>_CO<template>'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0}_{no_gm})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
 #                      'f_mean_em_fluxKkms_CO1-0'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
 #                      'f_mean_em_<q>Tex</q>_CO<template>'       : {'pos': [2,1], 'title': r'$f(Tex_{CO(1-0})$'   , 'v_rng': [0.0, 10000.0], 'log10': False},
 #                      'f_mean_em_<q>tau</q>_CO<template>'       : {'pos': [2,3], 'title': r'$f(tau_{CO(1-0})$'   , 'v_rng': [0.0, 1000.0], 'log10': False},
@@ -117,8 +123,8 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 
           #'interpolator' : scipy.interpolate.NearestNDInterpolator, 
           'interpolator' : scipy.interpolate.LinearNDInterpolator, 
-          'save_info'   : True,
-          'save_secies' : ['CO', '13CO'],
+          'save_info'    : True,
+          'save_secies'  : ['CO', '13CO', 'HCN'],
           }
 
 #fluxcgs, fluxKkms, tau, Tex, T_R
@@ -178,10 +184,10 @@ else:
     pdr_keys = {}
 
 #making all the interpolation functions
-em_interp_funcs, pdr_interp_funcs = fi_utils.make_interp_funcs_from_arxv(arxvPDR, 
-                                                                         em_keys, 
+em_interp_funcs, pdr_interp_funcs = fi_utils.make_interp_funcs_from_arxv(arxvPDR,
+                                                                         em_keys,
                                                                          pdr_keys, 
-                                                                         params, 
+                                                                         params,
                                                                          logger)
 
 for snap in params['snaps']:
@@ -203,7 +209,7 @@ for snap in params['snaps']:
 
     ## saving the info interpolated from the PDR grids
     if params['save_info'] == True:
-        snap_filename = params['rundir'] + '/firun/fiout.%06d' % snap  
+        snap_filename = params['rundir'] + '/firun/fiout.%06d' % snap
         fi_utils.save_gas_particle_info_saperate_files(snap_filename, gas, params['save_secies'])
 #
 

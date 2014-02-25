@@ -16,12 +16,13 @@ import fi_utils
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
-          'species' : ['CO', '13CO'],
-          'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
+          'species' : ['HCN'], #['CO'],#, '13CO'],
+          'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
           'snaps'   : numpy.arange(4, 4 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
@@ -49,24 +50,33 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                      'log10': True                      
 #                     }, 
           'all_maps' : {
+#                  'map1'   : {
+#                              'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
+#                              'v_rng'   : [-10.0, 4.0],
+#                              'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
+#                              'as_log10': True,
+#                              #'func'    : numpy.mean,
+#                              'func'    : numpy.average,
+#                              'weights' : 'weights',
+#                             },
                   'map1'   : {
-                              'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
+                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
                               'v_rng'   : [-10.0, 4.0],
                               'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
                               'as_log10': True,
                               'func'    : numpy.mean,
                               #'func'    : numpy.average,
-                              #'weights' : 'em_fluxKkms_CO1-0',
+                              #'weights' : 'weights',
                              },
-                  'map2'   : {
-                              'attr'    : 'em_fluxKkms_13CO1-0', #'mass', 'G0', 'gmech', 'Av'
-                              'v_rng'   : [-10.0, 4.0],
-                              'title'   : r'$f(L_{13CO(1-0} K.km.s-1))$', 
-                              'as_log10': True,
-                              'func'    : numpy.mean,
-                              #'func'    : numpy.average,
-                              #'weights' : 'em_fluxKkms_CO1-0',
-                             },
+#                  'map2'   : {
+#                              'attr'    : 'em_fluxKkms_13CO1-0', #'mass', 'G0', 'gmech', 'Av'
+#                              'v_rng'   : [-10.0, 4.0],
+#                              'title'   : r'$f(L_{13CO(1-0} K.km.s-1))$', 
+#                              'as_log10': True,
+#                              'func'    : numpy.mean,
+#                              #'func'    : numpy.average,
+#                              #'weights' : 'em_fluxKkms_CO1-0',
+#                             },
 #                  'map3'   : {
 #                              'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
 #                              'v_rng'   : [-10.0, 4.0],
@@ -85,29 +95,29 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                              #'func'    : numpy.average,
 #                              #'weights' : 'em_fluxKkms_CO1-0',
 #                             },
-                  'map5'   : {
-                              'attr'    : 'pdr_NCO',
-                              'v_rng'   : [10.0, 30.0],
-                              'title'   : r'$N(CO)$', 
-                              'as_log10': True,
-                              'func'    : numpy.sum,
-                             },
-                  'map6'   : {
-                              'attr'    : 'pdr_NH2',
-                              'v_rng'   : [10.0, 25.0],
-                              'title'   : r'$N(H2)$', 
-                              'as_log10': True,
-                              'func'    : numpy.mean,
-                              #'func'    : numpy.average,
-                              #'weights' : 'em_fluxKkms_CO1-0',                              
-                             },
-                  'map7'   : {
-                              'attr'    : 'pdr_N13CO',
-                              'v_rng'   : [10.0, 30.0],
-                              'title'   : r'$N(13CO)$', 
-                              'as_log10': True,
-                              'func'    : numpy.sum,
-                             },
+#                  'map5'   : {
+#                              'attr'    : 'pdr_NCO',
+#                              'v_rng'   : [10.0, 30.0],
+#                              'title'   : r'$N(CO)$', 
+#                              'as_log10': True,
+#                              'func'    : numpy.sum,
+#                             },
+#                  'map6'   : {
+#                              'attr'    : 'pdr_NH2',
+#                              'v_rng'   : [10.0, 25.0],
+#                              'title'   : r'$N(H2)$', 
+#                              'as_log10': True,
+#                              'func'    : numpy.mean,
+#                              #'func'    : numpy.average,
+#                              #'weights' : 'em_fluxKkms_CO1-0',                              
+#                             },
+#                  'map7'   : {
+#                              'attr'    : 'pdr_N13CO',
+#                              'v_rng'   : [10.0, 30.0],
+#                              'title'   : r'$N(13CO)$', 
+#                              'as_log10': True,
+#                              'func'    : numpy.sum,
+#                             },
 #                  'map8'   : {
 #                              'attr'    : 'G0',
 #                              'v_rng'   : [-2.0, 4.0],
@@ -147,10 +157,16 @@ def generate_maps(snap_index, params):
     
     #loading the processed sph simulation data with the emissions 
     logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
-    gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], load_pdr=params['pdr_sph'])    
+    gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], 
+                                                  load_pdr=params['pdr_sph'],
+                                                  )
     logger.debug('done reading fi snapshot : %s' % snap_filename)
     logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
+    #####!!!!!!!!!!!!    
+    gas = fi_utils.set_weights_sampled_to_zero(gas)
+    #gas = fi_utils.set_weights_not_sampled_to_zero(gas)
+    #####
     
     #keeping gas particles within the specified ranges
     gas = fi_utils.select_particles(gas, params['ranges'])

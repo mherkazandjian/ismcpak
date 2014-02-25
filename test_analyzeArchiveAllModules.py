@@ -10,6 +10,7 @@ import pylab
 import meshUtils
 #########################################parameters##########################################################
 home = '/home/mher'
+#home = '/home/mher/data2/mher'
 
 specStr_PDR   = 'HCO+'
 specStr_Radex = 'HCO+'
@@ -144,19 +145,20 @@ if False:
         parms['radex']['specStr'] = specStr
         arxv.constructRadexDatabase(writeDb = True)
 
-if False:
+if True:
     """construct radex databases for a bunch of species for a bunch of Avs"""
 
     parms['radex']['compute'] = True
     parms['radex']['writeDb'] = True
     
-    #for Av in numpy.arange(5.0, 10.0, 30.0):
-    #for Av in numpy.array([0.1, 1.0, 2.0]):
-    for Av in numpy.array([0.01]):
+    for Av in numpy.arange(10.0, 30.0+0.0001, 2.0):
+    #for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
+    #for Av in numpy.array([0.01]):
         parms['radex']['Av_range'][1] = Av
-        #species = ['CO', 'CS', 'HCN', 'HNC', 'HCO+',]
+        #species = ['HCN'] #, 'HNC', 'HCO+',]
+        species = ['SiO'] #, 'HNC', 'HCO+',]
         #species = ['CO', '13CO']
-        species = ['CO', '13CO'] 
+        #species = ['CO', '13CO'] 
         for specStr in species:
             parms['radex']['specStr'] = specStr
             arxv.constructRadexDatabase(writeDb = True)
