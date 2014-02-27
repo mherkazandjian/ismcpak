@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use('Qt4Agg')
 
 import numpy
+from numpy import arange
 import pylab
 
 from amuse.units import units
@@ -21,7 +22,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
-          'species' : ['HCN'], #['CO'],#, '13CO'],
+          'species' : ['CO', '13CO', 'HCN', 'HNC', 'HCO+'],
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
           'snaps'   : numpy.arange(4, 4 + 1, 1),
@@ -50,8 +51,30 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                      'log10': True                      
 #                     }, 
           'all_maps' : {
+#
+#
+#                        
 #                  'map1'   : {
+#                              'attr'    : 'em_fluxKkms_HCO+4-3', #'mass', 'G0', 'gmech', 'Av'
+#                              'v_rng'   : [-10.0, 4.0],
+##                              'title'   : r'$f(L_{CO(10-9} K.km.s-1))$', 
+#                              'title'   : r'asadasdasd', #$f(L_{CO(10-9} K.km.s-1))$', 
+#                              'as_log10': True,
+#                              'func'    : numpy.mean,
+#                              #'func'    : numpy.average,
+#                              #'weights' : 'weights',
+#                             },
+#                  'map2'   : {
 #                              'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
+#                              'v_rng'   : [-10.0, 4.0],
+#                              'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
+#                              'as_log10': True,
+#                              'func'    : numpy.mean,
+#                              #'func'    : numpy.average,
+#                              #'weights' : 'weights',
+#                             },
+#                  'map1'   : {
+#                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
 #                              'v_rng'   : [-10.0, 4.0],
 #                              'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
 #                              'as_log10': True,
@@ -59,15 +82,6 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                              'func'    : numpy.average,
 #                              'weights' : 'weights',
 #                             },
-                  'map1'   : {
-                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
-                              'v_rng'   : [-10.0, 4.0],
-                              'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
-                              'as_log10': True,
-                              'func'    : numpy.mean,
-                              #'func'    : numpy.average,
-                              #'weights' : 'weights',
-                             },
 #                  'map2'   : {
 #                              'attr'    : 'em_fluxKkms_13CO1-0', #'mass', 'G0', 'gmech', 'Av'
 #                              'v_rng'   : [-10.0, 4.0],
@@ -145,6 +159,36 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #############################################################################################################
 #############################################################################################################
 
+infos = [
+         ['CO'  , arange(0,10,3)], 
+         ['13CO', arange(0,10,3)], 
+         ['HCN' , arange(0,6,2)], 
+         ['HNC' , arange(0,6,2)], 
+         ['HCO+', arange(0,6,2)], 
+        ]  
+
+from lineDict import lines
+
+for i, info in enumerate(infos):
+    print info
+    for j, line in enumerate(info[1]):
+        print line
+
+        line_code = info[0] + '%d-%d' % (line+1, line)
+        
+
+        map_info = {
+                    'attr'    : 'em_fluxKkms_' + line_code,
+                    'v_rng'   : [-10.0, 4.0],
+                    'title'   : r'Flux[%s] K km s$^{-1}$' % lines[line_code]['latex'],   
+                    'as_log10': True,
+                    'func'    : numpy.mean,
+                    #'func'    : numpy.average,
+                    #'weights' : 'weights',
+                    }
+
+        params['all_maps']['map%d%d' % (i,j)] = map_info
+
 #setting up the logger object
 logger = default_logger()
 
@@ -156,7 +200,7 @@ def generate_maps(snap_index, params):
     snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % snap_index + '.states.npz'
     
     #loading the processed sph simulation data with the emissions 
-    logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
+    logger.debug('loading proccessed snapshot %s : ' % snap_filename)
     gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], 
                                                   load_pdr=params['pdr_sph'],
                                                   )
@@ -164,7 +208,7 @@ def generate_maps(snap_index, params):
     logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
     #####!!!!!!!!!!!!    
-    gas = fi_utils.set_weights_sampled_to_zero(gas)
+    #gas = fi_utils.set_weights_sampled_to_zero(gas)
     #gas = fi_utils.set_weights_not_sampled_to_zero(gas)
     #####
     

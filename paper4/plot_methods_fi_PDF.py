@@ -11,6 +11,7 @@ from amuse.datamodel import Particles
 from amuse.units import units
 
 from galaxies import fi_utils
+from paper4 import paper_plots
 #===========================================================================================================
 home = '/home/mher'
 
@@ -28,11 +29,15 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # th
                       },
           }
 
-npp           = 5             # number of particles to be sampled from each SPH particle
+npp           = 100             # number of particles to be sampled from each SPH particle
 n_min_sample  = 1e2            # particles with densities greater than this are sampled
 fit_func_rng  = [1e-2, 1e+3]   # the range of densities used in constructing the function used for the sampling
-save_sampled  = False  
 snap_index    = 4
+save_figs     = True
+fig_paths     = {
+                 'fig1' : '/home/mher/ism/docs/paper04/src/figs/methods/PDF_T_n.eps',
+                 'fig2' : '/home/mher/ism/docs/paper04/src/figs/methods/PDF_n_fit.eps',
+                 }
 #===========================================================================================================
  
 #extracting/guessing the metallicity from the name of the directory of the run
@@ -60,7 +65,6 @@ print 'number of sph particles in snapshot = %d' %  len(gas)
 n_s, w_s, gas_gt, w_gt, gas_lt = gas.sample_higher_densities(npp = npp, 
                                                              n_min_sample = n_min_sample,
                                                              fit_func_rng=fit_func_rng)
-
 
 ## making the new particle set
 gas_s = Particles(len(n_s))
@@ -99,25 +103,8 @@ gas_gt.parent   = numpy.ones(len(gas_gt))*numpy.nan
 gas_s.children = numpy.ones(len(gas_s))*numpy.nan
 gas_s.parent   = numpy.repeat(gas_gt.children, npp) 
 
-## checking if the parent/child assignment and weighting is done correctly
-## might take lots of time
-if False:
-    t0 = time.time()
-    for i, child in enumerate(gas_gt.children):
-    
-        inds = numpy.where(gas_s.parent == child)
-        
-        sum_weights = (gas_gt.weights[i] + gas_s.weights[inds].sum())
-        if sum_weights != 1.0:
-            print 'i = %d  child = %d, 1.0 - sum_weights = %e' % (i, child, 1.0 - sum_weights)
-            raise ValueError('check order of the sampled particles')
-    
-        print i
-    print 'time checking (seconds) = ', time.time() - t0
-
-
 ## aggregating all the particles sets into one set and writing it to the disk
-gas_all = Particles(len(gas_lt) + len(gas_gt) + len(gas_s))
+gas_all = fi_utils.gas_set(len(gas_lt) + len(gas_gt) + len(gas_s))
 
 # adding the new attributes related to the sampled particles 
 new_attr_list = attr_list + ('weights', 'children', 'parent')
@@ -130,22 +117,17 @@ for attr in new_attr_list:
                               getattr(gas_gt, attr), 
                               getattr(gas_s, attr)
                               )
-                            ) 
+                            )
     
     ## setting the repeated attributes to the sampled gas particle set
     setattr(gas_all, attr, attr_data)
 
 
-if save_sampled == True:
-    print 'number of particles in each set:'
-    print 'gas_lt : ', len(gas_lt)
-    print 'gas_gt : ', len(gas_gt)
-    print 'gas_s  : ', len(gas_s)
-    print '------------------------------'
-    print 'total : ',  len(gas_lt) + len(gas_gt) + len(gas_s)
-      
-    fname_ext = filename + '.ext'
-    fi_utils.save_gas_particle_info(fname_ext, gas_all, new_attr_list)
-    print 'saved snapshot with sampled data to \n\t %s' % fname_ext 
+####################################################################################### 
+##########################making the plots############################################# 
+####################################################################################### 
+
+## making the plot for the original distribution
+#paper_plots.plot_methods_fig(gas_all, save_figs, fig_paths) 
 
 print 'done'

@@ -19,7 +19,7 @@ import pylab
 from amuse.units import units
 from mylib.utils.misc  import default_logger
 from mylib.utils.histogram import hist_nd 
-import fi_utils
+from galaxies import fi_utils
 import lineDict
 import pickle
 
@@ -27,9 +27,14 @@ import pickle
 #-----------------------------------------------------------------------------
 home = '/home/mher'
 
-params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
+#fig_save_path = '/home/mher/ism/docs/paper02.5/src/figs/total_luminosity_vs_J.eps'
+fig_save_path = None #'/home/mher/ism/docs/paper02.5/src/figs/total_luminosity_vs_J.eps'
+
+#########################################################################################################
+######################DISK GALAXY DISK GALAXY DISK GALAXY DISK GALAXY DISK GALAXY #######################
+#########################################################################################################
+
+params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
@@ -49,16 +54,18 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                         },
           'em_unit'   : 'em_fluxKkms',
           'lines'     : [
-                         'CO1-0'  , 'CO2-1'  , 'CO3-2'  , 'CO4-3'  , 'CO5-4'  , 'CO6-5'  ,
-                         '13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3', '13CO5-4', '13CO6-5',
-                        ],
-          'beam_radii': numpy.linspace(0.2, 8.0, 60),
-          'save' : False,
-        }
+#                         'CO1-0'  , 'CO2-1'  , 'CO3-2'  , 'CO4-3'  ,'CO5-4'  , 'CO6-5'  ,
+                          'CO2-1'  , 'CO3-2'  , 'CO4-3'  ,'CO5-4'  , 'CO6-5', 'CO7-6', 'CO8-7', 'CO9-8', 'CO10-9', 'CO11-10','CO12-11', 'CO13-12', 'CO14-13', 'CO15-14',
+                          '13CO2-1'  , '13CO3-2'  , '13CO4-3'  ,'13CO5-4'  , '13CO6-5', '13CO7-6', '13CO8-7', '13CO9-8', '13CO10-9', '13CO11-10','13CO12-11', '13CO13-12', '13CO14-13', '13CO15-14',
+                          'HCN2-1'  , 'HCN3-2'  , 'HCN4-3'  ,'HCN5-4'  , 'HCN6-5', 'HCN7-6',
+                          'HNC2-1'  , 'HNC3-2'  , 'HNC4-3'  ,'HNC5-4'  , 'HNC6-5', 'HNC7-6',
+                          'HCO+2-1'  , 'HCO+3-2'  , 'HCO+4-3'  ,'HCO+5-4'  , 'HCO+6-5', 'HCO+7-6',
 
-#############################################################################################################
-#############################################################################################################
-#############################################################################################################
+#                         '13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3', '13CO5-4', '13CO6-5',
+                        ],
+          'beam_radii': numpy.linspace(0.2, 8.0, 30),
+          'fig_save'  : False,
+        }
 
 ## setting up the logger object
 logger = default_logger()
@@ -110,7 +117,7 @@ gas = gas[hist.inds_in]
 
 ## getting the luminosity maps for each line
 luminosity = {
-              'lines' : numpy.array(params['lines'], 'S'),
+              'lines' : numpy.array(params['lines'],'S'),
               'beam_r': params['beam_radii'],
               'lum_r' : {},
               'maps'  : {},
@@ -125,7 +132,8 @@ print 'making the maps of all the lines...'
 for i, this_attr in enumerate(attrs):
     
     ## the intensity map (intensity weight averaged intensity map)
-    this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.mean) #func=numpy.average, weights=this_attr)
+    #this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights=this_attr)
+    this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.mean) #ge, weights=this_attr)
     
     ## computing the luminsoty by mutiplying by the area of each pixel
     this_map_luminosity = this_map_intensity * hist.f.dl.prod()
@@ -134,7 +142,7 @@ for i, this_attr in enumerate(attrs):
     line = this_attr.replace(params['em_unit']+'_','')
     
     luminosity['maps'][line] = this_map_luminosity
-    
+
     luminosity['lum_r'][line] = numpy.zeros(params['beam_radii'].size,'f8')
     
 print '\t\tfinished making the luminosity maps'
@@ -157,45 +165,100 @@ for i, r_beam in enumerate(luminosity['beam_r']):
              
 print '\tfinished computing the emissions'
 
-################################## plotting the emission as a function of beam radius ############################
-fig1 = pylab.figure()
-ax1 = fig1.add_axes([0.1, 0.1, 0.8, 0.8])
+beam_radii = luminosity['beam_r']
 
-fig2 = pylab.figure()
-ax2 = fig2.add_axes([0.1, 0.1, 0.8, 0.8])
+use_beam_size = 8.0
+ind_8kpc = numpy.argmin(numpy.fabs(beam_radii - use_beam_size))
+print 'available beam size used : %e' % beam_radii[ind_8kpc]
 
-names1, names2 = [], []
-plts1, plts2 = [], []
-area_secotrs = numpy.pi*(hist.f.epos**2 - hist.f.spos**2)
+use_beam_size = 1.0
+ind_1kpc = numpy.argmin(numpy.fabs(beam_radii - use_beam_size))
+print 'available beam size used : %e' % beam_radii[ind_1kpc]
 
-for line in luminosity['lines']:
+ladder_disk_CO_8kpc = []  
+ladder_disk_13CO_8kpc = [] 
+ladder_disk_CO_1kpc = []  
+ladder_disk_13CO_1kpc = [] 
+
+#### CO and 13CO
+Ju_all = [2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+
+for i in numpy.array(Ju_all) - 1:
+    CO_line_str = 'CO%d-%d' % (i+1,i)
+    CO13_line_str = '13CO%d-%d' % (i+1,i)
+
+    ladder_disk_CO_8kpc.append(luminosity['lum_r'][CO_line_str][ind_8kpc])
+    ladder_disk_13CO_8kpc.append(luminosity['lum_r'][CO13_line_str][ind_8kpc])
+#    ladder_disk_CO_1kpc.append(luminosity['lum_r'][CO_line_str][ind_1kpc])
+#    ladder_disk_13CO_1kpc.append(luminosity['lum_r'][CO13_line_str][ind_1kpc])
+
+#### HCN, HNC, HCO+
+Ju_all_HD = [2,3,4,5,6,7]
+
+ladder_disk_HCN_8kpc = [] 
+ladder_disk_HNC_8kpc = [] 
+ladder_disk_HCOP_8kpc = []
+
+for i in numpy.array(Ju_all_HD) - 1:
     
-    if lineDict.lines[line]['specStr'] == 'CO':
-        plt1, = ax1.plot(luminosity['beam_r'], numpy.log10(luminosity['lum_r'][line]))
-        names1.append(line)
-        plts1.append(plt1)
-    if lineDict.lines[line]['specStr'] == '13CO':
-        plt2, = ax2.plot(luminosity['beam_r'], numpy.log10(luminosity['lum_r'][line]))
-        names2.append(line)
-        plts2.append(plt2)
-ax1.legend(plts1, names1, loc=0)
-ax2.legend(plts2, names2, loc=0)
+    HCN_line_str  = 'HCN%d-%d' % (i+1,i)
+    HNC_line_str  = 'HNC%d-%d' % (i+1,i)
+    HCOP_line_str = 'HCO+%d-%d' % (i+1,i)
 
-ax1.set_xlabel('beam radius')
-ax1.set_ylabel('log10 [line luminosity / (K.km/s kpc2)]')
+    ladder_disk_HCN_8kpc.append(luminosity['lum_r'][HCN_line_str][ind_8kpc])
+    ladder_disk_HNC_8kpc.append(luminosity['lum_r'][HNC_line_str][ind_8kpc])
+    ladder_disk_HCOP_8kpc.append(luminosity['lum_r'][HCOP_line_str][ind_8kpc])
 
-ax2.set_xlabel('beam radius')
-ax2.set_ylabel('log10 [line luminosity / (K.km/s kpc2)]')
+
+fig = pylab.figure(figsize=(4,4))
+ax = fig.add_axes([0.18, 0.15, 0.8, 0.8])
+
+#Ju_all = [1,2,3,4,5,6]
+#Ju_all = [2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+
+ladder_disk_CO_8kpc = numpy.array(ladder_disk_CO_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2 
+pltCO, = ax.semilogy(Ju_all, ladder_disk_CO_8kpc, 'k')
+ax.text(Ju_all[2], ladder_disk_CO_8kpc[2], 'disk-CO')
+
+ladder_disk_13CO_8kpc = numpy.array(ladder_disk_13CO_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
+plt13CO, = ax.semilogy(Ju_all, ladder_disk_13CO_8kpc, 'k--')
+ax.text(Ju_all[2], ladder_disk_13CO_8kpc[2], 'disk-13CO')
+
+ladder_disk_HCN_8kpc = numpy.array(ladder_disk_HCN_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
+pltHCN, = ax.semilogy(Ju_all_HD, ladder_disk_HCN_8kpc, 'k--')
+ax.text(Ju_all_HD[2], ladder_disk_HCN_8kpc[2], 'disk-HCN')
+
+ladder_disk_HNC_8kpc = numpy.array(ladder_disk_HNC_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
+pltHNC, = ax.semilogy(Ju_all_HD, ladder_disk_HNC_8kpc, 'k--')
+ax.text(Ju_all_HD[2], ladder_disk_HNC_8kpc[2], 'disk-HNC')
+
+ladder_disk_HCOP_8kpc = numpy.array(ladder_disk_HCOP_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
+pltHCOP, = ax.semilogy(Ju_all_HD, ladder_disk_HCOP_8kpc, 'k--')
+ax.text(Ju_all_HD[2], ladder_disk_HCOP_8kpc[2], 'disk-HCO+')
+
+#ladder_disk_CO_1kpc = numpy.array(ladder_disk_CO_1kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
+#ax.semilogy(Ju_all, ladder_disk_CO_1kpc, 'r-')
+#ax.text(Ju_all[1], ladder_disk_CO_1kpc[1], 'center')
+
+#ladder_disk_13CO_1kpc = numpy.array(ladder_disk_13CO_1kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
+#ax.semilogy(Ju_all, ladder_disk_13CO_1kpc, 'r--')
+#ax.text(Ju_all[1], ladder_disk_13CO_1kpc[1], 'center')
+
+#ax.legend([pltCO, plt13CO], ['CO', r'$^{13}$CO'], loc=0)
+
+ax.set_xlabel(r'J$_{\rm up}$', size=10)
+ax.set_ylabel(r'luminosity [K.km.s$^{-1}$.pc$^2$]', size=10)
+
+ax.tick_params(axis='both', which='major', labelsize=10)
+ax.set_xticks(Ju_all)
+ax.set_xticklabels(Ju_all, '%d')
+ax.set_xlim([1, 16])
+ax.set_ylim([10, 1e10])
+
+pylab.draw()
 pylab.show()
+###############################################################################################################
 
-if params['save'] == True:
-    
-    fname = os.path.join(params['rundir'],'analysis','line_luminosity_CO_13CO_snap_%d.pkl' % params['snap_index'][0])
-    
-    fObj = open(fname, 'w')
-    
-    pickle.dump(luminosity,fObj)
-    
-    fObj.close()
-    
-    print 'wrote the luminosity dict to :\n\t\t %s' % fname
+if fig_save_path != None:
+    fig.savefig(fig_save_path)
+    print 'saved image file to :\n\t\t\t %s' % fig_save_path

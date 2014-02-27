@@ -17,12 +17,15 @@ from amuse.units import units
 
 from mylib.utils.misc  import default_logger
 
-import fi_utils
+from galaxies import fi_utils
 import meshUtils
 
+import os
 #======================================================parameters=================================================
 
-home = '/home/mher'
+#home = '/home/mher'
+home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
+
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std-test', # the path of the dir containing the simulation
@@ -33,8 +36,8 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',          # the path to the dir containing the PDR database
           
-          'use_em'  : True, 
-          'use_pdr' : False,
+          'use_em'  : False, 
+          'use_pdr' : True,
 
           'use_sampled_set' : True,
           
@@ -65,7 +68,8 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                      'f_mean_em_<q>fluxcgs</q>_CO<template>'  : 0,
 #                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 1,
 #                      'f_mean_em_no_gm_<q>fluxKkms</q>_CO<template>' : 1,                      
-                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 15,
+#                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 15,
+#                      'f_mean_em_<q>fluxKkms</q>_CS<template>' : 7,
 #                      'f_mean_em_<q>fluxKkms</q>_HCN<template>' : 1,
 #                      'f_mean_em_<q>Tex</q>_CO<template>'      : 0,
 #                      'f_mean_em_<q>tau</q>_CO<template>'      : 0,
@@ -91,6 +95,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       #--------
 #                      'f_mean_em_<q>fluxcgs</q>_CO<template>'   : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
 #                      'f_mean_em_<q>fluxKkms</q>_CO<template>'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
+#                      'f_mean_em_<q>fluxKkms</q>_CS<template>'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
 #                      'f_mean_em_<q>fluxKkms</q>_HCN<template>'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
 #                      'f_mean_em_no_gm_<q>fluxKkms</q>_CO<template>'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0}_{no_gm})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
 #                      'f_mean_em_fluxKkms_CO1-0'  : {'pos': [2,0], 'title': r'$f(L_{CO(1-0})$'     , 'v_rng': [-10.0, -4.0] , 'log10': True},
@@ -104,27 +109,25 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       ########       
                       #'f_mean_em_<q>fluxcgs</q>_CO1-0'   : {'pos': [2,0], 'title': r'$f(L_{CO(1-0 [erg.cm^2.s-1]})$'       , 'v_rng': [-10.0, -4.0], 'log10': True},
                       #'f_mean_em_<q>fluxKkms</q>_CO1-0'  : {'pos': [2,1], 'title': r'$f(L_{CO(1-0}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
-                      'f_mean_em_<q>fluxKkms</q>_CN1_0.5-0_0.5'  : {'pos': [2,1], 'title': r'$f(L_{CN(1-0}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
-                      'f_mean_em_<q>fluxKkms</q>_CN1_1.5-0_0.5'  : {'pos': [2,1], 'title': r'$f(L_{CN(2-1}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
-                      'f_mean_em_<q>fluxKkms</q>_CN2_1.5-1_1.5'  : {'pos': [2,1], 'title': r'$f(L_{CN(3-2}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
-                      'f_mean_em_<q>fluxKkms</q>_CN2_1.5-1_0.5'  : {'pos': [2,1], 'title': r'$f(L_{CN(4-3}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
-                      'f_mean_em_<q>fluxKkms</q>_CN2_2.5-1_1.5'  : {'pos': [2,1], 'title': r'$f(L_{CN(5-4}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
-                      'f_mean_em_<q>fluxKkms</q>_CN3_2.5-2_2.5'  : {'pos': [2,1], 'title': r'$f(L_{CN(6-5}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
-                      'f_mean_em_<q>fluxKkms</q>_CN3_2.5-2_1.5'  : {'pos': [2,1], 'title': r'$f(L_{CN(7-6}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
-                      'f_mean_em_<q>fluxKkms</q>_CN3_3.5-2_2.5'  : {'pos': [2,1], 'title': r'$f(L_{CN(8-7}[K.km.s-1)$'             , 'v_rng': [-10.0, 4.0] , 'log10': True},
                       #'f_mean_em_<q>Tex</q>_CO1-0'       : {'pos': [2,2], 'title': r'$f(Tex_{CO(1-0} [K])$'                , 'v_rng': [0.0, 10000.0], 'log10': False},
                       #'f_mean_em_<q>tau</q>_CO1-0'       : {'pos': [2,3], 'title': r'$f(tau_{CO(1-0} [K])$'                , 'v_rng': [0.0, 1000.0], 'log10': False},
                       #'f_mean_em_<q>fluxcgs</q>_13CO1-0'       : {'pos': [3,0], 'title': r'$f(L_{13CO(1-0})$'                 , 'v_rng': [-10.0, -7.0], 'log10': True},
                       #'f_mean_em_no_gm_HCN-1-0' : {'pos': [3,1], 'title': r'$f(L_{HCN(1-0)})$ $\Gamma_m = 0$' , 'v_rng': [-10.0, -7.0], 'log10': True},
                       #'f_mean_em_HCO+-1-0'      : {'pos': [3,2], 'title': r'$f(L_{HCO+(1-0})$'                , 'v_rng': [-10.0, -7.0], 'log10': True},
                       #'f_mean_em_no_gm_HCO+-1-0': {'pos': [3,3], 'title': r'$f(L_{HCO+(1-0)})$ $\Gamma_m = 0$', 'v_rng': [-10.0, -7.0], 'log10': True},
-                      #'f_mean_pdr_NH'   : {'pos': [3,1], 'title': r'$log10 N(H2) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
-                      #'f_mean_pdr_NH2'  : {'pos': [3,1], 'title': r'$log10 N(H2) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},                      
-                      #'f_mean_pdr_NCO'  : {'pos': [3,0], 'title': r'$log10 N(CO) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
-                      #'f_mean_pdr_N13CO': {'pos': [3,2], 'title': r'$log10 N(13CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_NH'   : {'pos': [3,1], 'title': r'$log10 N(H2) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_NH2'  : {'pos': [3,1], 'title': r'$log10 N(H2) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},                      
+                      'f_mean_pdr_NCO'  : {'pos': [3,0], 'title': r'$log10 N(CO) [cm^{-2}]$'  , 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_N13CO': {'pos': [3,2], 'title': r'$log10 N(13CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_NHCN': {'pos': [3,2], 'title': r'$log10 N(13CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_NHNC': {'pos': [3,2], 'title': r'$log10 N(13CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_NHCO+': {'pos': [3,2], 'title': r'$log10 N(13CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_NCS': {'pos': [3,2], 'title': r'$log10 N(13CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_NCN': {'pos': [3,2], 'title': r'$log10 N(13CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
+                      'f_mean_pdr_NSiO': {'pos': [3,2], 'title': r'$log10 N(13CO) [cm^{-2}]$', 'v_rng': [10.0, 27.0], 'log10': True, 'log10_interp_func':True},
                       
                       ## temperature at the deepest part of the cloud
-                      'f_mean_pdr_T_molec': {'pos': [3,2], 'title': r'$log10 T_${\rm molecular gas}$ [K]', 'v_rng': [1.0, 4.0], 'log10': True, 'log10_interp_func':True},
+#                      'f_mean_pdr_T_molec': {'pos': [3,2], 'title': r'$log10 T_${\rm molecular gas}$ [K]', 'v_rng': [1.0, 4.0], 'log10': True, 'log10_interp_func':True},
 
                       #the empdr thing is not implemented yet!!!
                       },
@@ -132,7 +135,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'interpolator' : scipy.interpolate.NearestNDInterpolator, 
           'interpolator' : scipy.interpolate.LinearNDInterpolator, 
           'save_info'    : True,
-          'save_secies'  : ['CO', '13CO', 'HCN'],
+          'save_secies'  : [],
           }
 
 #fluxcgs, fluxKkms, tau, Tex, T_R

@@ -140,14 +140,14 @@ lines = {
          'HNC15-14' : {'radexIdx'  : 14, 'latex' : r'HNC(15-14)', 'type'   : 'radex-lvg' , 'specStr': 'HNC'  ,},
          'HNC16-15' : {'radexIdx'  : 15, 'latex' : r'HNC(16-15)', 'type'   : 'radex-lvg' , 'specStr': 'HNC'  ,},
          #------------------------------------------------------------------------------------------------------------         
-         'CN1_0.5-0_0.5' : {'radexIdx'  : 0,  'latex' : r'CN(1$_{1/2}$-0$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
-         'CN1_1.5-0_0.5' : {'radexIdx'  : 1,  'latex' : r'CN(1$_{3/2}$-0$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
-         'CN2_1.5-1_1.5' : {'radexIdx'  : 2,  'latex' : r'CN(2$_{3/2}$-1$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},         
-         'CN2_1.5-1_0.5' : {'radexIdx'  : 3,  'latex' : r'CN(2$_{3/2}$-1$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},         
-         'CN2_2.5-1_1.5' : {'radexIdx'  : 4,  'latex' : r'CN(2$_{5/2}$-1$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
-         'CN3_2.5-2_2.5' : {'radexIdx'  : 5,  'latex' : r'CN(3$_{5/2}$-2$_{5/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
-         'CN3_2.5-2_1.5' : {'radexIdx'  : 6,  'latex' : r'CN(3$_{5/2}$-2$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
-         'CN3_3.5-2_2.5' : {'radexIdx'  : 7,  'latex' : r'CN(3$_{7/2}$-2$_{5/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},         
+         'CN1-0' : {'radexIdx'  : 0,  'latex' : r'CN(1$_{1/2}$-0$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
+         'CN2-1' : {'radexIdx'  : 1,  'latex' : r'CN(1$_{3/2}$-0$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
+         'CN3-2' : {'radexIdx'  : 2,  'latex' : r'CN(2$_{3/2}$-1$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},         
+         'CN4-3' : {'radexIdx'  : 3,  'latex' : r'CN(2$_{3/2}$-1$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},         
+         'CN5-4' : {'radexIdx'  : 4,  'latex' : r'CN(2$_{5/2}$-1$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
+         'CN6-5' : {'radexIdx'  : 5,  'latex' : r'CN(3$_{5/2}$-2$_{5/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
+         'CN7-6' : {'radexIdx'  : 6,  'latex' : r'CN(3$_{5/2}$-2$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
+         'CN8-7' : {'radexIdx'  : 7,  'latex' : r'CN(3$_{7/2}$-2$_{5/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},         
          #------------------------------------------------------------------------------------------------------------         
          'CS1-0' : {'radexIdx'  : 0,  'latex' : r'CS(1-0)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
          'CS2-1' : {'radexIdx'  : 1,  'latex' : r'CS(2-1)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
@@ -159,7 +159,14 @@ lines = {
          'CS8-7' : {'radexIdx'  : 7,  'latex' : r'CS(8-7)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
          'CS9-8' : {'radexIdx'  : 8,  'latex' : r'CS(9-8)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
          #------------------------------------------------------------------------------------------------------------         
-
+         'SiO1-0' : {'radexIdx'  : 0,  'latex' : r'SiO(1-0)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
+         'SiO2-1' : {'radexIdx'  : 1,  'latex' : r'SiO(2-1)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
+         'SiO3-2' : {'radexIdx'  : 2,  'latex' : r'SiO(3-2)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
+         'SiO4-3' : {'radexIdx'  : 3,  'latex' : r'SiO(4-3)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
+         'SiO5-4' : {'radexIdx'  : 4,  'latex' : r'SiO(5-4)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
+         'SiO6-5' : {'radexIdx'  : 5,  'latex' : r'SiO(6-5)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
+         'SiO7-6' : {'radexIdx'  : 6,  'latex' : r'SiO(7-6)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
+         'SiO8-7' : {'radexIdx'  : 7,  'latex' : r'SiO(8-7)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
         }
 
 def get_default_specStr(specStr):

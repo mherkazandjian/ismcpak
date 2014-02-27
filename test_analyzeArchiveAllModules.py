@@ -12,8 +12,8 @@ import meshUtils
 home = '/home/mher'
 #home = '/home/mher/data2/mher'
 
-specStr_PDR   = 'HCO+'
-specStr_Radex = 'HCO+'
+specStr_PDR   = 'CO'
+specStr_Radex = 'CO'
 
 parms = {
          #path to the database files
@@ -82,7 +82,7 @@ parms = {
                                      'quantity'       : 'fluxKkms', #,'fluxcgs',
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
-                                     'Av_max'         : 3.0,  #the maximum Av to be used  
+                                     'Av_max'         : 10.0,  #the maximum Av to be used  
                                     },
                            },
          'gridsRes'      : 100,
@@ -145,18 +145,20 @@ if False:
         parms['radex']['specStr'] = specStr
         arxv.constructRadexDatabase(writeDb = True)
 
-if True:
+if False:
     """construct radex databases for a bunch of species for a bunch of Avs"""
 
     parms['radex']['compute'] = True
     parms['radex']['writeDb'] = True
     
-    for Av in numpy.arange(10.0, 30.0+0.0001, 2.0):
+    #for Av in numpy.arange(10.0, 30.0+0.0001, 2.0):
+    for Av in numpy.arange(1.0, 10.0+0.0001, 1.0):
     #for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
     #for Av in numpy.array([0.01]):
         parms['radex']['Av_range'][1] = Av
         #species = ['HCN'] #, 'HNC', 'HCO+',]
-        species = ['SiO'] #, 'HNC', 'HCO+',]
+        #species = ['SiO'] #, 'HNC', 'HCO+',]
+        species = ['CN'] #, 'HNC', 'HCO+',]
         #species = ['CO', '13CO']
         #species = ['CO', '13CO'] 
         for specStr in species:

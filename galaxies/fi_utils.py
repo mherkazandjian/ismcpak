@@ -33,6 +33,7 @@ from mylib.utils.ndmesh import ndmesh
 from mylib.utils.misc import scale
 
 import collections
+import multiprocessing
 
 def parse_old_runinfo_file(path):
     """parses the old runinfo file and returns its contetnts as a dict"""
@@ -77,10 +78,11 @@ def convert_units_to_pdr_units(gas, metallicity):
     units used in the PDR code. This addes the attributes :
     
         Av, G0, gmech, x, y, z, n, T, vdisp, Pe 
-        
+
+    the gas is returned as a gas_set object
     """
     
-    gas_new = Particles(len(gas))
+    gas_new = gas_set(len(gas))
     
     pos = gas.position.value_in(units.kpc).T
 
@@ -113,7 +115,7 @@ def convert_units_to_pdr_units(gas, metallicity):
     gas_new.Av = 0.22 * metallicity * ( 1520.0 / 100.0) * numpy.sqrt(gas_new.Pe/1e4)
 
     return gas_new
-
+    
 def select_particles(gas, ranges):
     '''
     returns the SPH particle set  which have attributes withing the specied radges'''
@@ -1544,42 +1546,62 @@ class galaxy_gas_mass_estimator(object):
         self.means = means
         
         return mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun
-    
-def sample_higher_densities(gas, npp=None, n_min_sample=None, fit_func_rng=None):
-    
-    n = gas.n.copy()
 
-    fig, axs = pylab.subplots(2, 3, figsize=(12,8))
 
-    ########################################################
-    #####################  just plotting ################### 
-    ########################################################
-    # getting the PDF and the CDF of all the particles
-    l10min, l10max = -6, 6
-    nBins = 100
+def set_weights_sampled_to_zero(gas):
+
+    inds_not_sampled = where( isnan(gas.parent) )
+    inds_sampled = where( isfinite(gas.parent) )
+
+    new_weights = gas.weights.copy()
     
-    bin_sz = (l10max - l10min)/float(nBins) 
+    new_weights[inds_not_sampled] = 1.0
+    new_weights[inds_sampled] = 0.0
     
-    l10n = log10(n) 
-    hpdf, bins = pylab.histogram(l10n, range=[l10min, l10max], bins=nBins, normed=True)
+    gas.weights = new_weights
     
-    # plotting the PDF of log10(n)
-    axs[0,0].plot(bins[1::], hpdf, 'b')
-    axs[0,0].set_title('PDF log10(n)')
+    return  gas
+
+def set_weights_not_sampled_to_zero(gas):
+
+    inds_not_sampled = where( isnan(gas.parent) )
+    inds_sampled = where( isfinite(gas.parent) )
+
+    new_weights = gas.weights.copy()
     
-    axs[0,1].semilogy(bins[1::], (hpdf*bin_sz).cumsum())
-    axs[0,1].set_title('CDF log10(n)')
-    axs[0,1].set_ylim(ymax=10.0)
+    new_weights[inds_not_sampled] = 0.0
+    new_weights[inds_sampled] = 1.0
     
-    ## fitting the lognorm PDF with a gaussian within a certain density range
-    #########################################################################
-    def fit_interval(n, n_min, n_max):
+    gas.weights = new_weights
+    
+    return  gas
+
+    return gas
+
+class gas_set(Particles):
+
+    def copy_attr_from_amuse_set(self, gas_amuse, attr_list):
+        '''copies the attributes from the amuse set to the gas_set'''
+        
+        for attr in attr_list:
+            
+            ## getting the data of the attribute of the amuse set 
+            attr_gas_amuse = getattr(gas_amuse, attr)
+            
+            ## setting the repeated attributes to the sampled gas particle set
+            setattr(self, attr, attr_gas_amuse)
+        
+        
+    def fit_interval(self, n_min, n_max):
         '''Fit a certain interval in densities. Returns a scipy.stats.norm function
         with the fit deviates in the specified range and the number of points in that
-        range. 
+        range.
+        
+        returns the fit function and the number of points used in the fit in the range
+        of the densities which were specified by the arguments.
         '''
 
-        ln = log(n)
+        ln = log(self.n)
             
         ## getting the log the ranges
         lmin_fit, lmax_fit = log(n_min), log(n_max)
@@ -1593,204 +1615,122 @@ def sample_higher_densities(gas, npp=None, n_min_sample=None, fit_func_rng=None)
         rv = stats.norm(loc=mu_fit, scale=sigma_fit)
         
         return rv, ln_fit.size
-    #
     
-    # plotting PDF(log(x))
-    ln = log(n) 
-    hpdf, lbins = pylab.histogram(ln, range=[log(1e-6), log(1e6)], bins=nBins, normed=True)
-    axs[0,2].semilogy(lbins[1::], hpdf, 'b', linewidth=2)
-    axs[0,2].set_title('PDF log(n)')
+    def plot_PDF_CDF(self, fit_func_rng=None):
+        
+        fig, axs = pylab.subplots(2, 3, figsize=(12,8))
+    
+        
+        # getting the PDF and the CDF of all the particles
+        l10min, l10max = -6, 6
+        nBins = 100
+        
+        bin_sz = (l10max - l10min)/float(nBins) 
+        
+        l10n = log10(self.n) 
+        hpdf, bins = pylab.histogram(l10n, range=[l10min, l10max], bins=nBins, normed=True)
+        
+        # plotting the PDF of log10(n)
+        axs[0,0].plot(bins[1::], hpdf, 'b')
+        axs[0,0].set_title('PDF log10(n)')
+        
+        axs[0,1].semilogy(bins[1::], (hpdf*bin_sz).cumsum())
+        axs[0,1].set_title('CDF log10(n)')
+        axs[0,1].set_ylim(ymax=10.0)
 
-    ########################################################
-    #####################  just plotting ################### 
-    ########################################################
-    
-    #ranges = [ [1e-1, 1e1], [1e-2, 1e2], [1e-1, 1e2], [1e-1, 1e3], [1e-1, 1e4] ]
-    #colors = [    'y'     ,   'g',         'k',          'c',        'm']
-    ranges = [ fit_func_rng,  ]
-    colors = [    'y'     , ]
-    x = numpy.linspace(log(1e-4), log(1e6), 100)
-    
-    plts = ()
-    labels = ()
-    for i, rng in enumerate(ranges):
-        
-        rv, N = fit_interval(n, *rng)
-        plt, = axs[0,2].semilogy(x, rv.pdf(x), colors[i])
-        
-        plts += (plt,)
-        labels += '%d,%d' % (log10(rng[0]), log10(rng[1])),
-        
-    axs[0,2].legend(plts, labels, loc=0)
-    
-    ## setting the appropriate labels on the x-axis
-    axs[0,2].set_xticks( [log(1e-4), log(1e-2), log(1e-0), log(1e2), log(1e4), log(1e6) ])
-    axs[0,2].set_xticklabels([-4, -2, 0, 2, 4, 6 ])
+        # plotting PDF(log(x))
+        ln = log(self.n) 
+        hpdf, lbins = pylab.histogram(ln, range=[log(1e-6), log(1e6)], bins=nBins, normed=True)
+        axs[0,2].semilogy(lbins[1::], hpdf, 'b', linewidth=2)
+        axs[0,2].set_title('PDF log(n)')
 
-    axs[0,2].set_ylim(1e-10, 1)    
-    #########################################################
-    #########################################################
+        ########################################################
+        #####################  just plotting ################### 
+        ########################################################
+        
+        #ranges = [ [1e-1, 1e1], [1e-2, 1e2], [1e-1, 1e2], [1e-1, 1e3], [1e-1, 1e4] ]
+        #colors = [    'y'     ,   'g',         'k',          'c',        'm']
+        ranges = [ fit_func_rng,  ]
+        colors = [    'y'     , ]
+        x = numpy.linspace(log(1e-4), log(1e6), 100)
+        
+        plts = ()
+        labels = ()
+        for i, rng in enumerate(ranges):
+            
+            rv, N = self.fit_interval(*rng)
+            plt, = axs[0,2].semilogy(x, rv.pdf(x), colors[i])
+            
+            plts += (plt,)
+            labels += '%d,%d' % (log10(rng[0]), log10(rng[1])),
+            
+        axs[0,2].legend(plts, labels, loc=0)
+        
+        ## setting the appropriate labels on the x-axis
+        axs[0,2].set_xticks( [log(1e-4), log(1e-2), log(1e-0), log(1e2), log(1e4), log(1e6) ])
+        axs[0,2].set_xticklabels([-4, -2, 0, 2, 4, 6 ])
     
-    ## picking one gaussian to be used in the sampled
-    rv, N = fit_interval(n, fit_func_rng[0], fit_func_rng[1])
+        axs[0,2].set_ylim(1e-10, 1)    
+        #########################################################
+        #########################################################        
+        
+        return fig, axs
     
-    ## testing the PDF
-    #x = 2.0
-    #y = (1.0/(sqrt(2.0*pi)*rv.std()))*exp( -0.5*((x - rv.mean())/rv.std())**2.0 )
-    #print rv.pdf(x), y
+    def sample_ln_densities(self, npp, rem, rv):
+        '''returns a sample of npp size of sampled densities in ln() scale, rv is the scipy 
+        generator. The sample size from which npp particles are picked are based on the remaining
+        number of particles to be sampled 'rem'.
+        '''
+         
+        if npp == 5:
+            if rem > 10000:
+                ln_trial = rv.rvs(1000)
+            if rem <= 10000:
+                ln_trial = rv.rvs(10000)
+            if rem <= 200:
+                ln_trial = rv.rvs(100000)
+            if rem <= 10:
+                ln_trial = rv.rvs(1000000)
+                
+        if npp == 20:
+            if rem > 3000:
+                ln_trial = rv.rvs(10000)
+            if rem <= 3000:
+                ln_trial = rv.rvs(1000000)
+            if rem <= 200:
+                ln_trial = rv.rvs(1000000)
+            if rem <= 10:
+                ln_trial = rv.rvs(10000000)
+                
+        if npp == 50:
+            if rem > 500:
+                ln_trial = rv.rvs(100000)
+            if rem <= 500:
+                ln_trial = rv.rvs(1000000)
+            if rem <= 300:
+                ln_trial = rv.rvs(1000000)
+            if rem <= 100:
+                ln_trial = rv.rvs(10000000)
 
-    if True:
-        ln = log(n)
+        if npp == 100:
+            if rem > 500:
+                ln_trial = rv.rvs(1000000)
+            if rem <= 500:
+                ln_trial = rv.rvs(1000000)
+            if rem <= 300:
+                ln_trial = rv.rvs(1000000)
+            if rem <= 100:
+                ln_trial = rv.rvs(50000000)
+
+        return ln_trial
     
-        ## array which will hold the sampled densities
-        ln_s = numpy.array([],'f8')
-        ## array which will hold the keys of the sampled densities
-        keys_s = numpy.array([],'f8')
-        ## array which will hold the weights sampled densities
-        w_s = numpy.array([],'f8')
-        
-        ## particles whose density is larger than X will be sampled 
-        X = n_min_sample
-    
-        # selecting the particles and their keys
-        inds = numpy.where(ln > log(X))
-        keys = gas.key[inds]
-        ln_gt_X = ln[inds]
-        w_ln_gt_X = numpy.zeros(ln_gt_X.size, 'f8')
-        gas_ln_gt_X = gas[inds] 
-        
-        # selecting the partilces whose density is less than X
-        inds = where(ln < log(X))
-        ln_lt_X = ln[ inds ]
-        gas_ln_lt_X = gas[inds]
-        
-        # soring the densities and the corresponding keys in ascending order
-        inds_sorted = numpy.argsort(ln_gt_X)
-        keys = keys[inds_sorted]
-        ln_gt_X = ln_gt_X[inds_sorted]
-        gas_ln_gt_X = gas_ln_gt_X[inds_sorted]
-        
-        n_to_be_sub_sampled = ln_gt_X.size
-        print 'number of SPH particles to be sampled = %d' % n_to_be_sub_sampled
-        print 'these are %.2f percent of the original set.' % (float(n_to_be_sub_sampled)/float(ln.size))
-    
-        ## sampling one particle at a time
-        for i, ln_this in enumerate(ln_gt_X):
-            
-            rem = n_to_be_sub_sampled - i
-            
-            t0 = time.time()
-            
-            ts = 0.0
-            
-            attempts = 0
-            
-            while True:
-                
-                ts1 = time.time()
-                
-                if npp == 5:
-                    if rem > 10000:
-                        ln_trial = rv.rvs(1000)
-                    if rem < 10000:
-                        ln_trial = rv.rvs(10000)
-                    if rem < 200:
-                        ln_trial = rv.rvs(100000)
-                    if rem < 10:
-                        ln_trial = rv.rvs(1000000)
-                        
-                if npp == 20:
-                    if rem > 3000:
-                        ln_trial = rv.rvs(10000)
-                    if rem < 3000:
-                        ln_trial = rv.rvs(1000000)
-                    if rem < 200:
-                        ln_trial = rv.rvs(1000000)
-                    if rem < 10:
-                        ln_trial = rv.rvs(10000000)
-                        
-                if npp == 50:
-                    if rem > 500:
-                        ln_trial = rv.rvs(100000)
-                    if rem < 500:
-                        ln_trial = rv.rvs(1000000)
-                    if rem < 300:
-                        ln_trial = rv.rvs(1000000)
-                    if rem < 100:
-                        ln_trial = rv.rvs(10000000)
-    
-                if npp == 100:
-                    if rem > 500:
-                        ln_trial = rv.rvs(1000000)
-                    if rem < 500:
-                        ln_trial = rv.rvs(1000000)
-                    if rem < 300:
-                        ln_trial = rv.rvs(1000000)
-                    if rem < 100:
-                        ln_trial = rv.rvs(50000000)
-                        
-                ts += (time.time() - ts1)
-    
-                ## keeping sampled particles whose density is higher than the current one             
-                ln_trial_gt_ln_this = ln_trial[ ln_trial > ln_this]
-                ## keeping all particles
-                #ln_trial_gt_ln_this = ln_trial[:]
-    
-                attempts += 1
-                
-                if  ln_trial_gt_ln_this.size > npp:
-                    
-                    
-                    sample_keep = ln_trial_gt_ln_this[:npp]
-    
-                    ## setting weights by volume to the sampled particles
-                    w_this_sample = (1.0/float(npp+1.0))*(exp(ln_this)/exp(sample_keep))
-                    ## setting zero weights
-                    #w_this_sample = numpy.zeros(npp, 'f8')
-                    ## setting unit weights
-                    #w_this_sample = numpy.ones(npp, 'f8')
-                    ## setting weights by mass
-                    #w_this_sample = numpy.ones(npp, 'f8')/float(npp+1)
-                    #((1.0/float(npp))*(exp(ln_this)/exp(sample_keep)))**(2.0/3.0),
-                    #(1.0/float(npp))*numpy.ones(npp, 'f8')/10.0,
-                    
-                    ln_s = numpy.hstack((ln_s, sample_keep))
-                    keys_s = numpy.hstack((keys_s, numpy.ones(npp)*keys[i]))
-                    w_s = numpy.hstack((w_s, w_this_sample))
-                    w_ln_gt_X[i] = 1.0 - w_this_sample.sum()
-                    #w_ln_gt_X[i] = 1.0   
-                                    
-                    #pdb.set_trace()
-                    
-                    print '%.3f%% %d | %e | %d | ' % (100.0*float(i)/float(n_to_be_sub_sampled), 
-                                                     n_to_be_sub_sampled - i,   
-                                                     log10(exp(ln_this)), 
-                                                     attempts), log10(exp(sample_keep).max())
-                    print '----------------------------'
-                    break
-    
-            print '% time sampling = ', ts / (time.time() - t0)
-            
-            
-        ln_new = numpy.hstack((
-                               ln_lt_X,
-                               ln_gt_X, 
-                               ln_s
-                               )
-                              )
-        
-        w_new = numpy.hstack((
-                              numpy.ones(ln_lt_X.size, 'f8'),
-                              w_ln_gt_X ,
-                              w_s,
-                              )
-                             )
-        ##
-    
-        print 'log10 max n = ', log10(exp(ln_s).max())    
-    
+    def plot_sampled(self, ln_new, w_new, rv, axs=None):
         ## plotting the PDF again, on top of which the PDF of the sampled particles
-        ## will be plotted and compared to     
+        ## will be plotted and compared to
+        nBins = 100
+        
+        ln = log(self.n)
+        
         lhpdf, lbins = pylab.histogram(ln, range=[log(1e-4), log(1e6)], bins=nBins, normed=True)
         axs[1,0].semilogy(lbins[1::], lhpdf, 'b', linewidth=2)
         
@@ -1815,7 +1755,7 @@ def sample_higher_densities(gas, npp=None, n_min_sample=None, fit_func_rng=None)
         
         l10bin_sz = (l10max - l10min)/float(nBins) 
         
-        l10n = log10(n) 
+        l10n = log10(self.n) 
         l10hpdf, l10bins = pylab.histogram(l10n, range=[l10min, l10max], bins=nBins, normed=True)
     
         l10ns_new = log10(exp(ln_new)) 
@@ -1847,37 +1787,134 @@ def sample_higher_densities(gas, npp=None, n_min_sample=None, fit_func_rng=None)
         ## setting the appropriate labels on the x-axis
         axs[1,2].set_xticks( [log(1e-4), log(1e-2), log(1e-0), log(1e2), log(1e4), log(1e6) ])
         axs[1,2].set_xticklabels([-4, -2, 0, 2, 4, 6 ])        
+    
+    def sample_set_serial(self, ln_gt_X, keys, rv, npp):
+        ## sampling one particle at a time
+
+        ## array which will hold the sampled densities
+        ln_s = numpy.array([],'f8')
+        ## array which will hold the keys of the sampled densities
+        keys_s = numpy.array([],'f8')
+        ## array which will hold the weights sampled densities
+        w_s = numpy.array([],'f8')
+        ## weights of the parent particles 
+        w_ln_gt_X = numpy.zeros(ln_gt_X.size, 'f8')
+                
+        n_to_be_sub_sampled = ln_gt_X.size
+
+        for i, ln_this in enumerate(ln_gt_X):
+            
+            rem = n_to_be_sub_sampled - i
+            
+            t0 = time.time()
+            
+            ts = 0.0
+            
+            attempts = 0
+
+            while True:
+                
+                ts1 = time.time()
+                ln_trial = self.sample_ln_densities(npp, rem, rv)
+                ts += (time.time() - ts1)
+                
+                ## keeping sampled particles whose density is higher than the current one             
+                ln_trial_gt_ln_this = ln_trial[ ln_trial > ln_this]
+                ## keeping all particles
+                #ln_trial_gt_ln_this = ln_trial[:]
+    
+                attempts += 1
+                
+                if  ln_trial_gt_ln_this.size > npp:
+                    
+                    sample_keep = ln_trial_gt_ln_this[:npp]
+    
+                    ## setting weights by volume to the sampled particles
+                    w_this_sample = (1.0/float(npp+1.0))*(exp(ln_this)/exp(sample_keep))
+                    ## setting zero weights
+                    #w_this_sample = numpy.zeros(npp, 'f8')
+                    ## setting unit weights
+                    #w_this_sample = numpy.ones(npp, 'f8')
+                    ## setting weights by mass
+                    #w_this_sample = numpy.ones(npp, 'f8')/float(npp+1)
+                    #((1.0/float(npp))*(exp(ln_this)/exp(sample_keep)))**(2.0/3.0),
+                    #(1.0/float(npp))*numpy.ones(npp, 'f8')/10.0,
+                    
+                    ln_s = numpy.hstack((ln_s, sample_keep))
+                    keys_s = numpy.hstack((keys_s, numpy.ones(npp)*keys[i]))
+                    w_s = numpy.hstack((w_s, w_this_sample))
+                    w_ln_gt_X[i] = 1.0 - w_this_sample.sum()
+                    #w_ln_gt_X[i] = 1.0   
+                                    
+                    #pdb.set_trace()
+                    
+                    print '%.3f%% %d | %e | %d | ' % (100.0*float(i)/float(n_to_be_sub_sampled), 
+                                                     n_to_be_sub_sampled - i,   
+                                                     log10(exp(ln_this)), 
+                                                     attempts), log10(exp(sample_keep).max())
+                    print '----------------------------'
+                    break
+    
+            print '% time sampling = ', ts / (time.time() - t0)
+    
+        return ln_s, keys_s, w_s, w_ln_gt_X
+    
+    def sample_higher_densities(self, npp=None, n_min_sample=None, fit_func_rng=None, plot=True):
+
+        if plot == True:
+            fig, axs = self.plot_PDF_CDF(fit_func_rng=fit_func_rng)
         
-        return exp(ln_s), w_s, gas_ln_gt_X, w_ln_gt_X, gas_ln_lt_X
-    else:
-        return None, None, None
+        ## picking one gaussian to be used in the sampled
+        rv, N = self.fit_interval(fit_func_rng[0], fit_func_rng[1])
 
-def set_weights_sampled_to_zero(gas):
+        ## testing the PDF
+        #x = 2.0
+        #y = (1.0/(sqrt(2.0*pi)*rv.std()))*exp( -0.5*((x - rv.mean())/rv.std())**2.0 )
+        #print rv.pdf(x), y
 
-    inds_not_sampled = where( isnan(gas.parent) )
-    inds_sampled = where( isfinite(gas.parent) )
-
-    new_weights = gas.weights.copy()
+        ln = log(self.n)
+        
+        ## particles whose density is larger than X will be sampled 
+        X = n_min_sample
     
-    new_weights[inds_not_sampled] = 1.0
-    new_weights[inds_sampled] = 0.0
-    
-    gas.weights = new_weights
-    
-    return  gas
+        # selecting the particles and their keys
+        inds = numpy.where(ln > log(X))
+        keys = self.key[inds]
+        ln_gt_X = ln[inds]
+        gas_ln_gt_X = self[inds] 
+        
+        # selecting the partilces whose density is less than X
+        inds = where(ln < log(X))
+        ln_lt_X = ln[ inds ]
+        gas_ln_lt_X = self[inds]
+        
+        # soring the densities and the corresponding keys in ascending order
+        inds_sorted = numpy.argsort(ln_gt_X)
+        keys = keys[inds_sorted]
+        ln_gt_X = ln_gt_X[inds_sorted]
+        gas_ln_gt_X = gas_ln_gt_X[inds_sorted]
 
-def set_weights_not_sampled_to_zero(gas):
+        n_to_be_sub_sampled = ln_gt_X.size
+        print 'number of SPH particles to be sampled = %d' % n_to_be_sub_sampled
+        print 'these are %.2f percent of the original set.' % (float(n_to_be_sub_sampled)/float(ln.size))
 
-    inds_not_sampled = where( isnan(gas.parent) )
-    inds_sampled = where( isfinite(gas.parent) )
+        ## doing the actual sampling        
+        ln_s, keys_s, w_s, w_ln_gt_X = self.sample_set_serial(ln_gt_X, keys, rv, npp)
+        
+        ## merging the data        
+        ln_new = numpy.hstack((ln_lt_X                       , ln_gt_X  , ln_s))        
+        w_new  = numpy.hstack((numpy.ones(ln_lt_X.size, 'f8'), w_ln_gt_X, w_s))
 
-    new_weights = gas.weights.copy()
-    
-    new_weights[inds_not_sampled] = 0.0
-    new_weights[inds_sampled] = 1.0
-    
-    gas.weights = new_weights
-    
-    return  gas
+        
+        ## doing some plots including the sampled densitieis
+        if plot == True:        
+            self.plot_sampled(ln_new, w_new, rv, axs)
+        
+        n_s = exp(ln_s)
+        
+        print 'log10 max n = ', log10(n_s.max())    
+        
+        
+        return n_s, w_s, gas_ln_gt_X, w_ln_gt_X, gas_ln_lt_X
 
-    return gas
+        
