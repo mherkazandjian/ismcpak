@@ -4,12 +4,14 @@ import subprocess, shlex
 
 import numpy
 from numpy import log10, where, argmin, fabs, linspace, log, exp, pi, sqrt
-from numpy import isfinite, isnan
+from numpy import isfinite, isnan, zeros
 
 from scipy.ndimage import zoom
 from scipy import stats
+from scipy import interpolate
 
 import pylab
+from pylab import histogram
 from matplotlib import ticker
 
 import time
@@ -31,6 +33,7 @@ import mylib.units
 from mylib.constants import M_SUN_SI
 from mylib.utils.ndmesh import ndmesh
 from mylib.utils.misc import scale
+from mylib.utils import templates
 
 import collections
 import multiprocessing
@@ -297,7 +300,7 @@ def load_gas_particle_info(filename, load_pdr=None):
     print '\tloaded file:\n\t\t%s' % filename    
     n = data['arr_0'].size
 
-    gas = Particles(n)
+    gas = gas_set(n)
 
     for i, name in enumerate(data['names']):
         setattr(gas, name, data['arr_%d' % i])
@@ -350,7 +353,7 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, **kwarg
      computing the averages of the maps
     '''
 
-    map_data = numpy.zeros((hist.nBins[0], hist.nBins[1]), dtype=numpy.float64)
+    map_data = zeros((hist.nBins[0], hist.nBins[1]), dtype=numpy.float64)
 
     if attr not in dir(gas[0]):  
         raise AttributeError('%s is not an attribute of the gas particles,' % attr)
@@ -1050,10 +1053,10 @@ class galaxy_gas_mass_estimator(object):
         pylab.show()
 
         self.hist_obs = hist_obs
-        self.H2_mass_mesh = numpy.zeros(hist_obs.f.shape, 'f8')
-        self.H_mass_mesh = numpy.zeros(hist_obs.f.shape, 'f8')
-        self.H2_mass_no_gmech_mesh = numpy.zeros(hist_obs.f.shape, 'f8')
-        self.H_mass_no_gmech_mesh = numpy.zeros(hist_obs.f.shape, 'f8')
+        self.H2_mass_mesh = zeros(hist_obs.f.shape, 'f8')
+        self.H_mass_mesh = zeros(hist_obs.f.shape, 'f8')
+        self.H2_mass_no_gmech_mesh = zeros(hist_obs.f.shape, 'f8')
+        self.H_mass_no_gmech_mesh = zeros(hist_obs.f.shape, 'f8')
  
     def inspect_estimation(self, event):
 
@@ -1288,7 +1291,7 @@ class galaxy_gas_mass_estimator(object):
             gas_in_pixel_in_hist = gas_in_pixel[n_dist.inds_in]
             
             #getting the emission distribution (a selection of lines)
-            dist_0 = numpy.zeros(n_dist.totalBins, 'f8') 
+            dist_0 = zeros(n_dist.totalBins, 'f8') 
             
             for i in numpy.arange(n_dist.totalBins):
                 
@@ -1376,7 +1379,7 @@ class galaxy_gas_mass_estimator(object):
             gas_in_pixel_in_hist = gas_in_pixel[G0_dist.inds_in]
             
             #getting the emission distribution (a selection of lines)
-            dist_0 = numpy.zeros(G0_dist.totalBins, 'f8') 
+            dist_0 = zeros(G0_dist.totalBins, 'f8') 
             
             for i in numpy.arange(G0_dist.totalBins):
                 
@@ -1409,7 +1412,7 @@ class galaxy_gas_mass_estimator(object):
             gas_in_pixel_in_hist = gas_in_pixel[gmech_dist.inds_in]
             
             #getting the emission distribution (a selection of lines)
-            dist_0 = numpy.zeros(gmech_dist.totalBins, 'f8') 
+            dist_0 = zeros(gmech_dist.totalBins, 'f8') 
             
             for i in numpy.arange(gmech_dist.totalBins):
                 
@@ -1441,7 +1444,7 @@ class galaxy_gas_mass_estimator(object):
             gas_in_pixel_in_hist = gas_in_pixel[Av_dist.inds_in]
             
             #getting the emission distribution (a selection of lines)
-            dist_0 = numpy.zeros(Av_dist.totalBins, 'f8') 
+            dist_0 = zeros(Av_dist.totalBins, 'f8') 
             
             for i in numpy.arange(Av_dist.totalBins):
                 
@@ -1798,7 +1801,7 @@ class gas_set(Particles):
         ## array which will hold the weights sampled densities
         w_s = numpy.array([],'f8')
         ## weights of the parent particles 
-        w_ln_gt_X = numpy.zeros(ln_gt_X.size, 'f8')
+        w_ln_gt_X = zeros(ln_gt_X.size, 'f8')
                 
         n_to_be_sub_sampled = ln_gt_X.size
 
@@ -1832,7 +1835,7 @@ class gas_set(Particles):
                     ## setting weights by volume to the sampled particles
                     w_this_sample = (1.0/float(npp+1.0))*(exp(ln_this)/exp(sample_keep))
                     ## setting zero weights
-                    #w_this_sample = numpy.zeros(npp, 'f8')
+                    #w_this_sample = zeros(npp, 'f8')
                     ## setting unit weights
                     #w_this_sample = numpy.ones(npp, 'f8')
                     ## setting weights by mass
@@ -1917,4 +1920,288 @@ class gas_set(Particles):
         
         return n_s, w_s, gas_ln_gt_X, w_ln_gt_X, gas_ln_lt_X
 
+    def get_inds_children(self):
+        '''returns the indicies of the particles which are sampled, i.e the children'''
+        
+        return numpy.where(numpy.isfinite(self.parent))[0]
+
+    def get_inds_original_set(self):
+        '''returns the indicies of the original set of the particles'''
+        
+        return numpy.where(numpy.isnan(self.parent))[0]
+
+    def get_inds_has_children(self):
+        '''returns the indicies of the original set of the particles which have been sampled,
+        i.e the particles which have children
+        '''
+        
+        return numpy.where(numpy.isfinite(self.children))[0]
+    
+    def plot_pdf(self, qx=None, qy=None, log10x=False, log10y=False, nbins=50, xrng=None):
+        '''getting the PDF of one quantity vs the other'''
+
+        N = len(self) 
+        
+        ## getting the data to be processed from the attributes        
+        x, y = getattr(self, qx), getattr(self, qy)
+        if log10x == True: x = log10(x)
+        if log10y == True: y = log10(y)
+        
+        if xrng != None:
+            xmin, xmax = xrng
+        else:
+            xmin, xmax = x.min(), x.max()
+            
+        ## constructing the PDF of the first variable 'x'
+        x_dist = hist_nd(x.reshape((1, N)), 
+                         nbins=nbins, mn=xmin, mx=xmax, loc=True, reverse_indicies=True)
+
+        ## keeping the data within the bounds of the histogram
+        x_in_hist = x[x_dist.inds_in]
+        y_in_hist = y[x_dist.inds_in]
+
+        #getting the distribution of the y variable as a function of the histogram in x
+        y_dist = zeros(x_dist.totalBins, 'f8')
+
+        for i in numpy.arange(x_dist.totalBins):
+           
+            inds_in_bin = x_dist.get_indicies(i)
+           
+            if inds_in_bin.size != 0:
+                 
+                y_dist[i] = y_in_hist[inds_in_bin].sum()  #.mean  .average
+            #
+        #
+        
+        pylab.plot(x_dist.f.cntrd, x_dist.f)
+        pylab.show()
+        '''        
+        #----------------------------------------------------------------------------------------
+        
+        #getting the emission distribution (a selection of lines)
+        dist_0 = zeros(n_dist.totalBins, 'f8') 
+       
+        for i in numpy.arange(n_dist.totalBins):
+           
+            inds_in_bin = n_dist.get_indicies(i)
+           
+            if inds_in_bin.size != 0:
+                
+                gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
+ 
+                dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').sum()
+                #dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_13CO1-0').sum()
+            #
+        #
+       
+        x, y = n_dist.f.cntrd, n_dist.f
+       
+        ## ploting the locations in density where the cumilitive particle 
+        ## mass (number) distribution sum is 10%, 50%, 90%
+        ## also getting the CDF for the emission
+        ax3.plot(zoom(x, 20, order=2), zoom(y / numpy.max(y), 20, order=3), 'b')
+        ax3.plot(zoom(n_dist.f.cntrd, 20, order=3), 
+                 zoom(dist_0 / numpy.max(dist_0), 20, order=3), 'r')
+
+        # CDF of the mass 
+        f_CDF_n = (y / y.sum()).cumsum()
+        n_i = linspace(-3.0, 4.0, 1000.0)[::-1]
+        f_CDF_n_i = numpy.interp(n_i, x, f_CDF_n)
+
+        # CDF of the emission
+        f_CDF_em = ((dist_0 / dist_0.sum())[::-1]).cumsum()[::-1]
+        f_CDF_em_i = numpy.interp(n_i, x, f_CDF_em)
+       
+        # plotting the 10, 50, 90% indicators for the SPH mass CDF
+        ind90percent = argmin(fabs(f_CDF_n_i - 0.9))
+        ax3.plot([n_i[ind90percent], n_i[ind90percent]], [0, 2.5], 'b--')
+        ax3.text(n_i[ind90percent] - 1.1, 2.35, '90%', color = 'b')
+        ax3.text(n_i[ind90percent] - 1.1, 2.35 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind90percent]*100) + '%', 
+                 color = 'r')
+
+        ind50percent = argmin(fabs(f_CDF_n_i - 0.5))            
+        ax3.plot([n_i[ind50percent], n_i[ind50percent]], [0, 2.2], 'b--', linewidth=1)
+        ax3.text(n_i[ind50percent] - 1.1, 2.05, '50%' , color = 'b')
+        ax3.text(n_i[ind50percent] - 1.1, 2.05 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind50percent]*100)  + '%', 
+                 color = 'r')
+       
+        ind10percent = argmin(fabs(f_CDF_n_i - 0.1))
+        ax3.plot([n_i[ind10percent], n_i[ind10percent]], [0, 1.85], 'b--', linewidth=1)
+        ax3.text(n_i[ind10percent] - 1.1, 1.7 , '10%', color = 'b')
+        ax3.text(n_i[ind10percent] - 1.1, 1.7 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind10percent]*100) + '%', 
+                 color = 'r')
+
+       
+        # plotting the 10, 50, 90% indicators for the emission CDF
+        ind10percent = argmin(fabs(f_CDF_em_i - 0.1))
+        ax3.plot([n_i[ind10percent], n_i[ind10percent]], [0, 1.55], 'r--', linewidth=1)
+        ax3.text(n_i[ind10percent], 1.4, '10%', color = 'r')
+        ax3.text(n_i[ind10percent], 1.25, '%d' % (100.0 - f_CDF_n_i[ind10percent]*100) + '%', 
+                 color = 'b')
+
+
+        ind50percent = argmin(fabs(f_CDF_em_i - 0.5))
+        ax3.plot([n_i[ind50percent], n_i[ind50percent]], [0, 1.25], 'r--', linewidth=1)
+        ax3.text(n_i[ind50percent], 1.1, '50%', color = 'r')
+        ax3.text(n_i[ind50percent], 0.95, '%d' % (100.0 - f_CDF_n_i[ind50percent]*100) + '%', 
+                 color = 'b')
+       
+        ind90percent = argmin(fabs(f_CDF_em_i - 0.90))
+        ax3.plot([n_i[ind90percent], n_i[ind90percent]], [0, 0.95], 'r--', linewidth=1)
+        ax3.text(n_i[ind90percent], 0.8, '90%', color = 'r')
+        ax3.text(n_i[ind90percent], 0.65, '%d' % (100.0 - f_CDF_n_i[ind90percent]*100) + '%', 
+                 color = 'b')
+
+        ax3.set_ylim([0, 2.5])
+        ax3.set_xlabel(r'$\log_{10}$[n$_{\rm gas}$]')
+        ax3.set_ylabel(r'$f$')
+        '''
+    def match_weights(self):
+        
+        pylab.figure()
+        
+        nbins = 100
+        N = len(self)
+        
+        ln = log(self.n)
+        
+        w = zeros(N, 'f8') 
+        
+        
+        inds_o = self.get_inds_original_set()
+        inds_s = self.get_inds_children()
+
+        w[inds_o] = 1.0
+        w[inds_s] = 0.0
+
+        ## selecting the original gas particles
+        gas_orig_amuse = self[self.get_inds_original_set()]
+        gas_orig = gas_set(len(gas_orig_amuse)) 
+        gas_orig.copy_attr_from_amuse_set(gas_orig_amuse, ['n'])
+         
+        fit_func_rng = [1e-2, 1e4]
+        rv, N = gas_orig.fit_interval(fit_func_rng[0], fit_func_rng[1])
+        
+        hpdf_s, lbins_s = pylab.histogram(ln, range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                          weights=w,
+                                         )
+        pylab.plot(lbins_s[1::], log10(hpdf_s))
+
+        x = linspace(log(1e-3), log(1e+6), 100)
+        pylab.plot(x, log10(rv.pdf(x)), 'r--', lw=1)
+        
+        
+        ###############
+        ln_o, w_o = ln[inds_o], w[inds_o]
+        ln_s, w_s = ln[inds_s], w[inds_s]
+        
+        w_o[:] = 1.0
+        w_o[ ln_o > 5.4 ] = 0.0
+        
+        w_s[:] = 1.0/20.0
+        match = True
+        
+        if match == False:
+            hpdf_s, lbins_s = pylab.histogram(numpy.hstack((ln_o, ln_s)), 
+                                              range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                              weights=numpy.hstack((w_o, w_s)),
+                                             )
+        else:
+            
+            t0 = time.time()
+            
+            
+            intervals =  numpy.vstack((numpy.linspace(5.4, 8.4, 16), 
+                                       numpy.linspace(5.4, 8.4, 16) + 0.2)).T
+    
+    
+            for interval in intervals:
+                
+                print '#'*100
+                print interval
+                print '---------------------------------------'
+                                
+                ln_rng = interval
+                
+                wTrialRng = numpy.array([0.0, 1.0])
+                nTrial = 0
+                ln_x = ln_rng.mean()
+                
+                while True:
+                    
+                    ln_min, ln_max =  ln_rng
+                    
+                    w_s[ ((ln_s > ln_min)*(ln_s < ln_max)) ] = wTrialRng.mean()            
+                    
+                    hpdf_s, lbins_s = pylab.histogram(numpy.hstack((ln_o, ln_s)), 
+                                                      range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                                      weights=numpy.hstack((w_o, w_s)),
+                                                     )
+                    f = interpolate.interp1d(lbins_s[1::], hpdf_s)
+                
+                    if numpy.fabs(1.0 - f(ln_x)/rv.pdf(ln_x)) < 0.01:
+                        break
+                    else:
+                        
+                        if f(ln_x) < rv.pdf(ln_x):
+                            wTrialRng[0] = wTrialRng.mean()
+                        else:
+                            wTrialRng[1] = wTrialRng.mean()                      
+                    print nTrial, wTrialRng
+                    #if True:
+                    #    break
+                #
+            
+            print time.time() - t0
+            print '---------------------------------------'
+        #
+        #1.0 - f(log(1e4))/rv.pdf(log(1e4))
+        pylab.step(lbins_s[1::], log10(hpdf_s), 'g-', lw=2)
+        
+        pylab.show()
+        
+        #asdasdW
+'''
+        intervals =  numpy.vstack((numpy.linspace(5.4, 6.0, 5), numpy.linspace(5.6, 6.2, 5))).T
+        
+        for interval in intervals:
+            
+            print interval
+            print '------------------------------------------'
+            
+            wTrialRng = numpy.array([0.0, 1.0])
+            nTrial = 0
+            
+            while True:
+                
+                wTry = wTrialRng.mean()
+                
+                w_s[ ((ln_s >= interval[0])*(ln_s < interval[1])) ] = wTry
+                
+                hpdf_s, lbins_s = pylab.histogram(numpy.hstack((ln_o, ln_s)), 
+                                                  range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                                  weights=numpy.hstack((w_o, w_s)),
+                                                 )
+                f = interpolate.interp1d(lbins_s[1::], hpdf_s)
+            
+                print nTrial, f(wTry), rv.pdf(wTry), 
+                
+                if numpy.fabs(1.0 - f(wTry)/rv.pdf(wTry)) < 0.05:
+                    break
+                else:
+                    
+                    if f(wTry) < rv.pdf(wTry):
+                        wTrialRng[1] = wTry
+                    else:
+                        wTrialRng[0] = wTry
+                                              
+                print wTry, wTrialRng
+                #if True:
+                #    break
+            #
+'''        
+        
+        
+        
+        
         

@@ -117,7 +117,7 @@ if False:
 
 
 ## aggregating all the particles sets into one set and writing it to the disk
-gas_all = Particles(len(gas_lt) + len(gas_gt) + len(gas_s))
+gas_all = fi_utils.gas_set(len(gas_lt) + len(gas_gt) + len(gas_s))
 
 # adding the new attributes related to the sampled particles 
 new_attr_list = attr_list + ('weights', 'children', 'parent')

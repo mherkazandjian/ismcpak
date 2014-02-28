@@ -29,11 +29,11 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # th
                       },
           }
 
-npp           = 100             # number of particles to be sampled from each SPH particle
+npp           = 20             # number of particles to be sampled from each SPH particle
 n_min_sample  = 1e2            # particles with densities greater than this are sampled
 fit_func_rng  = [1e-2, 1e+3]   # the range of densities used in constructing the function used for the sampling
 snap_index    = 4
-save_figs     = True
+save_figs     = False
 fig_paths     = {
                  'fig1' : '/home/mher/ism/docs/paper04/src/figs/methods/PDF_T_n.eps',
                  'fig2' : '/home/mher/ism/docs/paper04/src/figs/methods/PDF_n_fit.eps',
@@ -128,6 +128,6 @@ for attr in new_attr_list:
 ####################################################################################### 
 
 ## making the plot for the original distribution
-#paper_plots.plot_methods_fig(gas_all, save_figs, fig_paths) 
+paper_plots.plot_methods_fig(gas_all, save_figs, fig_paths) 
 
 print 'done'

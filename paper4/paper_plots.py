@@ -151,6 +151,7 @@ def plot_methods_fig(gas, save_figs, fig_paths):
         ticks = linspace(2.0e4, 1e5, 5)
         ax.set_yticks( ticks )
         ax.set_yticklabels(['2', '4', '6', '8', '10'], size='small')
+
         ax.set_ylim(0, 1.3e5)
         ax.set_ylabel(r'$N$ ' + r'($\times 10^4$)', size='small')
         
