@@ -74,10 +74,27 @@ def plot_methods_fig(gas, save_figs, fig_paths):
         ## computing the PDF of the original particles
         f, bins = histogram(x, range=[xmin, xmax], bins=nbins, normed=True)
         
-        ## plotting the PDF from which the new densities are sampled
+        ## plotting the PDF from which the new densities which are sampled
         f_sampled, = ax.step(bins[1::], log10(f/150), 'g--', lw=1)
 
-        ax.legend([plt_orig_pdf, plt_fit_pdf, f_sampled], ['SPH', 'FIT', 'SAMPLED'], loc=0, fontsize='small')
+        ## computing the PDF of the combined distribution of the original and sampled particles
+        
+        # using the ln of the densities 
+        weights_matched = gas.match_weights(20, fit_func_rng, 1e2, [1e2, gas.n.max()], 30, 0.001)
+        
+        gas.weights = weights_matched
+        
+        f_combined, bins = histogram(log(gas.n),
+                                     range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                     weights=gas.weights,
+                                     )
+        plt_combined, = ax.plot( (bins[0:-1] + bins[1:])/2.0, log10(f_combined), 'k+', markersize=4)
+
+
+        #plt_combined, = ax.plot( (bins[0:-1] + bins[1:])/2.0, log10(f/150), 'go', markersize=3)                                     
+
+        ax.legend([plt_orig_pdf, plt_fit_pdf, f_sampled, plt_combined], 
+                  ['SPH', 'fit', 'sampled', 'combined'], loc=0, fontsize='x-small')
         ax.set_xlabel(r'$n / {\rm cm}^{-3}$', size='small')
         ax.set_ylabel('PDF', size='small')
 

@@ -33,27 +33,27 @@ npp           = 20             # number of particles to be sampled from each SPH
 n_min_sample  = 1e2            # particles with densities greater than this are sampled
 fit_func_rng  = [1e-2, 1e+3]   # the range of densities used in constructing the function used for the sampling
 snap_index    = 4
-save_figs     = False
+save_figs     = True
 fig_paths     = {
                  'fig1' : '/home/mher/ism/docs/paper04/src/figs/methods/PDF_T_n.eps',
                  'fig2' : '/home/mher/ism/docs/paper04/src/figs/methods/PDF_n_fit.eps',
                  }
 #===========================================================================================================
  
-#extracting/guessing the metallicity from the name of the directory of the run
+## extracting/guessing the metallicity from the name of the directory of the run
 metallicity = fi_utils.guess_metallicity(params['rundir'])
 
-# setting the filename
+## setting the filename
 suffix = '%06d' % snap_index
 snapName = 'fiout.%s' % suffix 
 filename = params['rundir'] + '/firun/' + snapName 
     
-#loading the sph simulation data
+## loading the sph simulation data
 print 'loading snapshot %s : ' % filename
 gas_fi, dark, stars = read_set_from_file(filename, format = FiFileFormatProcessor)
 
 
-# getting the gas particles in cgs units
+## getting the gas particles in cgs units
 gas = fi_utils.convert_units_to_pdr_units(gas_fi, metallicity)
 
 print 'done reading fi snapshot : %s' % filename
@@ -67,7 +67,7 @@ n_s, w_s, gas_gt, w_gt, gas_lt = gas.sample_higher_densities(npp = npp,
                                                              fit_func_rng=fit_func_rng)
 
 ## making the new particle set
-gas_s = Particles(len(n_s))
+gas_s = fi_utils.gas_set(len(n_s))
 
 ## attributes to be assigined to the sampled particles
 attr_list = ('Av', 'G0', 'Pe', 'T', 'gmech', 'mass', 'n', 'vdisp', 'vx', 'vy', 'vz', 'x', 'y', 'z',)

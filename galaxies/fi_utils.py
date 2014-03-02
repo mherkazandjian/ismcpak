@@ -2056,7 +2056,9 @@ class gas_set(Particles):
         ax3.set_xlabel(r'$\log_{10}$[n$_{\rm gas}$]')
         ax3.set_ylabel(r'$f$')
         '''
-    def match_weights(self):
+    def match_weights(self, npp=None, fit_func_rng=None, n_min_sample=None, 
+                      match_interval=None, nbins_in_match_interval=None,
+                      matching_tol=None):
         
         pylab.figure()
         
@@ -2078,29 +2080,29 @@ class gas_set(Particles):
         gas_orig_amuse = self[self.get_inds_original_set()]
         gas_orig = gas_set(len(gas_orig_amuse)) 
         gas_orig.copy_attr_from_amuse_set(gas_orig_amuse, ['n'])
-         
-        fit_func_rng = [1e-2, 1e4]
+        
         rv, N = gas_orig.fit_interval(fit_func_rng[0], fit_func_rng[1])
         
         hpdf_s, lbins_s = pylab.histogram(ln, range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
                                           weights=w,
                                          )
         pylab.plot(lbins_s[1::], log10(hpdf_s))
-
+        
         x = linspace(log(1e-3), log(1e+6), 100)
         pylab.plot(x, log10(rv.pdf(x)), 'r--', lw=1)
-        
+
+        pylab.xticks(log(10.0**linspace(-6, 6, 12+1)), linspace(-6, 6, 12+1))
         
         ###############
         ln_o, w_o = ln[inds_o], w[inds_o]
         ln_s, w_s = ln[inds_s], w[inds_s]
         
         w_o[:] = 1.0
-        w_o[ ln_o > 5.4 ] = 0.0
-        
-        w_s[:] = 1.0/20.0
+        w_o[ ln_o > log(n_min_sample) ] = 0.0
+
+        w_s[:] = 1.0/float(npp)
         match = True
-        
+
         if match == False:
             hpdf_s, lbins_s = pylab.histogram(numpy.hstack((ln_o, ln_s)), 
                                               range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
@@ -2110,44 +2112,89 @@ class gas_set(Particles):
             
             t0 = time.time()
             
+            intervals = numpy.linspace(log(match_interval[0]), log(match_interval[1]), nbins_in_match_interval)
+            intervals = numpy.vstack((intervals, 
+                                      intervals + (intervals[1] - intervals[0]))).T
             
-            intervals =  numpy.vstack((numpy.linspace(5.4, 8.4, 16), 
-                                       numpy.linspace(5.4, 8.4, 16) + 0.2)).T
-    
-    
-            for interval in intervals:
+            print 'the intervals where the densities will be matched'
+            print intervals
+            print 'interal size', intervals[0][1] - intervals[0][0]
+            
+            for i, interval in enumerate(intervals):
                 
                 print '#'*100
                 print interval
-                print '---------------------------------------'
+                print log10(exp(interval))
+                print '----------------%d-----------------------' % i
                                 
                 ln_rng = interval
                 
                 wTrialRng = numpy.array([0.0, 1.0])
                 nTrial = 0
                 ln_x = ln_rng.mean()
+
+                ln_min, ln_max =  ln_rng
+
+                inds = where(((ln_s > ln_min)*(ln_s < ln_max)))[0]
+
+                if inds.size == 0:
+                    continue
+                
+                def compute_combined_pdf(wTry):
+                        
+                    w_s[ inds ] = wTry             
+                    
+                    all_ln = numpy.hstack((ln_o, ln_s))
+                    all_weights = numpy.hstack((w_o, w_s))
+                    
+                    hpdf_s, lbins_s = pylab.histogram(all_ln, 
+                                                      range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                                      weights=all_weights,
+                                                     )
+                    bins_c = (lbins_s[:-1:] + lbins_s[1::])/2.0
+                    f = interpolate.interp1d(bins_c, hpdf_s)
+                      
+                    return f
+
+                ####
+                # try a weights sweep (check)
+                def sweep_weights():
+                    weightsTry = [0.0,
+                                  0.001, 
+                                  0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09,
+                                  0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                                  1.0]     
+                    print '  x       f(x)     f     |  f(x)-f   | 1 - f(x)/f'
+                                                     
+                    for wTry in weightsTry:
+                        f = compute_combined_pdf(wTry)
+                        print '%.3f  %.5f  %.5f  | %.5f  %.5f' % (wTry, f(ln_x), rv.pdf(ln_x), f(ln_x) - rv.pdf(ln_x), numpy.fabs(1.0 - f(ln_x)/rv.pdf(ln_x))  )
+                #sweep_weights()
+                ####
                 
                 while True:
+                                        
+                    wTry = (wTrialRng[0] + wTrialRng[1])/2.0
                     
-                    ln_min, ln_max =  ln_rng
                     
-                    w_s[ ((ln_s > ln_min)*(ln_s < ln_max)) ] = wTrialRng.mean()            
+                    f = compute_combined_pdf(wTry)
                     
-                    hpdf_s, lbins_s = pylab.histogram(numpy.hstack((ln_o, ln_s)), 
-                                                      range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
-                                                      weights=numpy.hstack((w_o, w_s)),
-                                                     )
-                    f = interpolate.interp1d(lbins_s[1::], hpdf_s)
-                
-                    if numpy.fabs(1.0 - f(ln_x)/rv.pdf(ln_x)) < 0.01:
+                    
+                    print 'f_fit       f_hist\n%.2e     %.2e' % (rv.pdf(ln_x), f(ln_x)) 
+                    
+                    if numpy.fabs(1.0 - f(ln_x)/rv.pdf(ln_x)) < matching_tol:
                         break
                     else:
                         
                         if f(ln_x) < rv.pdf(ln_x):
-                            wTrialRng[0] = wTrialRng.mean()
+                            wTrialRng[0] = wTry
                         else:
-                            wTrialRng[1] = wTrialRng.mean()                      
-                    print nTrial, wTrialRng
+                            wTrialRng[1] = wTry
+                            
+                    print '\t', nTrial, wTrialRng, wTry
+                    
+                    nTrial += 1
+                    
                     #if True:
                     #    break
                 #
@@ -2156,6 +2203,17 @@ class gas_set(Particles):
             print '---------------------------------------'
         #
         #1.0 - f(log(1e4))/rv.pdf(log(1e4))
-        pylab.step(lbins_s[1::], log10(hpdf_s), 'g-', lw=2)
+        all_ln = numpy.hstack((ln_o, ln_s))
+        all_weights = numpy.hstack((w_o, w_s))
+        
+        hpdf_s, lbins_s = pylab.histogram(all_ln, 
+                                          range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                          weights=all_weights,
+                                         )
+        
+        pylab.step(lbins_s[1::], log10(hpdf_s), 'g--', lw=2)
+        #pylab.step(lbins_s[1::][::2], log10(hpdf_s)[::2], 'go', markersize=5)
         
         pylab.show()
+        
+        return numpy.hstack((w_o, w_s))
