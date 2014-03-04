@@ -14,7 +14,7 @@ from galaxies import fi_utils
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext', # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-test', # the path of the dir containing the simulation
           'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
@@ -35,7 +35,7 @@ save_sampled            = False
 nbins_in_match_interval = 30
 matching_tol            = 0.001 
 nPasses                 = 1            
-save_weights_func       = True
+save_weights_func       = False
 snap_index              = 4
 #===========================================================================================================
  
@@ -50,7 +50,6 @@ filename = params['rundir'] + '/firun/' + snapName
 #loading the sph simulation data
 print 'loading snapshot %s : ' % filename
 gas_fi, dark, stars = read_set_from_file(filename, format = FiFileFormatProcessor)
-
 
 # getting the gas particles in cgs units
 gas = fi_utils.convert_units_to_pdr_units(gas_fi, metallicity)
@@ -68,9 +67,9 @@ n_s, w_s, gas_gt, w_gt, gas_lt = gas.sample_higher_densities(npp = npp,
 
 ## making the new particle set
 gas_s = fi_utils.gas_set(len(n_s))
-
 ## attributes to be assigined to the sampled particles
-attr_list = ('Av', 'G0', 'Pe', 'T', 'gmech', 'mass', 'n', 'vdisp', 'vx', 'vy', 'vz', 'x', 'y', 'z',)
+attr_list = ('Av', 'G0', 'Pe', 'T', 'gmech', 'mass', 'n', 'vdisp', 
+             'vx', 'vy', 'vz', 'x', 'y', 'z', 'id', 'radius')
 
 ## creating a new particle set by repeating the attributes of the parent
 ## particles npp times (the new densities are assigned later)

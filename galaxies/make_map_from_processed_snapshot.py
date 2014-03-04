@@ -22,9 +22,11 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
-          'species' : ['CO', '13CO', 'HCN', 'HNC', 'HCO+'],
+          'species' : ['HCN'],#'CO'], #'13CO', 'HCN', 'HNC', 'HCO+'],
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'by-number', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+#          'weights' : 'original-only', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+#          'weights' : #'matched',  #'original-only' ,#None ,#by-number          
           'snaps'   : numpy.arange(4, 4 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
@@ -38,6 +40,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       #the size of the box to be displayed (particles outside the range are discarded)
                       'box_size' : [-8.0, 8.0] | units.kpc, #kpc
                       },
+          'check'   : 'default',
 #          'maps'   : {CO
 #                      'attr' : 'n', #'mass', 'G0', 'gmech', 'Av'
 #                      'v_rng': [-3.0, 4.0],
@@ -64,6 +67,17 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                              'func'    : numpy.average,
 #                              'weights' : 'weights',
 #                             },
+
+                  'map1'   : {
+                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
+                              'v_rng'   : [-10.0, 4.0],
+                              'title'   : r'', 
+                              'as_log10': True,
+#                              'func'    : fi_utils.luminosity,
+                              'func'    : fi_utils.flux,
+                             },
+
+
 #                  'map2'   : {
 #                              'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
 #                              'v_rng'   : [-10.0, 4.0],
@@ -73,15 +87,15 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                              #'func'    : numpy.average,
 #                              #'weights' : 'weights',
 #                             },
-                  'map1'   : {
-                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
-                              'v_rng'   : [-10.0, 4.0],
-                              'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
-                              'as_log10': True,
-                              #'func'    : numpy.mean,
-                              'func'    : numpy.average,
-                              'weights' : 'weights',
-                             },
+#                  'map1'   : {
+#                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
+#                              'v_rng'   : [-10.0, 4.0],
+#                              'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
+#                              'as_log10': True,
+#                              #'func'    : numpy.mean,
+#                              'func'    : numpy.average,
+#                              'weights' : 'weights',
+#                             },
 #                  'map2'   : {
 #                              'attr'    : 'em_fluxKkms_13CO1-0', #'mass', 'G0', 'gmech', 'Av'
 #                              'v_rng'   : [-10.0, 4.0],
@@ -198,27 +212,30 @@ bs_min, bs_max = params['ranges']['box_size'].number
 
 def generate_maps(snap_index, params):
     
-    #path to processed fi snapshot  
+    ## path to processed fi snapshot  
     snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % snap_index + '.states.npz'
     
-    #loading the processed sph simulation data with the emissions 
+    ## loading the processed sph simulation data with the emissions 
     logger.debug('loading proccessed snapshot %s : ' % snap_filename)
     gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], 
                                                   load_pdr=params['pdr_sph'],
                                                   )
-
+    
     logger.debug('done reading fi snapshot : %s' % snap_filename)
     logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
+    
+    ## checking for weird particles and taking care of them
+    gas.check_particles(params['check'], logger)
 
     ## setting the weights
     weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % snap_index
     gas.use_weights(weighting=params['weights'], weights_filename = weights_filename)
-
+    
     #keeping gas particles within the specified ranges
     gas = fi_utils.select_particles(gas, params['ranges'])
     logger.debug('got the sph particles in the required ranges')
     logger.debug('number of gas particles in the specified ranages = %d' %  len(gas))
-
+    
     #making the 2D histogram
     print 'getting the spatial distrubutions'
     hist = hist_nd(numpy.vstack((gas.x, gas.y)), mn = bs_min, mx=bs_max, nbins=params['imres'], reverse_indicies=True, loc=True)

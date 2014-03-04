@@ -113,10 +113,14 @@ def convert_units_to_pdr_units(gas, metallicity):
 
     gas_new.vdisp = gas.vdisp.value_in(units.km / units.s)
     
-    #computing the mean Av        
+    # computing the mean Av        
     gas_new.Pe = (1.085 * gas_new.T + 54.0 * gas_new.vdisp**2)*gas_new.n #how to set the unit to the same untis as  (units.K*gas.n.unit*constants.kB.unit)
     gas_new.Av = 0.22 * metallicity * ( 1520.0 / 100.0) * numpy.sqrt(gas_new.Pe/1e4)
 
+    # copying some other attributes
+    gas_new.id = numpy.int32(gas.id.value_in(gas.id.unit))
+    gas_new.radius = gas.radius.value_in(units.parsec)
+    
     return gas_new
     
 def select_particles(gas, ranges):
@@ -218,7 +222,7 @@ def save_gas_particle_info_saperate_files(path_of_snapshot, gas, species):
     attr_save = ['mass', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'n', 'G0', 'gmech', 'Av', 'T', 'alpha']
     
     # additional attributes related to the sampled particles
-    for extra_attr in ['weights', 'parent', 'children']:
+    for extra_attr in ['weights', 'parent', 'children', 'id', 'radius', 'Pe', 'vdisp']:
         if extra_attr in dir(gas):
             attr_save.append(extra_attr)
              
@@ -354,14 +358,19 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, **kwarg
      computing the averages of the maps
     '''
 
+    # the area of the binx (area of each pixel)
+    bin_area = hist.szBins.prod()
+    
     map_data = zeros((hist.nBins[0], hist.nBins[1]), dtype=numpy.float64)
 
     if attr not in dir(gas[0]):  
         raise AttributeError('%s is not an attribute of the gas particles,' % attr)
         
     attr_data = getattr(gas, attr)
-    if 'weights' in kwargs:
-        w_data = getattr(gas, kwargs['weights'])
+    
+    mass = gas.mass
+    weights = gas.weights
+    radius = gas.radius
     
     for i in numpy.arange(hist.nBins[0]):
         
@@ -373,15 +382,27 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, **kwarg
             
             if inds_in_bin.size > 0:
 
-                x = attr_data[inds_in_bin]
+                q = attr_data[inds_in_bin]
+                w = weights[inds_in_bin]
+                r = radius[inds_in_bin]
+                m = mass[inds_in_bin]
+                 
+                if func == luminosity:
+                    bin_value = luminosity(fluxes=q, radii=r, weights=w)
+                if func == flux:
+                    bin_value = flux(fluxes=q, radii=r, weights=w, bin_area=bin_area)
                 
+                ''' 
                 if 'weights' in kwargs:
                     w = w_data[inds_in_bin]
                     
                 if 'weights' in kwargs:
-                    map_data[i,j] = func(x, weights=w)
+                    map_data[i,j] = func(q, weights=w, mass=m, radius=r, bin_area=bin_area)
                 else:
                     map_data[i,j] = func(x)
+                '''
+                
+                map_data[i,j] = bin_value
             #
         #
     #
@@ -2444,5 +2465,46 @@ class gas_set(Particles):
         pass
         
         
+    def check_particles(self, what_to_check, logger):
+        '''checks the attributes and takes care of irregularities'''
         
+        logger.debug('='*100)
+        logger.debug('checking particle attributes for irregularitie')
         
+        if what_to_check == 'default':
+            # checking for the know problems
+            
+            # checking for extremely high values of CO(1-0)
+            if 'em_fluxKkms_CO1-0' in self.all_attributes():
+                x = getattr(self, 'em_fluxKkms_CO1-0')
+                inds = where(x > 300.0)[0]
+                x[inds] = 0.0
+                new_max = x.max()
+                logger.debug('warning: found %d particles with Flux > 300.0 k km / s' % inds.size)
+                logger.debug('         setting thier values of the max flux %f k km / s' % new_max)
+                x[inds] = new_max
+                setattr(self, 'em_fluxKkms_CO1-0', x)
+            
+            # converting the radii from pc to kpc
+            self.radius = self.radius * 1e-3
+            logger.debug('warning: converting radii from pc to kpc')
+            
+def luminosity(fluxes=None, radii=None, weights=None):
+    '''compute the total luminosity of particles. F is the array of the fluxes, m is the array
+    of the masses, r is the radius of thte particles, w is the weight'''
+    
+    
+    areas = pi * radii**2 # the projected area of the SPH particles
+    lum = fluxes*weights*areas   # the luminosity of each particle
+    
+    return lum.sum()
+
+def flux(fluxes=None, radii=None, weights=None, bin_area=None):
+    '''compute the mean/total flux of particles. F is the array of the fluxes, m is the array
+    of the masses, r is the radius of thte particles, w is the weight, area_pixel is the area 
+    of the pixel in which the particles are.'''
+    
+    
+    lum_pixel = luminosity(fluxes, radii, weights)
+    
+    return lum_pixel / bin_area
