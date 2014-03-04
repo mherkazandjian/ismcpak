@@ -80,7 +80,12 @@ def plot_methods_fig(gas, save_figs, fig_paths):
         ## computing the PDF of the combined distribution of the original and sampled particles
         
         # using the ln of the densities 
-        weights_matched = gas.match_weights(20, fit_func_rng, 1e2, [1e2, gas.n.max()], 30, 0.001)
+        weights_matched, intervals, weights_func = gas.match_weights(20, 
+                                                                     fit_func_rng, 
+                                                                     1e2, 
+                                                                     [1e2, gas.n.max()], 
+                                                                     30, 
+                                                                     0.001)
         
         gas.weights = weights_matched
         

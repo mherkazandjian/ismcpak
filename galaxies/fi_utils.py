@@ -348,6 +348,7 @@ def load_gas_particle_info_with_em(filename, species, load_pdr=None):
     print 'warning: make sure the computed optical depths make sense!!! it doesnt seem so..'
     return gas
 
+
 def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, **kwargs):
     '''looping over the bins of the 2D histogram of the x,y coordinates and 
      computing the averages of the maps
@@ -1551,38 +1552,37 @@ class galaxy_gas_mass_estimator(object):
         return mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun
 
 
-def set_weights_sampled_to_zero(gas):
-
-    inds_not_sampled = where( isnan(gas.parent) )
-    inds_sampled = where( isfinite(gas.parent) )
-
-    new_weights = gas.weights.copy()
-    
-    new_weights[inds_not_sampled] = 1.0
-    new_weights[inds_sampled] = 0.0
-    
-    gas.weights = new_weights
-    
-    return  gas
-
-def set_weights_not_sampled_to_zero(gas):
-
-    inds_not_sampled = where( isnan(gas.parent) )
-    inds_sampled = where( isfinite(gas.parent) )
-
-    new_weights = gas.weights.copy()
-    
-    new_weights[inds_not_sampled] = 0.0
-    new_weights[inds_sampled] = 1.0
-    
-    gas.weights = new_weights
-    
-    return  gas
-
-    return gas
-
 class gas_set(Particles):
 
+
+    def __getitem__(self, items):
+        '''overriding the slicing method of the amuse particle set class'''
+        
+        n = getattr(self, 'key')[items].size 
+        
+        gas_ret = gas_set(n)
+        
+        for attr_name in self.all_attributes():
+            
+            if attr_name in ['connected_components', 'mass_segregation_Gini_coefficient', 'total_mass',
+                             'bound_subset', 'LagrangianRadii', 'acceleration', 'thermal_energy',
+                             'total_angular_momentum', 'get_binaries', 'angular_momentum', 'potential',
+                             'Qparameter', 'potential_energy', 'center_of_mass', 'potential_energy_in_field',
+                             'moment_of_inertia', 'cluster_core', 'total_momentum', 
+                             'new_particle_from_cluster_core', 'position', 'kinetic_energy',
+                             'densitycentre_coreradius_coredens', 'oblateness', 'rotate', 'move_to_center',
+                             'center_of_mass_velocity', 'virial_radius', 'total_radius', 'scale_to_standard',
+                             'find_closest_particle_to', 'velocity', 'binaries', 'specific_kinetic_energy']:
+                continue
+            
+            data = getattr(self, attr_name)
+            
+            if type(getattr(self, attr_name)) == type(numpy.ndarray([])):
+                
+                setattr(gas_ret, attr_name, data[items])
+                        
+        return gas_ret
+     
     def copy_attr_from_amuse_set(self, gas_amuse, attr_list):
         '''copies the attributes from the amuse set to the gas_set'''
         
@@ -1937,9 +1937,16 @@ class gas_set(Particles):
         
         return numpy.where(numpy.isfinite(self.children))[0]
     
-    def plot_pdf(self, qx=None, qy=None, log10x=False, log10y=False, nbins=50, xrng=None):
-        '''getting the PDF of one quantity vs the other'''
+    def plot_pdf(self, qx=None, qy=None, log10x=False, log10y=False, weights=None, nbins=50, xrng=None):
+        '''getting the PDF of one quantity vs the other
+        
+        example.
+        gas.plot_pdf(qx='n', qy='em_fluxKkms_13CO1-0', log10x=True, weights=gas.weights, nbins=50)
 
+        '''
+
+        pylab.figure()
+        
         N = len(self) 
         
         ## getting the data to be processed from the attributes        
@@ -1951,7 +1958,12 @@ class gas_set(Particles):
             xmin, xmax = xrng
         else:
             xmin, xmax = x.min(), x.max()
-            
+
+        if weights == None:
+            w = numpy.ones(x.size, 'f8')
+        else:
+            w = weights
+        
         ## constructing the PDF of the first variable 'x'
         x_dist = hist_nd(x.reshape((1, N)), 
                          nbins=nbins, mn=xmin, mx=xmax, loc=True, reverse_indicies=True)
@@ -1959,7 +1971,8 @@ class gas_set(Particles):
         ## keeping the data within the bounds of the histogram
         x_in_hist = x[x_dist.inds_in]
         y_in_hist = y[x_dist.inds_in]
-
+        w_in_hist = w[x_dist.inds_in]
+        
         #getting the distribution of the y variable as a function of the histogram in x
         y_dist = zeros(x_dist.totalBins, 'f8')
 
@@ -1968,12 +1981,29 @@ class gas_set(Particles):
             inds_in_bin = x_dist.get_indicies(i)
            
             if inds_in_bin.size != 0:
-                 
-                y_dist[i] = y_in_hist[inds_in_bin].sum()  #.mean  .average
+                
+                #sum
+                #y =  y_in_hist[inds_in_bin].sum()
+                
+                # weighed sum
+                y =  ((y_in_hist[inds_in_bin]*w_in_hist[inds_in_bin]).sum())/((w_in_hist[inds_in_bin]).sum())
+                
+                # mean  
+                #y = numpy.mean(y_in_hist[inds_in_bin]) 
+                
+                # weighed mean
+                #y = numpy.average(y_in_hist[inds_in_bin], weights=w_in_hist[inds_in_bin])
+                                
+                print y
+                y_dist[i] = y
             #
         #
         
+        pylab.subplot(121)
         pylab.plot(x_dist.f.cntrd, x_dist.f)
+
+        pylab.subplot(122)        
+        pylab.plot(x_dist.f.cntrd, y_dist)
         pylab.show()
         '''        
         #----------------------------------------------------------------------------------------
@@ -2056,9 +2086,43 @@ class gas_set(Particles):
         ax3.set_xlabel(r'$\log_{10}$[n$_{\rm gas}$]')
         ax3.set_ylabel(r'$f$')
         '''
+    def set_weights_children_zero_parents_one(self):
+        
+        w = numpy.zeros(len(self), 'f8')
+        
+        inds_o = self.get_inds_original_set()
+        inds_s = self.get_inds_children()
+
+        w[inds_o] = 1.0
+        w[inds_s] = 0.0
+        
+        self.weights = w
+    
+    def set_weights_childrent_to_inverse_sampling_number(self, sampling_info_fname=None):
+
+        w = numpy.zeros(len(self.weights), 'f8')
+
+        ## loading the sampling info from the saved file
+        info = self.load_weights_function(sampling_info_fname)
+        
+        ## indicies of the original particles
+        inds1 = self.get_inds_original_set()
+        w[inds1] = 1.0
+        
+        ## indicies of the original particles which have children
+        inds2 = self.get_inds_has_children()
+        w[inds2] = 1.0 / (1.0 + info['npp'])
+        
+        ## indicies of the points which are sampled
+        inds3 = self.get_inds_children()        
+        w[inds3] = 1.0 / (1.0 + info['npp'])
+        
+        self.weights = w
+        
+        
     def match_weights(self, npp=None, fit_func_rng=None, n_min_sample=None, 
                       match_interval=None, nbins_in_match_interval=None,
-                      matching_tol=None):
+                      matching_tol=None, nPasses=1, save_weights_info=None):
         
         pylab.figure()
         
@@ -2068,7 +2132,6 @@ class gas_set(Particles):
         ln = log(self.n)
         
         w = zeros(N, 'f8') 
-        
         
         inds_o = self.get_inds_original_set()
         inds_s = self.get_inds_children()
@@ -2093,6 +2156,8 @@ class gas_set(Particles):
 
         pylab.xticks(log(10.0**linspace(-6, 6, 12+1)), linspace(-6, 6, 12+1))
         
+        x_fit = exp(x)
+        y_fit = rv.pdf(x)
         ###############
         ln_o, w_o = ln[inds_o], w[inds_o]
         ln_s, w_s = ln[inds_s], w[inds_s]
@@ -2112,93 +2177,100 @@ class gas_set(Particles):
             
             t0 = time.time()
             
-            intervals = numpy.linspace(log(match_interval[0]), log(match_interval[1]), nbins_in_match_interval)
-            intervals = numpy.vstack((intervals, 
-                                      intervals + (intervals[1] - intervals[0]))).T
-            
-            print 'the intervals where the densities will be matched'
-            print intervals
-            print 'interal size', intervals[0][1] - intervals[0][0]
-            
-            for i, interval in enumerate(intervals):
+            for p in range(nPasses):
                 
-                print '#'*100
-                print interval
-                print log10(exp(interval))
-                print '----------------%d-----------------------' % i
-                                
-                ln_rng = interval
+                intervals = numpy.linspace(log(match_interval[0]), log(match_interval[1]), nbins_in_match_interval)
+                intervals = numpy.vstack((intervals, 
+                                          intervals + (intervals[1] - intervals[0]))).T
                 
-                wTrialRng = numpy.array([0.0, 1.0])
-                nTrial = 0
-                ln_x = ln_rng.mean()
-
-                ln_min, ln_max =  ln_rng
-
-                inds = where(((ln_s > ln_min)*(ln_s < ln_max)))[0]
-
-                if inds.size == 0:
-                    continue
+                print 'the intervals where the densities will be matched'
+                print intervals
+                print 'interal size', intervals[0][1] - intervals[0][0]
                 
-                def compute_combined_pdf(wTry):
-                        
-                    w_s[ inds ] = wTry             
-                    
-                    all_ln = numpy.hstack((ln_o, ln_s))
-                    all_weights = numpy.hstack((w_o, w_s))
-                    
-                    hpdf_s, lbins_s = pylab.histogram(all_ln, 
-                                                      range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
-                                                      weights=all_weights,
-                                                     )
-                    bins_c = (lbins_s[:-1:] + lbins_s[1::])/2.0
-                    f = interpolate.interp1d(bins_c, hpdf_s)
-                      
-                    return f
-
-                ####
-                # try a weights sweep (check)
-                def sweep_weights():
-                    weightsTry = [0.0,
-                                  0.001, 
-                                  0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09,
-                                  0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
-                                  1.0]     
-                    print '  x       f(x)     f     |  f(x)-f   | 1 - f(x)/f'
-                                                     
-                    for wTry in weightsTry:
-                        f = compute_combined_pdf(wTry)
-                        print '%.3f  %.5f  %.5f  | %.5f  %.5f' % (wTry, f(ln_x), rv.pdf(ln_x), f(ln_x) - rv.pdf(ln_x), numpy.fabs(1.0 - f(ln_x)/rv.pdf(ln_x))  )
-                #sweep_weights()
-                ####
+                weights_in_interval = numpy.zeros(nbins_in_match_interval, 'f8')
                 
-                while True:
-                                        
-                    wTry = (wTrialRng[0] + wTrialRng[1])/2.0
+                for i, interval in enumerate(intervals):
                     
+                    print '#'*100
+                    print interval
+                    print log10(exp(interval))
+                    print '----------------%d-----------------------' % i
+                                    
+                    ln_rng = interval
                     
-                    f = compute_combined_pdf(wTry)
+                    wTrialRng = numpy.array([0.0, 1.0])
+                    nTrial = 0
+                    ln_x = ln_rng.mean()
+    
+                    ln_min, ln_max =  ln_rng
+    
+                    inds = where(((ln_s > ln_min)*(ln_s < ln_max)))[0]
+    
+                    if inds.size == 0:
+                        continue
                     
-                    
-                    print 'f_fit       f_hist\n%.2e     %.2e' % (rv.pdf(ln_x), f(ln_x)) 
-                    
-                    if numpy.fabs(1.0 - f(ln_x)/rv.pdf(ln_x)) < matching_tol:
-                        break
-                    else:
-                        
-                        if f(ln_x) < rv.pdf(ln_x):
-                            wTrialRng[0] = wTry
-                        else:
-                            wTrialRng[1] = wTry
+                    def compute_combined_pdf(wTry):
                             
-                    print '\t', nTrial, wTrialRng, wTry
+                        w_s[ inds ] = wTry             
+                        
+                        all_ln = numpy.hstack((ln_o, ln_s))
+                        all_weights = numpy.hstack((w_o, w_s))
+                        
+                        hpdf_s, lbins_s = pylab.histogram(all_ln, 
+                                                          range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                                          weights=all_weights,
+                                                         )
+                        bins_c = (lbins_s[:-1:] + lbins_s[1::])/2.0
+                        f = interpolate.interp1d(bins_c, hpdf_s)
+                          
+                        return f
+    
+                    ####
+                    # try a weights sweep (check)
+                    def sweep_weights():
+                        weightsTry = [0.0,
+                                      0.001, 
+                                      0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09,
+                                      0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 
+                                      1.0]     
+                        print '  x       f(x)     f     |  f(x)-f   | 1 - f(x)/f'
+                                                         
+                        for wTry in weightsTry:
+                            f = compute_combined_pdf(wTry)
+                            print '%.3f  %.5f  %.5f  | %.5f  %.5f' % (wTry, f(ln_x), rv.pdf(ln_x), f(ln_x) - rv.pdf(ln_x), numpy.fabs(1.0 - f(ln_x)/rv.pdf(ln_x))  )
+                    #sweep_weights()
+                    ####
                     
-                    nTrial += 1
-                    
-                    #if True:
-                    #    break
+                    while True:
+                                            
+                        wTry = (wTrialRng[0] + wTrialRng[1])/2.0
+                        
+                        
+                        f = compute_combined_pdf(wTry)
+                        
+                        
+                        print 'f_fit       f_hist\n%.2e     %.2e' % (rv.pdf(ln_x), f(ln_x)) 
+                        
+                        if numpy.fabs(1.0 - f(ln_x)/rv.pdf(ln_x)) < matching_tol:
+                            break
+                        else:
+                            
+                            if f(ln_x) < rv.pdf(ln_x):
+                                wTrialRng[0] = wTry
+                            else:
+                                wTrialRng[1] = wTry
+                                
+                        print '\t', nTrial, wTrialRng, wTry
+                        
+                        nTrial += 1
+                        
+                        #if True:
+                        #    break
+                    #
+                
+                    weights_in_interval[i] = wTry
                 #
-            
+            #    
             print time.time() - t0
             print '---------------------------------------'
         #
@@ -2216,4 +2288,161 @@ class gas_set(Particles):
         
         pylab.show()
         
-        return numpy.hstack((w_o, w_s))
+        if save_weights_info != None:
+            self.save_weights_function(save_weights_info, exp(intervals), weights_in_interval,
+                                       npp, fit_func_rng, n_min_sample, match_interval, 
+                                       nbins_in_match_interval, matching_tol, nPasses, x_fit, y_fit)
+            
+        return numpy.hstack((w_o, w_s)), intervals, weights_in_interval
+    
+    def set_weights_from_saved_sampling_info(self, sampling_info_file_path, show_plot=True):
+        '''sets the weights of the gas particles to the ones of the saved weight function.  If the
+        gas set has some particles removed, e.g. the ones with gmech = gsurface, then the plotted
+        PDF might not be lognormal.  However the weights and the matching should agree well when
+        this is applied to the original snapshot.
+        '''
+
+        N = len(self)
+        nbins = 100
+        
+        if show_plot:
+            fig = pylab.figure()
+
+        ln = log(self.n)
+        
+        w = zeros(N, 'f8') 
+        
+        inds_o = self.get_inds_original_set()
+        inds_s = self.get_inds_children()
+
+        w[inds_o] = 1.0
+        w[inds_s] = 0.0
+        
+        ## loading the sampling info from the saved file
+        info = self.load_weights_function(sampling_info_file_path)
+
+        ## setting the weights of the original particles above the sampling interval to zero
+        gas_orig_amuse = self[self.get_inds_original_set()]
+        gas_orig = gas_set(len(gas_orig_amuse)) 
+        gas_orig.copy_attr_from_amuse_set(gas_orig_amuse, ['n'])
+
+        if show_plot:        
+    
+            hpdf_s, lbins_s = pylab.histogram(ln, range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                              weights=w,
+                                             )
+    
+            pylab.plot(lbins_s[1::], log10(hpdf_s))
+    
+            pylab.plot(log(info['x_fit']), log10(info['y_fit']), 'r--', lw=1)
+    
+            pylab.xticks(log(10.0**linspace(-6, 6, 12+1)), linspace(-6, 6, 12+1))
+
+        ## setting the weights of the sampled gas particles from the saved function
+        ln_o, w_o = ln[inds_o], w[inds_o]
+        ln_s, w_s = ln[inds_s], w[inds_s]
+        
+        w_o[:] = 1.0
+        w_o[ ln_o > log(info['n_min_sample']) ] = 0.0
+
+        ###########################################
+        for i, interval in enumerate(info['intervals']):
+            
+            print '#'*100
+            print i, interval
+            print '----------------%d-----------------------' % i
+
+            ln_rng = log(interval)
+
+            ln_min, ln_max =  ln_rng
+
+            inds = where(((ln_s > ln_min)*(ln_s < ln_max)))[0]
+
+            if inds.size == 0:
+                continue
+
+            w_s[ inds ] = info['weight_func'][i]             
+        #
+        ###########################################
+        
+        all_ln = numpy.hstack((ln_o, ln_s))
+        all_weights = numpy.hstack((w_o, w_s))
+
+        if show_plot:        
+        
+            hpdf_s, lbins_s = pylab.histogram(all_ln, 
+                                              range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
+                                              weights=all_weights,
+                                             )
+            
+            pylab.step(lbins_s[1::], log10(hpdf_s), 'g--', lw=2)
+
+            pylab.show()
+        
+        self.weights = all_weights
+        
+    def set_weights_sampled_from_saved_weight_function(self, intervals, weight_func):
+        '''sets the weights of the sampeld point from the weight function'''
+        pass
+    
+    def save_weights_function(self, fpath, intervals, weights_in_interval, 
+                              npp=None, fit_func_rng=None, n_min_sample=None, 
+                              match_interval=None, nbins_in_match_interval=None,
+                              matching_tol=None, nPasses=None, x_fit=None, y_fit=None):
+        '''saves the weight function into a file and all the info that was used in producing it'''
+        
+        names = ['intervals', 'weight_func', 
+                 'npp', 'fit_func_rng', 'n_min_sample', 'match_interval', 
+                 'nbins_in_match_interval', 'matching_tol', 'nPasses', 'x_fit', 'y_fit']
+        
+        data = [intervals, weights_in_interval, 
+                npp, fit_func_rng, n_min_sample, 
+                match_interval, nbins_in_match_interval,
+                matching_tol, nPasses, x_fit, y_fit]
+        
+        numpy.savez(fpath, data=data, names=names)
+    
+        print 'saved weight function and info to\n\t%s' % fpath
+        
+    def load_weights_function(self, fpath):
+        '''loads the weight function and returns it as an interpolation function, also returns the
+        info used in producing the weight function as a dict'''
+        
+        weights_file  = numpy.load(fpath)
+        
+        info_ret = {}
+        
+        for i, name in enumerate(weights_file['names']):
+            
+            info_ret[name] = weights_file['data'][i]
+            
+        return info_ret
+    
+    def use_weights(self, weighting=None, **kwargs):
+        
+        if weighting == 'matched':
+            
+            self.set_weights_from_saved_sampling_info(kwargs['weights_filename'])
+            print '\t--------> set mathched weights'
+
+        elif weighting == 'original-only':
+            
+            self.set_weights_children_zero_parents_one()
+            print '\t---------> set weights such that sampled particles are ignored'
+        
+        elif weighting == 'by-number':
+
+            self.set_weights_childrent_to_inverse_sampling_number(kwargs['weights_filename'])
+            print '\t---------> set weights of childrent to ivnerse of number of sampling'
+            
+        else:
+            
+            print '\t----------> using the weights in the states file'        
+        
+    
+    def print_stats(self):
+        pass
+        
+        
+        
+        

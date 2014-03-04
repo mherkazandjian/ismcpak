@@ -38,6 +38,7 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # t
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
+          'weights' : 'original-only', #'by-number', #'matched',  #'original-only' ,#None 
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
           'ranges'    : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
@@ -57,9 +58,9 @@ params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # t
 #                         'CO1-0'  , 'CO2-1'  , 'CO3-2'  , 'CO4-3'  ,'CO5-4'  , 'CO6-5'  ,
                           'CO2-1'  , 'CO3-2'  , 'CO4-3'  ,'CO5-4'  , 'CO6-5', 'CO7-6', 'CO8-7', 'CO9-8', 'CO10-9', 'CO11-10','CO12-11', 'CO13-12', 'CO14-13', 'CO15-14',
                           '13CO2-1'  , '13CO3-2'  , '13CO4-3'  ,'13CO5-4'  , '13CO6-5', '13CO7-6', '13CO8-7', '13CO9-8', '13CO10-9', '13CO11-10','13CO12-11', '13CO13-12', '13CO14-13', '13CO15-14',
-                          'HCN2-1'  , 'HCN3-2'  , 'HCN4-3'  ,'HCN5-4'  , 'HCN6-5', 'HCN7-6',
-                          'HNC2-1'  , 'HNC3-2'  , 'HNC4-3'  ,'HNC5-4'  , 'HNC6-5', 'HNC7-6',
-                          'HCO+2-1'  , 'HCO+3-2'  , 'HCO+4-3'  ,'HCO+5-4'  , 'HCO+6-5', 'HCO+7-6',
+#                          'HCN2-1'  , 'HCN3-2'  , 'HCN4-3'  ,'HCN5-4'  , 'HCN6-5', 'HCN7-6',
+#                          'HNC2-1'  , 'HNC3-2'  , 'HNC4-3'  ,'HNC5-4'  , 'HNC6-5', 'HNC7-6',
+#                          'HCO+2-1'  , 'HCO+3-2'  , 'HCO+4-3'  ,'HCO+5-4'  , 'HCO+6-5', 'HCO+7-6',
 
 #                         '13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3', '13CO5-4', '13CO6-5',
                         ],
@@ -99,6 +100,10 @@ gas = fi_utils.load_gas_particle_info_with_em(snap_filename, species, load_pdr=p
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
+## setting the weights
+weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
+gas.use_weights(weighting=params['weights'], weights_filename = weights_filename)
+
 ## keeping gas particles within the specified ranges
 gas = fi_utils.select_particles(gas, params['ranges'])
 logger.debug('got the sph particles in the required ranges')
@@ -131,9 +136,11 @@ print 'computing the luminosity from all the pixles in for each line map...'
 print 'making the maps of all the lines...'
 for i, this_attr in enumerate(attrs):
     
+    print '\t%s' % this_attr
+    
     ## the intensity map (intensity weight averaged intensity map)
-    #this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights=this_attr)
-    this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.mean) #ge, weights=this_attr)
+    this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights='weights')
+    #this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.mean) #ge, weights=this_attr)
     
     ## computing the luminsoty by mutiplying by the area of each pixel
     this_map_luminosity = this_map_intensity * hist.f.dl.prod()
@@ -171,13 +178,13 @@ use_beam_size = 8.0
 ind_8kpc = numpy.argmin(numpy.fabs(beam_radii - use_beam_size))
 print 'available beam size used : %e' % beam_radii[ind_8kpc]
 
-use_beam_size = 1.0
-ind_1kpc = numpy.argmin(numpy.fabs(beam_radii - use_beam_size))
-print 'available beam size used : %e' % beam_radii[ind_1kpc]
+#use_beam_size = 1.0
+#ind_1kpc = numpy.argmin(numpy.fabs(beam_radii - use_beam_size))
+#print 'available beam size used : %e' % beam_radii[ind_1kpc]
 
-ladder_disk_CO_8kpc = []  
+ladder_disk_CO_8kpc = []
 ladder_disk_13CO_8kpc = [] 
-ladder_disk_CO_1kpc = []  
+ladder_disk_CO_1kpc = []
 ladder_disk_13CO_1kpc = [] 
 
 #### CO and 13CO
@@ -197,24 +204,24 @@ Ju_all_HD = [2,3,4,5,6,7]
 
 ladder_disk_HCN_8kpc = [] 
 ladder_disk_HNC_8kpc = [] 
-ladder_disk_HCOP_8kpc = []
+#ladder_disk_HCOP_8kpc = []
 
 for i in numpy.array(Ju_all_HD) - 1:
     
     HCN_line_str  = 'HCN%d-%d' % (i+1,i)
     HNC_line_str  = 'HNC%d-%d' % (i+1,i)
-    HCOP_line_str = 'HCO+%d-%d' % (i+1,i)
+#    HCOP_line_str = 'HCO+%d-%d' % (i+1,i)
 
-    ladder_disk_HCN_8kpc.append(luminosity['lum_r'][HCN_line_str][ind_8kpc])
-    ladder_disk_HNC_8kpc.append(luminosity['lum_r'][HNC_line_str][ind_8kpc])
-    ladder_disk_HCOP_8kpc.append(luminosity['lum_r'][HCOP_line_str][ind_8kpc])
+#    ladder_disk_HCN_8kpc.append(luminosity['lum_r'][HCN_line_str][ind_8kpc])
+#    ladder_disk_HNC_8kpc.append(luminosity['lum_r'][HNC_line_str][ind_8kpc])
+#    ladder_disk_HCOP_8kpc.append(luminosity['lum_r'][HCOP_line_str][ind_8kpc])
 
 
 fig = pylab.figure(figsize=(4,4))
 ax = fig.add_axes([0.18, 0.15, 0.8, 0.8])
 
 #Ju_all = [1,2,3,4,5,6]
-#Ju_all = [2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+Ju_all = [2,3,4,5,6,7,8,9,10,11,12,13,14,15]
 
 ladder_disk_CO_8kpc = numpy.array(ladder_disk_CO_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2 
 pltCO, = ax.semilogy(Ju_all, ladder_disk_CO_8kpc, 'k')
@@ -224,17 +231,17 @@ ladder_disk_13CO_8kpc = numpy.array(ladder_disk_13CO_8kpc)*1e6 ## converting fro
 plt13CO, = ax.semilogy(Ju_all, ladder_disk_13CO_8kpc, 'k--')
 ax.text(Ju_all[2], ladder_disk_13CO_8kpc[2], 'disk-13CO')
 
-ladder_disk_HCN_8kpc = numpy.array(ladder_disk_HCN_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
-pltHCN, = ax.semilogy(Ju_all_HD, ladder_disk_HCN_8kpc, 'k--')
-ax.text(Ju_all_HD[2], ladder_disk_HCN_8kpc[2], 'disk-HCN')
+#ladder_disk_HCN_8kpc = numpy.array(ladder_disk_HCN_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
+#pltHCN, = ax.semilogy(Ju_all_HD, ladder_disk_HCN_8kpc, 'k--')
+#ax.text(Ju_all_HD[2], ladder_disk_HCN_8kpc[2], 'disk-HCN')
 
-ladder_disk_HNC_8kpc = numpy.array(ladder_disk_HNC_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
-pltHNC, = ax.semilogy(Ju_all_HD, ladder_disk_HNC_8kpc, 'k--')
-ax.text(Ju_all_HD[2], ladder_disk_HNC_8kpc[2], 'disk-HNC')
+#ladder_disk_HNC_8kpc = numpy.array(ladder_disk_HNC_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
+#pltHNC, = ax.semilogy(Ju_all_HD, ladder_disk_HNC_8kpc, 'k--')
+#ax.text(Ju_all_HD[2], ladder_disk_HNC_8kpc[2], 'disk-HNC')
 
-ladder_disk_HCOP_8kpc = numpy.array(ladder_disk_HCOP_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
-pltHCOP, = ax.semilogy(Ju_all_HD, ladder_disk_HCOP_8kpc, 'k--')
-ax.text(Ju_all_HD[2], ladder_disk_HCOP_8kpc[2], 'disk-HCO+')
+#ladder_disk_HCOP_8kpc = numpy.array(ladder_disk_HCOP_8kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
+#pltHCOP, = ax.semilogy(Ju_all_HD, ladder_disk_HCOP_8kpc, 'k--')
+#ax.text(Ju_all_HD[2], ladder_disk_HCOP_8kpc[2], 'disk-HCO+')
 
 #ladder_disk_CO_1kpc = numpy.array(ladder_disk_CO_1kpc)*1e6 ## converting from K.km.s-1.kpc^2 to K.km.s-1.pc^2
 #ax.semilogy(Ju_all, ladder_disk_CO_1kpc, 'r-')

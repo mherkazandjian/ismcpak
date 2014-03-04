@@ -7,7 +7,6 @@ import numpy
 
 from amuse.io import read_set_from_file
 from amuse.io.fi_io import FiFileFormatProcessor
-from amuse.datamodel import Particles
 from amuse.units import units
 
 from galaxies import fi_utils
@@ -28,11 +27,16 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # th
                       },
           }
 
-npp           = 5             # number of particles to be sampled from each SPH particle
-n_min_sample  = 1e2            # particles with densities greater than this are sampled
-fit_func_rng  = [1e-2, 1e+3]   # the range of densities used in constructing the function used for the sampling
-save_sampled  = False  
-snap_index    = 4
+npp                     = 20             # number of particles to be sampled from each SPH particle
+n_min_sample            = 1e2            # particles with densities greater than this are sampled
+fit_func_rng            = [1e-2, 1e+4]   # the range of densities used in constructing the function used for the sampling
+save_sampled            = False
+
+nbins_in_match_interval = 30
+matching_tol            = 0.001 
+nPasses                 = 1            
+save_weights_func       = True
+snap_index              = 4
 #===========================================================================================================
  
 #extracting/guessing the metallicity from the name of the directory of the run
@@ -63,7 +67,7 @@ n_s, w_s, gas_gt, w_gt, gas_lt = gas.sample_higher_densities(npp = npp,
 
 
 ## making the new particle set
-gas_s = Particles(len(n_s))
+gas_s = fi_utils.gas_set(len(n_s))
 
 ## attributes to be assigined to the sampled particles
 attr_list = ('Av', 'G0', 'Pe', 'T', 'gmech', 'mass', 'n', 'vdisp', 'vx', 'vy', 'vz', 'x', 'y', 'z',)
@@ -137,6 +141,7 @@ for attr in new_attr_list:
 
 
 if save_sampled == True:
+    
     print 'number of particles in each set:'
     print 'gas_lt : ', len(gas_lt)
     print 'gas_gt : ', len(gas_gt)
@@ -147,5 +152,16 @@ if save_sampled == True:
     fname_ext = filename + '.ext'
     fi_utils.save_gas_particle_info(fname_ext, gas_all, new_attr_list)
     print 'saved snapshot with sampled data to \n\t %s' % fname_ext 
+
+if save_weights_func == True:
+
+    save_weights_func_path =  params['rundir'] + '/firun/' + 'weights_func.%06d' % snap_index
+    
+    w, inters, w_func = gas_all.match_weights(npp, fit_func_rng, n_min_sample, 
+                                              [n_min_sample, gas_all.n.max()], 
+                                              nbins_in_match_interval, matching_tol, 
+                                              nPasses=nPasses,
+                                              save_weights_info=save_weights_func_path)
+
 
 print 'done'

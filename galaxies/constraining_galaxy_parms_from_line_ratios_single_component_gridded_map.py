@@ -44,10 +44,12 @@ params = {
           ##################### parameters for making the mock maps #########################
           
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
+          'weights' : 'by-number', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
           'ranges'    : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
@@ -146,6 +148,10 @@ gas = fi_utils.load_gas_particle_info_with_em(snap_filename, species, load_pdr=p
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
+## setting the weights
+weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
+gas.use_weights(weighting=params['weights'], weights_filename = weights_filename)
+
 ## keeping gas particles within the specified ranges
 gas = fi_utils.select_particles(gas, params['ranges'])
 logger.debug('got the sph particles in the required ranges')
@@ -178,7 +184,8 @@ print 'making the maps of all the lines...'
 for i, this_attr in enumerate(attrs):
     
     ## the intensity map (intensity weight averaged intensity map)
-    this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.mean) #func=numpy.average, weights=this_attr)
+    #this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.mean) #func=numpy.average, weights=this_attr)
+    this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights='weights')
     
     ## computing the luminsoty by mutiplying by the area of each pixel
     this_map_luminosity = this_map_intensity * hist.f.dl.prod()
@@ -269,7 +276,7 @@ estimator.setup_observed_grid()
 #estimator.estimate_mass_in_all_pixels()
 
 #getting the fits for all the pixels within a radia range
-pixels_info = estimator.estimate_mass_in_pixels_at_radius(r = 2)
+#pixels_info = estimator.estimate_mass_in_pixels_at_radius(r = 2)
 
 #print 'total H2 mass          :', estimator.H2_mass_mesh.sum()
 #print 'total H2 mass no gmech :', estimator.H2_mass_no_gmech_mesh.sum()
