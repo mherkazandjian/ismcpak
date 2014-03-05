@@ -387,10 +387,10 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, **kwarg
                 r = radius[inds_in_bin]
                 m = mass[inds_in_bin]
                  
-                if func == luminosity:
-                    bin_value = luminosity(fluxes=q, radii=r, weights=w)
-                if func == flux:
-                    bin_value = flux(fluxes=q, radii=r, weights=w, bin_area=bin_area)
+                if func == total_luminosity:
+                    bin_value = total_luminosity(fluxes=q, radii=r, weights=w)
+                if func == mean_flux:
+                    bin_value = mean_flux(fluxes=q, radii=r, weights=w, bin_area=bin_area)
                 
                 ''' 
                 if 'weights' in kwargs:
@@ -988,7 +988,9 @@ class galaxy_gas_mass_estimator(object):
         self.means = None
         self.sdev = None
         
-    def get_model_emission_from_involved_line_ratios(self):
+        self.gas_in_pixel = None
+        
+    def get_model_emission_from_pdr_arxv_involved_line_ratios(self):
         '''loading the emission info from all the models for all Avs (also we check for 
         the consistenscy of the number of models...i.e same number of models 
         for all the lines)
@@ -1038,7 +1040,7 @@ class galaxy_gas_mass_estimator(object):
                 if nModels != v.size:
                     raise ValueError('the number of elements for this line differes at least from that of one of the other lines')
         
-        self.mode_em = model_em
+        self.model_em = model_em
         self.grid_coords = grid_coords
         
     def setup_observed_grid(self):
@@ -1087,18 +1089,27 @@ class galaxy_gas_mass_estimator(object):
         
         # get the x and y coords, flip y from top to bottom
         xd, yd = event.xdata, event.ydata
+
+        if self.axs.contains(event)[0]:
+           
+            print 'cursor x,y = ', xd, yd
+
+            ## plotting the centroid of the pixel clicked in the coarse grid 
+            x_ind = numpy.floor(scale(xd, 0.0, obs_res, bs_min, bs_max))
+            y_ind = numpy.floor(scale(yd, 0.0, obs_res, bs_min, bs_max))
         
-        if event.button == 1:
-    
-            if self.axs.contains(event)[0]:
-                
-                print 'cursor x,y = ', xd, yd
- 
-                ## plotting the centroid of the pixel clicked in the coarse grid 
-                x_ind = numpy.floor(scale(xd, 0.0, obs_res, bs_min, bs_max))
-                y_ind = numpy.floor(scale(yd, 0.0, obs_res, bs_min, bs_max))
-                
+            if event.button == 1:
+        
+                print 'left click...'
+        
                 self.estimate_mass_in_pixel(x_ind, y_ind, plot_fits=True)
+                
+            if event.button == 3:
+
+                print 'right click...'
+                
+                self.plot_gas_pdf_in_pixel(x_ind, y_ind)
+                
                 
     def estimate_mass_in_all_pixels(self):
         
@@ -1201,14 +1212,14 @@ class galaxy_gas_mass_estimator(object):
         return pixels_info
     
     def estimate_mass_in_pixel(self, x_ind=None, y_ind=None, plot_fits=False):
-       
+
         hist = self.hist
         hist_obs = self.hist_obs
         obs_mesh = self.hist_obs.f
         line_ratios = self.line_ratios
         luminosity = self.luminosity_maps
         params = self.params
-        model_em = self.mode_em 
+        model_em = self.model_em 
         grid_coords = self.grid_coords 
         arxvPDR = self.arxvPDR
         m_gas = self.gas.mass
@@ -1288,19 +1299,25 @@ class galaxy_gas_mass_estimator(object):
         if plot_fits == True:
             
             fig = pylab.figure(figsize=(16,8))
+            
+            # plotting the line ratios in these axes
             ax1 = fig.add_axes([0.1, 0.5, 0.15, 0.4])
             ax2 = fig.add_axes([0.3, 0.5, 0.15, 0.4])
+
+            # plotting the line ratios
+            #f.plot_results(fig = fig, ax = ax1)
+            print '-------------------------'
+            #f.plot_results(fig = fig, ax = ax2, no_gmech=True)
             
+            # plotting the PDFs in these axes
             ax3 = fig.add_axes([0.1, 0.1, 0.15, 0.3])
             ax4 = fig.add_axes([0.3, 0.1, 0.15, 0.3])
             ax5 = fig.add_axes([0.5, 0.1, 0.15, 0.3])
             ax6 = fig.add_axes([0.7, 0.1, 0.15, 0.3])
 
-            f.plot_results(fig = fig, ax = ax1)
-            print '-------------------------'
-            f.plot_results(fig = fig, ax = ax2, no_gmech=True)
             
-            #plotting the emission distribution in the pixel 
+            #plotting the emission distribution in the pixel
+            ''' 
             #g.em_fluxKkms_CO1-0, pdr_NH2, pdr_NH, pdr_NCO, pdr_N13CO
             gas_in_pixel = self.gas[inds_gas]
             
@@ -1315,16 +1332,17 @@ class galaxy_gas_mass_estimator(object):
             #getting the emission distribution (a selection of lines)
             dist_0 = zeros(n_dist.totalBins, 'f8') 
             
+            lum_CO_1_0 = gas_in_pixel_in_hist.get_luminosity('CO1-0')
+            
             for i in numpy.arange(n_dist.totalBins):
                 
                 inds_in_bin = n_dist.get_indicies(i)
                 
                 if inds_in_bin.size != 0:
                     
-                    gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
+                    lum_CO_1_0_in_bin = lum_CO_1_0[inds_in_bin]
  
-                    dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').sum()
-                    #dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_13CO1-0').sum()
+                    dist_0[i] = lum_CO_1_0_in_bin.sum().sum()
                 #
             #
             
@@ -1487,19 +1505,11 @@ class galaxy_gas_mass_estimator(object):
             ax6.set_ylim([0, 1.4])
             ax6.set_xlabel('Av gas')
             ax6.set_ylabel('f')            
-
+            '''
             
         #computing the averages of the physical parameters of the particles inside the pixel 
         #-----------------------------------------------------------------------------------
         gas_in_pixel = self.gas[inds_gas]
-        
-        # getting the emission distriubtion as a function of gas density
-        #---------------------------------------------------------------
-        log_n_gas = log10(gas_in_pixel.n).reshape((1, len(gas_in_pixel)))
-        n_dist = hist_nd(log_n_gas, nbins=50.0, mn=-3.0, mx=4.0, loc=True, reverse_indicies=True)
-        
-        # the gas particles within the ranges of the distribution histogram 
-        gas_in_pixel_in_hist = gas_in_pixel[n_dist.inds_in]
         
         means = collections.OrderedDict()
         
@@ -1566,13 +1576,80 @@ class galaxy_gas_mass_estimator(object):
             pylab.figtext(0.5, 0.8, strng)
             
         
+        print 'mean values in the pixel'    
+        print means 
+        
+        print 'line ratios of the observed and the best fit model (whichever with or without gmech)'
         f.get_model_em_for_min_Xi2()
         self.contraining = f
         self.means = means
         
         return mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun
 
+    def plot_gas_pdf_in_pixel(self, x_ind, y_ind):
+        
+        print 'disceting the gas'
 
+        hist = self.hist
+        hist_obs = self.hist_obs
+        obs_mesh = self.hist_obs.f
+        params = self.params
+        line_ratios = self.line_ratios    # line ratio strings
+        params = self.params
+        gas = self.gas
+        ######################################################
+        
+        area_obs_pixel = numpy.product(obs_mesh.dl)
+
+        pylab.plot(obs_mesh.cntrd[0][x_ind, y_ind],     
+                   obs_mesh.cntrd[1][x_ind, y_ind],     
+                   'r+', markersize=10)
+
+        ## plotting the centroids of the pixels of the pixel of the map inside the clicked pixel
+        inds = where(
+                     (hist.f.cntrd[0] >= obs_mesh.spos[0][x_ind, y_ind])*\
+                     (hist.f.cntrd[0] <= obs_mesh.epos[0][x_ind, y_ind])*\
+                     (hist.f.cntrd[1] >= obs_mesh.spos[1][x_ind, y_ind])*\
+                     (hist.f.cntrd[1] <= obs_mesh.epos[1][x_ind, y_ind])
+                    )
+
+        pylab.plot(hist.f.cntrd[0][inds], hist.f.cntrd[1][inds], 'c+')
+        
+        inds_gas = hist_obs.get_indicies([x_ind, y_ind])
+
+        pylab.plot(gas.x[inds_gas], gas.y[inds_gas], 'o')
+        
+        pylab.draw()
+        
+        fig = pylab.figure()
+        ax = pylab.subplot(111)
+        
+        gas_in_pixel = gas[inds_gas]
+
+        specs = gas_in_pixel.get_species_with_em()
+        
+        weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
+        #gas_in_pixel.use_weights(weighting='original-only', weights_filename = weights_filename)
+        gas_in_pixel.use_weights(weighting='by-number', weights_filename = weights_filename)
+        #gas_in_pixel.use_weights(weighting='mathced', weights_filename = weights_filename)
+        
+        for spec in ['CO', '13CO', 'HCN', 'HNC']:
+            
+            print 'getting the emission of %s' % spec
+            
+            idx, total_lum = gas_in_pixel.get_total_luminosity_ladder(spec)
+        
+            flux = total_lum / area_obs_pixel
+            
+            plt, = ax.semilogy(idx, flux, label=spec)
+            
+        ax.legend(loc=0)
+        
+        self.gas_in_pixel = gas_in_pixel
+        
+        gas_in_pixel.get_emission_pdf(qx='n', line='CO1-0', log10x=True, nbins=100, xrng=[-3, 6])
+
+        
 class gas_set(Particles):
 
 
@@ -1957,12 +2034,12 @@ class gas_set(Particles):
         '''
         
         return numpy.where(numpy.isfinite(self.children))[0]
-    
-    def plot_pdf(self, qx=None, qy=None, log10x=False, log10y=False, weights=None, nbins=50, xrng=None):
-        '''getting the PDF of one quantity vs the other
+
+    def get_emission_pdf(self, qx=None, line=None, log10x=False, nbins=50, xrng=None):
+        '''getting emission PDF vs a quantity qx
         
         example.
-        gas.plot_pdf(qx='n', qy='em_fluxKkms_13CO1-0', log10x=True, weights=gas.weights, nbins=50)
+        l10n, emPDF = gas.get_emission_pdf(qx='n', line='13CO1-0', log10x=True, nbins=50, xrng=[-3, 6])
 
         '''
 
@@ -1970,21 +2047,18 @@ class gas_set(Particles):
         
         N = len(self) 
         
+        print 'number of particles = ', N
+        
         ## getting the data to be processed from the attributes        
-        x, y = getattr(self, qx), getattr(self, qy)
+        x = getattr(self, qx)
+        y = self.get_luminosity(line)
         if log10x == True: x = log10(x)
-        if log10y == True: y = log10(y)
         
         if xrng != None:
             xmin, xmax = xrng
         else:
             xmin, xmax = x.min(), x.max()
 
-        if weights == None:
-            w = numpy.ones(x.size, 'f8')
-        else:
-            w = weights
-        
         ## constructing the PDF of the first variable 'x'
         x_dist = hist_nd(x.reshape((1, N)), 
                          nbins=nbins, mn=xmin, mx=xmax, loc=True, reverse_indicies=True)
@@ -1992,10 +2066,11 @@ class gas_set(Particles):
         ## keeping the data within the bounds of the histogram
         x_in_hist = x[x_dist.inds_in]
         y_in_hist = y[x_dist.inds_in]
-        w_in_hist = w[x_dist.inds_in]
+        w_in_hist = self.weights
         
         #getting the distribution of the y variable as a function of the histogram in x
-        y_dist = zeros(x_dist.totalBins, 'f8')
+        xw_dist = zeros(x_dist.totalBins, 'f8')
+        y_dist  = zeros(x_dist.totalBins, 'f8')
 
         for i in numpy.arange(x_dist.totalBins):
            
@@ -2003,110 +2078,29 @@ class gas_set(Particles):
            
             if inds_in_bin.size != 0:
                 
-                #sum
-                #y =  y_in_hist[inds_in_bin].sum()
+                #the weighted distribution in x
+                xw_dist[i] = w_in_hist[inds_in_bin].sum() 
                 
-                # weighed sum
-                y =  ((y_in_hist[inds_in_bin]*w_in_hist[inds_in_bin]).sum())/((w_in_hist[inds_in_bin]).sum())
+                # sum of the qy in that bin
+                y =  y_in_hist[inds_in_bin].sum()
                 
-                # mean  
-                #y = numpy.mean(y_in_hist[inds_in_bin]) 
-                
-                # weighed mean
-                #y = numpy.average(y_in_hist[inds_in_bin], weights=w_in_hist[inds_in_bin])
-                                
-                print y
                 y_dist[i] = y
             #
         #
-        
-        pylab.subplot(121)
-        pylab.plot(x_dist.f.cntrd, x_dist.f)
 
-        pylab.subplot(122)        
-        pylab.plot(x_dist.f.cntrd, y_dist)
+        pylab.subplot(211)
+        pylab.semilogy(x_dist.f.cntrd, xw_dist/xw_dist.max(), 'b')
+        pylab.semilogy(x_dist.f.cntrd, y_dist/y_dist.max(), 'r--')
+        pylab.ylim([1e-6, 10])
+        
+        pylab.subplot(212)
+        pylab.plot(x_dist.f.cntrd[::-1], (xw_dist[::-1].cumsum())/xw_dist.sum(), 'b')
+        pylab.plot(x_dist.f.cntrd[::-1], (y_dist[::-1].cumsum())/y_dist.sum(), 'r--')
+        pylab.ylim([0, 1.1])
+        
         pylab.show()
-        '''        
-        #----------------------------------------------------------------------------------------
-        
-        #getting the emission distribution (a selection of lines)
-        dist_0 = zeros(n_dist.totalBins, 'f8') 
-       
-        for i in numpy.arange(n_dist.totalBins):
-           
-            inds_in_bin = n_dist.get_indicies(i)
-           
-            if inds_in_bin.size != 0:
-                
-                gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
- 
-                dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').sum()
-                #dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_13CO1-0').sum()
-            #
-        #
-       
-        x, y = n_dist.f.cntrd, n_dist.f
-       
-        ## ploting the locations in density where the cumilitive particle 
-        ## mass (number) distribution sum is 10%, 50%, 90%
-        ## also getting the CDF for the emission
-        ax3.plot(zoom(x, 20, order=2), zoom(y / numpy.max(y), 20, order=3), 'b')
-        ax3.plot(zoom(n_dist.f.cntrd, 20, order=3), 
-                 zoom(dist_0 / numpy.max(dist_0), 20, order=3), 'r')
+    
 
-        # CDF of the mass 
-        f_CDF_n = (y / y.sum()).cumsum()
-        n_i = linspace(-3.0, 4.0, 1000.0)[::-1]
-        f_CDF_n_i = numpy.interp(n_i, x, f_CDF_n)
-
-        # CDF of the emission
-        f_CDF_em = ((dist_0 / dist_0.sum())[::-1]).cumsum()[::-1]
-        f_CDF_em_i = numpy.interp(n_i, x, f_CDF_em)
-       
-        # plotting the 10, 50, 90% indicators for the SPH mass CDF
-        ind90percent = argmin(fabs(f_CDF_n_i - 0.9))
-        ax3.plot([n_i[ind90percent], n_i[ind90percent]], [0, 2.5], 'b--')
-        ax3.text(n_i[ind90percent] - 1.1, 2.35, '90%', color = 'b')
-        ax3.text(n_i[ind90percent] - 1.1, 2.35 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind90percent]*100) + '%', 
-                 color = 'r')
-
-        ind50percent = argmin(fabs(f_CDF_n_i - 0.5))            
-        ax3.plot([n_i[ind50percent], n_i[ind50percent]], [0, 2.2], 'b--', linewidth=1)
-        ax3.text(n_i[ind50percent] - 1.1, 2.05, '50%' , color = 'b')
-        ax3.text(n_i[ind50percent] - 1.1, 2.05 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind50percent]*100)  + '%', 
-                 color = 'r')
-       
-        ind10percent = argmin(fabs(f_CDF_n_i - 0.1))
-        ax3.plot([n_i[ind10percent], n_i[ind10percent]], [0, 1.85], 'b--', linewidth=1)
-        ax3.text(n_i[ind10percent] - 1.1, 1.7 , '10%', color = 'b')
-        ax3.text(n_i[ind10percent] - 1.1, 1.7 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind10percent]*100) + '%', 
-                 color = 'r')
-
-       
-        # plotting the 10, 50, 90% indicators for the emission CDF
-        ind10percent = argmin(fabs(f_CDF_em_i - 0.1))
-        ax3.plot([n_i[ind10percent], n_i[ind10percent]], [0, 1.55], 'r--', linewidth=1)
-        ax3.text(n_i[ind10percent], 1.4, '10%', color = 'r')
-        ax3.text(n_i[ind10percent], 1.25, '%d' % (100.0 - f_CDF_n_i[ind10percent]*100) + '%', 
-                 color = 'b')
-
-
-        ind50percent = argmin(fabs(f_CDF_em_i - 0.5))
-        ax3.plot([n_i[ind50percent], n_i[ind50percent]], [0, 1.25], 'r--', linewidth=1)
-        ax3.text(n_i[ind50percent], 1.1, '50%', color = 'r')
-        ax3.text(n_i[ind50percent], 0.95, '%d' % (100.0 - f_CDF_n_i[ind50percent]*100) + '%', 
-                 color = 'b')
-       
-        ind90percent = argmin(fabs(f_CDF_em_i - 0.90))
-        ax3.plot([n_i[ind90percent], n_i[ind90percent]], [0, 0.95], 'r--', linewidth=1)
-        ax3.text(n_i[ind90percent], 0.8, '90%', color = 'r')
-        ax3.text(n_i[ind90percent], 0.65, '%d' % (100.0 - f_CDF_n_i[ind90percent]*100) + '%', 
-                 color = 'b')
-
-        ax3.set_ylim([0, 2.5])
-        ax3.set_xlabel(r'$\log_{10}$[n$_{\rm gas}$]')
-        ax3.set_ylabel(r'$f$')
-        '''
     def set_weights_children_zero_parents_one(self):
         
         w = numpy.zeros(len(self), 'f8')
@@ -2458,13 +2452,131 @@ class gas_set(Particles):
             
         else:
             
-            print '\t----------> using the weights in the states file'        
+            print '\t----------> using the default weights'        
         
     
     def print_stats(self):
         pass
+
+    def get_em_lines(self, specStr, em_unit='Kkms'):
+        '''returns the list of attributes for a certain species given an emission unit. Also returns 
+        the radex transition index.'''
+
+        all_attr = self.all_attributes()
         
+        line_codes = []
         
+        for attr in all_attr:
+            
+            if 'em_flux' in attr:
+                
+                line_code_this = attr.replace('em_fluxKkms_','').replace('em_fluxcgs_','')
+                
+                spec_this_line = lineDict.lines[line_code_this]['specStr']
+                  
+                if spec_this_line == specStr:
+                        
+                    line_codes.append(line_code_this)
+                     
+        line_codes = numpy.array(line_codes)
+        
+        ## radex indicies
+        idxs = numpy.zeros(line_codes.size, 'i4')
+        
+        for i, line_code in enumerate(line_codes):
+            idxs[i] = lineDict.lines[line_code]['radexIdx']
+        
+        ## sorting by increasing radex index
+        inds = numpy.argsort(idxs)
+        idxs = idxs[inds]
+        line_codes = line_codes[inds]
+        
+        return idxs, line_codes
+    
+    def get_species_with_em(self):
+        '''returns a list of string of the species which have emission info'''
+        
+        all_attr = self.all_attributes()
+        
+        line_codes = []
+        
+        for attr in all_attr:
+            
+            if 'em_flux' in attr:
+
+                line_codes.append(attr.replace('em_fluxKkms_','').replace('em_fluxcgs_','')) 
+        
+        spec_strs = []
+        
+        for line_code in numpy.unique(line_codes):
+            
+            spec_strs.append(lineDict.lines[line_code]['specStr'])
+            
+        return numpy.unique(spec_strs)
+    
+    def get_em_attr_name(self, line_str, em_unit='Kkms'):
+        '''gets the name of the attribute given a line code and the emission unit'''
+        
+        if em_unit in ['Kkms', 'cgs']:
+            
+            attr_name = 'em_flux%s_%s' % (em_unit, line_str)
+            
+            if attr_name in self.all_attributes():
+                
+                return attr_name
+    
+    def get_flux(self, line_str, em_unit='Kkms'):
+        '''returns the flux of the speciefied line in the specied unit. Deafult unit is in Kkms'''
+
+        attr_name = self.get_em_attr_name(line_str, em_unit)
+        
+        return getattr(self, attr_name)         
+
+    def get_luminosity(self, line_str, em_unit='Kkms'):
+        '''compute the luminosity of particles'''
+    
+        return luminosity(self.get_flux(line_str, em_unit), 
+                          self.radius,  
+                          self.weights)
+
+    def get_total_luminosity_ladder(self, specStr, em_unit='Kkms'):
+        '''compute the luminosity of particles'''
+
+        idx, line_codes = self.get_em_lines(specStr)
+        
+        total_lum = numpy.zeros(idx.size, 'f8')
+        
+        for i, line_code in enumerate(line_codes):
+
+            total_lum[i] = self.get_total_luminosity(line_code)             
+            
+        return idx, total_lum
+    
+    def plot_total_luminosity_ladder(self, specStr, em_unit='Kkms', axs=None, *args, **kwargs):
+        
+        x, y = self.get_total_luminosity_ladder(specStr, em_unit=em_unit)
+        
+        if axs != None:
+            ax_use = axs
+        else:
+            pylab.figure()
+            ax_use = pylab.subplot(111)
+            
+        plt, = ax_use.plot(x, y, *args, **kwargs)
+        
+        return plt
+    
+
+    def get_total_luminosity(self, line_str, em_unit='Kkms'):
+        '''compute the total luminosity of particles'''
+        
+        return self.get_luminosity(line_str, em_unit).sum() 
+        
+    def get_mean_flux(self, line_str, em_unit='Kkms', bin_area=1.0):
+        '''compute the mean flux of particles given a box size'''
+    
+        return self.get_total_luminosity(line_str, em_unit)/ bin_area
+    
     def check_particles(self, what_to_check, logger):
         '''checks the attributes and takes care of irregularities'''
         
@@ -2488,23 +2600,29 @@ class gas_set(Particles):
             # converting the radii from pc to kpc
             self.radius = self.radius * 1e-3
             logger.debug('warning: converting radii from pc to kpc')
-            
+
+    
 def luminosity(fluxes=None, radii=None, weights=None):
-    '''compute the total luminosity of particles. F is the array of the fluxes, m is the array
+    '''compute the total total_luminosity of particles. F is the array of the fluxes, m is the array
     of the masses, r is the radius of thte particles, w is the weight'''
-    
-    
+
     areas = pi * radii**2 # the projected area of the SPH particles
     lum = fluxes*weights*areas   # the luminosity of each particle
-    
-    return lum.sum()
 
-def flux(fluxes=None, radii=None, weights=None, bin_area=None):
+    return lum
+
+def total_luminosity(fluxes=None, radii=None, weights=None):
+    '''compute the total total_luminosity of particles. F is the array of the fluxes, m is the array
+    of the masses, r is the radius of thte particles, w is the weight'''
+    
+    return luminosity(fluxes, radii, weights).sum()
+    
+def mean_flux(fluxes=None, radii=None, weights=None, bin_area=None):
     '''compute the mean/total flux of particles. F is the array of the fluxes, m is the array
     of the masses, r is the radius of thte particles, w is the weight, area_pixel is the area 
     of the pixel in which the particles are.'''
     
     
-    lum_pixel = luminosity(fluxes, radii, weights)
+    lum_pixel = total_luminosity(fluxes, radii, weights)
     
     return lum_pixel / bin_area

@@ -64,11 +64,8 @@ params = {
                         #the size of the box to be displayed (particles outside the range are discarded)
                         'box_size' : [-8.0, 8.0] | units.kpc, 
                         },
+          'check'   : 'default',          
           'em_unit'   : 'em_fluxKkms',
-          'lines'     : [
-                         'CO1-0'  , 'CO2-1'  , 'CO3-2'  , 'CO4-3', #'CO5-4'  , 'CO6-5'  ,
-                         '13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3', #'13CO5-4', '13CO6-5',
-                        ],
           'save_maps' : False,
                     
           ##################### parameters for fitting for the maps #########################
@@ -79,20 +76,41 @@ params = {
 
           ### all the ratios up to J = 2-1
 #          'line_ratios' : [
-#                           'CO2-1/CO1-0', #'CO3-2/CO1-0', 'CO4-3/CO1-0', #'CO5-4/CO1-0', 'CO6-5/CO1-0', 
+#                           'CO2-1/CO1-0',  
 #
-#                           '13CO2-1/13CO1-0', #'13CO3-2/13CO1-0', '13CO4-3/13CO1-0', #'13CO5-4/13CO1-0', '13CO6-5/13CO1-0',
+#                           '13CO2-1/13CO1-0', 
 #
-#                          '13CO1-0/CO1-0', '13CO2-1/CO2-1', #'13CO3-2/CO3-2', '13CO4-3/CO4-3', #'13CO5-4/CO5-4', '13CO6-5/CO6-5',
+#                          '13CO1-0/CO1-0', '13CO2-1/CO2-1', 
 #                        ],
 
           ### all the ratios up to J = 4-3
+#          'line_ratios' : [
+#                           'CO2-1/CO1-0'    , 'CO3-2/CO1-0'    , 'CO4-3/CO1-0', 
+#
+#                           '13CO2-1/13CO1-0', '13CO3-2/13CO1-0', '13CO4-3/13CO1-0',
+#
+#                          '13CO1-0/CO1-0', '13CO2-1/CO2-1', '13CO3-2/CO3-2', '13CO4-3/CO4-3', 
+#                        ],
+          
+          ### all the ratios up to J = 6-5
+#          'line_ratios' : [
+#                           'CO2-1/CO1-0'    , 'CO3-2/CO1-0'    , 'CO4-3/CO1-0', 'CO5-4/CO1-0', 'CO6-5/CO1-0', 
+#
+#                           '13CO2-1/13CO1-0', '13CO3-2/13CO1-0', '13CO4-3/13CO1-0', '13CO5-4/13CO1-0', '13CO6-5/13CO1-0',
+#
+#                          '13CO1-0/CO1-0', '13CO2-1/CO2-1', '13CO3-2/CO3-2', '13CO4-3/CO4-3', '13CO5-4/CO5-4', '13CO6-5/CO6-5',
+#                       ],
+          ### other line ratios
           'line_ratios' : [
-                           'CO2-1/CO1-0'    , 'CO3-2/CO1-0'    , 'CO4-3/CO1-0', #'CO5-4/CO1-0', 'CO6-5/CO1-0', 
+                           'CO2-1/CO1-0'    , 'CO3-2/CO1-0'    , 'CO4-3/CO1-0', 'CO5-4/CO1-0', 'CO6-5/CO1-0', 
 
-                           '13CO2-1/13CO1-0', '13CO3-2/13CO1-0', '13CO4-3/13CO1-0', #'13CO5-4/13CO1-0', '13CO6-5/13CO1-0',
+                           '13CO2-1/13CO1-0', '13CO3-2/13CO1-0', '13CO4-3/13CO1-0', '13CO5-4/13CO1-0', '13CO6-5/13CO1-0',
 
-                          '13CO1-0/CO1-0', '13CO2-1/CO2-1', '13CO3-2/CO3-2', '13CO4-3/CO4-3', #'13CO5-4/CO5-4', '13CO6-5/CO6-5',
+                           'HCN1-0/CO1-0', 'HCN2-1/CO2-1', 'HCN3-2/CO3-2', 'HCN4-3/CO4-3', 
+
+                           'HNC1-0/CO1-0', 'HNC2-1/CO2-1', 'HNC3-2/CO3-2', 'HNC4-3/CO4-3', 
+
+                           'HCO+1-0/CO1-0', 'HCO+2-1/CO2-1', 'HCO+3-2/CO3-2', 'HCO+4-3/CO4-3',
                         ],
           
 #          'lines'       : {
@@ -109,7 +127,7 @@ params = {
 
           #'interpolator' : scipy.interpolate.NearestNDInterpolator, 
           'interpolator' : scipy.interpolate.LinearNDInterpolator, 
-          'obs_res'      : 21,
+          'obs_res'      : 21, #9
         }
 
 #############################################################################################################
@@ -119,9 +137,18 @@ params = {
 ## setting up the logger object
 logger = default_logger()
 
+## setting up the line ratio strings 
+if 'line_ratios' in params:
+    line_ratios = params['line_ratios']
+elif 'lines' in params:
+    line_ratios = line_ratio_utils.line_ratio_combinations(params['lines']['include'], params['lines']['combinations'])
+ 
+## getting the lines involved in the ratios
+lines = line_ratio_utils.all_lines_involved(line_ratios)
+
 ## setting up the line attribute array whose emission will be retried from the snapshot
 attrs = {}
-for i, line in enumerate(params['lines']):
+for i, line in enumerate(lines):
     
         attr = params['em_unit'] + '_' + line
         
@@ -134,10 +161,8 @@ print 'emissions to be extracted from the processed snapshopt'
 for attr in curve_attrs: print '\t%s' % attr
 
 ## getting the species involved in those emissions
-species = {}
-for key in curve_attrs:
-    species[lineDict.lines[key.replace(params['em_unit'] + '_', '')]['specStr']] = True
-print 'Species invloved = ', species.keys()
+species = line_ratio_utils.species_involved(lines)
+print 'Species invloved = ', species
 
 ## path to processed fi snapshot  
 snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % params['snap_index'] + '.states.npz'  
@@ -147,6 +172,9 @@ logger.debug('loading proccessed snapshot %s : ' % snap_filename)
 gas = fi_utils.load_gas_particle_info_with_em(snap_filename, species, load_pdr=params['pdr_sph'])    
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
+
+## checking for weird particles and taking care of them
+gas.check_particles(params['check'], logger)
 
 ## setting the weights
 weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
@@ -171,7 +199,7 @@ gas = gas[hist.inds_in]
 
 ## getting the luminosity maps for each line
 luminosity = {
-              'lines' : numpy.array(params['lines'], 'S'),
+              'lines' : numpy.array(lines, 'S'),
               'maps'  : {},
               'units' : {
                         'luminosity' : 'K.km.s^-1.kpc^2',
@@ -183,13 +211,13 @@ print 'computing the luminosity from all the pixles in for each line map...'
 print 'making the maps of all the lines...'
 for i, this_attr in enumerate(attrs):
     
+    print this_attr
+    
     ## the intensity map (intensity weight averaged intensity map)
     #this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.mean) #func=numpy.average, weights=this_attr)
-    this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights='weights')
-    
-    ## computing the luminsoty by mutiplying by the area of each pixel
-    this_map_luminosity = this_map_intensity * hist.f.dl.prod()
-    
+    #this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights='weights')
+    this_map_luminosity = fi_utils.make_map(gas, hist, attr=this_attr, func=fi_utils.total_luminosity)
+        
     ## getting the line code from the attribute name
     line = this_attr.replace(params['em_unit']+'_','')
     
@@ -204,12 +232,6 @@ print '\t\tfinished making the luminosity maps'
 
 ## reading and setting up the pdr database
 arxvPDR = meshUtils.meshArxv(dirPath = params['pdrDb'], readDb=True)
-
-## setting up the line ratio strings 
-if 'line_ratios' in params:
-    line_ratios = params['line_ratios']
-elif 'lines' in params:
-    line_ratios = line_ratio_utils.line_ratio_combinations(params['lines']['include'], params['lines']['combinations'])
 
 ## loading the emission info from all the models for all Avs (also check for the consistenscy of the 
 ## number of models...i.e same number of models for all the lines)
@@ -267,7 +289,7 @@ estimator = fi_utils.galaxy_gas_mass_estimator(luminosity_maps = luminosity,
                                                line_ratios=line_ratios,
                                                arxvPDR=arxvPDR,)
 
-estimator.get_model_emission_from_involved_line_ratios()
+estimator.get_model_emission_from_pdr_arxv_involved_line_ratios() 
 
 estimator.setup_observed_grid()
 

@@ -272,7 +272,7 @@ estimator = fi_utils.galaxy_gas_mass_estimator(luminosity_maps = luminosity,
                                                line_ratios=line_ratios,
                                                arxvPDR=arxvPDR,)
 
-estimator.get_model_emission_from_involved_line_ratios()
+estimator.get_model_emission_from_pdr_arxv_involved_line_ratios()
 
 estimator.setup_observed_grid()
 
