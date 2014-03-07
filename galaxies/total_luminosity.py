@@ -1,14 +1,11 @@
 '''
-ADD DOCUMENTATION HERE
+plots the total luminosity of all the SPH particles.
 '''
 #########################################################################################################
-import os, time, sys
-
 import matplotlib
 matplotlib.use('Qt4Agg')
 
 import numpy
-import scipy
 import pylab
 
 from amuse.units import units
@@ -18,13 +15,6 @@ from mylib.utils.histogram import hist_nd
  
 from galaxies import fi_utils
 import lineDict
-import meshUtils
-
-import line_ratio_utils
-import mylib.units
-from mylib.constants import M_SUN_SI
-from mylib.utils.ndmesh import ndmesh
-from mylib.utils.misc import scale
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
@@ -39,7 +29,7 @@ params = {
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'by-number', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'original-only', #'by-number', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
           'obs_res'      : 21,
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
@@ -134,10 +124,18 @@ gas = gas[hist.inds_in]
 ###################################################################################################
 ###################################################################################################
 
+pylab.figure()
+
 specsStrs =  ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'SiO']
 colors    =  ['k' , 'r'   , 'g'  , 'b'  , 'c'   , 'y' , 'm']
-sym       = '--'
 
+## plotting the total luminosity weighted by number of sampled points
+weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
+gas.use_weights(weighting='by-number', weights_filename = weights_filename)
+
+sym       = '-'
+
+gas.use_weights
 for i, specStr in enumerate(specsStrs):
     
     print specStr
@@ -145,8 +143,23 @@ for i, specStr in enumerate(specsStrs):
     x, y = gas.get_total_luminosity_ladder(specStr)
     
     pylab.semilogy(x, y*1e6, colors[i] + sym, label=specStr)
+
+if True:
+    ## plotting the total luminosity of the original points
+    gas.use_weights(weighting='original-only')
+        
+    sym       = '--'
     
-pylab.legend(loc=0)
+    
+    for i, specStr in enumerate(specsStrs):
+        
+        print specStr
+        
+        x, y = gas.get_total_luminosity_ladder(specStr)
+        
+        pylab.semilogy(x, y*1e6, colors[i] + sym)
+    
+
 pylab.show()
 
 

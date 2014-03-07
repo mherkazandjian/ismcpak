@@ -17,7 +17,12 @@ from radex      import *
 from scipy      import interpolate
 import chemicalNetwork
 import lineDict
-from despotic import cloud
+
+try:
+    from despotic import cloud
+except:
+    print 'could not import despotic'
+
 from multiprocessing import Process, Pipe
 from mylib.utils.interpolation import interpolator_sectioned
 
@@ -3846,7 +3851,62 @@ class meshArxv(object):
                                        scipy_interpolator=interpolate.LinearNDInterpolator)
 
         return F
-     
+
+    def get_4D_interp_emission_func_from_pdr_db_for_Av_range(self,
+                                                             sectioned=False,                                                                     
+                                                             **kwargs):
+        '''Retuns an interpolation function of a quantity from the PDR database.  This method takes the same
+         parmaeters as get_emission_from_all_radex_dbs_for_Av_range and takes the same keywords.  The 
+         returned interpolation function returns the emission info given logn, logG0, logGmech and Av.  
+        
+        .. code-block:: python
+        
+            F = arxv.get_4D_interp_emission_func_from_pdr_db_for_Av_range(
+                                                                         species = '13CO',
+                                                                         Avs  = [1.0, 2.0, 5.0, 10.0],
+                                                                         quantity = 'fluxKkms',
+                                                                         )
+
+            # the quantity for a given set of parameters can be returned
+            #        logn  logG0 logGM   Av  
+            parms = [ 0.0, 0.0  , -50.0, 9.0]
+            q = F(array(parms).reshape(1,4))
+
+            #or for a vector of inputs using
+            logn  = array([0.0  ,   1.0,   2.0,   3.0,   4.0])
+            logG0 = array([3.0  ,   3.1,   3.2,   3.3,   3.4])
+            logGM = array([-30.0, -29.0, -28.0, -27.0, -26.0])
+            Avs   = array([1.0  ,   2.0,   3.0,   4.0,   5.0])
+            qv = F.get(vstack((logn, logG0, logGM, Avs)).T)
+            
+            #constructing the interpolation might take about 10 seconds depending on the amount of 
+            #points in the DBs, so the constructed function can be saved into a file and loaded later 
+            #using
+            save('/home/mher/foo.npy', F)
+            #or
+            numpy.savez_compressed('/home/mher/tmp/foo.npz', F)
+
+            F = load('/home/mher/foo.npy')
+             
+        see also get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range
+        '''
+        ## getting the data
+        v, data = self.get_emission_from_all_radex_dbs_for_Av_range(**kwargs)
+
+        ## constructing the linear interpolation function        
+        if sectioned == False:
+            F = interpolate.LinearNDInterpolator(data, v)
+            setattr(F, 'get', F) 
+        else:
+            F = interpolator_sectioned(data, v, ## not tested
+                                       intervals_z=self.intervals_z,     
+                                       ghost_z=self.ghost_z,
+                                       intervals_t=self.intervals_t,
+                                       ghost_t=self.ghost_t,
+                                       scipy_interpolator=interpolate.LinearNDInterpolator)
+
+        return F
+         
     def get_4D_interp_quantity(self, info=None, save=None, **kwargs):
         ''' returns an interpolation function for different quantities defined by the info
         keyword.  
@@ -3872,6 +3932,8 @@ class meshArxv(object):
         
         if info['source'] == 'radex':
             F = self.get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range(**kwargs)
+        if info['source'] == 'pdr':
+            F = self.get_4D_interp_emission_func_from_pdr_db_for_Av_range(**kwargs)
             
 
         ## saving the interpolation function to the disk            

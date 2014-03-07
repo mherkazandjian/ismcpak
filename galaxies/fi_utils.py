@@ -353,7 +353,7 @@ def load_gas_particle_info_with_em(filename, species, load_pdr=None):
     return gas
 
 
-def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, **kwargs):
+def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, in_ax=None, **kwargs):
     '''looping over the bins of the 2D histogram of the x,y coordinates and 
      computing the averages of the maps
     '''
@@ -416,10 +416,13 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, **kwarg
             data_show = numpy.log10(map_data).T
         else:
             data_show = map_data
-             
-        pylab.figure()
-        pylab.imshow(data_show, origin='lower')
-        pylab.colorbar()
+        
+        if in_ax == None:
+            pylab.figure()
+            pylab.imshow(data_show, origin='lower', **kwargs)
+            pylab.colorbar()
+        else:
+            in_ax.imshow(data_show, origin='lower', **kwargs)
         
     return map_data
 
@@ -1305,9 +1308,9 @@ class galaxy_gas_mass_estimator(object):
             ax2 = fig.add_axes([0.3, 0.5, 0.15, 0.4])
 
             # plotting the line ratios
-            #f.plot_results(fig = fig, ax = ax1)
+            f.plot_results(fig = fig, ax = ax1)
             print '-------------------------'
-            #f.plot_results(fig = fig, ax = ax2, no_gmech=True)
+            f.plot_results(fig = fig, ax = ax2, no_gmech=True)
             
             # plotting the PDFs in these axes
             ax3 = fig.add_axes([0.1, 0.1, 0.15, 0.3])
@@ -2434,6 +2437,7 @@ class gas_set(Particles):
         return info_ret
     
     def use_weights(self, weighting=None, **kwargs):
+        '''set the weights determined by the weighting keyword'''
         
         if weighting == 'matched':
             

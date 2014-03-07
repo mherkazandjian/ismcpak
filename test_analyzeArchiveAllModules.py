@@ -225,10 +225,10 @@ if False:
     '''
     
     ## interpolation functions for emission in Kkms
-    lines  = ('13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3',)
-    lines += ('CO1-0', 'CO2-1', 'CO3-2', 'CO4-3',)
+    #lines  = ('13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3',)
+    #lines += ('CO1-0', 'CO2-1', 'CO3-2', 'CO4-3',)
  
-    #lines = ['13CO1-0'] 
+    lines = ['13CO1-0'] 
     for line in lines:
         print 'making interpolation function for %s' % line
         F = arxv.get_4D_interp_quantity(

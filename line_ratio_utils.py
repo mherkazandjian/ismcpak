@@ -456,6 +456,31 @@ def lines_involved(line_ratio):
     
     return line1, line2
 
+def all_lines_involved(line_ratios):
+    
+    lines = []
+
+    for line_ratio in line_ratios:
+        
+        line1, line2 = lines_involved(line_ratio)
+        
+        lines.append(line1)
+        lines.append(line2)
+
+    lines = numpy.unique(lines)
+    
+    return lines
+
+def species_involved(lines):
+    
+    specs = []
+    
+    for line in lines:
+        
+        specs.append( lineDict.lines[line]['specStr'] )
+
+    return numpy.unique(specs)
+
 def line_ratio_combinations(lines, combinations=None):
 
     x = list(itertools.permutations(lines, 2))
