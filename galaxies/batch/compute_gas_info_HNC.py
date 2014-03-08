@@ -129,7 +129,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'interpolator' : scipy.interpolate.NearestNDInterpolator, 
           'interpolator' : scipy.interpolate.LinearNDInterpolator, 
           'save_info'    : True,
-          'save_secies'  : ['HNC'],
+          'save_species' : ['HNC'],
           }
 
 #fluxcgs, fluxKkms, tau, Tex, T_R
@@ -215,7 +215,7 @@ for snap in params['snaps']:
     ## saving the info interpolated from the PDR grids
     if params['save_info'] == True:
         snap_filename = params['rundir'] + '/firun/fiout.%06d' % snap
-        fi_utils.save_gas_particle_info_saperate_files(snap_filename, gas, params['save_secies'])
+        fi_utils.save_gas_particle_info_saperate_files(snap_filename, gas, params['save_species'])
 #
 
 ####add a plotting routine here for the masp

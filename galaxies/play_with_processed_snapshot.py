@@ -17,10 +17,11 @@ import ismUtils
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100',  # the path of the dir containing the simulation
           'imres' : 200,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['CO'],
-          'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
+          'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
           'snap'    : 4,
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
@@ -80,7 +81,7 @@ logger.debug('loading proccessed snapshot %s : ' % snap_filename)
 gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], load_pdr=params['pdr_sph'])    
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
-
+asdasdad
 #keeping gas particles within the specified ranges
 gas = fi_utils.select_particles(gas, params['ranges'])
 logger.debug('got the sph particles in the required ranges')

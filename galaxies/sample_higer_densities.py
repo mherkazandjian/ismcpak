@@ -3,7 +3,7 @@ import time
 import matplotlib
 matplotlib.use('Qt4Agg')
 
-import numpy
+from numpy import repeat, nan, arange, where, hstack, ones
 
 from amuse.io import read_set_from_file
 from amuse.io.fi_io import FiFileFormatProcessor
@@ -14,7 +14,7 @@ from galaxies import fi_utils
 home = '/home/mher'
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-test', # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100', # the path of the dir containing the simulation
           'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
@@ -27,12 +27,13 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # th
                       },
           }
 
-npp                     = 20             # number of particles to be sampled from each SPH particle
-n_min_sample            = 1e2            # particles with densities greater than this are sampled
+npp                     = 100              # number of particles to be sampled from each SPH particle
+n_min_sample            = 100.0            # particles with densities greater than this are sampled
+n_max_sample            = 1e6
 fit_func_rng            = [1e-2, 1e+4]   # the range of densities used in constructing the function used for the sampling
-save_sampled            = False
+save_sampled            = True
 
-nbins_in_match_interval = 30
+nbins_in_match_interval = 25
 matching_tol            = 0.001 
 nPasses                 = 1            
 save_weights_func       = False
@@ -61,9 +62,10 @@ print 'number of sph particles in snapshot = %d' %  len(gas)
 
 ## extending the densities to include higher ones
 n_s, w_s, gas_gt, w_gt, gas_lt = gas.sample_higher_densities(npp = npp, 
-                                                             n_min_sample = n_min_sample,
-                                                             fit_func_rng=fit_func_rng)
-
+                                                             n_min_sample = n_min_sample, 
+                                                             n_max_sample = n_max_sample,
+                                                             fit_func_rng=fit_func_rng,
+                                                             plot=True)
 
 ## making the new particle set
 gas_s = fi_utils.gas_set(len(n_s))
@@ -79,7 +81,7 @@ for attr in attr_list:
     attr_gas_gt = getattr(gas_gt, attr)
     
     ## repeating the attributes npp times
-    attr_gas_s = numpy.repeat(attr_gas_gt, npp)
+    attr_gas_s = repeat(attr_gas_gt, npp)
     
     ## setting the repeated attributes to the sampled gas particle set
     setattr(gas_s, attr, attr_gas_s)
@@ -93,14 +95,21 @@ gas_s.weights = w_s
 gas_s.n = n_s
 
 ## assigning the keys to the sampled particles to their parent's keys
-gas_lt.children = numpy.ones(len(gas_lt))*numpy.nan
-gas_lt.parent   = numpy.ones(len(gas_lt))*numpy.nan
+gas_lt.children = ones(len(gas_lt))*nan
+gas_lt.parent   = ones(len(gas_lt))*nan
 
-gas_gt.children = numpy.arange(len(gas_gt))
-gas_gt.parent   = numpy.ones(len(gas_gt))*numpy.nan
+gas_gt.children = arange(len(gas_gt))
+gas_gt.parent   = ones(len(gas_gt))*nan
 
-gas_s.children = numpy.ones(len(gas_s))*numpy.nan
-gas_s.parent   = numpy.repeat(gas_gt.children, npp) 
+gas_s.children = ones(len(gas_s))*nan
+gas_s.parent   = repeat(gas_gt.children, npp) 
+
+## setting the radii and the masses of the sampled particles (children and parents)
+gas_gt.mass = gas_gt.mass * gas_gt.weights
+gas_s.mass = gas_s.mass * gas_s.weights
+
+gas_gt.radius = gas_gt.radius * (gas_gt.weights)**(1.0/3.0) 
+gas_s.radius = gas_s.radius * (gas_s.weights * ((repeat(gas_gt.n, npp))/gas_s.n) )**(1.0/3.0) 
 
 ## checking if the parent/child assignment and weighting is done correctly
 ## might take lots of time
@@ -108,7 +117,7 @@ if False:
     t0 = time.time()
     for i, child in enumerate(gas_gt.children):
     
-        inds = numpy.where(gas_s.parent == child)
+        inds = where(gas_s.parent == child)
         
         sum_weights = (gas_gt.weights[i] + gas_s.weights[inds].sum())
         if sum_weights != 1.0:
@@ -129,11 +138,11 @@ new_attr_list = attr_list + ('weights', 'children', 'parent')
 for attr in new_attr_list:
     
     ## getting the data of the attribute of the gas particles which were sampled
-    attr_data = numpy.hstack((getattr(gas_lt, attr),    
-                              getattr(gas_gt, attr), 
-                              getattr(gas_s, attr)
-                              )
-                            ) 
+    attr_data = hstack((getattr(gas_lt, attr),
+                        getattr(gas_gt, attr),  
+                        getattr(gas_s, attr)
+                        )
+                       ) 
     
     ## setting the repeated attributes to the sampled gas particle set
     setattr(gas_all, attr, attr_data)

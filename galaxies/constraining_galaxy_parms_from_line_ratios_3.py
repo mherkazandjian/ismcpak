@@ -73,7 +73,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'interpolator' : scipy.interpolate.NearestNDInterpolator, 
           #'interpolator' : scipy.interpolate.LinearNDInterpolator, 
           'save_info'   : False,
-          'save_secies' : ['CO', '13CO'],
+          'save_species' : ['CO', '13CO'],
           }
 #############################################################################################################
 

@@ -143,35 +143,56 @@ def select_particles(gas, ranges):
     
                     
     return gas[inds]
-    
-def compute_alpha(gas, arxvPDR):
+
+def compute_alpha(gas, arxvPDR, if_nan_set_nearest=None):
     """Computes the ratio of the mechanical heating of an SPH particle to the surface heating of
     a pure PDR with the same n,G0.
     """
     
     lgMechMin = arxvPDR.grid_z.min() #the minim mechanical heating  (in log) which will be assumed to be that of a pure PDR
 
-    f_log_gamma_surf=arxvPDR.construct3DInterpolationFunction(quantity=['therm','heating'], 
-                                                              slabIdx=0, 
-                                                              log10=True, 
-                                                              interpolator='linear')
-
     dataNew = numpy.array([
                            numpy.log10(gas.n), 
                            numpy.log10(gas.G0), 
                            numpy.ones(gas.n.shape)*lgMechMin
                           ]).T
-                          
-    print 'interpolating the surface heating at the surface of the SPH particles'
-    gammaSurf_sph_from_pdr = 10.0**f_log_gamma_surf(dataNew)
-    gas.alpha = gas.gmech/gammaSurf_sph_from_pdr
+    
+    def interpolate_surface_heating(interpolator, data):                          
+        print 'constructing the surface heating interpolation function from the PDR arxv'
+        f_log_gamma_surf=arxvPDR.construct3DInterpolationFunction(quantity=['therm','heating'], 
+                                                                  slabIdx=0, 
+                                                                  log10=True, 
+                                                                  interpolator=interpolator)
+    
+        print 'interpolating the surface heating at the surface of the SPH particles'
+        gammaSurf_sph_from_pdr = 10.0**f_log_gamma_surf(data)
+    
+        return gammaSurf_sph_from_pdr
+    #
+    
+    # computing the surface heating of the sph particles using linear interpolation
+    gammaSurf_sph_from_pdr = interpolate_surface_heating('linear', dataNew)
     
     indsNan = where(numpy.isnan(gammaSurf_sph_from_pdr))[0]
-    if indsNan.size != 0:
-        err_strng = 'interpolated variable Tkin_sph_from_pdf has %d nans values in it!!' % indsNan.size
-        err_strng += '\n\t\tgMechMin = %e' % lgMechMin                 
-        raise ValueError(err_strng)
+        
+    if  if_nan_set_nearest != True:
+        if indsNan.size != 0:
+            err_strng = 'interpolated variable gammaSurf_sph_from_pdr has %d nans values in it!!' % indsNan.size
+            err_strng += '\n\t\tgMechMin = %e' % lgMechMin                 
+            raise ValueError(err_strng)
+    else:
+        print '''!!!!!!!!! fi_utils.compute_alpha: found an nan in the interpolated surface heating 
+        setting the interpolated surface heating to the nearest using nearest neighbour interpolation'''
+
+        print 'number of points with Nan surface heating is ', indsNan.size
+        
+        # computing the surface heating of the sph particles using nearest neighbour interpolation
+        gammaSurf_sph_from_pdr_nearest = interpolate_surface_heating('nearest', dataNew[indsNan])
+        
+        gammaSurf_sph_from_pdr[indsNan] = gammaSurf_sph_from_pdr_nearest 
+    #
     
+    gas.alpha = gas.gmech/gammaSurf_sph_from_pdr
     
 def guess_metallicity(runDir):
     if '-std' in runDir:
@@ -231,7 +252,7 @@ def save_gas_particle_info_saperate_files(path_of_snapshot, gas, species):
     #-----------------------------------------
     
     #the list of all the attributes    
-    attr_list = dir(gas)
+    attr_list = gas.all_attributes()
     
     #saving the emission info for each species into a saperate file
     for specStr in species:
@@ -692,7 +713,7 @@ def snapshot_interpolated_data(snap, arxvPDR, em_interp_funcs, pdr_interp_funcs,
     
     #computing alpha for each SPH particle (amount of gm wrt surface heating for the PDR model)
     #and selecting particles which have alpha < 1.0
-    compute_alpha(gas, arxvPDR)
+    compute_alpha(gas, arxvPDR, if_nan_set_nearest=True)
     logger.debug('computed the alpha for the SPH particles')
     inds = where( gas.alpha < 1.0 )
     gas = gas[inds]
@@ -1780,52 +1801,17 @@ class gas_set(Particles):
         
         return fig, axs
     
-    def sample_ln_densities(self, npp, rem, rv):
+    def sample_ln_densities(self, npp, ln_this, rem, rv):
         '''returns a sample of npp size of sampled densities in ln() scale, rv is the scipy 
         generator. The sample size from which npp particles are picked are based on the remaining
         number of particles to be sampled 'rem'.
         '''
-         
-        if npp == 5:
-            if rem > 10000:
-                ln_trial = rv.rvs(1000)
-            if rem <= 10000:
-                ln_trial = rv.rvs(10000)
-            if rem <= 200:
-                ln_trial = rv.rvs(100000)
-            if rem <= 10:
-                ln_trial = rv.rvs(1000000)
-                
-        if npp == 20:
-            if rem > 3000:
-                ln_trial = rv.rvs(10000)
-            if rem <= 3000:
-                ln_trial = rv.rvs(1000000)
-            if rem <= 200:
-                ln_trial = rv.rvs(1000000)
-            if rem <= 10:
-                ln_trial = rv.rvs(10000000)
-                
-        if npp == 50:
-            if rem > 500:
-                ln_trial = rv.rvs(100000)
-            if rem <= 500:
-                ln_trial = rv.rvs(1000000)
-            if rem <= 300:
-                ln_trial = rv.rvs(1000000)
-            if rem <= 100:
-                ln_trial = rv.rvs(10000000)
+        
+        ## generating (1 - cdf(x))*npp points  
+        n_generated = npp*(1.0/(1.0 - rv.cdf(ln_this)))
 
-        if npp == 100:
-            if rem > 500:
-                ln_trial = rv.rvs(1000000)
-            if rem <= 500:
-                ln_trial = rv.rvs(1000000)
-            if rem <= 300:
-                ln_trial = rv.rvs(1000000)
-            if rem <= 100:
-                ln_trial = rv.rvs(50000000)
-
+        ln_trial = rv.rvs(n_generated)
+        
         return ln_trial
     
     def plot_sampled(self, ln_new, w_new, rv, axs=None):
@@ -1892,13 +1878,15 @@ class gas_set(Particles):
         axs[1,2].set_xticks( [log(1e-4), log(1e-2), log(1e-0), log(1e2), log(1e4), log(1e6) ])
         axs[1,2].set_xticklabels([-4, -2, 0, 2, 4, 6 ])        
     
-    def sample_set_serial(self, ln_gt_X, keys, rv, npp):
-        ## sampling one particle at a time
+    def sample_set_serial(self, ln_gt_X, ln_Y, rv, npp):
+        '''sample the particles whose densities are ln_gt_X one at a time. Keeping sampled only particles
+        whose density is less than Y.
+        '''
 
+        #ln_gt_X = ln_gt_X[-600:-499:]  ## testing on a subset
+        
         ## array which will hold the sampled densities
         ln_s = numpy.array([],'f8')
-        ## array which will hold the keys of the sampled densities
-        keys_s = numpy.array([],'f8')
         ## array which will hold the weights sampled densities
         w_s = numpy.array([],'f8')
         ## weights of the parent particles 
@@ -1919,33 +1907,35 @@ class gas_set(Particles):
             while True:
                 
                 ts1 = time.time()
-                ln_trial = self.sample_ln_densities(npp, rem, rv)
+                ln_trial = self.sample_ln_densities(npp, ln_this, rem, rv)
                 ts += (time.time() - ts1)
-                
+
+                if attempts == 0:
+                    print '\t generated a pool of %e random numbers' % ln_trial.size
+
                 ## keeping sampled particles whose density is higher than the current one             
-                ln_trial_gt_ln_this = ln_trial[ ln_trial > ln_this]
+                ln_trial_gt_ln_this = ln_trial[ (ln_trial > ln_this)*(ln_trial < ln_Y)]
                 ## keeping all particles
                 #ln_trial_gt_ln_this = ln_trial[:]
     
                 attempts += 1
-                
+
                 if  ln_trial_gt_ln_this.size > npp:
                     
                     sample_keep = ln_trial_gt_ln_this[:npp]
     
                     ## setting weights by volume to the sampled particles
-                    w_this_sample = (1.0/float(npp+1.0))*(exp(ln_this)/exp(sample_keep))
+                    #w_this_sample = (1.0/float(npp+1.0))*(exp(ln_this)/exp(sample_keep))
                     ## setting zero weights
                     #w_this_sample = zeros(npp, 'f8')
                     ## setting unit weights
                     #w_this_sample = numpy.ones(npp, 'f8')
                     ## setting weights by mass
-                    #w_this_sample = numpy.ones(npp, 'f8')/float(npp+1)
+                    w_this_sample = numpy.ones(npp, 'f8')/float(npp+1)
                     #((1.0/float(npp))*(exp(ln_this)/exp(sample_keep)))**(2.0/3.0),
                     #(1.0/float(npp))*numpy.ones(npp, 'f8')/10.0,
                     
                     ln_s = numpy.hstack((ln_s, sample_keep))
-                    keys_s = numpy.hstack((keys_s, numpy.ones(npp)*keys[i]))
                     w_s = numpy.hstack((w_s, w_this_sample))
                     w_ln_gt_X[i] = 1.0 - w_this_sample.sum()
                     #w_ln_gt_X[i] = 1.0   
@@ -1961,9 +1951,9 @@ class gas_set(Particles):
     
             print '% time sampling = ', ts / (time.time() - t0)
     
-        return ln_s, keys_s, w_s, w_ln_gt_X
+        return ln_s, w_s, w_ln_gt_X
     
-    def sample_higher_densities(self, npp=None, n_min_sample=None, fit_func_rng=None, plot=True):
+    def sample_higher_densities(self, npp=None, n_min_sample=None, n_max_sample=None, fit_func_rng=None, plot=True):
 
         if plot == True:
             fig, axs = self.plot_PDF_CDF(fit_func_rng=fit_func_rng)
@@ -1978,12 +1968,12 @@ class gas_set(Particles):
 
         ln = log(self.n)
         
-        ## particles whose density is larger than X will be sampled 
+        ## particles whose density is larger than X and less than Y will be sampled 
         X = n_min_sample
-    
-        # selecting the particles and their keys
-        inds = numpy.where(ln > log(X))
-        keys = self.key[inds]
+        Y = n_max_sample 
+        
+        # selecting the particles within the density range to be sampled
+        inds = numpy.where((ln > log(X))*(ln < log(Y)))
         ln_gt_X = ln[inds]
         gas_ln_gt_X = self[inds] 
         
@@ -1994,21 +1984,19 @@ class gas_set(Particles):
         
         # soring the densities and the corresponding keys in ascending order
         inds_sorted = numpy.argsort(ln_gt_X)
-        keys = keys[inds_sorted]
         ln_gt_X = ln_gt_X[inds_sorted]
         gas_ln_gt_X = gas_ln_gt_X[inds_sorted]
 
         n_to_be_sub_sampled = ln_gt_X.size
         print 'number of SPH particles to be sampled = %d' % n_to_be_sub_sampled
         print 'these are %.2f percent of the original set.' % (float(n_to_be_sub_sampled)/float(ln.size))
-
+        
         ## doing the actual sampling        
-        ln_s, keys_s, w_s, w_ln_gt_X = self.sample_set_serial(ln_gt_X, keys, rv, npp)
+        ln_s, w_s, w_ln_gt_X = self.sample_set_serial(ln_gt_X, log(Y), rv, npp)
         
         ## merging the data        
         ln_new = numpy.hstack((ln_lt_X                       , ln_gt_X  , ln_s))        
         w_new  = numpy.hstack((numpy.ones(ln_lt_X.size, 'f8'), w_ln_gt_X, w_s))
-
         
         ## doing some plots including the sampled densitieis
         if plot == True:        
@@ -2026,6 +2014,33 @@ class gas_set(Particles):
         
         return numpy.where(numpy.isfinite(self.parent))[0]
 
+    def get_inds_of_has_children_with_corresponding_children(self):
+        '''returns in the indicies of the parents, and the indicies of the children
+        
+        p, c = gas.get_inds_of_has_children_with_corresponding_children()
+        
+        ## chaning the values of the parents
+        ids = gas.ids
+        
+        ids[p] = arange(p.size)
+        
+        ## setting the  
+        '''
+        
+        ## the indicies of the particles which have children and the children in the curernt set
+        inds_parents = self.get_inds_has_children()
+        inds_children = self.get_inds_children()
+
+        ## the ids of the parents and their children 
+        ids_parents = self.id[inds_parents]
+        ids_children = self.id[inds_children]
+        
+        ## getting the mask of the parents in the children id list 
+        mask = numpy.in1d(ids_children, ids_parents)
+        inds = inds_children[numpy.where(mask)]
+
+        return inds_parents, inds
+        
     def get_inds_original_set(self):
         '''returns the indicies of the original set of the particles'''
         

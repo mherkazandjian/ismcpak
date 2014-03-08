@@ -29,7 +29,8 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std-test', # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100',  # the path of the dir containing the simulation
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',          # the path to the dir containing the PDR database
@@ -66,7 +67,8 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                      'f_mean_em_<q>fluxcgs</q>_CO<template>'  : 0,
 #                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 1,
 #                      'f_mean_em_no_gm_<q>fluxKkms</q>_CO<template>' : 1,                      
-                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 15,
+#                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 15,
+                      'f_mean_em_<q>fluxKkms</q>_CO<template>' : 1,
 #                      'f_mean_em_<q>fluxKkms</q>_HCN<template>' : 1,
 #                      'f_mean_em_<q>Tex</q>_CO<template>'      : 0,
 #                      'f_mean_em_<q>tau</q>_CO<template>'      : 0,
@@ -211,7 +213,7 @@ for snap in params['snaps']:
     ## saving the info interpolated from the PDR grids
     if params['save_info'] == True:
         snap_filename = params['rundir'] + '/firun/fiout.%06d' % snap
-        fi_utils.save_gas_particle_info_saperate_files(snap_filename, gas, params['save_secies'])
+        fi_utils.save_gas_particle_info_saperate_files(snap_filename, gas, params['save_species'])
 #
 
 ####add a plotting routine here for the masp

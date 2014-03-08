@@ -200,7 +200,7 @@ class ratios(collections.OrderedDict):
         
         return self.get_values(line_ratios), self.get_errors(line_ratios)
 
-    def get_ratios_by_species(self, spec1, spec2, in_num=None, in_denom=None, sort_num=None):
+    def get_ratios_by_species(self, spec1, spec2, in_num=None, in_denom=None, sort_num=None, **kwargs):
         '''returns the line ratios string of the line ratios whose numerator involves spec1 and denominator spec2
         For example 
         
@@ -226,7 +226,7 @@ class ratios(collections.OrderedDict):
         
         ret = numpy.array(ret)
         
-        if sort_num != None:
+        if sort_num != None and sort_num == True:
             '''sort the line ratio strings with increasing transition index of the line in the numerator'''
             idx_num = []
             for line_ratio in ret:
@@ -235,8 +235,8 @@ class ratios(collections.OrderedDict):
                 
                 idx1 = lineDict.lines[line1]
                 
-                idx_num.append(idx1)
-            
+                idx_num.append(idx1['radexIdx'])
+
             inds = numpy.argsort(numpy.array(idx_num))
             ret = ret[inds]
             

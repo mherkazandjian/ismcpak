@@ -56,7 +56,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'em_unit'     : 'fluxKkms',## plotting the line ratios and the modelled ones
           'error_bars'  : 0.2, 
           'save_info'   : False,
-          'save_secies' : ['CO', '13CO'],
+          'save_species': ['CO', '13CO'],
           #'interpolator' : scipy.interpolate.NearestNDInterpolator, 
           'interpolator' : scipy.interpolate.LinearNDInterpolator, 
           }

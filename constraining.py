@@ -174,56 +174,41 @@ class Xi2_line_ratios_single_component(object):
         obs = self.obs_ratios
         mod = self.model_line_ratios
         
-        ## plotting the observed ratios for CO/CO line ratios
-        line_ratios = obs.get_ratios_by_species('CO','CO', in_denom='1-0', sort_num=True)
-        print 'plotting line ratios CO/CO     :', line_ratios
-                
-        vo, eo = obs.get_values_and_error(line_ratios)
-        Jup = numpy.arange(len(vo))+1
-        ax.errorbar(Jup, vo, fmt='ko', yerr=eo)
-        ax.text(len(vo)-1, vo[-1], 'CO/CO', size='small')
-        ## plotting the model line ratios
-        vm = []
-        for i, line_ratio in enumerate(line_ratios):
-            vm.append(mod[line_ratio][ind_model])
-        ax.plot(Jup, vm,'k--')
-        #-----------------------------------------------------
-        ## plotting the observed ratios for 13CO/13CO line ratios
-        line_ratios = obs.get_ratios_by_species('13CO','13CO', in_denom='1-0', sort_num=True)        
-        print 'plotting line ratios  13CO/13CO:', line_ratios
+        def plot_ratio_ladder(spec_num=None, spec_denom=None, in_denom='1-0', **kwargs):
+            ## plotting the observed ratios for CO/CO line ratios
+            line_ratios = obs.get_ratios_by_species(spec_num, spec_denom, **kwargs)
+            print 'plotting line ratios %s/%s    :' % (spec_num, spec_denom), line_ratios
+                    
+            vo, eo = obs.get_values_and_error(line_ratios)
+            Jup = numpy.arange(len(vo))+1
+    
+            ax.errorbar(Jup, vo,  yerr=eo, fmt='o', markersize=3, **kwargs)
+            #ax.text(len(vo)-1, vo[-1], '%s/%s' %  (spec_num, spec_denom), size='x-small')
+            
+            ## plotting the model line ratios
+            vm = []
+            for i, line_ratio in enumerate(line_ratios):
+                vm.append(mod[line_ratio][ind_model])
+            ax.plot(Jup, vm, linestyle='--', label='%s/%s' %  (spec_num, spec_denom), **kwargs)
+        #
+        
+        plot_ratio_ladder(spec_num='CO', spec_denom='CO', in_denom='1-0', color='k')
+        plot_ratio_ladder(spec_num='13CO', spec_denom='13CO', in_denom='1-0', color='r')
+        plot_ratio_ladder(spec_num='13CO', spec_denom='CO', in_denom='1-0', color='g')
+        plot_ratio_ladder(spec_num='HCN', spec_denom='CO', in_denom='1-0', color='c')
+        plot_ratio_ladder(spec_num='HNC', spec_denom='CO', in_denom='1-0', color='m')
+        plot_ratio_ladder(spec_num='HCO+', spec_denom='CO', in_denom='1-0', color='y')
+        
 
-        vo, eo = obs.get_values_and_error(line_ratios)
-        Jup = numpy.arange(len(vo))+1
-        ax.errorbar(Jup, vo, fmt='ro', yerr=eo)
-        ax.text(len(vo)-1, vo[-1], '13CO/13CO', size='small')
-        ## plotting the model line ratios
-        vm = []
-        for i, line_ratio in enumerate(line_ratios):
-            vm.append(mod[line_ratio][ind_model])
-        ax.plot(Jup, vm,'r--')
-        #-----------------------------------------------------
-        ## plotting the observed ratios for 13CO/CO line ratios
-        line_ratios = obs.get_ratios_by_species('13CO','CO', sort_num=True)
-        print 'plotting line ratios 13CO/CO   :', line_ratios
+        ax.set_xlim(-1, 17)
+        ax.set_ylim(1e-7, 2.0)
         
-        vo, eo = obs.get_values_and_error(line_ratios)
-        Jup = numpy.arange(len(vo))
-        
-        ax.errorbar(Jup, vo, fmt='go', yerr=eo)
-        ax.text(len(vo)-1, vo[-1], '13CO/CO', size='small')
-        ## plotting the model line ratios
-        vm = []
-        for i, line_ratio in enumerate(line_ratios):
-            vm.append(mod[line_ratio][ind_model])
-        ax.plot(Jup, vm,'g--')
-        #-----------------------------------------------------
-        
-        ax.set_xlim(-1, 6)
-        ax.set_ylim(0.0001, 2.0)
-        
-        ax.set_xticklabels(['', 'i=0', 'i=1', 'i=2', 'i=3', 'i=4', 'i=5'])
+        ax.set_xticks(numpy.arange(0, 16, 2))
+        ax.set_xticklabels(numpy.arange(0, 16, 2))
         ax.set_ylabel('line ratio')
         ax.set_xlabel('J = i + 1/ J = 1-0')
         ax.set_yscale('log')
+        
+        ax.legend(loc=0, prop={'size':'x-small'})
         #pylab.show()
         
