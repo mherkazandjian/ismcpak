@@ -31,7 +31,8 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std-test', # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100',  # the path of the dir containing the simulation
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
           #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',          # the path to the dir containing the PDR database
@@ -48,7 +49,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                              'min_log_G0_use' : -3.0,
                              'min_log_gm_use' : -50.0,
                              'Av_use'         :  [0.0, 200000.0],
-                             'Av_clip'        :  [0.01, 28.0],  #sph particles with Av higher than this are clipped to this value                             
+                             'Av_clip'        :  [0.01, 27.9],  #sph particles with Av higher than this are clipped to this value                             
                             },
                       
                       #the size of the box to be displayed (particles outside the range are discarded)
@@ -58,7 +59,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                       'interp'   : {'log_n'        : [-10.0,  10.0],
                                     'log_G0'       : [-2.0 ,  3.0 ],
                                     'log_gmech'    : [-50.0, -20.0],
-                                    'Av'           : [ 1.0,  28.0],
+                                    'Av'           : [ 1.0,  30.0],
                                     'Av_res'       : 1.0,   #resolution of constructing the interp funcs from the PDR data
                                     'extra_Av_sec' : [0.01, 0.1],
                                     },   #Av_res is used only for quantities interpolated upon from PDR meshes 

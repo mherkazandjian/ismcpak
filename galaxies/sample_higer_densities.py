@@ -1,4 +1,4 @@
-import time
+import time, os
 
 import matplotlib
 matplotlib.use('Qt4Agg')
@@ -12,6 +12,7 @@ from amuse.units import units
 from galaxies import fi_utils
 #===========================================================================================================
 home = '/home/mher'
+home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # the path of the dir containing the simulation
           'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100', # the path of the dir containing the simulation
@@ -27,11 +28,11 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # th
                       },
           }
 
-npp                     = 100              # number of particles to be sampled from each SPH particle
+npp                     = 20              # number of particles to be sampled from each SPH particle
 n_min_sample            = 100.0            # particles with densities greater than this are sampled
 n_max_sample            = 1e6
 fit_func_rng            = [1e-2, 1e+4]   # the range of densities used in constructing the function used for the sampling
-save_sampled            = True
+save_sampled            = False
 
 nbins_in_match_interval = 25
 matching_tol            = 0.001 
@@ -57,7 +58,7 @@ gas = fi_utils.convert_units_to_pdr_units(gas_fi, metallicity)
 
 print 'done reading fi snapshot : %s' % filename
 print 'number of sph particles in snapshot = %d' %  len(gas)
-
+asdasdasd
 ###########################################################################################################
 
 ## extending the densities to include higher ones

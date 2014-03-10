@@ -910,7 +910,7 @@ class radex():
         for ax in self.axs:            
             ax.lines = []
                 
-    def setLabels(self, em_unit=None):
+    def setLabels(self, em_unit=''):
         """Set the appropriate labels of all the axes"""
 
         axs = self.axs
@@ -946,10 +946,7 @@ class radex():
             removeAll_yLabels(ax)
                     
         # plotting the ylabels of the axes
-        if em_unit == None:
-            axsLeft[0].set_ylabel('Flux')
-        else:
-            axsLeft[0].set_ylabel(em_unit)            
+        axsLeft[0].set_ylabel('Flux[%s]' % em_unit)
         axsLeft[1].set_ylabel('Tex, Trot')
         axsLeft[2].set_ylabel('tau')
         axsLeft[3].set_ylabel('pop dens')

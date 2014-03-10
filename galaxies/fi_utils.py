@@ -4,7 +4,7 @@ import subprocess, shlex
 
 import numpy
 from numpy import log10, where, argmin, fabs, linspace, log, exp, pi, sqrt
-from numpy import isfinite, isnan, zeros
+from numpy import isfinite, isnan, zeros, int32
 
 from scipy.ndimage import zoom
 from scipy import stats
@@ -34,6 +34,7 @@ from mylib.constants import M_SUN_SI
 from mylib.utils.ndmesh import ndmesh
 from mylib.utils.misc import scale
 from mylib.utils import templates
+from mylib.utils.misc import find_matching_indicies
 
 import collections
 import multiprocessing
@@ -222,7 +223,7 @@ def gas_particle_info_from_interp_func(gas, map_key, arxvPDR, interp_funcs, take
 
     print 'time interpolating for %s = %.3f seconds for %d points at %e points/sec' % (map_key, dt, data_use.shape[0], data_use.shape[0]/dt)
 
-    #setting emissions of particles with nan interpolated values to zero             
+    #setting emissions of particles with nan interpolated values to a very low value        
     indsNan = where(numpy.isnan(v_ret))[0]
     if indsNan.size != 0:
         v_ret[indsNan] = 1e-30
@@ -318,7 +319,7 @@ def save_gas_particle_info(filename, gas, attr_name_list):
         
     numpy.savez_compressed(filename, *attr_data_list, names=attr_arr)
 
-def load_gas_particle_info(filename, load_pdr=None):
+def load_gas_particle_info(filename, load_pdr=None, load_only=None):
     '''load the particle states from the file'''
     
     data = numpy.load(filename)
@@ -327,11 +328,21 @@ def load_gas_particle_info(filename, load_pdr=None):
 
     gas = gas_set(n)
 
+    if load_only != None:
+        names_to_be_loaded = numpy.array(load_only)
+    else:
+        names_to_be_loaded = data['names']         
+    
     for i, name in enumerate(data['names']):
+        
+        if name not in names_to_be_loaded:
+            print '\t\tattr_name = %-30s [%d elements] ... SKIPPING' % (name, data['arr_%d' %i].size)
+            continue
+        
         setattr(gas, name, data['arr_%d' % i])
         print '\t\tattr_name = %-30s [%d elements]' % (name, data['arr_%d' %i].size)
-        
-    all_names = data['names'] 
+    
+    all_names = names_to_be_loaded
     
     if load_pdr == True:
         filename_pdr = filename + '.pdr.npz'
@@ -345,7 +356,7 @@ def load_gas_particle_info(filename, load_pdr=None):
 
     return gas, all_names
 
-def load_gas_particle_info_with_em(filename, species, load_pdr=None):
+def load_gas_particle_info_with_em(filename, species, load_pdr=None, load_only_em=None):
     '''loads the specified file foo.states.npz, also looks for files
      foo.states.npz.em_XYZ.npz, where XYZ is an entry in the list of strings in species
     '''
@@ -356,11 +367,24 @@ def load_gas_particle_info_with_em(filename, species, load_pdr=None):
     gas, names = load_gas_particle_info(filename, load_pdr=load_pdr)
     
     names_all.append(names.tolist())
-    
+
     for specStr in species:
+        
         filename_this = filename + '.em_%s.npz' % specStr
-        gas_this, names_this = load_gas_particle_info(filename_this)
-        for name_this in names_this:
+        
+        if load_only_em != None:
+            '''keeping the emission attributes for this specific species'''
+            load_only_em_this_species = []
+            for em_attr_name in load_only_em:
+                line = em_attr_name.replace('em_','').replace('fluxKkms_','').replace('fluxcgs_','')
+                spec_this_em_attr = lineDict.lines[line]['specStr']
+                if spec_this_em_attr == specStr:
+                    load_only_em_this_species.append(em_attr_name)
+        else:
+            load_only_em_this_species = None
+            
+        gas_this, names_this = load_gas_particle_info(filename_this, load_only=load_only_em_this_species)
+        for name_this in names_this:            
             attr_data_this = getattr(gas_this, name_this)
             setattr(gas, name_this, attr_data_this)
     
@@ -390,7 +414,6 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, in_ax=N
     attr_data = getattr(gas, attr)
     
     mass = gas.mass
-    weights = gas.weights
     radius = gas.radius
     
     for i in numpy.arange(hist.nBins[0]):
@@ -404,24 +427,13 @@ def make_map(gas, hist, attr=None, as_log10=None, func=None, show=False, in_ax=N
             if inds_in_bin.size > 0:
 
                 q = attr_data[inds_in_bin]
-                w = weights[inds_in_bin]
                 r = radius[inds_in_bin]
                 m = mass[inds_in_bin]
                  
                 if func == total_luminosity:
-                    bin_value = total_luminosity(fluxes=q, radii=r, weights=w)
+                    bin_value = total_luminosity(fluxes=q, radii=r)
                 if func == mean_flux:
-                    bin_value = mean_flux(fluxes=q, radii=r, weights=w, bin_area=bin_area)
-                
-                ''' 
-                if 'weights' in kwargs:
-                    w = w_data[inds_in_bin]
-                    
-                if 'weights' in kwargs:
-                    map_data[i,j] = func(q, weights=w, mass=m, radius=r, bin_area=bin_area)
-                else:
-                    map_data[i,j] = func(x)
-                '''
+                    bin_value = mean_flux(fluxes=q, radii=r, bin_area=bin_area)
                 
                 map_data[i,j] = bin_value
             #
@@ -512,6 +524,10 @@ def get_interpolation_function_pdr(arxvPDR, params, logger, **kwargs):
 
 def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
     """makes an interpolation function from the radex meshes from the database.
+    
+    # the generated interpolation functions can be used in the following way:
+        fInterp(array([[3.0, 3.0, -50.0, 10.0]]))
+
     :param string specStr: The specie whose info will be used (emission, or anything else radex outputs)
     :param int transitionIdx: The index of the transition (for example for CO: transitionIdx = 0, uses info of the J=1-0 transition 
     :param bool sectioned: if true uses a sectioned 4D interpolator. 
@@ -588,6 +604,7 @@ def get_interpolation_function_radex(arxvPDR, params, logger, **kwargs):
     else:
         fInterp = params['interpolator'](data_all_Av, v_all_Av)
     logger.debug('time contruncting interpolation function for %s transition %d in %.4f seconds' % (specStr, kwargs['transitionIdx'], time.time() - t0))
+
     return fInterp
 
 def make_interp_funcs_from_arxv(arxvPDR, em_keys, pdr_keys, params, logger):
@@ -1656,6 +1673,7 @@ class galaxy_gas_mass_estimator(object):
         #gas_in_pixel.use_weights(weighting='original-only', weights_filename = weights_filename)
         gas_in_pixel.use_weights(weighting='by-number', weights_filename = weights_filename)
         #gas_in_pixel.use_weights(weighting='mathced', weights_filename = weights_filename)
+        asdasdasd
         
         for spec in ['CO', '13CO', 'HCN', 'HNC']:
             
@@ -2027,6 +2045,7 @@ class gas_set(Particles):
         ## setting the  
         '''
         
+        asdadasd 
         ## the indicies of the particles which have children and the children in the curernt set
         inds_parents = self.get_inds_has_children()
         inds_children = self.get_inds_children()
@@ -2138,7 +2157,7 @@ class gas_set(Particles):
         ## loading the sampling info from the saved file
         info = self.load_weights_function(sampling_info_fname)
         
-        ## indicies of the original particles
+        ## indicies of the original particles    
         inds1 = self.get_inds_original_set()
         w[inds1] = 1.0
         
@@ -2156,6 +2175,9 @@ class gas_set(Particles):
     def match_weights(self, npp=None, fit_func_rng=None, n_min_sample=None, 
                       match_interval=None, nbins_in_match_interval=None,
                       matching_tol=None, nPasses=1, save_weights_info=None):
+        '''set the weights of the parent particles to zero and set the weights
+        of the sampled (child particles) such that a the fit lognormal PDF is 
+        maintained'''
         
         pylab.figure()
         
@@ -2452,28 +2474,191 @@ class gas_set(Particles):
         return info_ret
     
     def use_weights(self, weighting=None, **kwargs):
-        '''set the weights determined by the weighting keyword'''
+        '''set the weights determined by the weighting keyword.
+        
+        weights_filename = fi_utils.gen_weights_filename(params['rundir'], params['snap_index'])
+        gas.use_weights(weighting=params['weights'], weights_filename = weights_filename)
+        
+        '''
         
         if weighting == 'matched':
-            
-            self.set_weights_from_saved_sampling_info(kwargs['weights_filename'])
+            ''' weights parents = 0, weight children match the PDF'''
+            self.set_weights_from_saved_sampling_info(kwargs['weights_filename'], show_plot=False)
             print '\t--------> set mathched weights'
 
         elif weighting == 'original-only':
-            
+            ''' weights children = 0, weights original = 1 '''
             self.set_weights_children_zero_parents_one()
             print '\t---------> set weights such that sampled particles are ignored'
         
         elif weighting == 'by-number':
-
+            ''' wegihts parent + weights children = 1'''
             self.set_weights_childrent_to_inverse_sampling_number(kwargs['weights_filename'])
             print '\t---------> set weights of childrent to ivnerse of number of sampling'
             
         else:
-            
-            print '\t----------> using the default weights'        
+            raise ValueError('unknown weighting!!')
         
+    def set_radii_children_to_original_parent_radii(self, rundir, snap_index):
+        '''sets the radii to children to the the original radii of the parents'''
+        
+        cinds = self.get_inds_children()
+        cid = int32(self.id[cinds])
+        
+        r = self.radius
+        
+        ## loading the arrays holding the original information of the parents
+        n_o, r_o, ids_o = load_original_n_r_ids(rundir, snap_index)
+        ids_o = int32(ids_o)
+        
+        ##         
+        inds_list_of_c_in_o_arrys = find_matching_indicies(ids_o, cid, check=False) 
+
+        ## computing the original radii assuing the radii were scaled using the 
+        ## current weights 
+        r[cinds] = r_o[inds_list_of_c_in_o_arrys]
+        
+        self.radius = r
     
+    def set_radii_using_original_weighting(self, rundir, snap_index):
+        '''sets the radii to the original weights and
+        the radii of the children are set to zero along with their weights.
+        '''
+        
+        pinds = self.get_inds_has_children()
+        pid = int32(self.id[pinds])
+        
+        r = self.radius
+        
+        ## loading the arrays holding the original information of the parents
+        n_o, r_o, ids_o = load_original_n_r_ids(rundir, snap_index)
+        ids_o = int32(ids_o)
+        
+        ##         
+        inds_list_of_p_in_o_arrys = find_matching_indicies(ids_o, pid, check=False) 
+
+        ## computing the original radii assuing the radii were scaled using the 
+        ## current weights 
+        r[pinds] = r_o[inds_list_of_p_in_o_arrys]
+        
+        ## setting the weights of the childrent to zero
+        r[self.get_inds_children()] = 0.0
+        
+        self.radius = r
+
+        ## setting the appropriate weights
+        self.use_weights(weighting='original-only')
+        
+    def set_radii_using_matched_weighting(self, rundir, snap_index):
+        '''
+        r_parent = 0
+        r_children = matched weights
+        '''
+        
+        ## getting the indicies of the parents and the chidlren
+        pinds = self.get_inds_has_children()
+        cinds = self.get_inds_children()
+        
+        ## setting the radii of the children to the original radii of their parents
+        self.set_radii_children_to_original_parent_radii(rundir, snap_index)
+        
+        ## setting the new weights by number to the parents and the children
+        weights_filename = gen_weights_filename(rundir, snap_index)    
+        self.use_weights(weighting='matched', weights_filename = weights_filename)
+
+        w = self.weights
+        r = self.radius
+        n = self.n
+
+        ## setting the radii of the parents to zero
+        r[pinds] = 0.0
+                
+        ## the ids of the children
+        cid = int32(self.id[cinds])
+                
+        ## loading the arrays holding the original information of the parents
+        n_o, r_o, ids_o = load_original_n_r_ids(rundir, snap_index)
+        ids_o = int32(ids_o)
+        
+        ##         
+        inds_list_of_c_in_o_arrys = find_matching_indicies(ids_o, cid, check=False) 
+
+        ## computing the original radii assuing the radii were scaled using the 
+        ## current weights 
+        r[cinds] = r[cinds] * (w[cinds] * n_o[inds_list_of_c_in_o_arrys]/n[cinds])**(1.0/3.0)
+        
+        self.radius = r
+        self.weights = w
+    
+    def set_radii_using_by_number_weighting(self, rundir, snap_index):
+        '''
+        r_parent = r_parent_original * (1/(npp+1))**1/3
+        w_parent = 1.0 / (npp + 1)
+        r_child = r_parent_original * ( (1/(npp+1)) * n_parent / n_child )**1/3
+        w_child =   1.0 / (npp + 1)
+        '''
+
+        ## getting the indicies of the parents and the chidlren
+        pinds = self.get_inds_has_children()
+        cinds = self.get_inds_children()
+        
+        ## first set the radii of the parent particles back to their oringal
+        self.set_radii_using_original_weighting(rundir, snap_index)
+        
+        ## setting the radii of the children to the original radii of their parents       
+        self.set_radii_children_to_original_parent_radii(rundir, snap_index)
+        
+        ## setting the new weights by number to the parents and the children
+        weights_filename = gen_weights_filename(rundir, snap_index)    
+        self.use_weights(weighting='by-number', weights_filename = weights_filename)
+
+        w = self.weights
+        r = self.radius
+        n = self.n        
+        
+        ## computing the new radii corresponding to the new weights of the parents
+        r[pinds] = r[pinds] * (w[pinds])**(1.0/3.0)
+
+        ## the ids of the children
+        cid = int32(self.id[cinds])
+                
+        ## loading the arrays holding the original information of the parents
+        n_o, r_o, ids_o = load_original_n_r_ids(rundir, snap_index)
+        ids_o = int32(ids_o)
+        
+        ##         
+        inds_list_of_c_in_o_arrys = find_matching_indicies(ids_o, cid, check=False) 
+
+        ## computing the original radii assuing the radii were scaled using the 
+        ## current weights 
+        r[cinds] = r[cinds] * (w[cinds] * n_o[inds_list_of_c_in_o_arrys]/n[cinds])**(1.0/3.0)
+        
+        self.radius = r
+    
+    def set_radii(self, weighting=None, tokpc = True, rundir=None, snap_index=None):
+        '''sets the radii and weights of the particles based on the suggested weighting'''
+        
+        if weighting == 'matched':
+            ''' weights parents = 0, weight children match the PDF'''
+            self.set_radii_using_matched_weighting(rundir, snap_index)
+            print '\t--------> set radii and weights using mathched weights'
+
+        elif weighting == 'original-only':
+            ''' weights children = 0, weights original = 1 '''
+            self.set_radii_using_original_weighting(rundir, snap_index)
+            print '\t---------> set radii and weights such that sampled particles are ignored'
+        
+        elif weighting == 'by-number':
+            ''' wegihts parent + weights children = 1'''
+            self.set_radii_using_by_number_weighting(rundir, snap_index)
+            print '\t---------> set radii and weights of childrent to ivnerse of number of sampling'
+            
+        else:
+            raise ValueError('unknown weighting!!')
+        
+        if tokpc == True:
+            self.convert_radii_to_kpc()
+            
     def print_stats(self):
         pass
 
@@ -2487,7 +2672,7 @@ class gas_set(Particles):
         
         for attr in all_attr:
             
-            if 'em_flux' in attr:
+            if 'em_flux' in attr and em_unit in attr:
                 
                 line_code_this = attr.replace('em_fluxKkms_','').replace('em_fluxcgs_','')
                 
@@ -2554,20 +2739,18 @@ class gas_set(Particles):
     def get_luminosity(self, line_str, em_unit='Kkms'):
         '''compute the luminosity of particles'''
     
-        return luminosity(self.get_flux(line_str, em_unit), 
-                          self.radius,  
-                          self.weights)
-
+        return luminosity(self.get_flux(line_str, em_unit), self.radius)
+        
     def get_total_luminosity_ladder(self, specStr, em_unit='Kkms'):
         '''compute the luminosity of particles'''
 
-        idx, line_codes = self.get_em_lines(specStr)
+        idx, line_codes = self.get_em_lines(specStr, em_unit=em_unit)
         
         total_lum = numpy.zeros(idx.size, 'f8')
         
         for i, line_code in enumerate(line_codes):
 
-            total_lum[i] = self.get_total_luminosity(line_code)             
+            total_lum[i] = self.get_total_luminosity(line_code, em_unit=em_unit)             
             
         return idx, total_lum
     
@@ -2588,7 +2771,7 @@ class gas_set(Particles):
 
     def get_total_luminosity(self, line_str, em_unit='Kkms'):
         '''compute the total luminosity of particles'''
-        
+         
         return self.get_luminosity(line_str, em_unit).sum() 
         
     def get_mean_flux(self, line_str, em_unit='Kkms', bin_area=1.0):
@@ -2596,6 +2779,12 @@ class gas_set(Particles):
     
         return self.get_total_luminosity(line_str, em_unit)/ bin_area
     
+    def convert_radii_to_kpc(self):
+        '''multiplt the radii by 1e-3 to convert them from pc to kpc (assuming they are in pc)'''
+        
+        self.radius = self.radius * 1e-3  # converting the radii from pc to kpc
+        print '\twarning converted the radii from pc to kpc'''
+         
     def check_particles(self, what_to_check, logger):
         '''checks the attributes and takes care of irregularities'''
         
@@ -2608,40 +2797,65 @@ class gas_set(Particles):
             # checking for extremely high values of CO(1-0)
             if 'em_fluxKkms_CO1-0' in self.all_attributes():
                 x = getattr(self, 'em_fluxKkms_CO1-0')
-                inds = where(x > 300.0)[0]
+                inds = where(x > 500.0)[0]
                 x[inds] = 0.0
                 new_max = x.max()
                 logger.debug('warning: found %d particles with Flux > 300.0 k km / s' % inds.size)
                 logger.debug('         setting thier values of the max flux %f k km / s' % new_max)
                 x[inds] = new_max
                 setattr(self, 'em_fluxKkms_CO1-0', x)
-            
-            # converting the radii from pc to kpc
-            self.radius = self.radius * 1e-3
-            logger.debug('warning: converting radii from pc to kpc')
 
+            # checking for extremely high values of CO(1-0) in cgs
+            if 'em_fluxcgs_CO1-0' in self.all_attributes():
+                x = getattr(self, 'em_fluxcgs_CO1-0')
+                inds = where(x > 1.0)[0]
+                x[inds] = 0.0
+                new_max = x.max()
+                logger.debug('warning: found %d particles with Flux > 1.0 erg / cm2 / s' % inds.size)
+                logger.debug('         setting thier values of the max flux %f erg / cm2 / s' % new_max)
+                x[inds] = new_max
+                setattr(self, 'em_fluxcgs_CO1-0', x)
     
-def luminosity(fluxes=None, radii=None, weights=None):
-    '''compute the total total_luminosity of particles. F is the array of the fluxes, m is the array
-    of the masses, r is the radius of thte particles, w is the weight'''
+def luminosity(fluxes=None, radii=None):
+    '''compute the total total_luminosity of particles. F is the array of the fluxes, r 
+    is the radius of thte particles'''
 
     areas = pi * radii**2 # the projected area of the SPH particles
-    lum = fluxes*weights*areas   # the luminosity of each particle
+    lum = fluxes*areas   # the luminosity of each particle
 
     return lum
 
-def total_luminosity(fluxes=None, radii=None, weights=None):
-    '''compute the total total_luminosity of particles. F is the array of the fluxes, m is the array
-    of the masses, r is the radius of thte particles, w is the weight'''
+def total_luminosity(fluxes=None, radii=None):
+    '''compute the total total_luminosity of particles. F is the array of the fluxes, 
+    r is the radius of thte particles'''
     
-    return luminosity(fluxes, radii, weights).sum()
+    return luminosity(fluxes, radii).sum()
     
-def mean_flux(fluxes=None, radii=None, weights=None, bin_area=None):
-    '''compute the mean/total flux of particles. F is the array of the fluxes, m is the array
-    of the masses, r is the radius of thte particles, w is the weight, area_pixel is the area 
-    of the pixel in which the particles are.'''
+def mean_flux(fluxes=None, radii=None, bin_area=None):
+    '''compute the mean/total flux of particles. F is the array of the fluxes, r is the radius 
+    of thte particles, area_pixel is the area of the pixel in which the particles are.'''
     
     
-    lum_pixel = total_luminosity(fluxes, radii, weights)
+    lum_pixel = total_luminosity(fluxes, radii)
     
     return lum_pixel / bin_area
+
+def gen_weights_filename(rundir, snap_index):
+    '''returns the weights filename
+    
+        fname = gen_weights_filename(params['rundir'], 4)
+    '''
+
+    return rundir + '/firun/' + 'weights_func.%06d.npz' % snap_index
+
+def load_original_n_r_ids(rundir, snap_index):
+    
+    fname = rundir + '/firun/' + 'fiout.%06d.original_n_r_ids.npz' % snap_index
+    
+    f = numpy.load(fname)
+    
+    n, r, ids = f['arr_0']
+    
+    return n, r, ids
+    
+    

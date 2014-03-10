@@ -79,10 +79,10 @@ parms = {
                                      'type'           : 'radex',
                                      'specStr'        : specStr_Radex,     # database to be restored/computed
                                      'transitionIndx' : 0,
-                                     'quantity'       : 'fluxKkms', #,'fluxcgs',
+                                     'quantity'       : 'fluxcgs', #,'fluxcgs',
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
-                                     'Av_max'         : 10.0,  #the maximum Av to be used  
+                                     'Av_max'         : 28.0,  #the maximum Av to be used  
                                     },
                            },
          'gridsRes'      : 100,
@@ -111,7 +111,7 @@ parms = {
                              'lineWidth'            : 1.0,
                              'verbose'              : False,
                              'maxDisplayTranistion' : 20,
-                             'quantity'             : 'fluxKkms', 
+                             'quantity'             : 'fluxcgs',  # 'fluxKkms', 'fluxcgs' 
                              ###----------extra convergence params-----------------------
                              'checkOutputIntegrity'       : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'         : 1.0, 

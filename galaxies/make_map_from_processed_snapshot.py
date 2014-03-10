@@ -5,7 +5,6 @@ import matplotlib
 matplotlib.use('Qt4Agg')
 
 import numpy
-from numpy import arange
 import pylab
 
 from amuse.units import units
@@ -15,6 +14,7 @@ import fi_utils
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 home = '/home/mher'
+#home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
@@ -23,10 +23,10 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
-          'species' : ['CO'],#'CO'], #'13CO', 'HCN', 'HNC', 'HCO+'],
+          'species' : ['HCN'],#'CO'], #'13CO', 'HCN', 'HNC', 'HCO+'],
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
 #          'weights' : 'original-only', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
-          'weights' : 'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'matched', #by-number', #'matched',  #'original-only' ,#None ,#by-number          
 #          'weights' : #'matched',  #'original-only' ,#None ,#by-number          
           'snaps'   : numpy.arange(4, 4 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
@@ -69,14 +69,14 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                              'weights' : 'weights',
 #                             },
 
-                  'map1'   : {
-                              'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
-                              'v_rng'   : [-10.0, 4.0],
-                              'title'   : r'', 
-                              'as_log10': True,
-#                              'func'    : fi_utils.luminosity,
-                              'func'    : fi_utils.mean_flux,
-                             },
+#                  'map1'   : {
+#                              'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
+#                              'v_rng'   : [-10.0, 4.0],
+#                              'title'   : r'', 
+#                              'as_log10': True,
+##                              'func'    : fi_utils.luminosity,
+#                              'func'    : fi_utils.mean_flux,
+#                             },
 
 
 #                  'map2'   : {
@@ -88,15 +88,25 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                              #'func'    : numpy.average,
 #                              #'weights' : 'weights',
 #                             },
-#                  'map1'   : {
-#                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
-#                              'v_rng'   : [-10.0, 4.0],
-#                              'title'   : r'$f(L_{CO(1-0} K.km.s-1))$', 
-#                              'as_log10': True,
-#                              #'func'    : numpy.mean,
-#                              'func'    : numpy.average,
-#                              'weights' : 'weights',
-#                             },
+
+                  'map1'   : {
+                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
+                              'v_rng'   : [-8.0, 4.0],
+                              'title'   : r'', 
+                              'as_log10': True,
+#                              'func'    : fi_utils.luminosity,
+                              'func'    : fi_utils.mean_flux,
+                             },
+
+                  'map2'   : {
+                              'attr'    : 'em_fluxKkms_HCN3-2', #'mass', 'G0', 'gmech', 'Av'
+                              'v_rng'   : [-8.0, 4.0],
+                              'title'   : r'', 
+                              'as_log10': True,
+#                              'func'    : fi_utils.luminosity,
+                              'func'    : fi_utils.mean_flux,
+                             },
+                        
 #                  'map2'   : {
 #                              'attr'    : 'em_fluxKkms_13CO1-0', #'mass', 'G0', 'gmech', 'Av'
 #                              'v_rng'   : [-10.0, 4.0],
@@ -211,6 +221,12 @@ logger = default_logger()
 
 bs_min, bs_max = params['ranges']['box_size'].number
 
+## getting the emission attributes which will be loaded
+em_attr_names = []
+for  map_name in params['all_maps']:
+    this_map_em_attr = params['all_maps'][map_name]['attr']
+    em_attr_names.append(this_map_em_attr)
+
 def generate_maps(snap_index, params):
     
     ## path to processed fi snapshot  
@@ -220,18 +236,17 @@ def generate_maps(snap_index, params):
     logger.debug('loading proccessed snapshot %s : ' % snap_filename)
     gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], 
                                                   load_pdr=params['pdr_sph'],
+                                                  load_only_em=em_attr_names,
                                                   )
-    
     logger.debug('done reading fi snapshot : %s' % snap_filename)
     logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
     
+    ## setting the radii and weights based on the suggested weighting
+    gas.set_radii(weighting=params['weights'], rundir=params['rundir'], snap_index=snap_index)
+
     ## checking for weird particles and taking care of them
     gas.check_particles(params['check'], logger)
 
-    ## setting the weights
-    weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % snap_index
-    gas.use_weights(weighting=params['weights'], weights_filename = weights_filename)
-    
     #keeping gas particles within the specified ranges
     gas = fi_utils.select_particles(gas, params['ranges'])
     logger.debug('got the sph particles in the required ranges')

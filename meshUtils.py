@@ -2574,7 +2574,7 @@ class meshArxv(object):
                                                                  )
         return has_lines, radex_parm_from_pdr_mesh 
     
-    def compute_and_set_radex_curves(self, pdr_mesh_obj = None, radex_parms = None, Av_range = None, compute_only = None, radex_obj = None):
+    def compute_and_set_radex_curves(self, pdr_mesh_obj=None, radex_parms=None, Av_range=None, compute_only=None, radex_obj = None):
         """This is a utilty method (make it a private method), for populating the radex axes
           with the plots for the specie passed in the global parameter self.parms['radex']['specStr'].
           It takes as a paremeter the :data:`mesh` which will be used for doing the radex computations.
@@ -2613,7 +2613,7 @@ class meshArxv(object):
                                                       title = '',
                                                       em_unit=radex_parms['quantity']
                                                      )                             
-                radex_obj.setLabels()
+                radex_obj.setLabels(em_unit=radex_parms['quantity'].replace('flux',''))
             else:
                 radex_obj.print_warnings() #printing the warnings
         else:
@@ -2654,7 +2654,7 @@ class meshArxv(object):
         #Av_range_used = [0.0, self.currentRadexDb['Av']]
         #self.update_gui_em_lines_titles(radex_obj, Av_range_used)
 
-    def compute_and_set_despotic_curves(self, meshObj = None, radex_parms = None, Av_range = None, compute_only = None):
+    def compute_and_set_despotic_curves(self, meshObj=None, radex_parms=None, Av_range=None, compute_only=None):
         """This is a utilty method (make it a private method), for populating the radex axes
           with the plots for the specie passed in the global parameter self.parms['radex']['specStr'].
           It takes as a paremeter the :data:`mesh` which will be used for doing the radex computations.

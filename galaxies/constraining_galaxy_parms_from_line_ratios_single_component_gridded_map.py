@@ -45,11 +45,12 @@ params = {
           
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100',  # the path of the dir containing the simulation
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'by-number', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'matched', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
           'ranges'    : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
@@ -177,16 +178,15 @@ snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % params['snap_index
 
 ## loading the processed sph simulation data with the emissions 
 logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
-gas = fi_utils.load_gas_particle_info_with_em(snap_filename, species, load_pdr=params['pdr_sph'])    
+gas = fi_utils.load_gas_particle_info_with_em(snap_filename, species, load_pdr=params['pdr_sph'], load_only_em=curve_attrs)    
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
+## setting the radii based on the suggested weighting
+gas.set_radii(weighting=params['weights'], rundir=params['rundir'], snap_index=params['snap_index'])
+
 ## checking for weird particles and taking care of them
 gas.check_particles(params['check'], logger)
-
-## setting the weights
-weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
-gas.use_weights(weighting=params['weights'], weights_filename = weights_filename)
 
 ## keeping gas particles within the specified ranges
 gas = fi_utils.select_particles(gas, params['ranges'])

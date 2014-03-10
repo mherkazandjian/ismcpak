@@ -3,10 +3,11 @@ from pylab import *
 from galaxies import fi_utils
 from mylib.utils import templates
 import lineDict
+import mylib.units
 
-def plot_methods_fig(gas, save_figs, fig_paths):
+def plot_methods_fig(gas, save_figs, fig_paths, params=None):
     
-    def plot_original(gas, fig_path):
+    def plot_pdfs_n_original_and_matched(gas, fig_path, params):
         '''plotting the original distributuion'''
 
         fig = templates.subplots_grid(1,1, hspace=0.15, wspace=0.15,
@@ -23,11 +24,8 @@ def plot_methods_fig(gas, save_figs, fig_paths):
         ax = fig.sub[0,0]
 
         ######### plotting the original PDFs #############
-        
         ## selecting the original gas particles
-        gas_orig_amuse = gas[where(isnan(gas.parent) == True)]
-        gas_orig = fi_utils.gas_set(len(gas_orig_amuse)) 
-        gas_orig.copy_attr_from_amuse_set(gas_orig_amuse, ['n'])
+        gas_orig = gas[gas.get_inds_original_set()]
         
         ## using the ln of the densities                
         x = log(gas_orig.n)
@@ -35,13 +33,18 @@ def plot_methods_fig(gas, save_figs, fig_paths):
         ## parameters for the plots
         xmin, xmax = log(1e-8), log(1e6)
         nbins = 100 
-        fit_func_rng  = [1e-2, 1e+4]
                 
         ## computing the PDF of the original particles
         f, bins = histogram(x, range=[xmin, xmax], bins=nbins, normed=True)
         
         ## plotting the PDF
         plt_orig_pdf, = ax.step(bins[1::], log10(f), 'b', lw=1)
+
+        ## loading the sampling info from the saved file
+        sampling_info_file_path = fi_utils.gen_weights_filename(params['rundir'], params['snap_index'])
+        info = gas.load_weights_function(sampling_info_file_path)
+
+        fit_func_rng  = info['fit_func_rng']
         
         ## fitting the distribution to a log-normal function
         rv, N = gas_orig.fit_interval(*fit_func_rng)        
@@ -57,13 +60,11 @@ def plot_methods_fig(gas, save_figs, fig_paths):
         ticks = [1e-10, 1e-8, 1e-6, 1e-4, 1e-2, 1e0]
         ax.set_yticks( log10(ticks) )
         ax.set_yticklabels([r'$10^{%d}$' % i for i in log10(ticks)], size='small')
-        
+
         ######### plotting the sampled PDF #############
         
         ## selecting the original gas particles
-        gas_sampled_amuse = gas[where(isnan(gas.parent) == False)]
-        gas_sampled = fi_utils.gas_set(len(gas_sampled_amuse)) 
-        gas_sampled.copy_attr_from_amuse_set(gas_sampled_amuse, ['n'])
+        gas_sampled = gas[ gas.get_inds_children()]
         
         ## using the ln of the densities                
         x = log(gas_sampled.n)
@@ -79,16 +80,7 @@ def plot_methods_fig(gas, save_figs, fig_paths):
         f_sampled, = ax.step(bins[1::], log10(f/150), 'g--', lw=1)
 
         ## computing the PDF of the combined distribution of the original and sampled particles
-        
-        # using the ln of the densities 
-        weights_matched, intervals, weights_func = gas.match_weights(20, 
-                                                                     fit_func_rng, 
-                                                                     1e2, 
-                                                                     [1e2, gas.n.max()], 
-                                                                     30, 
-                                                                     0.001)
-        
-        gas.weights = weights_matched
+        gas.set_radii(weighting='matched', rundir=params['rundir'], snap_index=params['snap_index'])
         
         f_combined, bins = histogram(log(gas.n),
                                      range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
@@ -96,11 +88,11 @@ def plot_methods_fig(gas, save_figs, fig_paths):
                                      )
         plt_combined, = ax.plot( (bins[0:-1] + bins[1:])/2.0, log10(f_combined), 'k+', markersize=4)
 
-
         #plt_combined, = ax.plot( (bins[0:-1] + bins[1:])/2.0, log10(f/150), 'go', markersize=3)                                     
 
         ax.legend([plt_orig_pdf, plt_fit_pdf, f_sampled, plt_combined], 
                   ['SPH', 'fit', 'sampled', 'combined'], loc=0, fontsize='x-small')
+                  
         ax.set_xlabel(r'$n / {\rm cm}^{-3}$', size='small')
         ax.set_ylabel('PDF', size='small')
 
@@ -186,8 +178,8 @@ def plot_methods_fig(gas, save_figs, fig_paths):
         #fig.preview(env='aa')
     ###
     
-    plot_T_n_PDFs(gas, fig_paths['fig1'])
-    plot_original(gas, fig_paths['fig2'])
+    plot_T_n_PDFs(gas[gas.get_inds_original_set()], fig_paths['fig1'])
+    plot_pdfs_n_original_and_matched(gas, fig_paths['fig2'], params)
     
     show()
 
@@ -211,23 +203,31 @@ def total_luminosity(gas, params, fig_save_path):
     colors    =  ['k' , 'r'   , 'g'  , 'b'  , 'c'   , 'y' , 'm']
     
     ## plotting the total luminosity weighted by number of sampled points
-    weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
-    gas.use_weights(weighting='by-number', weights_filename = weights_filename)
-    
+    gas.set_radii(weighting='matched', rundir=params['rundir'], snap_index=params['snap_index'])
+
     sym       = '-'
+
+    em_unit = params['em_unit'].replace('em_flux', '')
     
     for i, specStr in enumerate(specsStrs):
         
         print specStr
         
-        x, y = gas.get_total_luminosity_ladder(specStr)
+        x, y = gas.get_total_luminosity_ladder(specStr, em_unit=em_unit)
         
-        ax.semilogy(x+1, y*1e6, colors[i] + sym, label=specStr)
-    
+        if em_unit == 'Kkms':
+            y *= 1e6  # form K km /s kpc2 -> K km /s pc2
+        elif em_unit == 'cgs':
+                y = y * ((mylib.units.KPC2CM)**2) / mylib.units.Lsun # from ergs/cm2/s kpc2 -> Lsun
+        else:
+            raise ValueError('unknown unit %s' % em_unit)
+        
+        semilogy(x+1, y, colors[i] + sym, label=specStr)
+
     if True:
         ## plotting the total luminosity of the original points
-        gas.use_weights(weighting='original-only')
-            
+        gas.set_radii(weighting='original-only', rundir=params['rundir'], snap_index=params['snap_index'])
+        
         sym       = '--'
         
         
@@ -235,11 +235,18 @@ def total_luminosity(gas, params, fig_save_path):
             
             print specStr
             
-            x, y = gas.get_total_luminosity_ladder(specStr)
+            x, y = gas.get_total_luminosity_ladder(specStr, em_unit=em_unit)
+
+            if em_unit == 'Kkms':
+                y *= 1e6  # form K km /s kpc2 -> K km /s pc2
+            elif em_unit == 'cgs':
+                y = y * ((mylib.units.KPC2CM)**2) / mylib.units.Lsun # from ergs/cm2/s kpc2 -> Lsun
+            else:
+                raise ValueError('unknown unit %s' % em_unit)
             
-            ax.semilogy(x+1, y*1e6, colors[i] + sym)
+            ax.semilogy(x+1, y, colors[i] + sym)
         
-    xlabel(r'$J_{\rm up}$', size='small')
+    xlabel(r'$J_{\rm up}$', size='small')    
     ylabel(r'L (K km s$^{-1}$ pc$^2$)', size='small')
     xlim([1,15])
     xticks(size='small')
