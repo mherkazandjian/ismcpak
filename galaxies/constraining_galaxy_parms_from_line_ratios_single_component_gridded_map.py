@@ -52,7 +52,7 @@ params = {
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
           'weights' : 'matched', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
            
-          'snap_index': numpy.arange(4, 4 + 1, 1),
+          'snap_index': 4,
           'ranges'    : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                          'sph':{
                                'min_log_n_use'  : -3.0,
@@ -68,6 +68,9 @@ params = {
           'check'   : 'default',          
           'em_unit'   : 'em_fluxKkms',
           'save_maps' : False,
+
+          'error_bars'  : 0.2, 
+          'obs_res'      : 21, #9
                     
           ##################### parameters for fitting for the maps #########################
           
@@ -101,7 +104,8 @@ params = {
 #
 #                          '13CO1-0/CO1-0', '13CO2-1/CO2-1', '13CO3-2/CO3-2', '13CO4-3/CO4-3', '13CO5-4/CO5-4', '13CO6-5/CO6-5',
 #                       ],
-          ### other line ratios
+
+          ### other line ratios 1
           'line_ratios' : [
                            'CO2-1/CO1-0', 'CO3-2/CO1-0', 'CO4-3/CO1-0', 'CO5-4/CO1-0', 'CO6-5/CO1-0', 'CO7-6/CO1-0', 
                            'CO8-7/CO1-0', 'CO9-8/CO1-0', 'CO10-9/CO1-0', 'CO11-10/CO1-0', 'CO12-11/CO1-0', 'CO13-12/CO1-0', 
@@ -115,12 +119,13 @@ params = {
                            '13CO8-7/CO1-0', '13CO9-8/CO1-0', '13CO10-9/CO1-0', '13CO11-10/CO1-0', '13CO12-11/CO1-0', '13CO13-12/CO1-0', 
                            '13CO14-13/CO1-0', '13CO15-14/CO1-0', 
 
-                           'HCN1-0/CO1-0', 'HCN2-1/CO1-0', 'HCN3-2/CO1-0', 'HCN4-3/CO1-0', #'HCN5-4/CO1-0',  'HCN6-5/CO1-0', 'HCN7-6/CO1-0',
+                           'HCN1-0/CO1-0', 'HCN2-1/CO1-0', 'HCN3-2/CO1-0', 'HCN4-3/CO1-0', 'HCN5-4/CO1-0',  'HCN6-5/CO1-0', 'HCN7-6/CO1-0',
 
-                           'HNC1-0/CO1-0', 'HNC2-1/CO1-0', 'HNC3-2/CO1-0', 'HNC4-3/CO1-0', #'HNC5-4/CO1-0',  'HNC6-5/CO1-0', 'HNC7-6/CO1-0',
+                           'HNC1-0/CO1-0', 'HNC2-1/CO1-0', 'HNC3-2/CO1-0', 'HNC4-3/CO1-0', 'HNC5-4/CO1-0',  'HNC6-5/CO1-0', 'HNC7-6/CO1-0',
 
-                           'HCO+1-0/CO1-0', 'HCO+2-1/CO1-0', 'HCO+3-2/CO1-0', 'HCO+4-3/CO1-0', #'HCO+5-4/CO1-0',  'HCO+6-5/CO1-0', 'HCO+7-6/CO1-0',
+                           'HCO+1-0/CO1-0', 'HCO+2-1/CO1-0', 'HCO+3-2/CO1-0', 'HCO+4-3/CO1-0', 'HCO+5-4/CO1-0',  'HCO+6-5/CO1-0', 'HCO+7-6/CO1-0',
                         ],
+
           
 #          'lines'       : {
 #                           'include'     : [
@@ -132,16 +137,16 @@ params = {
 #                                           ],
 #                         },
 
-          'error_bars'  : 0.2, 
 
           #'interpolator' : scipy.interpolate.NearestNDInterpolator, 
-          'interpolator' : scipy.interpolate.LinearNDInterpolator, 
-          'obs_res'      : 21, #9
+          'interpolator' : scipy.interpolate.LinearNDInterpolator,
         }
 
 #############################################################################################################
 #############################################################################################################
 #############################################################################################################
+
+em_unit = params['em_unit'].replace('em_flux','')
 
 ## setting up the logger object
 logger = default_logger()
@@ -216,20 +221,18 @@ luminosity = {
 
 print 'computing the luminosity from all the pixles in for each line map...'
 
-print 'making the maps of all the lines...'
-for i, this_attr in enumerate(attrs):
+print 'making a sample fine map (just for plotting purposes)...'
+this_attr = attrs.keys()[0]
     
-    print this_attr
-    
-    ## the intensity map (intensity weight averaged intensity map)
-    #this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.mean) #func=numpy.average, weights=this_attr)
-    #this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights='weights')
-    this_map_luminosity = fi_utils.make_map(gas, hist, attr=this_attr, func=fi_utils.total_luminosity)
+## the intensity map (intensity weight averaged intensity map)
+#this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.mean) #func=numpy.average, weights=this_attr)
+#this_map_intensity = fi_utils.make_map(gas, hist, attr=this_attr, func=numpy.average, weights='weights')
+this_map_luminosity = fi_utils.make_map(gas, hist, attr=this_attr, func=fi_utils.total_luminosity)
         
-    ## getting the line code from the attribute name
-    line = this_attr.replace(params['em_unit']+'_','')
+## getting the line code from the attribute name
+line = this_attr.replace(params['em_unit']+'_','')
     
-    luminosity['maps'][line] = this_map_luminosity
+luminosity['maps'][line] = this_map_luminosity
     
 print '\t\tfinished making the luminosity maps'
 
@@ -295,7 +298,8 @@ estimator = fi_utils.galaxy_gas_mass_estimator(luminosity_maps = luminosity,
                                                params = params, 
                                                hist = hist,
                                                line_ratios=line_ratios,
-                                               arxvPDR=arxvPDR,)
+                                               arxvPDR=arxvPDR,
+                                               em_unit=em_unit)
 
 estimator.get_model_emission_from_pdr_arxv_involved_line_ratios() 
 

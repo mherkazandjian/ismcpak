@@ -51,7 +51,7 @@ params = {
           'check'   : 'default',          
           'em_unit'   : 'em_fluxKkms', # 'em_fluxcgs', 'em_fluxKkms'
 #          'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'CS1-0', 'SiO1-0', 'HCO+1-0'],
-          'lines'     : ['SiO1-0'],
+          'lines'     : ['CO1-0'],
           'save_maps' : False,
         }
 
@@ -124,7 +124,7 @@ pylab.figure()
 #specsStrs =  ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'SiO']
 #colors    =  ['k' , 'r'   , 'g'  , 'b'  , 'c'   , 'y' , 'm']
 
-specsStrs =  ['SiO']
+specsStrs =  ['CO']
 colors    =  ['k']
 
 #specsStrs =  ['HCN', 'HNC']

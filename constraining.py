@@ -181,7 +181,7 @@ class Xi2_line_ratios_single_component(object):
                     
             vo, eo = obs.get_values_and_error(line_ratios)
             Jup = numpy.arange(len(vo))+1
-    
+ 
             ax.errorbar(Jup, vo,  yerr=eo, fmt='o', markersize=3, **kwargs)
             #ax.text(len(vo)-1, vo[-1], '%s/%s' %  (spec_num, spec_denom), size='x-small')
             
@@ -190,18 +190,22 @@ class Xi2_line_ratios_single_component(object):
             for i, line_ratio in enumerate(line_ratios):
                 vm.append(mod[line_ratio][ind_model])
             ax.plot(Jup, vm, linestyle='--', label='%s/%s' %  (spec_num, spec_denom), **kwargs)
+            
+            print vo
         #
         
-        plot_ratio_ladder(spec_num='CO', spec_denom='CO', in_denom='1-0', color='k')
+        plot_ratio_ladder(spec_num='CO'  , spec_denom='CO'  , in_denom='1-0', color='k')
         plot_ratio_ladder(spec_num='13CO', spec_denom='13CO', in_denom='1-0', color='r')
-        plot_ratio_ladder(spec_num='13CO', spec_denom='CO', in_denom='1-0', color='g')
-        plot_ratio_ladder(spec_num='HCN', spec_denom='CO', in_denom='1-0', color='c')
-        plot_ratio_ladder(spec_num='HNC', spec_denom='CO', in_denom='1-0', color='m')
-        plot_ratio_ladder(spec_num='HCO+', spec_denom='CO', in_denom='1-0', color='y')
+        plot_ratio_ladder(spec_num='13CO', spec_denom='CO'  , in_denom='1-0', color='g')
+        plot_ratio_ladder(spec_num='HCN' , spec_denom='CO'  , in_denom='1-0', color='c')
+        plot_ratio_ladder(spec_num='HNC' , spec_denom='CO'  , in_denom='1-0', color='m')
+        plot_ratio_ladder(spec_num='HCO+', spec_denom='CO'  , in_denom='1-0', color='y')
+        plot_ratio_ladder(spec_num='HCO+', spec_denom='HCN' , in_denom='1-0', color='y')
+        plot_ratio_ladder(spec_num='HCN' , spec_denom='HNC' , in_denom='1-0', color='y')
+        plot_ratio_ladder(spec_num='13CO', spec_denom='HCN' , in_denom='1-0', color='y')
         
-
         ax.set_xlim(-1, 17)
-        ax.set_ylim(1e-7, 2.0)
+        ax.set_ylim(1e-7, 100.0)
         
         ax.set_xticks(numpy.arange(0, 16, 2))
         ax.set_xticklabels(numpy.arange(0, 16, 2))

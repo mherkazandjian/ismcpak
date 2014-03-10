@@ -394,6 +394,11 @@ def load_gas_particle_info_with_em(filename, species, load_pdr=None, load_only_e
     
     print 'att attributes loaded are : ', names_all
     
+    print '!'*100; print '!'*100; print '!'*100;
+    print '!!!! warning : converting loaded radii from pc to kpc'
+    print '!'*100; print '!'*100; print '!'*100;
+    gas.radius = gas.radius * 1e-3
+    
     print 'warning: make sure the computed optical depths make sense!!! it doesnt seem so..'
     return gas
 
@@ -1008,7 +1013,7 @@ def get_snapshot_time(snapIndex, params):
 class galaxy_gas_mass_estimator(object):
     
     def __init__(self, luminosity_maps=None, gas=None, params=None, hist=None, 
-                 line_ratios=None, arxvPDR=None, **kwargs):
+                 line_ratios=None, arxvPDR=None, em_unit='Kkms', **kwargs):
     
         self.luminosity_maps = luminosity_maps #: the dict containing the luminosity maps
         self.gas = gas #: the object of gas particles
@@ -1016,6 +1021,7 @@ class galaxy_gas_mass_estimator(object):
         self.hist = hist
         self.line_ratios = line_ratios
         self.arxvPDR = arxvPDR
+        self.em_unit = em_unit  # the unit of the emission of the gas to be used
         
         #####################
         self.hist_obs = None
@@ -1084,9 +1090,12 @@ class galaxy_gas_mass_estimator(object):
         self.model_em = model_em
         self.grid_coords = grid_coords
         
-    def setup_observed_grid(self):
+    def setup_observed_grid(self, use_line_ratios=None):
         '''sets up the observed mesh. A lower resolution mesh than the synthetica map'''
         
+        if use_line_ratios != None:
+            self.line_ratios = use_line_ratios
+            
         bs_min, bs_max = self.params['ranges']['box_size'].number
 
         fig = pylab.figure(0, (8,8))
@@ -1095,7 +1104,7 @@ class galaxy_gas_mass_estimator(object):
         
         self.fig, self.axs = fig, axs
         
-        pylab.imshow(log10(self.luminosity_maps['maps']['CO1-0']), 
+        pylab.imshow(log10(self.luminosity_maps['maps'][self.luminosity_maps['maps'].keys()[0]]),
                      extent=[bs_min, bs_max, bs_min, bs_max], 
                      origin='lower')
 
@@ -1283,16 +1292,18 @@ class galaxy_gas_mass_estimator(object):
                     )
          
         if plot_fits == True:
-            pylab.plot(hist.f.cntrd[0][inds], hist.f.cntrd[1][inds], 'c+')
+            pylab.plot(hist.f.cntrd[0][inds], hist.f.cntrd[1][inds], 'w+', zorder=2)
         
         inds_gas = hist_obs.get_indicies([x_ind, y_ind])
 
+        gas_in_pixel = self.gas[inds_gas]
+
         if plot_fits == True:
             
-            pylab.plot(self.gas.x[inds_gas], self.gas.y[inds_gas], 'o')
+            pylab.plot(gas_in_pixel.x, gas_in_pixel.y, 'o', markersize=2, zorder=1)
         
             pylab.draw()
-        
+                
         ## make line ratios from the mock luminosities 
         obs_mock_ratios = line_ratio_utils.ratios()                
 
@@ -1302,20 +1313,17 @@ class galaxy_gas_mass_estimator(object):
             
             print line1, line2
 
-            lum1, lum2 = luminosity['maps'][line1][inds].sum(), luminosity['maps'][line2][inds].sum() 
-
-            int1, int2 = lum1/area_obs_pixel, lum2/area_obs_pixel
-            
-            print '--------------'
+            flux1 = gas_in_pixel.get_mean_flux(line1, em_unit=self.em_unit, bin_area=area_obs_pixel)
+            flux2 = gas_in_pixel.get_mean_flux(line2, em_unit=self.em_unit, bin_area=area_obs_pixel)
             
             obs_mock_ratios.make_ratios(
                                         {
-                                          line1:{'fluxKkms': int1, 'err': params['error_bars']*int1}, 
-                                          line2:{'fluxKkms': int2, 'err': params['error_bars']*int2}
+                                          line1:{'fluxKkms': flux1, 'err': params['error_bars']*flux1}, 
+                                          line2:{'fluxKkms': flux2, 'err': params['error_bars']*flux2}
                                         },
                                         ratios = [line_ratio],
                                         em_unit = 'fluxKkms',
-                                        lum = {line1: lum1, line2: lum2}
+                                        lum = {line1: flux1*area_obs_pixel, line2: flux2*area_obs_pixel}
                                        )
             '''
             print line_ratio, obs_mock_ratios[line_ratio]
@@ -1550,8 +1558,6 @@ class galaxy_gas_mass_estimator(object):
             
         #computing the averages of the physical parameters of the particles inside the pixel 
         #-----------------------------------------------------------------------------------
-        gas_in_pixel = self.gas[inds_gas]
-        
         means = collections.OrderedDict()
         
         means['n']  = log10(gas_in_pixel.n.mean())
@@ -1625,6 +1631,8 @@ class galaxy_gas_mass_estimator(object):
         self.contraining = f
         self.means = means
         
+        self.gas_in_pixel = gas_in_pixel
+        
         return mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun
 
     def plot_gas_pdf_in_pixel(self, x_ind, y_ind):
@@ -1662,35 +1670,59 @@ class galaxy_gas_mass_estimator(object):
         
         pylab.draw()
         
-        fig = pylab.figure()
-        ax = pylab.subplot(111)
-        
-        gas_in_pixel = gas[inds_gas]
+        gas_in_pixel = gas[inds_gas].copy()
 
         specs = gas_in_pixel.get_species_with_em()
         
-        weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
+        #weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
         #gas_in_pixel.use_weights(weighting='original-only', weights_filename = weights_filename)
-        gas_in_pixel.use_weights(weighting='by-number', weights_filename = weights_filename)
+        #gas_in_pixel.use_weights(weighting='by-number', weights_filename = weights_filename)
         #gas_in_pixel.use_weights(weighting='mathced', weights_filename = weights_filename)
-        asdasdasd
         
-        for spec in ['CO', '13CO', 'HCN', 'HNC']:
+        if False:
+
+            fig = pylab.figure()
+            ax = pylab.subplot(111)
             
-            print 'getting the emission of %s' % spec
+            for spec in specs:
+                
+                print 'getting the emission of %s' % spec
+                
+                idx, total_lum = gas_in_pixel.get_total_luminosity_ladder(spec, em_unit=self.em_unit)
             
-            idx, total_lum = gas_in_pixel.get_total_luminosity_ladder(spec)
-        
-            flux = total_lum / area_obs_pixel
+                flux = total_lum / area_obs_pixel
+                
+                plt, = ax.semilogy(idx+1, flux, label=spec)
             
-            plt, = ax.semilogy(idx, flux, label=spec)
-            
-        ax.legend(loc=0)
+            ax.legend(loc=0)
+            ax.set_xlabel(r'$J_{\rm up}$')
+            ax.set_ylabel('Flux')
         
         self.gas_in_pixel = gas_in_pixel
         
-        gas_in_pixel.get_emission_pdf(qx='n', line='CO1-0', log10x=True, nbins=100, xrng=[-3, 6])
+        line = 'CO1-0'
+         
+        #gas_in_pixel.get_emission_pdf(qx='n', line='CO1-0', log10x=True, nbins=100, xrng=[-3, 6])
+        #ax1, ax2 = gas_in_pixel.get_emission_pdf(qx='n', line=line, log10x=True, nbins=50, xrng=[-3, 6], wtitle='sampled')
+        #ax1, ax2 = gas_in_pixel.get_emission_pdf(qx='G0', line=line, log10x=True, nbins=50, xrng=[-3, 6], wtitle='sampled')
 
+        gas_in_pixel.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
+                                       line='CO1-0',
+                                       log10xs=[True, True, True, False],
+                                       xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 27.0]],
+                                       )
+        if False:
+            self.gas_in_pixel_original = gas_in_pixel.copy()
+            self.gas_in_pixel_original.set_radii(weighting='original-only', 
+                                                 rundir=self.params['rundir'], 
+                                                 snap_index=self.params['snap_index'])
+            
+            self.gas_in_pixel_original.get_emission_pdf(qx='n', line=line, log10x=True, nbins=50, 
+                                                       xrng=[-3, 6], wtitle='original', in_ax1=ax1, in_ax2=ax2,
+                                                       linestyle='--')
+        #pylab.figure()
+        #gs = self.gas_in_pixel
+        #pylab.loglog(gs.n[gs.get_inds_has_children()], gs.radius[gs.get_inds_has_children()], '.')
         
 class gas_set(Particles):
 
@@ -1720,6 +1752,34 @@ class gas_set(Particles):
             if type(getattr(self, attr_name)) == type(numpy.ndarray([])):
                 
                 setattr(gas_ret, attr_name, data[items])
+                        
+        return gas_ret
+
+    def copy(self):
+        '''overriding the slicing method of the amuse particle set class'''
+        
+        n = len(self) 
+        
+        gas_ret = gas_set(n)
+        
+        for attr_name in self.all_attributes():
+            
+            if attr_name in ['connected_components', 'mass_segregation_Gini_coefficient', 'total_mass',
+                             'bound_subset', 'LagrangianRadii', 'acceleration', 'thermal_energy',
+                             'total_angular_momentum', 'get_binaries', 'angular_momentum', 'potential',
+                             'Qparameter', 'potential_energy', 'center_of_mass', 'potential_energy_in_field',
+                             'moment_of_inertia', 'cluster_core', 'total_momentum', 
+                             'new_particle_from_cluster_core', 'position', 'kinetic_energy',
+                             'densitycentre_coreradius_coredens', 'oblateness', 'rotate', 'move_to_center',
+                             'center_of_mass_velocity', 'virial_radius', 'total_radius', 'scale_to_standard',
+                             'find_closest_particle_to', 'velocity', 'binaries', 'specific_kinetic_energy']:
+                continue
+            
+            data = getattr(self, attr_name).copy()
+            
+            if type(getattr(self, attr_name)) == type(numpy.ndarray([])):
+                
+                setattr(gas_ret, attr_name, data)
                         
         return gas_ret
      
@@ -2072,7 +2132,49 @@ class gas_set(Particles):
         
         return numpy.where(numpy.isfinite(self.children))[0]
 
-    def get_emission_pdf(self, qx=None, line=None, log10x=False, nbins=50, xrng=None):
+    def get_emission_pdf_populations(self, qx=None, line=None, log10x=False, nbins=50, xrng=None, 
+                                     wtitle='', in_ax1=None, in_ax2=None, linestyle='-'):
+        '''getting emission distributions of the sub-populations
+        
+        get_emission_pdf_populations(qx='n', line=line, log10x=True, nbins=50, xrng=[-3, 6])
+
+        '''
+
+        inds = self.get_inds_original_set()
+        gas_pop = self.copy()[inds]
+        ax1, ax2 = gas_pop.get_emission_pdf(qx=qx, line=line, log10x=log10x, nbins=nbins, xrng=xrng, 
+                                            wtitle=wtitle, linestyle='-')
+
+        inds = self.get_inds_has_children()
+        gas_pop = self.copy()[inds]
+        gas_pop.get_emission_pdf(qx=qx, line=line, log10x=log10x, nbins=nbins, xrng=xrng,       
+                                 wtitle=wtitle, linestyle='-o', in_ax1=ax1, in_ax2=ax2)
+
+        inds = self.get_inds_children()
+        gas_pop = self.copy()[inds]
+        ax1, ax2 = gas_pop.get_emission_pdf(qx=qx, line=line, log10x=log10x, nbins=nbins, xrng=xrng, 
+                                            wtitle=wtitle, linestyle=':', in_ax1=ax1, in_ax2=ax2)
+
+        return ax1, ax2
+
+    def get_emission_pdfs(self, qxs=None, line=None, log10xs=False, nbins=50, xrngs=None):
+        '''plots the PDFs as a function of multiple quantities
+        
+        gas.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
+                              line='CO1-0',
+                              log10xs=[True, True, True, False],
+                              xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 30.0]],)  
+        '''
+        
+        fig, axs = pylab.subplots(2, 4, figsize=(12, 6))
+        
+        for i, qx in enumerate(qxs):
+            
+            self.get_emission_pdf(qx=qx, line=line, log10x=log10xs[i], nbins=nbins, xrng=xrngs[i], 
+                                  in_ax1=axs[0,i], in_ax2=axs[1,i])
+            
+    def get_emission_pdf(self, qx=None, line=None, log10x=False, nbins=50, xrng=None, wtitle='', 
+                         in_ax1=None, in_ax2=None, linestyle='-'):
         '''getting emission PDF vs a quantity qx
         
         example.
@@ -2080,7 +2182,8 @@ class gas_set(Particles):
 
         '''
 
-        pylab.figure()
+        if in_ax1 == None and in_ax2 == None:
+            pylab.figure()
         
         N = len(self) 
         
@@ -2125,19 +2228,34 @@ class gas_set(Particles):
             #
         #
 
-        pylab.subplot(211)
-        pylab.semilogy(x_dist.f.cntrd, xw_dist/xw_dist.max(), 'b')
-        pylab.semilogy(x_dist.f.cntrd, y_dist/y_dist.max(), 'r--')
-        pylab.ylim([1e-6, 10])
+        if in_ax1 == None and in_ax2 == None:
+            ax1 = pylab.subplot(211)
+            ax2 = pylab.subplot(212)
+        else:
+            ax1 = in_ax1
+            ax2 = in_ax2
+
+        ax1.plot(x_dist.f.cntrd, xw_dist/xw_dist.max(), 'b', linestyle=linestyle, label=qx, 
+                 drawstyle='steps-mid')
+        ax1.plot(x_dist.f.cntrd, y_dist/y_dist.max(), 'r', linestyle=linestyle, label=line + '\n max = %.5f' % y_dist.max(), 
+                 drawstyle='steps-mid')
+        ax1.set_ylim([0, 1.1])
+        ax1.set_title(' PDF')
+        ax1.legend(loc=0, prop={'size':8})
         
-        pylab.subplot(212)
-        pylab.plot(x_dist.f.cntrd[::-1], (xw_dist[::-1].cumsum())/xw_dist.sum(), 'b')
-        pylab.plot(x_dist.f.cntrd[::-1], (y_dist[::-1].cumsum())/y_dist.sum(), 'r--')
-        pylab.ylim([0, 1.1])
+        ax2.plot(x_dist.f.cntrd[::-1], (xw_dist[::-1].cumsum())/xw_dist.sum(), 'b', 
+                 linestyle=linestyle, label=qx, drawstyle='steps-mid')
+        ax2.plot(x_dist.f.cntrd[::-1], (y_dist[::-1].cumsum())/y_dist.sum(), 'r', 
+                 linestyle=linestyle, label=line, drawstyle='steps-mid')
+        ax2.set_ylim([0, 1.1])
+        ax2.set_title(' CDF')
+        ax2.legend(loc=0, prop={'size':8})
         
+        pylab.gcf().canvas.set_window_title(wtitle)
         pylab.show()
     
-
+        return ax1, ax2
+    
     def set_weights_children_zero_parents_one(self):
         
         w = numpy.zeros(len(self), 'f8')
@@ -2516,13 +2634,15 @@ class gas_set(Particles):
 
         ## computing the original radii assuing the radii were scaled using the 
         ## current weights 
-        r[cinds] = r_o[inds_list_of_c_in_o_arrys]
+        r[cinds] = r_o[inds_list_of_c_in_o_arrys] # these are in pc
+        r[cinds] *= 1e-3 # converting them to kpc
         
         self.radius = r
     
     def set_radii_using_original_weighting(self, rundir, snap_index):
-        '''sets the radii to the original weights and
-        the radii of the children are set to zero along with their weights.
+        '''sets the radii and weights such that the sampled population is ignored. i.e the weights and radii
+        of the children are set to zero, wheras the weights of the parents are set to one and their radii
+        are restored to their original values.
         '''
         
         pinds = self.get_inds_has_children()
@@ -2537,11 +2657,11 @@ class gas_set(Particles):
         ##         
         inds_list_of_p_in_o_arrys = find_matching_indicies(ids_o, pid, check=False) 
 
-        ## computing the original radii assuing the radii were scaled using the 
-        ## current weights 
-        r[pinds] = r_o[inds_list_of_p_in_o_arrys]
+        ## set the radii of the parent to their original value 
+        r[pinds] = r_o[inds_list_of_p_in_o_arrys]  # these are in pc
+        r[pinds] *= 1e-3 # converting to kpc
         
-        ## setting the weights of the childrent to zero
+        ## setting the radii of the childrent to zero
         r[self.get_inds_children()] = 0.0
         
         self.radius = r
@@ -2560,7 +2680,7 @@ class gas_set(Particles):
         cinds = self.get_inds_children()
         
         ## setting the radii of the children to the original radii of their parents
-        self.set_radii_children_to_original_parent_radii(rundir, snap_index)
+        self.set_radii_children_to_original_parent_radii(rundir, snap_index) ## in kpc
         
         ## setting the new weights by number to the parents and the children
         weights_filename = gen_weights_filename(rundir, snap_index)    
@@ -2576,16 +2696,17 @@ class gas_set(Particles):
         ## the ids of the children
         cid = int32(self.id[cinds])
                 
-        ## loading the arrays holding the original information of the parents
+        ## loading the arrays holding the original information of the parents (the loaded r_o radii are in pc)
         n_o, r_o, ids_o = load_original_n_r_ids(rundir, snap_index)
         ids_o = int32(ids_o)
         
         ##         
         inds_list_of_c_in_o_arrys = find_matching_indicies(ids_o, cid, check=False) 
 
-        ## computing the original radii assuing the radii were scaled using the 
-        ## current weights 
-        r[cinds] = r[cinds] * (w[cinds] * n_o[inds_list_of_c_in_o_arrys]/n[cinds])**(1.0/3.0)
+        ## computing the original radii assuing the radii were scaled using the current weights 
+        r[cinds] = r[cinds] * (w[cinds] * n_o[inds_list_of_c_in_o_arrys]/n[cinds])**(1.0/3.0) # these are in pc
+        # no need to convert the radii of the children to kpc since they were set and converted
+        # in set_radii_children_to_original_parent_radii which are used as r[cinds] in the previous line
         
         self.radius = r
         self.weights = w
@@ -2598,6 +2719,8 @@ class gas_set(Particles):
         w_child =   1.0 / (npp + 1)
         '''
 
+        raise ValueError('check the units!!!!!!!! pc ?? kpc?? ''')
+    
         ## getting the indicies of the parents and the chidlren
         pinds = self.get_inds_has_children()
         cinds = self.get_inds_children()
@@ -2617,7 +2740,7 @@ class gas_set(Particles):
         n = self.n        
         
         ## computing the new radii corresponding to the new weights of the parents
-        r[pinds] = r[pinds] * (w[pinds])**(1.0/3.0)
+        r[pinds] = r[pinds] * (w[pinds])**(1.0/3.0) 
 
         ## the ids of the children
         cid = int32(self.id[cinds])
@@ -2635,7 +2758,7 @@ class gas_set(Particles):
         
         self.radius = r
     
-    def set_radii(self, weighting=None, tokpc = True, rundir=None, snap_index=None):
+    def set_radii(self, weighting=None, rundir=None, snap_index=None):
         '''sets the radii and weights of the particles based on the suggested weighting'''
         
         if weighting == 'matched':
@@ -2656,9 +2779,6 @@ class gas_set(Particles):
         else:
             raise ValueError('unknown weighting!!')
         
-        if tokpc == True:
-            self.convert_radii_to_kpc()
-            
     def print_stats(self):
         pass
 
