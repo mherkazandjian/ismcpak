@@ -10,7 +10,7 @@ import pylab
 from amuse.units import units
 from mylib.utils.misc  import default_logger
 from mylib.utils.histogram import hist_nd 
-import fi_utils
+from galaxies import fi_utils
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 home = '/home/mher'

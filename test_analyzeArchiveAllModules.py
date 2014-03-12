@@ -9,11 +9,12 @@ matplotlib.use('Qt4Agg')
 import pylab
 import meshUtils
 #########################################parameters##########################################################
-home = '/home/mher'
+#home = '/home/mher'
 #home = '/home/mher/data2/mher'
+home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
-specStr_PDR   = 'CO'
-specStr_Radex = 'CO'
+specStr_PDR   = 'HCN'
+specStr_Radex = 'HCN'
 
 parms = {
          #path to the database files
@@ -79,10 +80,10 @@ parms = {
                                      'type'           : 'radex',
                                      'specStr'        : specStr_Radex,     # database to be restored/computed
                                      'transitionIndx' : 0,
-                                     'quantity'       : 'fluxcgs', #,'fluxcgs',
+                                     'quantity'       : 'fluxcgs', #,'fluxcgs', 'fluxKkms'
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
-                                     'Av_max'         : 28.0,  #the maximum Av to be used  
+                                     'Av_max'         : 10.0,  #the maximum Av to be used  
                                     },
                            },
          'gridsRes'      : 100,
@@ -111,7 +112,7 @@ parms = {
                              'lineWidth'            : 1.0,
                              'verbose'              : False,
                              'maxDisplayTranistion' : 20,
-                             'quantity'             : 'fluxcgs',  # 'fluxKkms', 'fluxcgs' 
+                             'quantity'             : 'fluxKkms',  # 'fluxKkms', 'fluxcgs' 
                              ###----------extra convergence params-----------------------
                              'checkOutputIntegrity'       : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'         : 1.0, 
@@ -227,18 +228,24 @@ if False:
     ## interpolation functions for emission in Kkms
     #lines  = ('13CO1-0', '13CO2-1', '13CO3-2', '13CO4-3',)
     #lines += ('CO1-0', 'CO2-1', 'CO3-2', 'CO4-3',)
- 
-    lines = ['13CO1-0'] 
-    for line in lines:
-        print 'making interpolation function for %s' % line
-        F = arxv.get_4D_interp_quantity(
-                                        info={'source':'radex'},
-                                        save=True,
-                                        sectioned=True,
-                                        line = line,
-                                        Avs  = 'all',
-                                        quantity = 'fluxKkms',
-                                       )
+    
+    for q in ['fluxKkms', 'fluxcgs']:
+        
+        lines = ['CN%d-%d' % (i+1, i) for i in range(8)]
+    
+        #lines = ['HCN1-0', 'HCN2-1', 'HCN3-2', 'HCN4-3', 'HCN5-4', 'HCN6-5', 'HCN7-6', ]
+        #lines  = ('SiO1-0', 'CS1-0', 'HCO+1-0', 'HCN1-0', 'HNC1-0','13CO1-0', 'CO1-0',)
+             
+        for line in lines:
+            print 'making interpolation function for %s' % line
+            F = arxv.get_4D_interp_quantity(
+                                            info={'source':'radex'},
+                                            save=True,
+                                            sectioned=True,
+                                            line = line,
+                                            Avs  = 'all',
+                                            quantity = q, #'fluxcgs', # 'fluxcgs', #'fluxKkms'
+                                           )
     
     ## interpolation functions for intergrated quantities (N(x), gamma, lamda..)
     pass

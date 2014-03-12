@@ -2,6 +2,10 @@ import pdb
 import os, sys, time
 import subprocess, shlex
 
+from pylab import *
+from numpy import *
+import scipy
+
 import numpy
 from numpy import log10, where, argmin, fabs, linspace, log, exp, pi, sqrt
 from numpy import isfinite, isnan, zeros, int32
@@ -1275,6 +1279,7 @@ class galaxy_gas_mass_estimator(object):
         m_gas = self.gas.mass
         
         ######################################################
+        self.inspect_species = 'HCN1-0'
         
         area_obs_pixel = numpy.product(obs_mesh.dl)
         
@@ -1347,215 +1352,43 @@ class galaxy_gas_mass_estimator(object):
 
         if plot_fits == True:
             
-            fig = pylab.figure(figsize=(16,8))
+            fig = pylab.figure(figsize=(16,10))
             
             # plotting the line ratios in these axes
-            ax1 = fig.add_axes([0.1, 0.5, 0.15, 0.4])
-            ax2 = fig.add_axes([0.3, 0.5, 0.15, 0.4])
+            ax1 = fig.add_axes([0.05, 0.55, 0.25, 0.4])
+            ax2 = fig.add_axes([0.35, 0.55, 0.25, 0.4])
 
             # plotting the line ratios
             f.plot_results(fig = fig, ax = ax1)
-            print '-------------------------'
+            #print '-------------------------'
             f.plot_results(fig = fig, ax = ax2, no_gmech=True)
             
             # plotting the PDFs in these axes
-            ax3 = fig.add_axes([0.1, 0.1, 0.15, 0.3])
-            ax4 = fig.add_axes([0.3, 0.1, 0.15, 0.3])
-            ax5 = fig.add_axes([0.5, 0.1, 0.15, 0.3])
-            ax6 = fig.add_axes([0.7, 0.1, 0.15, 0.3])
+            axes = numpy.ndarray((2,4), 'object')
+            ys = 0.02
+            xsz, ysz = 0.2, 0.2
+            dx = 0.02
+            
+            axes[0,0] = fig.add_axes([0.05, 0.25, xsz, ysz]) 
+            axes[1,0] = fig.add_axes([0.05, ys, xsz, ysz]) 
 
+            axes[0,1] = fig.add_axes([0.05 + xsz + dx, 0.25, xsz, ysz]) 
+            axes[1,1] = fig.add_axes([0.05 + xsz + dx, ys, xsz, ysz]) 
+
+            axes[0,2] = fig.add_axes([0.05 + 2*(xsz + dx), 0.25, xsz, ysz]) 
+            axes[1,2] = fig.add_axes([0.05 + 2*(xsz + dx), ys, xsz, ysz]) 
+
+            axes[0,3] = fig.add_axes([0.05 + 3*(xsz + dx), 0.25, xsz, ysz]) 
+            axes[1,3] = fig.add_axes([0.05 + 3*(xsz + dx), ys, xsz, ysz]) 
+            pylab.show()
             
             #plotting the emission distribution in the pixel
-            ''' 
-            #g.em_fluxKkms_CO1-0, pdr_NH2, pdr_NH, pdr_NCO, pdr_N13CO
-            gas_in_pixel = self.gas[inds_gas]
-            
-            # getting the emission distriubtion as a function of gas density
-            #----------------------------------------------------------------------------------------
-            log_n_gas = log10(gas_in_pixel.n).reshape((1, len(gas_in_pixel)))
-            n_dist = hist_nd(log_n_gas, nbins=50.0, mn=-3.0, mx=4.0, loc=True, reverse_indicies=True)
-            
-            # the gas particles within the ranges of the distribution histogram 
-            gas_in_pixel_in_hist = gas_in_pixel[n_dist.inds_in]
-            
-            #getting the emission distribution (a selection of lines)
-            dist_0 = zeros(n_dist.totalBins, 'f8') 
-            
-            lum_CO_1_0 = gas_in_pixel_in_hist.get_luminosity('CO1-0')
-            
-            for i in numpy.arange(n_dist.totalBins):
-                
-                inds_in_bin = n_dist.get_indicies(i)
-                
-                if inds_in_bin.size != 0:
-                    
-                    lum_CO_1_0_in_bin = lum_CO_1_0[inds_in_bin]
- 
-                    dist_0[i] = lum_CO_1_0_in_bin.sum().sum()
-                #
-            #
-            
-            x, y = n_dist.f.cntrd, n_dist.f
-            
-            ## ploting the locations in density where the cumilitive particle 
-            ## mass (number) distribution sum is 10%, 50%, 90%
-            ## also getting the CDF for the emission
-            ax3.plot(zoom(x, 20, order=2), zoom(y / numpy.max(y), 20, order=3), 'b')
-            ax3.plot(zoom(n_dist.f.cntrd, 20, order=3), 
-                     zoom(dist_0 / numpy.max(dist_0), 20, order=3), 'r')
-
-            # CDF of the mass 
-            f_CDF_n = (y / y.sum()).cumsum()
-            n_i = linspace(-3.0, 4.0, 1000.0)[::-1]
-            f_CDF_n_i = numpy.interp(n_i, x, f_CDF_n)
-
-            # CDF of the emission
-            f_CDF_em = ((dist_0 / dist_0.sum())[::-1]).cumsum()[::-1]
-            f_CDF_em_i = numpy.interp(n_i, x, f_CDF_em)
-            
-            # plotting the 10, 50, 90% indicators for the SPH mass CDF
-            ind90percent = argmin(fabs(f_CDF_n_i - 0.9))
-            ax3.plot([n_i[ind90percent], n_i[ind90percent]], [0, 2.5], 'b--')
-            ax3.text(n_i[ind90percent] - 1.1, 2.35, '90%', color = 'b')
-            ax3.text(n_i[ind90percent] - 1.1, 2.35 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind90percent]*100) + '%', 
-                     color = 'r')
-
-            ind50percent = argmin(fabs(f_CDF_n_i - 0.5))            
-            ax3.plot([n_i[ind50percent], n_i[ind50percent]], [0, 2.2], 'b--', linewidth=1)
-            ax3.text(n_i[ind50percent] - 1.1, 2.05, '50%' , color = 'b')
-            ax3.text(n_i[ind50percent] - 1.1, 2.05 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind50percent]*100)  + '%', 
-                     color = 'r')
-            
-            ind10percent = argmin(fabs(f_CDF_n_i - 0.1))
-            ax3.plot([n_i[ind10percent], n_i[ind10percent]], [0, 1.85], 'b--', linewidth=1)
-            ax3.text(n_i[ind10percent] - 1.1, 1.7 , '10%', color = 'b')
-            ax3.text(n_i[ind10percent] - 1.1, 1.7 - 0.15, '%d' % (100.0 - f_CDF_em_i[ind10percent]*100) + '%', 
-                     color = 'r')
-
-            
-            # plotting the 10, 50, 90% indicators for the emission CDF
-            ind10percent = argmin(fabs(f_CDF_em_i - 0.1))
-            ax3.plot([n_i[ind10percent], n_i[ind10percent]], [0, 1.55], 'r--', linewidth=1)
-            ax3.text(n_i[ind10percent], 1.4, '10%', color = 'r')
-            ax3.text(n_i[ind10percent], 1.25, '%d' % (100.0 - f_CDF_n_i[ind10percent]*100) + '%', 
-                     color = 'b')
-
-
-            ind50percent = argmin(fabs(f_CDF_em_i - 0.5))
-            ax3.plot([n_i[ind50percent], n_i[ind50percent]], [0, 1.25], 'r--', linewidth=1)
-            ax3.text(n_i[ind50percent], 1.1, '50%', color = 'r')
-            ax3.text(n_i[ind50percent], 0.95, '%d' % (100.0 - f_CDF_n_i[ind50percent]*100) + '%', 
-                     color = 'b')
-            
-            ind90percent = argmin(fabs(f_CDF_em_i - 0.90))
-            ax3.plot([n_i[ind90percent], n_i[ind90percent]], [0, 0.95], 'r--', linewidth=1)
-            ax3.text(n_i[ind90percent], 0.8, '90%', color = 'r')
-            ax3.text(n_i[ind90percent], 0.65, '%d' % (100.0 - f_CDF_n_i[ind90percent]*100) + '%', 
-                     color = 'b')
-
-            ax3.set_ylim([0, 2.5])
-            ax3.set_xlabel(r'$\log_{10}$[n$_{\rm gas}$]')
-            ax3.set_ylabel(r'$f$')
-            
-            
-            # getting the emission distriubtion as a function of G0
-            #----------------------------------------------------------------------------------------
-            log_G0_gas = log10(gas_in_pixel.G0).reshape((1, len(gas_in_pixel)))
-
-            G0_dist = hist_nd(log_G0_gas, nbins=50.0, mn=-3.0, mx=4.0, loc=True, reverse_indicies=True)
-            
-            # the gas particles within the ranges of the distribution histogram 
-            gas_in_pixel_in_hist = gas_in_pixel[G0_dist.inds_in]
-            
-            #getting the emission distribution (a selection of lines)
-            dist_0 = zeros(G0_dist.totalBins, 'f8') 
-            
-            for i in numpy.arange(G0_dist.totalBins):
-                
-                inds_in_bin = G0_dist.get_indicies(i) 
-                
-                if inds_in_bin.size != 0:
-                    
-                    gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
- 
-                    dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').mean()
-                #
-            #
-            
-            ax4.plot(G0_dist.f.cntrd, G0_dist.f / numpy.max(G0_dist.f))
-
-            ax4.plot(G0_dist.f.cntrd, dist_0 / dist_0.sum(), 'k--')
-                         
-            ax4.set_ylim([0, 1.4])
-            ax4.set_xlabel('log G0 gas')
-            ax4.set_ylabel('f')
-            
-            
-            # getting the emission distriubtion as a function of gmech
-            #----------------------------------------------------------------------------------------
-            log_gmech_gas = log10(gas_in_pixel.gmech).reshape((1, len(gas_in_pixel)))
-
-            gmech_dist = hist_nd(log_gmech_gas, nbins=50.0, mn=-30.0, mx=-20.0, loc=True, reverse_indicies=True)
-            
-            # the gas particles within the ranges of the distribution histogram 
-            gas_in_pixel_in_hist = gas_in_pixel[gmech_dist.inds_in]
-            
-            #getting the emission distribution (a selection of lines)
-            dist_0 = zeros(gmech_dist.totalBins, 'f8') 
-            
-            for i in numpy.arange(gmech_dist.totalBins):
-                
-                inds_in_bin = gmech_dist.get_indicies(i) 
-                
-                if inds_in_bin.size != 0:
-                    
-                    gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
- 
-                    dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').mean()
-                #
-            #
-            
-            ax5.plot(gmech_dist.f.cntrd, gmech_dist.f / numpy.max(gmech_dist.f))
-
-            ax5.plot(gmech_dist.f.cntrd, dist_0 / dist_0.sum(), 'k--')
-                         
-            ax5.set_ylim([0, 1.4])
-            ax5.set_xlabel('log gmech gas')
-            ax5.set_ylabel('f')
-
-            # getting the emission distriubtion as a function of gmech
-            #----------------------------------------------------------------------------------------
-            Av_gas = (gas_in_pixel.Av).reshape((1, len(gas_in_pixel)))
-
-            Av_dist = hist_nd(Av_gas, nbins=50.0, mn=0.0, mx=30.0, loc=True, reverse_indicies=True)
-            
-            # the gas particles within the ranges of the distribution histogram 
-            gas_in_pixel_in_hist = gas_in_pixel[Av_dist.inds_in]
-            
-            #getting the emission distribution (a selection of lines)
-            dist_0 = zeros(Av_dist.totalBins, 'f8') 
-            
-            for i in numpy.arange(Av_dist.totalBins):
-                
-                inds_in_bin = Av_dist.get_indicies(i) 
-                
-                if inds_in_bin.size != 0:
-                    
-                    gas_in_bin = gas_in_pixel_in_hist[inds_in_bin]
- 
-                    dist_0[i] = getattr(gas_in_bin, 'em_fluxKkms_CO1-0').mean()
-                #
-            #
-            
-            ax6.plot(Av_dist.f.cntrd, Av_dist.f / numpy.max(Av_dist.f))
-
-            ax6.plot(Av_dist.f.cntrd, dist_0 / dist_0.max(), 'k--')
-                         
-            ax6.set_ylim([0, 1.4])
-            ax6.set_xlabel('Av gas')
-            ax6.set_ylabel('f')            
-            '''
-            
+            gas_in_pixel.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
+                                           line=self.inspect_species,
+                                           log10xs=[True, True, True, False],
+                                           xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 27.0]],
+                                           in_axes=axes
+                                           )
         #computing the averages of the physical parameters of the particles inside the pixel 
         #-----------------------------------------------------------------------------------
         means = collections.OrderedDict()
@@ -1620,7 +1453,7 @@ class galaxy_gas_mass_estimator(object):
             ax1.set_title('with gmech')
             ax2.set_title('no gmech')
             
-            pylab.figtext(0.5, 0.8, strng)
+            pylab.figtext(0.6, 0.8, strng, size=8)
             
         
         print 'mean values in the pixel'    
@@ -2031,7 +1864,8 @@ class gas_set(Particles):
     
         return ln_s, w_s, w_ln_gt_X
     
-    def sample_higher_densities(self, npp=None, n_min_sample=None, n_max_sample=None, fit_func_rng=None, plot=True):
+    def sample_higher_densities(self, npp=None, n_min_sample=None, n_max_sample=None, 
+                                fit_func_rng=None, plot=True):
 
         if plot == True:
             fig, axs = self.plot_PDF_CDF(fit_func_rng=fit_func_rng)
@@ -2157,7 +1991,7 @@ class gas_set(Particles):
 
         return ax1, ax2
 
-    def get_emission_pdfs(self, qxs=None, line=None, log10xs=False, nbins=50, xrngs=None):
+    def get_emission_pdfs(self, qxs=None, line=None, log10xs=False, nbins=50, xrngs=None, in_axes=None):
         '''plots the PDFs as a function of multiple quantities
         
         gas.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
@@ -2166,7 +2000,10 @@ class gas_set(Particles):
                               xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 30.0]],)  
         '''
         
-        fig, axs = pylab.subplots(2, 4, figsize=(12, 6))
+        if in_axes == None:
+            fig, axs = pylab.subplots(2, 4, figsize=(12, 6))
+        else:
+            axs = in_axes
         
         for i, qx in enumerate(qxs):
             
@@ -2240,7 +2077,7 @@ class gas_set(Particles):
         ax1.plot(x_dist.f.cntrd, y_dist/y_dist.max(), 'r', linestyle=linestyle, label=line + '\n max = %.5f' % y_dist.max(), 
                  drawstyle='steps-mid')
         ax1.set_ylim([0, 1.1])
-        ax1.set_title(' PDF')
+        #ax1.set_title(' PDF')
         ax1.legend(loc=0, prop={'size':8})
         
         ax2.plot(x_dist.f.cntrd[::-1], (xw_dist[::-1].cumsum())/xw_dist.sum(), 'b', 
@@ -2248,7 +2085,7 @@ class gas_set(Particles):
         ax2.plot(x_dist.f.cntrd[::-1], (y_dist[::-1].cumsum())/y_dist.sum(), 'r', 
                  linestyle=linestyle, label=line, drawstyle='steps-mid')
         ax2.set_ylim([0, 1.1])
-        ax2.set_title(' CDF')
+        #ax2.set_title(' CDF')
         ax2.legend(loc=0, prop={'size':8})
         
         pylab.gcf().canvas.set_window_title(wtitle)
@@ -2978,4 +2815,117 @@ def load_original_n_r_ids(rundir, snap_index):
     
     return n, r, ids
     
+
+def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
+    ########################
+    figure(figsize=(18,8))
+    ###
+    # getting the fit function for the radii as a function of density
+    # linear fit in log scale
+    ###
     
+    subplot(231)
+    x, y = log10(gaso.n[ gaso.n > 1e-2]), log10(gaso.radius[ gaso.n > 1e-2])
+    z = polyfit(x, y, 1)
+    p = poly1d(z)
+    
+    ## radius (in kpc) as a function of density (in cm-3)
+    # r(kpc) = R(n) (kpc) 
+    r_func = lambda n: 10.0**p(log10(n))
+    
+    # plotting the distribution of the radii vs n
+    loglog(gas.n[::1000], gas.radius[::1000], 'b.')
+    loglog(10**x[::1000], 10**y[::1000], 'r.')
+    # plotting the fit linear function
+    xs = linspace(-3.0, 6.0, 100)
+    ys = p(xs)
+    loglog(10.0**xs, r_func(10.0**xs), 'g--', linewidth=2)
+    
+    
+    ## getting the fitted PDF of the density (reading it from the disk)
+    subplot(232)
+    weights_filename = gen_weights_filename(params['rundir'], params['snap_index'])    
+    info = gas.load_weights_function(weights_filename)
+    log10nPDF_fit = scipy.interpolate.interp1d(log10(info['x_fit']), log10(info['y_fit']))
+    
+    ## the interpolation function of the PDF
+    # nPDF(n) = probability density at that density (not in log scale
+    nPDF = lambda n: 10.0**log10nPDF_fit(log10(n))
+    loglog(10.0**xs, nPDF(10.0**xs), 'r--', lw=1)
+    
+    ################################################################################################
+    # computing the total luminosity discretely over the whole PDF
+    
+    nmin, nmax = -3, 6.0
+    log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
+    
+    ###################
+    n_bins = 10.0**(log10n + dlog10n*0.5)
+    prob_n_bins = nPDF(n_bins)
+    r_nbins = r_func(n_bins)
+    
+    N_particles = 2e6
+    
+    def plot_luminosity_vs_n(log10G0_log10Gmech_Av, k):
+        
+        log10G0, log10Gmech, Av = log10G0_log10Gmech_Av
+        
+        log10G0s = ones(n_bins.size, 'f8')*log10G0
+        log10gmechs = ones(n_bins.size, 'f8')*log10Gmech
+        Avs = ones(n_bins.size, 'f8')*Av
+        
+        data = numpy.array([log10(n_bins), log10G0s, log10gmechs, Avs]).T
+        
+        flux_bins = 10.0**F.get( data )
+        
+        luminosity_nbins = prob_n_bins*flux_bins*(pi*(r_nbins*1e3)**2)
+        
+        # computing the luminosuty for all the particles
+        luminosity_nbins *= N_particles 
+        
+        loglog(n_bins, luminosity_nbins, label=log10G0_log10Gmech_Av[k])
+        
+        '''
+        log10G0, log10gmech, Av = 2.0, -50.0, 10.0
+        
+        for i, n_bin in enumerate(n_bins):
+            
+            data = numpy.array([[log10(n_bin), log10G0, log10gmech, Av]])
+            
+            flux_bin = 10.0**F.get( data )
+        
+            luminosity_nbins[i] = prob_n_bins[i]*flux_bin*(pi*(r_nbins[i])**2)
+            print 'i = %03d, n = %.2e  log10(n) = %-+.2f  flux = %.1e, r = %.1e' % (i, n_bin, log10(n_bin), flux_bin, r_nbins[i]),
+            print 'luminostiy = %.1e' % luminosity_nbins[i] 
+        '''
+
+    subplot(2, 3, 4)
+    for log10G0 in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
+        plot_luminosity_vs_n([log10G0, -23, 5.0], 0)
+    xlim(10.0**nmin, 10.0**nmax)
+    ylim(1e-6, 1e12)
+    legend(loc=0, prop={'size':8})
+    
+    subplot(2, 3, 5)
+    for log10Gmech in [-50.0, -30.0, -25.0, -23.0, -22.0, -21.0]:
+        plot_luminosity_vs_n([2.0, log10Gmech, 10.0], 1)
+    xlim(10.0**nmin, 10.0**nmax)
+    ylim(1e-6, 1e12)    
+    legend(loc=0, prop={'size':8})
+
+    subplot(2, 3, 6)
+    for Av in [0.1, 1.0, 5.0, 10.0, 20.0]:
+        plot_luminosity_vs_n([4.0, -22.0, Av], 2)
+    xlim(10.0**nmin, 10.0**nmax)
+    ylim(1e-6, 1e12)
+    legend(loc=0, prop={'size':8})
+    
+    #Av = 10.0
+    #log10Gmech=-50.0
+
+    #for log10G0 in [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
+    
+        
+        
+    
+    pylab.show() 
