@@ -1,6 +1,9 @@
 import line_ratio_utils
 import numpy
 import pylab
+from scipy import interpolate
+from mylib.utils.interpolation import interpolator_sectioned
+import time
 
 class Xi2_line_ratios_single_component(object):
     
@@ -46,7 +49,7 @@ class Xi2_line_ratios_single_component(object):
         
             mod = self.model_line_ratios[line_ratio]
             
-            Xi2 += ((obs - mod)**2.0)/err**2 # goodness of fit
+            Xi2 += ((obs - mod)**2.0)/err**2 # goodness of fit (numerical recipes)
             #Xi2 += ((obs - mod)**2)/mod  # pearsons chi squared test
         
         self.Xi2 = Xi2
@@ -85,7 +88,95 @@ class Xi2_line_ratios_single_component(object):
 
         return self.ind_global_min, self.ind_global_min_orig,\
                self.ind_global_min_no_gmech, self.ind_global_min_no_gmech_orig
+    
+    def Xi2_diagrams(self, intervals=None, with_gm = True, arxvPDR=None):
+        '''
+        xi2i = estimator.contraining.Xi2_diagrams(arxvPDR=arxvPDR)
+        '''
+        ## the values of the Xi2 and the corresponding model parameters        
+        v, data = self.Xi2_valid.copy(), self.model_parms_valid.copy()
 
+        ## model parameters for the minimum Xi2 (at model coordinates)
+        data_Xi2_min, Xi2_min, data_Xi2_min_zero_gmech, Xi2_min_zero_gm = self.get_model_parms_for_min_Xi2()
+
+        ## computing the degrees of freedom and the reduced Xi2
+        DOF = len(line_ratio_utils.all_lines_involved(self.line_ratios_use))
+        if with_gm == True:
+            DOF -= 4
+        else:
+            DOF -= 3
+        v /= float(DOF)
+        
+        ## constructing the interpolation functions of the Xi2
+        t0 = time.time()
+        F = interpolator_sectioned(data, v,
+                                   intervals_z=arxvPDR.intervals_z,     
+                                   ghost_z=arxvPDR.ghost_z,
+                                   intervals_t=arxvPDR.intervals_t,
+                                   ghost_t=arxvPDR.ghost_t,
+                                   scipy_interpolator=interpolate.LinearNDInterpolator)
+        t1 = time.time()
+        print 'time constructing Xi2 interpolation function = %.2f seconds' % (t1 - t0)
+
+        ## interpolating sections of the Xi2 values
+        log10n  = numpy.linspace(-1.0, 6.0, 20)
+        log10G0 = numpy.linspace(-1.0, 6.0, 20)
+        gmech   = data_Xi2_min[2] #-22.0 #numpy.linspace(-25.0, -20.0, 50)
+        Av      = data_Xi2_min[3] #10.0 #numpy.linspace(1.0, 30.0, 50)
+        
+        data_i = numpy.meshgrid(
+                               log10n,   # log10(n)  
+                               log10G0,  # log10(G0)
+                               [gmech],  # log10(gmech)
+                               [Av],       # Av
+                              )
+        
+        data_i = numpy.array([ dim.flatten() for dim in data_i], 'f8').T
+        
+        print 'interpolating the Xi2 values'
+        Xi2_i = F.get(data_i).reshape(log10n.size, log10G0.size)
+        
+        ## clipping the interpolated Xi2 values
+        
+        
+        ## plotting the Xi2 diagrams
+        fig, axs = pylab.subplots(4, 4, figsize=(12,12))
+        
+        axs[0,0].imshow(numpy.log10(Xi2_i), 
+                        extent=[log10n.min(), log10n.max(), log10G0.min(), log10G0.max()], 
+                        origin='lower')
+
+        pylab.show()
+
+        inds_section = numpy.where( (data[:,2] == data_Xi2_min[2])*(data[:,3] == data_Xi2_min[3]) )[0]
+        data_sec = data[  inds_section, :]
+        v_sec = v[ inds_section ]
+
+        ## interpolate around the minimum with higher resolution than that of the model grids to
+        ## to find a better minimum
+        log10n  = numpy.linspace(data_Xi2_min[0] - 0.5, data_Xi2_min[0] + 0.5, 20)
+        log10G0 = numpy.linspace(data_Xi2_min[1] - 0.5, data_Xi2_min[1] + 0.5, 20)
+        gmech   = numpy.linspace(data_Xi2_min[2] - 1.0, data_Xi2_min[2] + 1.0, 20)
+        Av      = numpy.linspace(data_Xi2_min[3] - 2.0, data_Xi2_min[3] + 2.0, 20)
+        
+        data_i = numpy.meshgrid(log10n,log10G0, gmech, Av)
+        
+        data_i = numpy.array([ dim.flatten() for dim in data_i], 'f8').T
+        
+        print 'interpolating the Xi2 values to find a better minimum'
+        Xi2_i = F.get(data_i)
+
+        
+        ind_min = numpy.nanargmin(Xi2_i)
+        Xi2_i_min = Xi2_i[ind_min]
+        data_i_min = data_i[ind_min, :]
+        
+        print 'minimum Xi2 (interp) = ', Xi2_i_min        
+        print 'parameters for minimum Xi2 (interp) = ', data_i_min         
+
+        return v, data, Xi2_i
+        
+        
     def get_model_parms_for_min_Xi2(self):
 
         self.model_inds_for_min_Xi2()
@@ -174,35 +265,48 @@ class Xi2_line_ratios_single_component(object):
         obs = self.obs_ratios
         mod = self.model_line_ratios
         
-        def plot_ratio_ladder(spec_num=None, spec_denom=None, in_denom='1-0', **kwargs):
+        def plot_ratio_ladder(spec_num=None, spec_denom=None, in_denom='1-0', linestyle='--', **kwargs):
             ## plotting the observed ratios for CO/CO line ratios
             line_ratios = obs.get_ratios_by_species(spec_num, spec_denom, **kwargs)
             print 'plotting line ratios %s/%s    :' % (spec_num, spec_denom), line_ratios
-                    
-            vo, eo = obs.get_values_and_error(line_ratios)
-            Jup = numpy.arange(len(vo))+1
- 
-            ax.errorbar(Jup, vo,  yerr=eo, fmt='o', markersize=3, **kwargs)
-            #ax.text(len(vo)-1, vo[-1], '%s/%s' %  (spec_num, spec_denom), size='x-small')
+            print '\t\t %d line ratios found' % len(line_ratios)
             
-            ## plotting the model line ratios
-            vm = []
-            for i, line_ratio in enumerate(line_ratios):
-                vm.append(mod[line_ratio][ind_model])
-            ax.plot(Jup, vm, linestyle='--', label='%s/%s' %  (spec_num, spec_denom), **kwargs)
+            if len(line_ratios) != 0:
+                
+                vo, eo = obs.get_values_and_error(line_ratios)
+                Jup = numpy.arange(len(vo))+1
+                     
+                ax.errorbar(Jup, vo,  yerr=eo, fmt='+', markersize=3, **kwargs)
+                #ax.text(len(vo)-1, vo[-1], '%s/%s' %  (spec_num, spec_denom), size='x-small')
+                
+                ## plotting the model line ratios
+                vm = []
+                for i, line_ratio in enumerate(line_ratios):
+                    vm.append(mod[line_ratio][ind_model])
+
+                ax.plot(Jup, vm, linestyle=linestyle, label='%s/%s' %  (spec_num, spec_denom), **kwargs)
             
-            print vo
         #
         
         plot_ratio_ladder(spec_num='CO'  , spec_denom='CO'  , in_denom='1-0', color='k')
-        plot_ratio_ladder(spec_num='13CO', spec_denom='13CO', in_denom='1-0', color='r')
         plot_ratio_ladder(spec_num='13CO', spec_denom='CO'  , in_denom='1-0', color='g')
-        plot_ratio_ladder(spec_num='HCN' , spec_denom='CO'  , in_denom='1-0', color='c')
-        plot_ratio_ladder(spec_num='HNC' , spec_denom='CO'  , in_denom='1-0', color='m')
-        plot_ratio_ladder(spec_num='HCO+', spec_denom='CO'  , in_denom='1-0', color='y')
-        plot_ratio_ladder(spec_num='HCO+', spec_denom='HCN' , in_denom='1-0', color='y')
-        plot_ratio_ladder(spec_num='HCN' , spec_denom='HNC' , in_denom='1-0', color='y')
-        plot_ratio_ladder(spec_num='13CO', spec_denom='HCN' , in_denom='1-0', color='y')
+        plot_ratio_ladder(spec_num='HCN' , spec_denom='CO'  , in_denom='1-0', color='b')
+        plot_ratio_ladder(spec_num='HNC' , spec_denom='CO'  , in_denom='1-0', color='c')
+        plot_ratio_ladder(spec_num='HCO+', spec_denom='CO'  , in_denom='1-0', color='m')
+        plot_ratio_ladder(spec_num='SiO' , spec_denom='CO'  , in_denom='1-0', color='y')
+        plot_ratio_ladder(spec_num='CS'  , spec_denom='CO'  , in_denom='1-0', color='r')
+        plot_ratio_ladder(spec_num='CN'  , spec_denom='CO'  , in_denom='1-0', color='0.25')
+        
+        plot_ratio_ladder(spec_num='HCN' , spec_denom='HNC' , in_denom='1-0', color='k', linestyle=':')
+        plot_ratio_ladder(spec_num='HCN' , spec_denom='HCO+', in_denom='1-0', color='r', linestyle=':')
+        plot_ratio_ladder(spec_num='HNC' , spec_denom='HCO+', in_denom='1-0', color='b', linestyle=':')
+        plot_ratio_ladder(spec_num='HCO+', spec_denom='13CO', in_denom='1-0', color='m', linestyle=':')
+
+        plot_ratio_ladder(spec_num='13CO', spec_denom='13CO', in_denom='1-0', color='k', linestyle='--')
+        
+        #plot_ratio_ladder(spec_num='HCO+', spec_denom='HCN' , in_denom='1-0', color='y')
+        #plot_ratio_ladder(spec_num='HCN' , spec_denom='HNC' , in_denom='1-0', color='y')
+        #plot_ratio_ladder(spec_num='13CO', spec_denom='CO' , in_denom='1-0', color='y')
         
         ax.set_xlim(-1, 17)
         ax.set_ylim(1e-7, 100.0)

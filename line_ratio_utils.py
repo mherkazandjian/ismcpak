@@ -518,3 +518,96 @@ def line_ratio_combinations(lines, combinations=None):
         
     return line_ratios.keys()
 
+#########################################
+
+ratio_sets = {
+              ### CO, 13CO ratios in the denominator (all ladders)
+              'COCO' : (
+                        'CO2-1/CO1-0', 'CO3-2/CO1-0', 'CO4-3/CO1-0', 'CO5-4/CO1-0', 'CO6-5/CO1-0', 'CO7-6/CO1-0',   
+                        'CO8-7/CO1-0', 'CO9-8/CO1-0', 'CO10-9/CO1-0', 'CO11-10/CO1-0', 'CO12-11/CO1-0', 'CO13-12/CO1-0', 
+                        'CO14-13/CO1-0', 'CO15-14/CO1-0', 
+                        ), 
+              '13CO13CO' : (
+                            '13CO2-1/13CO1-0', '13CO3-2/13CO1-0', '13CO4-3/13CO1-0', '13CO5-4/13CO1-0', '13CO6-5/13CO1-0', '13CO7-6/13CO1-0', 
+                            '13CO8-7/13CO1-0', '13CO9-8/13CO1-0', '13CO10-9/13CO1-0', '13CO11-10/13CO1-0', '13CO12-11/13CO1-0', '13CO13-12/13CO1-0', 
+                            '13CO14-13/13CO1-0', '13CO15-14/13CO1-0',
+                           ),
+              '13COCO' :  (
+                           '13CO2-1/CO1-0', '13CO3-2/CO1-0', '13CO4-3/CO1-0', '13CO5-4/CO1-0', '13CO6-5/CO1-0', '13CO7-6/CO1-0', 
+                           '13CO8-7/CO1-0', '13CO9-8/CO1-0', '13CO10-9/CO1-0', '13CO11-10/CO1-0', '13CO12-11/CO1-0', '13CO13-12/CO1-0', 
+                           '13CO14-13/CO1-0', '13CO15-14/CO1-0',
+                          ), 
+              'HCNCO' : (
+                         'HCN1-0/CO1-0', 'HCN2-1/CO1-0', 'HCN3-2/CO1-0', 'HCN4-3/CO1-0', 'HCN5-4/CO1-0',  'HCN6-5/CO1-0', 'HCN7-6/CO1-0',
+                        ),
+
+              'HNCCO' : (
+                         'HNC1-0/CO1-0', 'HNC2-1/CO1-0', 'HNC3-2/CO1-0', 'HNC4-3/CO1-0', 'HNC5-4/CO1-0',  'HNC6-5/CO1-0', 'HNC7-6/CO1-0',
+                        ),
+              'HCO+CO' : (
+                          'HCO+1-0/CO1-0', 'HCO+2-1/CO1-0', 'HCO+3-2/CO1-0', 'HCO+4-3/CO1-0', 'HCO+5-4/CO1-0',  'HCO+6-5/CO1-0', 'HCO+7-6/CO1-0',
+                         ),
+              'SiOCO' : (
+                         'SiO1-0/CO1-0', 'SiO2-1/CO1-0', 'SiO3-2/CO1-0', 'SiO4-3/CO1-0', 'SiO5-4/CO1-0',  'SiO6-5/CO1-0', 'SiO7-6/CO1-0',
+                        ),
+              'CSCO' : (
+                        'CS1-0/CO1-0', 'CS2-1/CO1-0', 'CS3-2/CO1-0', 'CS4-3/CO1-0', 'CS5-4/CO1-0',  'CS6-5/CO1-0', 'CS7-6/CO1-0',
+                       ), 
+              'CNCO' : (
+                        'CN1-0/CO1-0', 'CN2-1/CO1-0', 'CN3-2/CO1-0', 'CN4-3/CO1-0', 'CN5-4/CO1-0',  'CN6-5/CO1-0', 'CN7-6/CO1-0',
+                       ),
+              'HCO+13CO' : (
+                         'HCO+1-0/13CO1-0', 'HCO+2-1/13CO1-0', 'HCO+3-2/13CO1-0', 'HCO+4-3/13CO1-0', 'HCO+5-4/13CO1-0',  'HCO+6-5/13CO1-0', 'HCO+7-6/13CO1-0',
+                         ),
+              ### CO ratios in the denominator (all ladders)
+              'COCO-low'     : ('CO2-1/CO1-0',), 
+              '13CO13CO-low' : ('13CO2-1/13CO1-0',),
+              '13COCO-low'   : ('13CO1-0/CO1-0',), 
+              'HCNCO-low'    : ('HCN1-0/CO1-0',),
+              'HNCCO-low'    : ('HNC1-0/CO1-0',),
+              'HCO+CO-low'   : ('HCO+1-0/CO1-0',),
+              'SiOCO-low'    : ('SiO1-0/CO1-0',),
+              'CSCO-low'     : ('CS1-0/CO1-0',), 
+              'CNCO-low'     : ('CN1-0/CO1-0',),
+              ##########################################
+              # ratios among high density tracers
+              ##########################################
+              'HCNHNC' : (
+                         'HCN1-0/HNC1-0', 'HCN2-1/HNC1-0', 'HCN3-2/HNC1-0', 'HCN4-3/HNC1-0', 'HCN5-4/HNC1-0',  'HCN6-5/HNC1-0', 'HCN7-6/HNC1-0',
+                         ),
+              'HCNHCO+' : (
+                         'HCN1-0/HCO+1-0', 'HCN2-1/HCO+1-0', 'HCN3-2/HCO+1-0', 'HCN4-3/HCO+1-0', 'HCN5-4/HCO+1-0',  'HCN6-5/HCO+1-0', 'HCN7-6/HCO+1-0',
+                         ),
+              'HNCHCO+' : (
+                         'HNC1-0/HCO+1-0', 'HNC2-1/HCO+1-0', 'HNC3-2/HCO+1-0', 'HNC4-3/HCO+1-0', 'HNC5-4/HCO+1-0',  'HNC6-5/HCO+1-0', 'HNC7-6/HCO+1-0',
+                         ),
+              # J > 3-2 in the numerator
+              'HNCHCNhigh' : (
+                              'HNC4-3/HCN1-0', 'HNC5-4/HCN1-0',  'HNC6-5/HCN1-0', 'HNC7-6/HCN1-0',
+                             ),
+              'HCNHCO+high' : (
+                              'HCN4-3/HCO+1-0', 'HCN5-4/HCO+1-0',  'HCN6-5/HCO+1-0', 'HCN7-6/HCO+1-0',
+                              ),
+              'HNCHCO+high' : (
+                              'HNC4-3/HCO+1-0', 'HNC5-4/HCO+1-0',  'HNC6-5/HCO+1-0', 'HNC7-6/HCO+1-0',
+                              ),
+              }
+
+ratios_set1 = ratio_sets['COCO'] + ratio_sets['13CO13CO'] + ratio_sets['13COCO'] +\
+              ratio_sets['HCNCO'] + ratio_sets['HNCCO'] + ratio_sets['HCO+CO'] +\
+              ratio_sets['SiOCO'] + ratio_sets['CSCO'] + ratio_sets['CNCO']
+              
+ratios_set2 = ratio_sets['COCO'] + ratio_sets['13CO13CO'] + ratio_sets['13COCO']
+
+ratios_set3 = ratio_sets['COCO'] + ratio_sets['13CO13CO'] + ratio_sets['13COCO'] +\
+              ratio_sets['HCNCO'] + ratio_sets['HNCCO'] + ratio_sets['HCO+CO'] 
+
+ratios_set4 = ratio_sets['HCNCO'] + ratio_sets['HNCCO'] + ratio_sets['HCO+CO'] 
+
+ratios_set5 = ratio_sets['HCNHNC'] + ratio_sets['HCNHCO+'] + ratio_sets['HNCHCO+'] 
+
+ratios_set6 = ratio_sets['HNCHCNhigh'] + ratio_sets['HCNHCO+high'] + ratio_sets['HNCHCO+high'] 
+             
+low_ratios = ratio_sets['COCO-low'] + ratio_sets['13CO13CO-low'] + ratio_sets['13COCO-low'] +\
+             ratio_sets['HCNCO-low'] + ratio_sets['HNCCO-low'] + ratio_sets['HCO+CO-low'] +\
+             ratio_sets['SiOCO-low'] + ratio_sets['CSCO-low'] + ratio_sets['CNCO-low']

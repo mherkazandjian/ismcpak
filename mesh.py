@@ -57,6 +57,7 @@ class mesh(object):
             m.data['fineStructureCoolingComponents']['Si']['popDens']['1']
             m.data['fineStructureCoolingComponents']['Si']['rate']['1-0']
             m.data['fineStructureCoolingComponents']['remainig species in self.coolingFormatFineStructure']
+            'C+'
             
             m.data['selfSheilding']  # dtype defined in self.selfSheildingFormat()
             m.data['selfSheilding']['H2']
@@ -964,7 +965,7 @@ class mesh(object):
             Av = self.data['state']['Av']
             inds =  numpy.where((Av >= Av_range[0])*(Av < Av_range[1]))
             integrated_quantity = numpy.sum(q[inds]*dxSlabs[inds])
-        
+
         return integrated_quantity
     
     def copy(self):

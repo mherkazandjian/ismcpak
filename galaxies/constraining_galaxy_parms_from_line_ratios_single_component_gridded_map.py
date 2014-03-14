@@ -19,7 +19,6 @@ matplotlib.use('Qt4Agg')
 
 import numpy
 import scipy
-import pylab
 
 from amuse.units import units
 
@@ -27,18 +26,16 @@ from mylib.utils.misc  import default_logger
 from mylib.utils.histogram import hist_nd
  
 from galaxies import fi_utils
-import lineDict
 import meshUtils
 
 import line_ratio_utils
-import mylib.units
-from mylib.constants import M_SUN_SI
-from mylib.utils.ndmesh import ndmesh
-from mylib.utils.misc import scale
+from line_ratio_utils import ratio_sets as r
+from line_ratio_utils import *
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 home = '/home/mher'
+#home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
 params = {
           ##################### parameters for making the mock maps #########################
@@ -124,6 +121,13 @@ params = {
                            'HNC1-0/CO1-0', 'HNC2-1/CO1-0', 'HNC3-2/CO1-0', 'HNC4-3/CO1-0', 'HNC5-4/CO1-0',  'HNC6-5/CO1-0', 'HNC7-6/CO1-0',
 
                            'HCO+1-0/CO1-0', 'HCO+2-1/CO1-0', 'HCO+3-2/CO1-0', 'HCO+4-3/CO1-0', 'HCO+5-4/CO1-0',  'HCO+6-5/CO1-0', 'HCO+7-6/CO1-0',
+
+                           'SiO1-0/CO1-0', 'SiO2-1/CO1-0', 'SiO3-2/CO1-0', 'SiO4-3/CO1-0', 'SiO5-4/CO1-0',  'SiO6-5/CO1-0', 'SiO7-6/CO1-0',
+
+                           'CS1-0/CO1-0', 'CS2-1/CO1-0', 'CS3-2/CO1-0', 'CS4-3/CO1-0', 'CS5-4/CO1-0',  'CS6-5/CO1-0', 'CS7-6/CO1-0',
+
+                           'CN1-0/CO1-0', 'CN2-1/CO1-0', 'CN3-2/CO1-0', 'CN4-3/CO1-0', 'CN5-4/CO1-0',  'CN6-5/CO1-0', 'CN7-6/CO1-0',
+
                         ],
 
           

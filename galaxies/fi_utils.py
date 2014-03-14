@@ -1094,8 +1094,11 @@ class galaxy_gas_mass_estimator(object):
         self.model_em = model_em
         self.grid_coords = grid_coords
         
-    def setup_observed_grid(self, use_line_ratios=None):
+    def setup_observed_grid(self, use_line_ratios=None, clean=False, inspect=''):
         '''sets up the observed mesh. A lower resolution mesh than the synthetica map'''
+        
+        self.clean = clean
+        self.inspect_species = inspect
         
         if use_line_ratios != None:
             self.line_ratios = use_line_ratios
@@ -1164,6 +1167,346 @@ class galaxy_gas_mass_estimator(object):
                 
                 self.plot_gas_pdf_in_pixel(x_ind, y_ind)
                 
+    
+    def estimate_mass_in_pixel(self, x_ind=None, y_ind=None, plot_fits=False):
+        
+        t0 = time.time()
+        
+        hist = self.hist
+        hist_obs = self.hist_obs
+        obs_mesh = self.hist_obs.f
+        line_ratios = self.line_ratios
+        luminosity = self.luminosity_maps
+        params = self.params
+        model_em = self.model_em 
+        grid_coords = self.grid_coords 
+        arxvPDR = self.arxvPDR
+        m_gas = self.gas.mass        
+        ######################################################
+        
+        area_obs_pixel = numpy.product(obs_mesh.dl)
+        
+        if plot_fits == True:
+            pylab.plot(obs_mesh.cntrd[0][x_ind, y_ind], 
+                       obs_mesh.cntrd[1][x_ind, y_ind], 
+                       'r+', markersize=10)
+
+        ## plotting the centroids of the pixels of the pixel of the map inside the clicked pixel
+        inds = where(
+                     (hist.f.cntrd[0] >= obs_mesh.spos[0][x_ind, y_ind])*\
+                     (hist.f.cntrd[0] <= obs_mesh.epos[0][x_ind, y_ind])*\
+                     (hist.f.cntrd[1] >= obs_mesh.spos[1][x_ind, y_ind])*\
+                     (hist.f.cntrd[1] <= obs_mesh.epos[1][x_ind, y_ind])
+                    )
+         
+        if plot_fits == True:
+            pylab.plot(hist.f.cntrd[0][inds], hist.f.cntrd[1][inds], 'w+', zorder=2)
+        
+        inds_gas = hist_obs.get_indicies([x_ind, y_ind])
+
+        gas_in_pixel = self.gas[inds_gas]
+
+        if plot_fits == True:
+            
+            pylab.plot(gas_in_pixel.x, gas_in_pixel.y, 'o', markersize=2, zorder=1)
+         
+            pylab.draw()
+                
+        ## make line ratios from the mock luminosities 
+        obs_mock_ratios = line_ratio_utils.ratios()                
+
+        for line_ratio in line_ratios:
+        
+            line1, line2 = line_ratio_utils.lines_involved(line_ratio)
+            
+            print line1, line2
+
+            flux1 = gas_in_pixel.get_mean_flux(line1, em_unit=self.em_unit, bin_area=area_obs_pixel)
+            flux2 = gas_in_pixel.get_mean_flux(line2, em_unit=self.em_unit, bin_area=area_obs_pixel)
+            
+            obs_mock_ratios.make_ratios(
+                                        {
+                                          line1:{'fluxKkms': flux1, 'err': params['error_bars']*flux1}, 
+                                          line2:{'fluxKkms': flux2, 'err': params['error_bars']*flux2}
+                                        },
+                                        ratios = [line_ratio],
+                                        em_unit = 'fluxKkms',
+                                        lum = {line1: flux1*area_obs_pixel, line2: flux2*area_obs_pixel}
+                                       )
+            '''
+            print line_ratio, obs_mock_ratios[line_ratio]
+            
+            obs_mock_ratios.species_and_codes()
+            '''
+        #
+        
+        ## fitting
+        f = constraining.Xi2_line_ratios_single_component(obs_data = obs_mock_ratios, 
+                                                          model_data = model_em, 
+                                                          model_parms = grid_coords,
+                                                          line_ratios = line_ratios
+                                                          )
+
+        f.compute_model_line_ratios()
+
+        f.compute_Xi2()
+        
+        f.print_minima()
+
+        if plot_fits == True:
+            
+            fig = pylab.figure(figsize=(16,10))
+            
+            # plotting the line ratios in these axes
+            ax1 = fig.add_axes([0.05, 0.55, 0.25, 0.4])
+            ax2 = fig.add_axes([0.35, 0.55, 0.25, 0.4])
+
+            # plotting the line ratios
+            f.plot_results(fig = fig, ax = ax1)
+            #print '-------------------------'
+            f.plot_results(fig = fig, ax = ax2, no_gmech=True)
+            
+            # plotting the PDFs in these axes
+            axes = numpy.ndarray((2,4), 'object')
+            ys = 0.02
+            xsz, ysz = 0.2, 0.2
+            dx = 0.02
+            
+            axes[0,0] = fig.add_axes([0.05, 0.25, xsz, ysz]) 
+            axes[1,0] = fig.add_axes([0.05, ys, xsz, ysz]) 
+
+            axes[0,1] = fig.add_axes([0.05 + xsz + dx, 0.25, xsz, ysz]) 
+            axes[1,1] = fig.add_axes([0.05 + xsz + dx, ys, xsz, ysz]) 
+
+            axes[0,2] = fig.add_axes([0.05 + 2*(xsz + dx), 0.25, xsz, ysz]) 
+            axes[1,2] = fig.add_axes([0.05 + 2*(xsz + dx), ys, xsz, ysz]) 
+
+            axes[0,3] = fig.add_axes([0.05 + 3*(xsz + dx), 0.25, xsz, ysz]) 
+            axes[1,3] = fig.add_axes([0.05 + 3*(xsz + dx), ys, xsz, ysz]) 
+            pylab.show()
+            
+            #plotting the emission distribution in the pixel
+            if self.inspect_species != None:
+                gas_in_pixel.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
+                                               line=self.inspect_species,
+                                               log10xs=[True, True, True, False],
+                                               xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 27.0]],
+                                               in_axes=axes
+                                               )
+        #computing the averages of the physical parameters of the particles inside the pixel 
+        #-----------------------------------------------------------------------------------
+        def get_pixel_mean_info(weights=None):
+            
+            means = collections.OrderedDict()
+            
+            if weights == None:
+                
+                means['n']  = log10(gas_in_pixel.n.mean())
+                means['G0'] = log10(gas_in_pixel.G0.mean())
+                means['gm'] = log10(gas_in_pixel.gmech.mean())
+                means['Av'] = gas_in_pixel.Av.mean()
+                
+            else:
+
+                means['n']  = log10(numpy.average(gas_in_pixel.n, weights))
+                means['G0'] = log10(numpy.average(gas_in_pixel.G0, weights))
+                means['gm'] = log10(numpy.average(gas_in_pixel.gmech, weights))
+                means['Av'] = numpy.average(gas_in_pixel.Av, weights)
+                
+            return means
+        
+        means = get_pixel_mean_info()
+        #-----------------------------------------------------------------------------------
+                    
+        ##  computing the masses in the pixel
+        
+        ## estimating the mass of H and H2 from the fitted PDR model (with and without gmech)
+        PDR_parms, Xi2_min, PDR_parms_no_gmech, Xi2_min_no_gmech = f.get_model_parms_for_min_Xi2()
+        
+        area_kpc2 = area_obs_pixel
+        area_cm2 = area_kpc2 * 1000.0**2 * mylib.units.PC2CM**2.0
+        
+        ## getting the column densities of H and H2
+        log10_n, log10_G0, log10_gmech, Av = PDR_parms
+
+        mesh_index = arxvPDR.get_mesh_index(x = log10_n, y = log10_G0, z = log10_gmech)
+        
+        arxvPDR.mshTmp.setData(arxvPDR.meshes[mesh_index])
+        
+        NH, NH2 = arxvPDR.mshTmp.getColumnDensity(specsStrs = ['H', 'H2'], maxAv = Av)
+        
+        mH_1e9_m_sun = (NH * area_cm2 * 1.67e-27) / (1e9 * M_SUN_SI)
+        mH2_1e9_m_sun = (NH2 * area_cm2 * (2.0*1.67e-27)) / (1e9 * M_SUN_SI)  
+                             
+        ## getting the column densities of H and H2 (when no gmech is assumed)
+        log10_n_no_gmech, log10_G0_no_gmech, log10_gmech_no_gmech, Av_no_gmech = PDR_parms_no_gmech
+        
+        mesh_index_no_gmech = arxvPDR.get_mesh_index(x = log10_n_no_gmech,
+                                                     y = log10_G0_no_gmech,
+                                                     z = log10_gmech_no_gmech)
+        
+        arxvPDR.mshTmp.setData(arxvPDR.meshes[mesh_index_no_gmech])
+        
+        NH_no_gmech, NH2_no_gmech = arxvPDR.mshTmp.getColumnDensity(specsStrs = ['H', 'H2'], maxAv = Av_no_gmech)
+        
+        mH_no_gmech_1e9_m_sun = (NH_no_gmech * area_cm2 * 1.67e-27) / (1e9 * M_SUN_SI)
+        mH2_no_gmech_1e9_m_sun = (NH2_no_gmech * area_cm2 * (2.0*1.67e-27)) / (1e9 * M_SUN_SI)  
+
+        print 'm(H)             = %.5f  m(H2) = %.5f m(H + H2) = %.5f' % (mH_1e9_m_sun, mH2_1e9_m_sun, mH_1e9_m_sun + mH2_1e9_m_sun)
+        print 'm(H)  (no gmech) = %.5f  m(H2) = %.5f m(H + H2) = %.5f' % (mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun, mH_no_gmech_1e9_m_sun + mH2_no_gmech_1e9_m_sun)
+        print '                                      m_gas_sim       = %.5f' % ((m_gas[inds_gas].sum()/100.0)  / (1e9 * M_SUN_SI))
+
+        def gen_fit_string():
+            
+            strng = 'fit parameters\n' 
+            strng += '     with gmech : '
+            strng += r'$\log_{10}$[n$_{\rm gas}]$ = %-+.2f' % log10_n + ' '
+            strng += r'$\log_{10}$[G$_0]$ = %-+.2f' % log10_G0 + ' '
+            strng += r'$\log_{10}$[$\Gamma_{\rm mech}$] = %-+.2f' % log10_gmech + ' '
+            strng += r'$A_V$ = %-+.2f' % Av + '\n'
+
+            strng += 'without gmech : '
+            strng += r'$\log_{10}$[n$_{\rm gas}]$ = %-+.2f' % log10_n_no_gmech + ' '
+            strng += r'$\log_{10}$[G$_0]$ = %-+.2f' % log10_G0_no_gmech + ' '
+            strng += r'$\log_{10}$[$\Gamma_{\rm mech}$] = %-+.2f' % log10_gmech_no_gmech + ' '
+            strng += r'$A_V$ = %-+.2f' % Av_no_gmech + '\n'
+            
+            return strng
+        
+        def gen_pixel_means_string(means):
+            
+            strng  = '    pixel means : '
+
+            strng += r'$\log_{10}$[n$_{\rm gas}]$ = %-+.2f' % means['n'] + ' '
+            strng += r'$\log_{10}$[G$_0]$ = %-+.2f' % means['G0'] + ' '
+            strng += r'$\log_{10}$[$\Gamma_{\rm mech}$] = %-+.2f' % means['gm'] + ' '
+            strng += r'$A_V$ = %-+.2f' % means['Av'] + '\n'
+            
+            return strng
+        
+        if plot_fits == True:
+            
+            strng = gen_fit_string()            
+            pylab.figtext(0.61, 0.8, strng, size=10)
+            
+            # the reduced Xi2
+            n_lines = float(line_ratio_utils.all_lines_involved(self.line_ratios).size)
+            
+            ax1.set_title(r'with gmech ' + r'$\chi^2 = %.3f$' % (Xi2_min/ (n_lines - 4.0)))
+            ax2.set_title(r'no gmech ' + r'$\chi^2 = %.3f$' % (Xi2_min_no_gmech/(n_lines - 3.0)))
+
+            strng = 'pixel coordinates = [%d, %d]' % (x_ind - self.hist_obs.f.shape[0]/2, 
+                                                       y_ind - self.hist_obs.f.shape[1]/2)            
+            pylab.figtext(0.61, 0.9, strng, size=10)                        
+            
+            strng = gen_pixel_means_string(means)
+            pylab.figtext(0.61, 0.78, strng, size=10)
+            
+        print 'mean values in the pixel'    
+        print means 
+        
+        print 'line ratios of the observed and the best fit model (whichever with or without gmech)'
+        f.get_model_em_for_min_Xi2()
+        self.contraining = f
+        self.means = means
+        
+        self.gas_in_pixel = gas_in_pixel
+        
+        if self.clean == True:
+            del self.gas_in_pixel
+        
+        print 'time processing = %.2f seconds' % (time.time() - t0)
+        return mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun
+
+    def plot_gas_pdf_in_pixel(self, x_ind, y_ind):
+        
+        print 'disceting the gas'
+
+        hist = self.hist
+        hist_obs = self.hist_obs
+        obs_mesh = self.hist_obs.f
+        params = self.params
+        line_ratios = self.line_ratios    # line ratio strings
+        params = self.params
+        gas = self.gas
+        ######################################################
+        
+        area_obs_pixel = numpy.product(obs_mesh.dl)
+
+        pylab.plot(obs_mesh.cntrd[0][x_ind, y_ind],     
+                   obs_mesh.cntrd[1][x_ind, y_ind],     
+                   'r+', markersize=10)
+
+        ## plotting the centroids of the pixels of the pixel of the map inside the clicked pixel
+        inds = where(
+                     (hist.f.cntrd[0] >= obs_mesh.spos[0][x_ind, y_ind])*\
+                     (hist.f.cntrd[0] <= obs_mesh.epos[0][x_ind, y_ind])*\
+                     (hist.f.cntrd[1] >= obs_mesh.spos[1][x_ind, y_ind])*\
+                     (hist.f.cntrd[1] <= obs_mesh.epos[1][x_ind, y_ind])
+                    )
+
+        pylab.plot(hist.f.cntrd[0][inds], hist.f.cntrd[1][inds], 'c+')
+        
+        inds_gas = hist_obs.get_indicies([x_ind, y_ind])
+
+        pylab.plot(gas.x[inds_gas], gas.y[inds_gas], 'o')
+        
+        pylab.draw()
+        
+        gas_in_pixel = gas[inds_gas].copy()
+
+        specs = gas_in_pixel.get_species_with_em()
+        
+        #weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
+        #gas_in_pixel.use_weights(weighting='original-only', weights_filename = weights_filename)
+        #gas_in_pixel.use_weights(weighting='by-number', weights_filename = weights_filename)
+        #gas_in_pixel.use_weights(weighting='mathced', weights_filename = weights_filename)
+        
+        if False:
+
+            fig = pylab.figure()
+            ax = pylab.subplot(111)
+            
+            for spec in specs:
+                
+                print 'getting the emission of %s' % spec
+                
+                idx, total_lum = gas_in_pixel.get_total_luminosity_ladder(spec, em_unit=self.em_unit)
+            
+                flux = total_lum / area_obs_pixel
+                
+                plt, = ax.semilogy(idx+1, flux, label=spec)
+            
+            ax.legend(loc=0)
+            ax.set_xlabel(r'$J_{\rm up}$')
+            ax.set_ylabel('Flux')
+        
+        self.gas_in_pixel = gas_in_pixel
+        
+        line = 'CO1-0'
+         
+        #gas_in_pixel.get_emission_pdf(qx='n', line='CO1-0', log10x=True, nbins=100, xrng=[-3, 6])
+        #ax1, ax2 = gas_in_pixel.get_emission_pdf(qx='n', line=line, log10x=True, nbins=50, xrng=[-3, 6], wtitle='sampled')
+        #ax1, ax2 = gas_in_pixel.get_emission_pdf(qx='G0', line=line, log10x=True, nbins=50, xrng=[-3, 6], wtitle='sampled')
+
+        gas_in_pixel.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
+                                       line='CO1-0',
+                                       log10xs=[True, True, True, False],
+                                       xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 27.0]],
+                                       )
+        if False:
+            self.gas_in_pixel_original = gas_in_pixel.copy()
+            self.gas_in_pixel_original.set_radii(weighting='original-only', 
+                                                 rundir=self.params['rundir'], 
+                                                 snap_index=self.params['snap_index'])
+            
+            self.gas_in_pixel_original.get_emission_pdf(qx='n', line=line, log10x=True, nbins=50, 
+                                                       xrng=[-3, 6], wtitle='original', in_ax1=ax1, in_ax2=ax2,
+                                                       linestyle='--')
+        #pylab.figure()
+        #gs = self.gas_in_pixel
+        #pylab.loglog(gs.n[gs.get_inds_has_children()], gs.radius[gs.get_inds_has_children()], '.')
+
                 
     def estimate_mass_in_all_pixels(self):
         
@@ -1264,298 +1607,6 @@ class galaxy_gas_mass_estimator(object):
         print 'sdev parms SPH          = %-+8.3f %-+8.3f %-+8.3f %-+8.3f' % tuple(numpy.array(means_all).std(axis=0))
         
         return pixels_info
-    
-    def estimate_mass_in_pixel(self, x_ind=None, y_ind=None, plot_fits=False):
-
-        hist = self.hist
-        hist_obs = self.hist_obs
-        obs_mesh = self.hist_obs.f
-        line_ratios = self.line_ratios
-        luminosity = self.luminosity_maps
-        params = self.params
-        model_em = self.model_em 
-        grid_coords = self.grid_coords 
-        arxvPDR = self.arxvPDR
-        m_gas = self.gas.mass
-        
-        ######################################################
-        self.inspect_species = 'HCN1-0'
-        
-        area_obs_pixel = numpy.product(obs_mesh.dl)
-        
-        if plot_fits == True:
-            pylab.plot(obs_mesh.cntrd[0][x_ind, y_ind], 
-                       obs_mesh.cntrd[1][x_ind, y_ind], 
-                       'r+', markersize=10)
-
-        ## plotting the centroids of the pixels of the pixel of the map inside the clicked pixel
-        inds = where(
-                     (hist.f.cntrd[0] >= obs_mesh.spos[0][x_ind, y_ind])*\
-                     (hist.f.cntrd[0] <= obs_mesh.epos[0][x_ind, y_ind])*\
-                     (hist.f.cntrd[1] >= obs_mesh.spos[1][x_ind, y_ind])*\
-                     (hist.f.cntrd[1] <= obs_mesh.epos[1][x_ind, y_ind])
-                    )
-         
-        if plot_fits == True:
-            pylab.plot(hist.f.cntrd[0][inds], hist.f.cntrd[1][inds], 'w+', zorder=2)
-        
-        inds_gas = hist_obs.get_indicies([x_ind, y_ind])
-
-        gas_in_pixel = self.gas[inds_gas]
-
-        if plot_fits == True:
-            
-            pylab.plot(gas_in_pixel.x, gas_in_pixel.y, 'o', markersize=2, zorder=1)
-        
-            pylab.draw()
-                
-        ## make line ratios from the mock luminosities 
-        obs_mock_ratios = line_ratio_utils.ratios()                
-
-        for line_ratio in line_ratios:
-        
-            line1, line2 = line_ratio_utils.lines_involved(line_ratio)
-            
-            print line1, line2
-
-            flux1 = gas_in_pixel.get_mean_flux(line1, em_unit=self.em_unit, bin_area=area_obs_pixel)
-            flux2 = gas_in_pixel.get_mean_flux(line2, em_unit=self.em_unit, bin_area=area_obs_pixel)
-            
-            obs_mock_ratios.make_ratios(
-                                        {
-                                          line1:{'fluxKkms': flux1, 'err': params['error_bars']*flux1}, 
-                                          line2:{'fluxKkms': flux2, 'err': params['error_bars']*flux2}
-                                        },
-                                        ratios = [line_ratio],
-                                        em_unit = 'fluxKkms',
-                                        lum = {line1: flux1*area_obs_pixel, line2: flux2*area_obs_pixel}
-                                       )
-            '''
-            print line_ratio, obs_mock_ratios[line_ratio]
-            
-            obs_mock_ratios.species_and_codes()
-            '''
-        #
-        
-        ## fitting
-        f = constraining.Xi2_line_ratios_single_component(obs_data = obs_mock_ratios, 
-                                                          model_data = model_em, 
-                                                          model_parms = grid_coords,
-                                                          line_ratios = line_ratios
-                                                          )
-
-        f.compute_model_line_ratios()
-
-        f.compute_Xi2()
-        
-        f.print_minima()
-
-        if plot_fits == True:
-            
-            fig = pylab.figure(figsize=(16,10))
-            
-            # plotting the line ratios in these axes
-            ax1 = fig.add_axes([0.05, 0.55, 0.25, 0.4])
-            ax2 = fig.add_axes([0.35, 0.55, 0.25, 0.4])
-
-            # plotting the line ratios
-            f.plot_results(fig = fig, ax = ax1)
-            #print '-------------------------'
-            f.plot_results(fig = fig, ax = ax2, no_gmech=True)
-            
-            # plotting the PDFs in these axes
-            axes = numpy.ndarray((2,4), 'object')
-            ys = 0.02
-            xsz, ysz = 0.2, 0.2
-            dx = 0.02
-            
-            axes[0,0] = fig.add_axes([0.05, 0.25, xsz, ysz]) 
-            axes[1,0] = fig.add_axes([0.05, ys, xsz, ysz]) 
-
-            axes[0,1] = fig.add_axes([0.05 + xsz + dx, 0.25, xsz, ysz]) 
-            axes[1,1] = fig.add_axes([0.05 + xsz + dx, ys, xsz, ysz]) 
-
-            axes[0,2] = fig.add_axes([0.05 + 2*(xsz + dx), 0.25, xsz, ysz]) 
-            axes[1,2] = fig.add_axes([0.05 + 2*(xsz + dx), ys, xsz, ysz]) 
-
-            axes[0,3] = fig.add_axes([0.05 + 3*(xsz + dx), 0.25, xsz, ysz]) 
-            axes[1,3] = fig.add_axes([0.05 + 3*(xsz + dx), ys, xsz, ysz]) 
-            pylab.show()
-            
-            #plotting the emission distribution in the pixel
-            gas_in_pixel.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
-                                           line=self.inspect_species,
-                                           log10xs=[True, True, True, False],
-                                           xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 27.0]],
-                                           in_axes=axes
-                                           )
-        #computing the averages of the physical parameters of the particles inside the pixel 
-        #-----------------------------------------------------------------------------------
-        means = collections.OrderedDict()
-        
-        means['n']  = log10(gas_in_pixel.n.mean())
-        means['G0'] = log10(gas_in_pixel.G0.mean())
-        means['gm'] = log10(gas_in_pixel.gmech.mean())
-        means['Av'] = gas_in_pixel.Av.mean()
-        #-----------------------------------------------------------------------------------
-                    
-        ##  computing the masses in the pixel
-        
-        ## estimating the mass of H and H2 from the fitted PDR model (with and without gmech)
-        PDR_parms, Xi2_min, PDR_parms_no_gmech, Xi2_min_no_gmech = f.get_model_parms_for_min_Xi2()
-        
-        area_kpc2 = area_obs_pixel
-        area_cm2 = area_kpc2 * 1000.0**2 * mylib.units.PC2CM**2.0
-        
-        ## getting the column densities of H and H2
-        log10_n, log10_G0, log10_gmech, Av = PDR_parms
-
-        mesh_index = arxvPDR.get_mesh_index(x = log10_n, y = log10_G0, z = log10_gmech)
-        
-        arxvPDR.mshTmp.setData(arxvPDR.meshes[mesh_index])
-        
-        NH, NH2 = arxvPDR.mshTmp.getColumnDensity(specsStrs = ['H', 'H2'], maxAv = Av)
-        
-        mH_1e9_m_sun = (NH * area_cm2 * 1.67e-27) / (1e9 * M_SUN_SI)
-        mH2_1e9_m_sun = (NH2 * area_cm2 * (2.0*1.67e-27)) / (1e9 * M_SUN_SI)  
-                             
-        ## getting the column densities of H and H2 (when no gmech is assumed)
-        log10_n_no_gmech, log10_G0_no_gmech, log10_gmech_no_gmech, Av_no_gmech = PDR_parms_no_gmech
-        
-        mesh_index_no_gmech = arxvPDR.get_mesh_index(x = log10_n_no_gmech,
-                                                     y = log10_G0_no_gmech,
-                                                     z = log10_gmech_no_gmech)
-        
-        arxvPDR.mshTmp.setData(arxvPDR.meshes[mesh_index_no_gmech])
-        
-        NH_no_gmech, NH2_no_gmech = arxvPDR.mshTmp.getColumnDensity(specsStrs = ['H', 'H2'], maxAv = Av_no_gmech)
-        
-        mH_no_gmech_1e9_m_sun = (NH_no_gmech * area_cm2 * 1.67e-27) / (1e9 * M_SUN_SI)
-        mH2_no_gmech_1e9_m_sun = (NH2_no_gmech * area_cm2 * (2.0*1.67e-27)) / (1e9 * M_SUN_SI)  
-
-        print 'm(H)             = %.5f  m(H2) = %.5f m(H + H2) = %.5f' % (mH_1e9_m_sun, mH2_1e9_m_sun, mH_1e9_m_sun + mH2_1e9_m_sun)
-        print 'm(H)  (no gmech) = %.5f  m(H2) = %.5f m(H + H2) = %.5f' % (mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun, mH_no_gmech_1e9_m_sun + mH2_no_gmech_1e9_m_sun)
-        print '                                      m_gas_sim       = %.5f' % ((m_gas[inds_gas].sum()/100.0)  / (1e9 * M_SUN_SI))
-
-        if plot_fits == True:
-            strng = '     with gmech : '
-            strng += r'$\log_{10}$[n$_{\rm gas}]$ = %-+.2f' % log10_n + ' '
-            strng += r'$\log_{10}$[G$_0]$ = %-+.2f' % log10_G0 + ' '
-            strng += r'$\log_{10}$[$\Gamma_{\rm mech}$] = %-+.2f' % log10_gmech + ' '
-            strng += r'$A_V$ = %-+.2f' % Av + '\n'
-
-            strng += 'without gmech : '
-            strng += r'$\log_{10}$[n$_{\rm gas}]$ = %-+.2f' % log10_n_no_gmech + ' '
-            strng += r'$\log_{10}$[G$_0]$ = %-+.2f' % log10_G0_no_gmech + ' '
-            strng += r'$\log_{10}$[$\Gamma_{\rm mech}$] = %-+.2f' % log10_gmech_no_gmech + ' '
-            strng += r'$A_V$ = %-+.2f' % Av_no_gmech + '\n'
-             
-            ax1.set_title('with gmech')
-            ax2.set_title('no gmech')
-            
-            pylab.figtext(0.6, 0.8, strng, size=8)
-            
-        
-        print 'mean values in the pixel'    
-        print means 
-        
-        print 'line ratios of the observed and the best fit model (whichever with or without gmech)'
-        f.get_model_em_for_min_Xi2()
-        self.contraining = f
-        self.means = means
-        
-        self.gas_in_pixel = gas_in_pixel
-        
-        return mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun
-
-    def plot_gas_pdf_in_pixel(self, x_ind, y_ind):
-        
-        print 'disceting the gas'
-
-        hist = self.hist
-        hist_obs = self.hist_obs
-        obs_mesh = self.hist_obs.f
-        params = self.params
-        line_ratios = self.line_ratios    # line ratio strings
-        params = self.params
-        gas = self.gas
-        ######################################################
-        
-        area_obs_pixel = numpy.product(obs_mesh.dl)
-
-        pylab.plot(obs_mesh.cntrd[0][x_ind, y_ind],     
-                   obs_mesh.cntrd[1][x_ind, y_ind],     
-                   'r+', markersize=10)
-
-        ## plotting the centroids of the pixels of the pixel of the map inside the clicked pixel
-        inds = where(
-                     (hist.f.cntrd[0] >= obs_mesh.spos[0][x_ind, y_ind])*\
-                     (hist.f.cntrd[0] <= obs_mesh.epos[0][x_ind, y_ind])*\
-                     (hist.f.cntrd[1] >= obs_mesh.spos[1][x_ind, y_ind])*\
-                     (hist.f.cntrd[1] <= obs_mesh.epos[1][x_ind, y_ind])
-                    )
-
-        pylab.plot(hist.f.cntrd[0][inds], hist.f.cntrd[1][inds], 'c+')
-        
-        inds_gas = hist_obs.get_indicies([x_ind, y_ind])
-
-        pylab.plot(gas.x[inds_gas], gas.y[inds_gas], 'o')
-        
-        pylab.draw()
-        
-        gas_in_pixel = gas[inds_gas].copy()
-
-        specs = gas_in_pixel.get_species_with_em()
-        
-        #weights_filename = params['rundir'] + '/firun/' + 'weights_func.%06d.npz' % params['snap_index']
-        #gas_in_pixel.use_weights(weighting='original-only', weights_filename = weights_filename)
-        #gas_in_pixel.use_weights(weighting='by-number', weights_filename = weights_filename)
-        #gas_in_pixel.use_weights(weighting='mathced', weights_filename = weights_filename)
-        
-        if False:
-
-            fig = pylab.figure()
-            ax = pylab.subplot(111)
-            
-            for spec in specs:
-                
-                print 'getting the emission of %s' % spec
-                
-                idx, total_lum = gas_in_pixel.get_total_luminosity_ladder(spec, em_unit=self.em_unit)
-            
-                flux = total_lum / area_obs_pixel
-                
-                plt, = ax.semilogy(idx+1, flux, label=spec)
-            
-            ax.legend(loc=0)
-            ax.set_xlabel(r'$J_{\rm up}$')
-            ax.set_ylabel('Flux')
-        
-        self.gas_in_pixel = gas_in_pixel
-        
-        line = 'CO1-0'
-         
-        #gas_in_pixel.get_emission_pdf(qx='n', line='CO1-0', log10x=True, nbins=100, xrng=[-3, 6])
-        #ax1, ax2 = gas_in_pixel.get_emission_pdf(qx='n', line=line, log10x=True, nbins=50, xrng=[-3, 6], wtitle='sampled')
-        #ax1, ax2 = gas_in_pixel.get_emission_pdf(qx='G0', line=line, log10x=True, nbins=50, xrng=[-3, 6], wtitle='sampled')
-
-        gas_in_pixel.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
-                                       line='CO1-0',
-                                       log10xs=[True, True, True, False],
-                                       xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 27.0]],
-                                       )
-        if False:
-            self.gas_in_pixel_original = gas_in_pixel.copy()
-            self.gas_in_pixel_original.set_radii(weighting='original-only', 
-                                                 rundir=self.params['rundir'], 
-                                                 snap_index=self.params['snap_index'])
-            
-            self.gas_in_pixel_original.get_emission_pdf(qx='n', line=line, log10x=True, nbins=50, 
-                                                       xrng=[-3, 6], wtitle='original', in_ax1=ax1, in_ax2=ax2,
-                                                       linestyle='--')
-        #pylab.figure()
-        #gs = self.gas_in_pixel
-        #pylab.loglog(gs.n[gs.get_inds_has_children()], gs.radius[gs.get_inds_has_children()], '.')
         
 class gas_set(Particles):
 
@@ -1615,7 +1666,29 @@ class gas_set(Particles):
                 setattr(gas_ret, attr_name, data)
                         
         return gas_ret
-     
+
+    def delete(self):            
+    
+        for attr_name in self.all_attributes():
+            
+            if attr_name in ['connected_components', 'mass_segregation_Gini_coefficient', 'total_mass',
+                             'bound_subset', 'LagrangianRadii', 'acceleration', 'thermal_energy',
+                             'total_angular_momentum', 'get_binaries', 'angular_momentum', 'potential',
+                             'Qparameter', 'potential_energy', 'center_of_mass', 'potential_energy_in_field',
+                             'moment_of_inertia', 'cluster_core', 'total_momentum', 
+                             'new_particle_from_cluster_core', 'position', 'kinetic_energy',
+                             'densitycentre_coreradius_coredens', 'oblateness', 'rotate', 'move_to_center',
+                             'center_of_mass_velocity', 'virial_radius', 'total_radius', 'scale_to_standard',
+                             'find_closest_particle_to', 'velocity', 'binaries', 'specific_kinetic_energy']:
+                continue
+            
+            data = getattr(self, attr_name)
+            
+            if type(getattr(self, attr_name)) == type(numpy.ndarray([])):
+            
+                del data
+                print '\t deleting attribute %s' % attr_name
+                        
     def copy_attr_from_amuse_set(self, gas_amuse, attr_list):
         '''copies the attributes from the amuse set to the gas_set'''
         
@@ -2818,7 +2891,7 @@ def load_original_n_r_ids(rundir, snap_index):
 
 def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
     ########################
-    figure(figsize=(18,8))
+    figure(figsize=(16,8))
     ###
     # getting the fit function for the radii as a function of density
     # linear fit in log scale
@@ -2901,7 +2974,7 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
 
     subplot(2, 3, 4)
     for log10G0 in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
-        plot_luminosity_vs_n([log10G0, -23, 5.0], 0)
+        plot_luminosity_vs_n([log10G0, -22, 10.0], 0)
     xlim(10.0**nmin, 10.0**nmax)
     ylim(1e-6, 1e12)
     legend(loc=0, prop={'size':8})
@@ -2915,7 +2988,7 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
 
     subplot(2, 3, 6)
     for Av in [0.1, 1.0, 5.0, 10.0, 20.0]:
-        plot_luminosity_vs_n([4.0, -22.0, Av], 2)
+        plot_luminosity_vs_n([2.0, -22.0, Av], 2)
     xlim(10.0**nmin, 10.0**nmax)
     ylim(1e-6, 1e12)
     legend(loc=0, prop={'size':8})

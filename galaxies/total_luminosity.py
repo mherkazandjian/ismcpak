@@ -50,9 +50,9 @@ params = {
                         },
           'check'   : 'default',          
           'em_unit'   : 'em_fluxKkms', # 'em_fluxcgs', 'em_fluxKkms'
-#          'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'CS1-0', 'SiO1-0', 'HCO+1-0'],
-          'lines'     : ['CO1-0'],
-          'save_maps' : False,
+          'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'CS1-0', 'SiO1-0', 'HCO+1-0'],
+#          'lines'     : ['CO1-0'],
+          'save_data' : False,
         }
 
 #############################################################################################################
@@ -121,11 +121,11 @@ gas = gas[hist.inds_in]
 
 pylab.figure()
 
-#specsStrs =  ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'SiO']
-#colors    =  ['k' , 'r'   , 'g'  , 'b'  , 'c'   , 'y' , 'm']
+specsStrs =  ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'SiO']
+colors    =  ['k' , 'r'   , 'g'  , 'b'  , 'c'   , 'y' , 'm']
 
-specsStrs =  ['CO']
-colors    =  ['k']
+#specsStrs =  ['CO']
+#colors    =  ['k']
 
 #specsStrs =  ['HCN', 'HNC']
 #colors    =  ['g'  , 'b'  ]
@@ -142,6 +142,8 @@ sym       = '-'
 
 em_unit = params['em_unit'].replace('em_flux', '')
 
+lum_ladder = {} 
+
 for i, specStr in enumerate(specsStrs):
     
     print specStr
@@ -157,6 +159,8 @@ for i, specStr in enumerate(specsStrs):
     
     pylab.semilogy(x+1, y, colors[i] + sym, label=specStr)
 
+    lum_ladder[specStr] = {'Jup': x+1, 'L': y}
+    
 print 'getting the luminsoty of the original set'
 if True:
     ## plotting the total luminosity of the original points
@@ -164,6 +168,7 @@ if True:
     
     sym       = '--'
     
+    lum_ladder_original = {}
     
     for i, specStr in enumerate(specsStrs):
         
@@ -179,6 +184,8 @@ if True:
             raise ValueError('unknown unit %s' % em_unit)
         
         pylab.semilogy(x+1, y, colors[i] + sym)
+
+        lum_ladder_original[specStr] = {'Jup': x+1, 'L': y}
     
 pylab.legend(loc=0)
 

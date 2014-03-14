@@ -13,8 +13,8 @@ import meshUtils
 #home = '/home/mher/data2/mher'
 home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
-specStr_PDR   = 'HCN'
-specStr_Radex = 'HCN'
+specStr_PDR   = 'CO'
+specStr_Radex = 'CO'
 
 parms = {
          #path to the database files
@@ -28,7 +28,8 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMeshTest1-copy2/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
-         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',
+         #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/', # <==============
+         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0/', # <==============
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
@@ -112,7 +113,7 @@ parms = {
                              'lineWidth'            : 1.0,
                              'verbose'              : False,
                              'maxDisplayTranistion' : 20,
-                             'quantity'             : 'fluxKkms',  # 'fluxKkms', 'fluxcgs' 
+                             'quantity'             : 'fluxcgs',  # 'fluxKkms', 'fluxcgs' 
                              ###----------extra convergence params-----------------------
                              'checkOutputIntegrity'       : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
                              'popDensSumExpected'         : 1.0, 
@@ -248,6 +249,30 @@ if False:
                                            )
     
     ## interpolation functions for intergrated quantities (N(x), gamma, lamda..)
-    pass
+    F = arxv.get_4D_interp_quantity(
+                                    info={'source':'pdr'}, 
+                                    save=True,
+                                    Avs  = [0.01, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
+                                            12, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 30.0],
+                                    func = meshUtils.pdr_mesh_integrated_quantity,
+                                    quantity=['fineStructureCoolingComponents', 'C+', 'rate', '1-0'],
+                                    func_kw={
+                                             'as_log10':True
+                                            }, 
+                                    sectioned=True,
+                                   )
+
+    F = arxv.get_4D_interp_quantity(
+                                    info={'source':'pdr'}, 
+                                    save=True,
+                                    Avs  = [0.0, 0.01, 0.1, 1.0],
+                                    func = meshUtils.pdr_mesh_general_quantity,
+                                    quantity=['therm', 'heating'],
+                                    func_kw={
+                                             'as_log10':True
+                                            }, 
+                                    sectioned=True,
+                                   )
+    
 
 print 'done'

@@ -15,6 +15,7 @@ from mylib.utils.misc   import fetchNestedDtypeValue, scale
 from ismUtils   import *
 from radex      import *
 from scipy      import interpolate
+import scipy
 import chemicalNetwork
 import lineDict
 
@@ -293,21 +294,24 @@ class meshArxv(object):
         #sections in gm within which saperate interpolation functions will be built.
         # .. note:: make sure there are enough points in the database within each section
         self.intervals_z = [ 
-                         [-50.0, -35.0],  
-                         [-35.0, -34.0], [-34.0, -33.0], [-33.0, -32.0], [-32.0, -31.0], [-31.0, -30.0],    
-                         [-30.0, -29.0], [-29.0, -28.0], [-28.0, -27.0], [-27.0, -26.0], [-26.0, -25.0],    
-                         [-25.0, -24.0], [-24.0, -23.0], [-23.0, -22.0], [-22.0, -21.0], [-21.0, -20.0],    
-                         #[-20.0, -13.0],
+                            [-50.0, -35.0],      
+                            [-35.0, -34.0], [-34.0, -33.0], [-33.0, -32.0], [-32.0, -31.0], [-31.0, -30.0],    
+                            [-30.0, -29.0], [-29.0, -28.0], [-28.0, -27.0], [-27.0, -26.0], [-26.0, -25.0],    
+                            [-25.0, -24.0], [-24.0, -23.0], [-23.0, -22.0], [-22.0, -21.0], [-21.0, -20.0],    
+#                            [-20.0, -19.0], [-19.0, -18.0], [-18.0, -17.0], [-17.0, -16.0], [-16.0, -15.0],    
+#                            [-15.0, -14.0], [-14.0, -13.0],
+                            [-20.0, -13.0],
                        ]
         self.ghost_z = 1e-6 #1.1
     
         #sections in Av within which saperate interpolation functions will be built.
         # .. note:: make sure there are enough points in the database within each section
-        self.intervals_t = [  [0.01, 1.0],  [1.0, 2.0],   [2.0, 3.0],
-                         [3.0, 4.0],   [4.0, 5.0],   [5.0, 6.0],   [6.0, 7.0],   [7.0, 8.0],   [8.0, 9.0], [9.0, 10.0],
-                         [10.0, 12.0], [12.0, 14.0], [14.0, 16.0], [16.0, 18.0], [18.0, 20.0], 
-                         [20.0, 22.0], [22.0, 24.0], [24.0, 26.0], [26.0, 28.0], #, [28.0, 30.0],
-                       ] 
+        self.intervals_t = [ 
+                             [0.01, 1.0],  [1.0, 2.0],   [2.0, 3.0], [3.0, 4.0],   [4.0, 5.0],   
+                             [5.0, 6.0],   [6.0, 7.0],   [7.0, 8.0],   [8.0, 9.0], [9.0, 10.0],
+                             [10.0, 12.0], [12.0, 14.0], [14.0, 16.0], [16.0, 18.0], [18.0, 20.0], 
+                             [20.0, 22.0], [22.0, 24.0], [24.0, 26.0], [26.0, 28.0], #, [28.0, 30.0],
+                           ] 
     
         self.ghost_t = 1e-6 #1.1
         
@@ -1290,7 +1294,26 @@ class meshArxv(object):
 
     def apply_function_to_all_meshes(self, func, func_kw = None):
         """Applies func to all the meshes in self.meshes. func_kw are passed to func. The results are 
-        returned as a list which is the same length as self.nMeshes"""
+        returned as a list which is the same length as self.nMeshes
+        
+        
+        examples: 
+        
+        #to get the integrated intensity of a fine-structure cooling line for example
+        x = arxv.apply_function_to_all_meshes(meshUtils.pdr_mesh_integrated_quantity, 
+                                              func_kw={'quantity':['fineStructureCoolingComponents', 'C+', 'rate', '1-0'], 
+                                              'up_to_Av':10.0})
+    
+        #to get a value at a certain Av, here we extract the gas temparature at Av=1.0
+        x = arxv.apply_function_to_all_meshes(meshUtils.pdr_mesh_general_quantity, 
+                                          func_kw={
+                                                   'quantity':['state', 'gasT'], 
+                                                   'Av':1.0, 
+                                                   'as_log10':True
+                                                  }
+                                          )
+
+        """
         
         if func_kw == None: func_kw = {}
             
@@ -1300,7 +1323,7 @@ class meshArxv(object):
             self.mshTmp.setData(mesh)
             v = func(self.mshTmp, **func_kw)
             dataRet.append(v)
-        return dataRet
+        return numpy.array(dataRet)
 
     def apply_function_to_all_radex_meshes(self, func, func_kw = None):
         """Applies func to all the radex meshes in self.meshesRadex. func_kw are passed to func. The 
@@ -1507,9 +1530,6 @@ class meshArxv(object):
         
         return ()
 
-    def construct_4D_interpolation_function_sectioned(self, ):
-        pass 
-    
     def computeAndSetInterpolationFunctions(self, *args, **kwargs):
         """compute the 3D interpolation functions which will be used to compute the 2D grids.
             sets the attributes : self.grdInterp_f, self.abunGridInterp_f, self.colDensGridInterp_f
@@ -3384,7 +3404,7 @@ class meshArxv(object):
         quantity    = 'fluxcgs'
                 
         for i,specStr in enumerate(specStrs):
-            Avs, vs = self.get_quantity_from_radex_meshes_vs_Av(mesh_indx,
+            Avs, vs = self.get_quantity_from_radex_mesh_vs_Av(mesh_indx,
                                                                 specStr, 
                                                                 quantity,
                                                                 transitions[i])
@@ -3413,7 +3433,7 @@ class meshArxv(object):
         pylab.show()
         self.logger.debug('exitting auxiliaray method')
         
-    def get_quantity_from_radex_meshes_vs_Av(self, mesh_indx, specStr, quantity, transition_idx):
+    def get_quantity_from_radex_mesh_vs_Av(self, mesh_indx, specStr, quantity, transition_idx):
         """returns a quantity vs Av from a certain mesh indicated by 'mesh_indx'
         from readeDbs. A tuple is reutured (Avs, quantity) where Avs is the
         visual extinction at which the quantities returned. Both are numpy arrays.
@@ -3797,6 +3817,70 @@ class meshArxv(object):
 
         return v_all_Av, data_all_Av
 
+    def get_pdr_quantity_from_all_meshes_for_Av_range(self, func=None, Avs=None, keep_nans=None, 
+                                                      quantity=None, func_kw=None):
+        '''gets the quantity (returned by 'func') from the pdr database for
+         the specified Avs in the Avs array.
+        
+        :param Avs: array specifiying the Avs.
+        
+        .. code-block:: python
+        
+          v, data = arxv.get_pdr_quantity_from_all_meshes_for_Av_range(
+                                                                      func = pdr_mesh_general_quantity
+                                                                      Avs  = [1.0, 2.0, 5.0, 10.0],
+                                                                      quantity=['fineStructureCoolingComponents', 'C+', 'rate', '1-0']
+                                                                      func_kw={
+                                                                              'as_log10':True
+                                                                              } 
+                                                                      )
+
+        if addition of func_kw, a keyword 'Av' is appended to that dict indicating the slice in Av. This
+        is done for each Av in the Avs array.
+        '''
+        
+        Avs_use = numpy.array(Avs)
+        
+        ## collecting the data from the database corresponding to all the data in Av avaiable
+        for i, Av in enumerate(Avs_use):
+
+            print '\t Av = %.3f' % Av
+                        
+            #making the func_kw dict which will be passed to func
+            if func_kw == None:
+                func_kw_pass = {}
+            else:
+                func_kw_pass = func_kw.copy()
+                
+            func_kw_pass['quantity'] = quantity
+            func_kw_pass['Av'] = Av
+                        
+            #getting the data corresponding to this Av
+            v = self.apply_function_to_all_meshes(func, func_kw_pass) 
+
+            v = numpy.array(v)
+                        
+            if keep_nans != None and keep_nans == True: 
+                xGrd, yGrd, zGrd = self.grid_x, self.grid_y, self.grid_z
+            else:
+                #keeping the points which are useful (finite ones)
+                inds_valid = numpy.isfinite(v)
+                v = v[inds_valid]
+                xGrd, yGrd, zGrd = self.grid_x[inds_valid], self.grid_y[inds_valid], self.grid_z[inds_valid]
+
+            AvGrd = numpy.ones(xGrd.shape, 'f')*Av
+            data = numpy.array([xGrd, yGrd, zGrd, AvGrd], dtype = numpy.float64).T
+                    
+            #soting the x,y,z,t, and v into arrays to be used later to construct the interpoaltion function
+            if i == 0:
+                data_all_Av = data
+                v_all_Av = v
+            else:
+                data_all_Av = numpy.vstack( (data_all_Av, data) )
+                v_all_Av = numpy.hstack( (v_all_Av, v) )
+
+        return v_all_Av, data_all_Av
+
     def get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range(self,
                                                                     sectioned=False,                                                                     
                                                                     **kwargs):
@@ -3843,7 +3927,7 @@ class meshArxv(object):
             F = interpolate.LinearNDInterpolator(data, v)
             setattr(F, 'get', F) 
         else:
-            F = interpolator_sectioned(data, v, ## not tested
+            F = interpolator_sectioned(data, v,
                                        intervals_z=self.intervals_z,     
                                        ghost_z=self.ghost_z,
                                        intervals_t=self.intervals_t,
@@ -3852,19 +3936,20 @@ class meshArxv(object):
 
         return F
 
-    def get_4D_interp_emission_func_from_pdr_db_for_Av_range(self,
+    def get_4D_interp_quantity_func_from_pdr_db_for_Av_range(self,
                                                              sectioned=False,                                                                     
                                                              **kwargs):
-        '''Retuns an interpolation function of a quantity from the PDR database.  This method takes the same
-         parmaeters as get_emission_from_all_radex_dbs_for_Av_range and takes the same keywords.  The 
-         returned interpolation function returns the emission info given logn, logG0, logGmech and Av.  
+        '''Retuns an interpolation function of a quantity from the PDR database. The 
+         returned interpolation function returns the quantity given logn, logG0, logGmech and Av.  
         
         .. code-block:: python
         
-            F = arxv.get_4D_interp_emission_func_from_pdr_db_for_Av_range(
-                                                                         species = '13CO',
+            F = arxv.get_4D_interp_quantity_func_from_pdr_db_for_Av_range(func = pdr_mesh_general_quantity
                                                                          Avs  = [1.0, 2.0, 5.0, 10.0],
-                                                                         quantity = 'fluxKkms',
+                                                                         quantity=['fineStructureCoolingComponents', 'C+', 'rate', '1-0'],
+                                                                         func_kw={
+                                                                                 'as_log10':True
+                                                                                 } 
                                                                          )
 
             # the quantity for a given set of parameters can be returned
@@ -3891,19 +3976,21 @@ class meshArxv(object):
         see also get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range
         '''
         ## getting the data
-        v, data = self.get_emission_from_all_radex_dbs_for_Av_range(**kwargs)
+        v, data = self.get_pdr_quantity_from_all_meshes_for_Av_range(**kwargs)
 
         ## constructing the linear interpolation function        
         if sectioned == False:
             F = interpolate.LinearNDInterpolator(data, v)
             setattr(F, 'get', F) 
         else:
-            F = interpolator_sectioned(data, v, ## not tested
+            F = interpolator_sectioned(data, v,
                                        intervals_z=self.intervals_z,     
                                        ghost_z=self.ghost_z,
                                        intervals_t=self.intervals_t,
                                        ghost_t=self.ghost_t,
-                                       scipy_interpolator=interpolate.LinearNDInterpolator)
+                                       scipy_interpolator=interpolate.LinearNDInterpolator,
+                                       verbose=True
+                                       )
 
         return F
          
@@ -3920,20 +4007,35 @@ class meshArxv(object):
             info = {'source' : 'radex' }
              
         .. code-block:: python
-        F = self.get_4D_interp_quantity(
-                                        info={'source':'radex', 
-                                        save=False,
-                                        line='13CO1-0',
-                                        Avs='all',
-                                        quantity='fluxKkms'
-                                        sectioned=False,
-                                       )
+            ## get an interpolation function for a radex quantity 
+            F = self.get_4D_interp_quantity(
+                                            info={'source':'radex', 
+                                            save=False,
+                                            line='13CO1-0',
+                                            Avs='all',
+                                            quantity='fluxKkms'
+                                            sectioned=False,
+                                           )
+                                           
+            ## get an interpolation function for a pdf quantity 
+            F = self.get_4D_interp_quantity(
+                                            info={'source':'pdr'}, 
+                                            save=False,
+                                            Avs  = [0.01, 0.1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
+                                                    12, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 30.0],
+                                            func = pdr_mesh_general_quantity,
+                                            quantity=['fineStructureCoolingComponents', 'C+', 'rate', '1-0'],
+                                            func_kw={
+                                                     'as_log10':True
+                                                    } 
+                                            sectioned=False,
+                                           )
         '''
         
         if info['source'] == 'radex':
             F = self.get_4D_interp_emission_func_from_all_radex_dbs_for_Av_range(**kwargs)
         if info['source'] == 'pdr':
-            F = self.get_4D_interp_emission_func_from_pdr_db_for_Av_range(**kwargs)
+            F = self.get_4D_interp_quantity_func_from_pdr_db_for_Av_range(**kwargs)
             
 
         ## saving the interpolation function to the disk            
@@ -3989,7 +4091,14 @@ class meshArxv(object):
                                                 kwargs['quantity'])
                                  )
         
-         
+        if info['source'] == 'pdr':
+            
+            fpath =  os.path.join(self.dirPath, 'interp', 
+                                    '%s__%s' % (kwargs['func'].func_name,  
+                                                ''.join(kwargs['quantity']))
+                                 )
+            print fpath
+            
         return fpath
     
     def get_emission_grid_from_databases(self, 
@@ -4205,7 +4314,10 @@ def pdr_mesh_integrated_quantity(mesh_obj, **kwargs):
     '''
 
     quantity = kwargs['quantity']
-    up_to_Av = kwargs['up_to_Av']
+    if 'up_to_Av' in kwargs:
+        up_to_Av = kwargs['up_to_Av']
+    if 'Av' in kwargs:
+        up_to_Av = kwargs['Av']
     
     value = mesh_obj.compute_integrated_quantity(quantity, Av_range = [0.0, up_to_Av])
     
@@ -4213,13 +4325,18 @@ def pdr_mesh_integrated_quantity(mesh_obj, **kwargs):
         return numpy.log10(value)
     else:
         return value
-    
+
 def pdr_mesh_column_density(mesh_obj, **kwargs):
     '''Same as pdr_mesh_integrated_quantity, but returns a column density of a certain species.
+    
+    The keywords Av and up_to_Av are the same, they both have the same effect
     '''
 
     specStr  = kwargs['specStr']
-    up_to_Av = kwargs['up_to_Av']
+    if 'up_to_Av' in kwargs:
+        up_to_Av = kwargs['up_to_Av']
+    if 'Av' in kwargs:
+        up_to_Av = kwargs['Av']
 
     value = mesh_obj.getColumnDensity(specsStrs = [specStr], maxAv = up_to_Av)
 
@@ -4231,3 +4348,57 @@ def pdr_mesh_column_density(mesh_obj, **kwargs):
         return numpy.log10(value)
     else:
         return value
+    
+def pdr_mesh_general_quantity(mesh_obj, **kwargs):
+    '''
+    
+    kwargs options are : 
+    
+          'quantity'
+          'as_log10'
+          'slab_idx'
+          'Av'
+          'interpolator'
+          
+    usage:
+     
+        x = arxv.apply_function_to_all_meshes(meshUtils.pdr_mesh_general_quantity, 
+                                              func_kw={
+                                                       'quantity':['state', 'gasT'], 
+                                                       'Av':0.0, 
+                                                       'as_log10':True
+                                                      }
+                                              )
+
+    .. warning:: using 'cubic' for the interpolator might be very expensive
+    '''
+    
+    ## the quantity to be used from the mesh object
+    quantity = kwargs['quantity']
+     
+    ## the data of that quantity
+    quantity_data = fetchNestedDtypeValue(mesh_obj.data, quantity)
+
+    ## determining if the log of the data will be used/returned
+    if 'as_log10' in kwargs:     
+        quantity_data = np.log10(quantity_data)
+        
+    ## checking if the value to be returned is chosen by Av or the slab index
+    if 'slab_idx' in kwargs:
+        # returning the value at a certail slab index
+        quantity_data_in_slab = quantity_data[kwargs['slab_idx']]        
+    elif 'Av' in kwargs:
+        # return the value at a certain slab index by interpolating at a given Av
+        if 'interpolator' not in kwargs:
+            interpolator = 'linear'
+        else:
+            interpolator = kwargs['interpolator']
+        
+        x = mesh_obj.data['state']['Av']
+        y = quantity_data
+        f_quantity_vs_Av = scipy.interpolate.interp1d(x, y, kind=interpolator)
+ 
+        quantity_data_in_slab = f_quantity_vs_Av(kwargs['Av'])
+        
+
+    return quantity_data_in_slab
