@@ -602,7 +602,7 @@ ratios_set2 = ratio_sets['COCO'] + ratio_sets['13CO13CO'] + ratio_sets['13COCO']
 ratios_set3 = ratio_sets['COCO'] + ratio_sets['13CO13CO'] + ratio_sets['13COCO'] +\
               ratio_sets['HCNCO'] + ratio_sets['HNCCO'] + ratio_sets['HCO+CO'] 
 
-ratios_set4 = ratio_sets['HCNCO'] + ratio_sets['HNCCO'] + ratio_sets['HCO+CO'] 
+ratios_set4 = ratio_sets['HCNCO'] + ratio_sets['HNCCO'] + ratio_sets['HCO+CO']
 
 ratios_set5 = ratio_sets['HCNHNC'] + ratio_sets['HCNHCO+'] + ratio_sets['HNCHCO+'] 
 

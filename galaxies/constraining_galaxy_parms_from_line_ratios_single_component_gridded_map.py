@@ -19,6 +19,7 @@ matplotlib.use('Qt4Agg')
 
 import numpy
 import scipy
+from scipy.stats import chisqprob
 
 from amuse.units import units
 

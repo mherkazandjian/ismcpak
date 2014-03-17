@@ -89,8 +89,12 @@ class Xi2_line_ratios_single_component(object):
         return self.ind_global_min, self.ind_global_min_orig,\
                self.ind_global_min_no_gmech, self.ind_global_min_no_gmech_orig
     
-    def Xi2_diagrams(self, intervals=None, with_gm = True, arxvPDR=None):
+    def Xi2_diagrams(self, with_gm = True, arxvPDR=None):
         '''
+        # first setup the observed grid
+        estimator.setup_observed_grid(ratios_set5, inspect='HCN1-0')
+        
+        # then run this method
         xi2i = estimator.contraining.Xi2_diagrams(arxvPDR=arxvPDR)
         '''
         ## the values of the Xi2 and the corresponding model parameters        
@@ -121,8 +125,14 @@ class Xi2_line_ratios_single_component(object):
         ## interpolating sections of the Xi2 values
         log10n  = numpy.linspace(-1.0, 6.0, 20)
         log10G0 = numpy.linspace(-1.0, 6.0, 20)
-        gmech   = data_Xi2_min[2] #-22.0 #numpy.linspace(-25.0, -20.0, 50)
-        Av      = data_Xi2_min[3] #10.0 #numpy.linspace(1.0, 30.0, 50)
+
+        
+        # using gmech and Av section of the minimum        
+        #gmech   = data_Xi2_min[2] #-22.0 #numpy.linspace(-25.0, -20.0, 50)
+        #Av      = data_Xi2_min[3] #10.0 #numpy.linspace(1.0, 30.0, 50)
+        # using specific custom gmech and Av sections        
+        gmech   = -50.0
+        Av      = 3.0
         
         data_i = numpy.meshgrid(
                                log10n,   # log10(n)  
@@ -142,10 +152,21 @@ class Xi2_line_ratios_single_component(object):
         ## plotting the Xi2 diagrams
         fig, axs = pylab.subplots(4, 4, figsize=(12,12))
         
-        axs[0,0].imshow(numpy.log10(Xi2_i), 
-                        extent=[log10n.min(), log10n.max(), log10G0.min(), log10G0.max()], 
-                        origin='lower')
-
+        
+        l10Xi2 = numpy.log10(Xi2_i)
+        extent = [log10n.min(), log10n.max(), log10G0.min(), log10G0.max()]
+        im = axs[0,0].imshow(l10Xi2,
+                            extent=[log10n.min(), log10n.max(), log10G0.min(), log10G0.max()], 
+                            origin='lower')
+        CS = axs[0,0].contour(l10Xi2, 
+                              numpy.log10(numpy.linspace(1.0, 10.0, 6)),
+                              linewidth = 2,
+                              colors='k',
+                              extent=[log10n.min(), log10n.max(), log10G0.min(), log10G0.max()],
+                              origin='lower',
+                              )
+        #pylab.clabel(CS)
+        #axs[0,0].colorbar(im)
         pylab.show()
 
         inds_section = numpy.where( (data[:,2] == data_Xi2_min[2])*(data[:,3] == data_Xi2_min[3]) )[0]
@@ -174,7 +195,7 @@ class Xi2_line_ratios_single_component(object):
         print 'minimum Xi2 (interp) = ', Xi2_i_min        
         print 'parameters for minimum Xi2 (interp) = ', data_i_min         
 
-        return v, data, Xi2_i
+        return v, data, Xi2_i, axs
         
         
     def get_model_parms_for_min_Xi2(self):

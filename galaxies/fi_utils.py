@@ -5,6 +5,7 @@ import subprocess, shlex
 from pylab import *
 from numpy import *
 import scipy
+from scipy.stats import chisqprob
 
 import numpy
 from numpy import log10, where, argmin, fabs, linspace, log, exp, pi, sqrt
@@ -1298,6 +1299,7 @@ class galaxy_gas_mass_estimator(object):
         def get_pixel_mean_info(weights=None):
             
             means = collections.OrderedDict()
+            sdevs = collections.OrderedDict()
             
             if weights == None:
                 
@@ -1308,14 +1310,19 @@ class galaxy_gas_mass_estimator(object):
                 
             else:
 
-                means['n']  = log10(numpy.average(gas_in_pixel.n, weights))
-                means['G0'] = log10(numpy.average(gas_in_pixel.G0, weights))
-                means['gm'] = log10(numpy.average(gas_in_pixel.gmech, weights))
-                means['Av'] = numpy.average(gas_in_pixel.Av, weights)
+                means['n']  = log10(average(gas_in_pixel.n, weights=gas_in_pixel.weights))
+                means['G0'] = log10(average(gas_in_pixel.G0, weights=gas_in_pixel.weights))
+                means['gm'] = log10(average(gas_in_pixel.gmech, weights=gas_in_pixel.weights))
+                means['Av'] = average(gas_in_pixel.Av, weights=gas_in_pixel.weights)
                 
-            return means
+                sdevs['n']  = log10(sqrt(average((gas_in_pixel.n     - 10.0**means['n'])**2 , weights=gas_in_pixel.weights)))
+                sdevs['G0'] = log10(sqrt(average((gas_in_pixel.G0    - 10.0**means['G0'])**2, weights=gas_in_pixel.weights)))
+                sdevs['gm'] = log10(sqrt(average((gas_in_pixel.gmech - 10.0**means['gm'])**2, weights=gas_in_pixel.weights)))
+                sdevs['Av'] = log10(sqrt(average((gas_in_pixel.Av    - means['Av'])**2      , weights=gas_in_pixel.weights)))
+
+            return means, sdevs
         
-        means = get_pixel_mean_info()
+        means, sdevs = get_pixel_mean_info(weights=True)
         #-----------------------------------------------------------------------------------
                     
         ##  computing the masses in the pixel
@@ -1392,18 +1399,28 @@ class galaxy_gas_mass_estimator(object):
             # the reduced Xi2
             n_lines = float(line_ratio_utils.all_lines_involved(self.line_ratios).size)
             
-            ax1.set_title(r'with gmech ' + r'$\chi^2 = %.3f$' % (Xi2_min/ (n_lines - 4.0)))
-            ax2.set_title(r'no gmech ' + r'$\chi^2 = %.3f$' % (Xi2_min_no_gmech/(n_lines - 3.0)))
+            DOF = n_lines - 4.0
+            p_value = chisqprob(Xi2_min, DOF)
+            ax1.set_title(r'with gmech ' + r'$\chi^2 = %.3f$ p-value = %.3f' % (Xi2_min, p_value))
+            
+            DOF = n_lines - 3.0
+            p_value_no_gmech = chisqprob(Xi2_min_no_gmech, DOF)            
+            ax2.set_title(r'no gmech ' + r'$\chi^2 = %.3f$ p-value = %.3f' % (Xi2_min_no_gmech, p_value_no_gmech))
 
             strng = 'pixel coordinates = [%d, %d]' % (x_ind - self.hist_obs.f.shape[0]/2, 
-                                                       y_ind - self.hist_obs.f.shape[1]/2)            
+                                                      y_ind - self.hist_obs.f.shape[1]/2)
+            strng += ' nLines = %d' % n_lines            
             pylab.figtext(0.61, 0.9, strng, size=10)                        
             
             strng = gen_pixel_means_string(means)
             pylab.figtext(0.61, 0.78, strng, size=10)
             
+        print '-'*100
         print 'mean values in the pixel'    
         print means 
+        print 'standard deviations in the pixel'    
+        print sdevs 
+        print '-'*100
         
         print 'line ratios of the observed and the best fit model (whichever with or without gmech)'
         f.get_model_em_for_min_Xi2()
@@ -1416,7 +1433,7 @@ class galaxy_gas_mass_estimator(object):
             del self.gas_in_pixel
         
         print 'time processing = %.2f seconds' % (time.time() - t0)
-        return mH_1e9_m_sun, mH2_1e9_m_sun, mH_no_gmech_1e9_m_sun, mH2_no_gmech_1e9_m_sun
+        return means, sdevs, PDR_parms, Xi2_min, PDR_parms_no_gmech, Xi2_min_no_gmech, n_lines
 
     def plot_gas_pdf_in_pixel(self, x_ind, y_ind):
         
@@ -1507,6 +1524,72 @@ class galaxy_gas_mass_estimator(object):
         #gs = self.gas_in_pixel
         #pylab.loglog(gs.n[gs.get_inds_has_children()], gs.radius[gs.get_inds_has_children()], '.')
 
+    def estimate_mass_in_some_pixels(self):
+        
+        info_all = []
+        
+        #inds = [[0,0]]
+        #inds = [[0,1], [0,-1], [1,0], [-1,0]]
+        #inds = [[-1,1], [-1,-1], [1,-1], [1,1]]
+        inds = [
+                [-1, 2], [ 0, 2], [ 1, 2],
+                [-1,-2], [ 0,-2], [ 1,-2],
+                [ 2, 1], [ 2, 0], [ 2,-1],
+                [-2, 1], [-2, 0], [-2,-1],
+                ]
+
+        xc, yc = array(self.hist_obs.f.shape)/2
+        for i, j in inds:
+            x_ind , y_ind = xc + i, yc + j
+            info = self.estimate_mass_in_pixel(x_ind=x_ind, y_ind=y_ind, plot_fits=True)
+            info_all.append(info)
+            
+        #means, sdevs, PDR_parms, Xi2_min, PDR_parms_no_gmech, Xi2_min_no_gmech, n_lines = info
+
+        if False:    
+            i_fit = 2  # select the mPDR fit info
+            pfit = 4.0
+            i_Xi2 = 3
+        if True:
+            i_fit = 4  # select the pure PDR fit info
+            pfit  = 4.0
+            i_Xi2 = 5
+        
+        print 'k    [i, j]     r      log10n  log10G0  log10Gmech  Av    Xi2      Xi2_red      p-value'
+        for k, [i,j] in enumerate(inds):
+            x_ind , y_ind = xc + i, yc + j
+            r = sqrt(self.hist_obs.f.cntrd[0][x_ind,y_ind]**2 + 
+                     self.hist_obs.f.cntrd[1][x_ind,y_ind]**2 )
+            print '%d    %-+d,%-+d  %f' % (k, i, j, r),
+            
+            # 0       1       2         3           4                   5             6        
+            #means, sdevs, PDR_parms, Xi2_min, PDR_parms_no_gmech, Xi2_min_no_gmech, n_lines = info_all[k]
+
+            means = info_all[k][0]
+            Xi2 = info_all[k][i_Xi2]
+            Xi2_red = info_all[k][i_Xi2]//(info[6]-pfit)
+            print '   %5.2f  %5.2f      %5.2f   %5.2f' % (means['n'],  means['G0'], means['gm'], means['Av']),
+            print ' %5.2f    %5.2f' % (Xi2, Xi2_red)
+
+        print '-'*100
+        
+        print 'averages pixel          %5.2f  %5.2f      %5.2f   %5.2f ' % (
+                                                                            mean([info[0]['n']  for info in info_all]),     
+                                                                            mean([info[0]['G0']  for info in info_all]), 
+                                                                            mean([info[0]['gm']  for info in info_all]), 
+                                                                            mean([info[0]['Av']  for info in info_all]), 
+                                                                            )
+    
+            
+        print 'averages fit            %5.2f  %5.2f      %5.2f   %5.2f  %5.2f    %5.2f' % (
+                                                                                           mean([info[i_fit][0] for info in info_all]), 
+                                                                                           mean([info[i_fit][1] for info in info_all]), 
+                                                                                           mean([info[i_fit][2] for info in info_all]), 
+                                                                                           mean([info[i_fit][3] for info in info_all]), 
+                                                                                           mean([info[i_Xi2] for info in info_all]),
+                                                                                           mean([info[i_Xi2]/(info[6]-pfit) for info in info_all]),
+                                                                                           )
+        return info_all
                 
     def estimate_mass_in_all_pixels(self):
         
@@ -2901,7 +2984,7 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
     x, y = log10(gaso.n[ gaso.n > 1e-2]), log10(gaso.radius[ gaso.n > 1e-2])
     z = polyfit(x, y, 1)
     p = poly1d(z)
-    
+
     ## radius (in kpc) as a function of density (in cm-3)
     # r(kpc) = R(n) (kpc) 
     r_func = lambda n: 10.0**p(log10(n))
@@ -2920,7 +3003,7 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
     weights_filename = gen_weights_filename(params['rundir'], params['snap_index'])    
     info = gas.load_weights_function(weights_filename)
     log10nPDF_fit = scipy.interpolate.interp1d(log10(info['x_fit']), log10(info['y_fit']))
-    
+
     ## the interpolation function of the PDF
     # nPDF(n) = probability density at that density (not in log scale
     nPDF = lambda n: 10.0**log10nPDF_fit(log10(n))
@@ -3002,3 +3085,4 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
         
     
     pylab.show() 
+    return info
