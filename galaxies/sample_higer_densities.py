@@ -12,7 +12,7 @@ from amuse.units import units
 from galaxies import fi_utils
 #===========================================================================================================
 home = '/home/mher'
-home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
+#home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # the path of the dir containing the simulation
           'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100', # the path of the dir containing the simulation
@@ -58,7 +58,7 @@ gas = fi_utils.convert_units_to_pdr_units(gas_fi, metallicity)
 
 print 'done reading fi snapshot : %s' % filename
 print 'number of sph particles in snapshot = %d' %  len(gas)
-asdasdasd
+
 ###########################################################################################################
 
 ## extending the densities to include higher ones

@@ -64,7 +64,7 @@ params = {
                         'box_size' : [-8.0, 8.0] | units.kpc, 
                         },
           'check'   : 'default',          
-          'em_unit'   : 'em_fluxKkms',
+          'em_unit'   : 'em_fluxKkms', #'em_fluxKkms', 'em_fluxcgs'
           'save_maps' : False,
 
           'error_bars'  : 0.2, 
@@ -73,8 +73,9 @@ params = {
           ##################### parameters for fitting for the maps #########################
           
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
-          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',  # the path to the dir containing the PDR database
+          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0/',   # the path to the dir containing the PDR database
           #'pdrDb' :  home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
+          #'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',  # the path to the dir containing the PDR database
 
           ### all the ratios up to J = 2-1
 #          'line_ratios' : [
@@ -249,55 +250,7 @@ print '\t\tfinished making the luminosity maps'
 ## reading and setting up the pdr database
 arxvPDR = meshUtils.meshArxv(dirPath = params['pdrDb'], readDb=True)
 
-## loading the emission info from all the models for all Avs (also check for the consistenscy of the 
-## number of models...i.e same number of models for all the lines)
-
-## make line ratios from the mock luminosities 
-obs_mock_ratios_template = line_ratio_utils.ratios()
-
-for line_ratio in line_ratios:
-
-    line1, line2 = line_ratio_utils.lines_involved(line_ratio)
-    
-    v1, v2 = 1, 1
-    
-    obs_mock_ratios_template.make_ratios(
-                                         {
-                                           line1:{'fluxKkms': v1, 'err': params['error_bars']*v1}, 
-                                           line2:{'fluxKkms': v2, 'err': params['error_bars']*v2}
-                                         },
-                                         ratios = [line_ratio],
-                                         em_unit = 'fluxKkms'
-                                        )
-
-    print line_ratio, obs_mock_ratios_template[line_ratio]
-    
-obs_mock_ratios_template.species_and_codes()
-
-                    
-model_em = {}
-for i, line in enumerate(obs_mock_ratios_template.codes):
-    v, grid_coords = arxvPDR.get_emission_from_all_radex_dbs_for_Av_range(
-                                                                          line = line, 
-                                                                          Avs = 'all', 
-                                                                          quantity = 'fluxKkms',
-                                                                          keep_nans = True,
-                                                                         )
-    model_em[line] = 10.0**v
-    print line, v.size, grid_coords.shape
-    print '----------------------'
-
-    ## some checks of the sizes
-    if v.size != grid_coords.shape[0]:
-        raise ValueError('number of elements in the emission values is different from the number of modesl.')
-    
-    if i == 0:
-        nModels = v.size
-    else:
-        if nModels != v.size:
-            raise ValueError('the number of elements for this line differes at least from that of one of the other lines')
-#########
-
+## setting up the object which grids the particles and fits
 estimator = fi_utils.galaxy_gas_mass_estimator(luminosity_maps = luminosity, 
                                                gas = gas, 
                                                params = params, 
@@ -306,7 +259,7 @@ estimator = fi_utils.galaxy_gas_mass_estimator(luminosity_maps = luminosity,
                                                arxvPDR=arxvPDR,
                                                em_unit=em_unit)
 
-estimator.get_model_emission_from_pdr_arxv_involved_line_ratios() 
+estimator.get_model_emission_from_pdr_arxv_involved_line_ratios(em_unit=em_unit) 
 
 estimator.setup_observed_grid()
 

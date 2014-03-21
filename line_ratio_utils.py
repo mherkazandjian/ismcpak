@@ -68,23 +68,18 @@ class ratios(collections.OrderedDict):
         
         self[rStr] = r 
     
-    def make_ratios(self, lines, ratios, em_unit=None, lum=None):
+    def make_ratios(self, lines, ratios, em_unit='fluxKkms', lum=None):
         '''takes a dict of lines ('CO1-0', 'HCN4-3'...ect) and ratio string ('HCN4-3/CO1-0',...)
         and adds the ratios as dict keys and computes the errors using propagation of error
         for ratios (assuming the errors in line[SPEC_STR]['err'] exist)
         '''
-        
-        if em_unit == None:
-            unit = 'fluxcgs'
-        else:
-            unit = 'fluxKkms'
-            
+
         for ratio in ratios:
             
             code1, code2 = codes_from_ratio(ratio)
             
-            v1, e1 = lines[code1][unit], lines[code1]['err']
-            v2, e2 = lines[code2][unit], lines[code2]['err'] 
+            v1, e1 = lines[code1][em_unit], lines[code1]['err']
+            v2, e2 = lines[code2][em_unit], lines[code2]['err'] 
              
             #the value of the line ratio
             v = v1 / v2
@@ -250,7 +245,18 @@ class ratios(collections.OrderedDict):
 
         for item in self:
             print '%-20s |%10.2e |%10.2e' % (item, self[item]['v'], self[item]['e'])
+
+class observations(collections.OrderedDict):
+    
+    def set_flux_errors(self, em_unit=None, err_bar_percent=None):
+        '''sets the error bars of all the fluxes using the input error bar
         
+        observations.set_flux_errors(em_unit='fluxKkms', err_bar_percent=0.1) 
+        '''
+        
+        for key in self.keys():
+            self[key]['err'] = self[key][em_unit] * err_bar_percent
+            
 def read_observations(fname):
     '''returns info about the observed lines as a dict object from an excel sheet (Marissa's format)'''
 

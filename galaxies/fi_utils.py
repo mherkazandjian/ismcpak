@@ -1,48 +1,38 @@
-import pdb
-import os, sys, time
-import subprocess, shlex
-
-from pylab import *
-from numpy import *
-import scipy
-from scipy.stats import chisqprob
-
-import numpy
-from numpy import log10, where, argmin, fabs, linspace, log, exp, pi, sqrt
-from numpy import isfinite, isnan, zeros, int32
-
-from scipy.ndimage import zoom
-from scipy import stats
-from scipy import interpolate
-
-import pylab
-from pylab import histogram
-from matplotlib import ticker
-
-import time
-
-from amuse.units import units, constants, nbody_system
 from amuse.datamodel import Particles
 from amuse.io import read_set_from_file, fi_io
-
-import meshUtils
-import lineDict
-import pdrDict
-import line_ratio_utils
-import constraining
-
-from mylib.constants import M_SUN_SI
-from mylib.utils.histogram import hist_nd
-from mylib.utils.interpolation import sectioned_4D_interpolator 
-import mylib.units
-from mylib.constants import M_SUN_SI
-from mylib.utils.ndmesh import ndmesh
-from mylib.utils.misc import scale
-from mylib.utils import templates
-from mylib.utils.misc import find_matching_indicies
-
+from amuse.units import units, constants, nbody_system
 import collections
+import constraining
+import lineDict
+import line_ratio_utils
+import meshUtils
 import multiprocessing
+from mylib.constants import M_SUN_SI, M_SUN_SI
+import mylib.units
+from mylib.utils import templates
+from mylib.utils.histogram import hist_nd
+from mylib.utils.interpolation import sectioned_4D_interpolator
+from mylib.utils.misc import find_matching_indicies, scale
+from mylib.utils.ndmesh import ndmesh
+import os
+import pdb
+import pdrDict
+import shlex
+import subprocess
+import sys
+import time
+import time
+
+from matplotlib import ticker
+from numpy import *
+import numpy
+from pylab import *
+import pylab
+from scipy import interpolate, stats
+import scipy
+from scipy.ndimage import zoom
+from scipy.stats import chisqprob
+
 
 def parse_old_runinfo_file(path):
     """parses the old runinfo file and returns its contetnts as a dict"""
@@ -1042,55 +1032,15 @@ class galaxy_gas_mass_estimator(object):
         
         self.gas_in_pixel = None
         
-    def get_model_emission_from_pdr_arxv_involved_line_ratios(self):
+    def get_model_emission_from_pdr_arxv_involved_line_ratios(self, em_unit='Kkms'):
         '''loading the emission info from all the models for all Avs (also we check for 
         the consistenscy of the number of models...i.e same number of models 
         for all the lines)
         '''
         
-        ## make line ratios from the mock luminosities 
-        obs_mock_ratios_template = line_ratio_utils.ratios()
         
-        for line_ratio in self.line_ratios:
-        
-            line1, line2 = line_ratio_utils.lines_involved(line_ratio)
-            
-            v1, v2 = 1, 1
-            
-            obs_mock_ratios_template.make_ratios(
-                                                 {
-                                                   line1:{'fluxKkms': 1, 'err': 1.0}, 
-                                                   line2:{'fluxKkms': 1, 'err': 1.0},
-                                                 },
-                                                 ratios = [line_ratio],
-                                                 em_unit = 'fluxKkms'
-                                                )
-        
-        ## determin the species and the line codes in the line ratios
-        obs_mock_ratios_template.species_and_codes()
-        
-        ## getting the emission of the lines involved in the ratios from the PDR archive
-        print 'getting the emission from the PDR models...'
-        model_em = {}
-        for i, line in enumerate(obs_mock_ratios_template.codes):
-            v, grid_coords = self.arxvPDR.get_emission_from_all_radex_dbs_for_Av_range(
-                                                                                       line = line,
-                                                                                       Avs = 'all', 
-                                                                                       quantity = 'fluxKkms',
-                                                                                       keep_nans = True,
-                                                                                      )
-            model_em[line] = 10.0**v
-            print '\t%-12s %d' % (line, v.size), grid_coords.shape
-        
-            ## some checks of the sizes
-            if v.size != grid_coords.shape[0]:
-                raise ValueError('number of elements in the emission values is different from the number of modesl.')
-            
-            if i == 0:
-                nModels = v.size
-            else:
-                if nModels != v.size:
-                    raise ValueError('the number of elements for this line differes at least from that of one of the other lines')
+        model_em, grid_coords = self.arxvPDR.get_model_emission_from_involved_line_ratios(self.line_ratios,     
+                                                                                          em_unit=em_unit)
         
         self.model_em = model_em
         self.grid_coords = grid_coords
@@ -1227,12 +1177,11 @@ class galaxy_gas_mass_estimator(object):
             
             obs_mock_ratios.make_ratios(
                                         {
-                                          line1:{'fluxKkms': flux1, 'err': params['error_bars']*flux1}, 
-                                          line2:{'fluxKkms': flux2, 'err': params['error_bars']*flux2}
+                                          line1:{'flux' + self.em_unit: flux1, 'err': params['error_bars']*flux1}, 
+                                          line2:{'flux' + self.em_unit: flux2, 'err': params['error_bars']*flux2}
                                         },
                                         ratios = [line_ratio],
-                                        em_unit = 'fluxKkms',
-                                        lum = {line1: flux1*area_obs_pixel, line2: flux2*area_obs_pixel}
+                                        em_unit = 'flux' + self.em_unit,
                                        )
             '''
             print line_ratio, obs_mock_ratios[line_ratio]
@@ -1292,7 +1241,8 @@ class galaxy_gas_mass_estimator(object):
                                                line=self.inspect_species,
                                                log10xs=[True, True, True, False],
                                                xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 27.0]],
-                                               in_axes=axes
+                                               in_axes=axes, 
+                                               em_unit=self.em_unit.replace('flux',''),
                                                )
         #computing the averages of the physical parameters of the particles inside the pixel 
         #-----------------------------------------------------------------------------------
@@ -1500,14 +1450,14 @@ class galaxy_gas_mass_estimator(object):
         
         self.gas_in_pixel = gas_in_pixel
         
-        line = 'CO1-0'
+        line = 'HCN1-0'
          
         #gas_in_pixel.get_emission_pdf(qx='n', line='CO1-0', log10x=True, nbins=100, xrng=[-3, 6])
         #ax1, ax2 = gas_in_pixel.get_emission_pdf(qx='n', line=line, log10x=True, nbins=50, xrng=[-3, 6], wtitle='sampled')
         #ax1, ax2 = gas_in_pixel.get_emission_pdf(qx='G0', line=line, log10x=True, nbins=50, xrng=[-3, 6], wtitle='sampled')
 
         gas_in_pixel.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
-                                       line='CO1-0',
+                                       line=line,
                                        log10xs=[True, True, True, False],
                                        xrngs=[[-3.0, 6.0], [-3.0,6.0], [-30.0, -20.0], [0.0, 27.0]],
                                        )
@@ -2123,7 +2073,7 @@ class gas_set(Particles):
         return numpy.where(numpy.isfinite(self.children))[0]
 
     def get_emission_pdf_populations(self, qx=None, line=None, log10x=False, nbins=50, xrng=None, 
-                                     wtitle='', in_ax1=None, in_ax2=None, linestyle='-'):
+                                     wtitle='', in_ax1=None, in_ax2=None, linestyle='-', em_unit='fluxKkms'):
         '''getting emission distributions of the sub-populations
         
         get_emission_pdf_populations(qx='n', line=line, log10x=True, nbins=50, xrng=[-3, 6])
@@ -2147,7 +2097,7 @@ class gas_set(Particles):
 
         return ax1, ax2
 
-    def get_emission_pdfs(self, qxs=None, line=None, log10xs=False, nbins=50, xrngs=None, in_axes=None):
+    def get_emission_pdfs(self, qxs=None, line=None, log10xs=False, nbins=50, xrngs=None, in_axes=None, em_unit='Kkms'):
         '''plots the PDFs as a function of multiple quantities
         
         gas.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
@@ -2164,10 +2114,12 @@ class gas_set(Particles):
         for i, qx in enumerate(qxs):
             
             self.get_emission_pdf(qx=qx, line=line, log10x=log10xs[i], nbins=nbins, xrng=xrngs[i], 
-                                  in_ax1=axs[0,i], in_ax2=axs[1,i])
+                                  in_ax1=axs[0,i], in_ax2=axs[1,i], em_unit=em_unit)
             
     def get_emission_pdf(self, qx=None, line=None, log10x=False, nbins=50, xrng=None, wtitle='', 
-                         in_ax1=None, in_ax2=None, linestyle='-'):
+                         in_ax1=None, in_ax2=None, linestyle='-', em_unit='Kkms', legend=True,
+                         color1='b', color2='r'):
+        
         '''getting emission PDF vs a quantity qx
         
         example.
@@ -2184,7 +2136,7 @@ class gas_set(Particles):
         
         ## getting the data to be processed from the attributes        
         x = getattr(self, qx)
-        y = self.get_luminosity(line)
+        y = self.get_luminosity(line, em_unit)
         if log10x == True: x = log10(x)
         
         if xrng != None:
@@ -2228,21 +2180,22 @@ class gas_set(Particles):
             ax1 = in_ax1
             ax2 = in_ax2
 
-        ax1.plot(x_dist.f.cntrd, xw_dist/xw_dist.max(), 'b', linestyle=linestyle, label=qx, 
+        ax1.plot(x_dist.f.cntrd, xw_dist/xw_dist.max(), color1, linestyle=linestyle, label=qx, 
                  drawstyle='steps-mid')
-        ax1.plot(x_dist.f.cntrd, y_dist/y_dist.max(), 'r', linestyle=linestyle, label=line + '\n max = %.5f' % y_dist.max(), 
+        ax1.plot(x_dist.f.cntrd, y_dist/y_dist.max(), color2, linestyle=linestyle, 
+                 label=line + '\n max = %.5f' % y_dist.max(), 
                  drawstyle='steps-mid')
         ax1.set_ylim([0, 1.1])
         #ax1.set_title(' PDF')
-        ax1.legend(loc=0, prop={'size':8})
+        if legend == True: ax1.legend(loc=0, prop={'size':8})
         
-        ax2.plot(x_dist.f.cntrd[::-1], (xw_dist[::-1].cumsum())/xw_dist.sum(), 'b', 
+        ax2.plot(x_dist.f.cntrd[::-1], (xw_dist[::-1].cumsum())/xw_dist.sum(), color1, 
                  linestyle=linestyle, label=qx, drawstyle='steps-mid')
-        ax2.plot(x_dist.f.cntrd[::-1], (y_dist[::-1].cumsum())/y_dist.sum(), 'r', 
+        ax2.plot(x_dist.f.cntrd[::-1], (y_dist[::-1].cumsum())/y_dist.sum(), color2, 
                  linestyle=linestyle, label=line, drawstyle='steps-mid')
         ax2.set_ylim([0, 1.1])
         #ax2.set_title(' CDF')
-        ax2.legend(loc=0, prop={'size':8})
+        if legend == True: ax2.legend(loc=0, prop={'size':8})
         
         pylab.gcf().canvas.set_window_title(wtitle)
         pylab.show()
@@ -2973,6 +2926,12 @@ def load_original_n_r_ids(rundir, snap_index):
     
 
 def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
+    '''
+    '''
+    
+    #yrng = [1e-12, 1e2]
+    yrng = [1e-6, 1e12]
+    
     ########################
     figure(figsize=(16,8))
     ###
@@ -3021,7 +2980,7 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
     r_nbins = r_func(n_bins)
     
     N_particles = 2e6
-    
+
     def plot_luminosity_vs_n(log10G0_log10Gmech_Av, k):
         
         log10G0, log10Gmech, Av = log10G0_log10Gmech_Av
@@ -3034,7 +2993,7 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
         
         flux_bins = 10.0**F.get( data )
         
-        luminosity_nbins = prob_n_bins*flux_bins*(pi*(r_nbins*1e3)**2)
+        luminosity_nbins = (prob_n_bins*dlog10n)*flux_bins*(pi*(r_nbins*1e3)**2)
         
         # computing the luminosuty for all the particles
         luminosity_nbins *= N_particles 
@@ -3059,21 +3018,21 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
     for log10G0 in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
         plot_luminosity_vs_n([log10G0, -22, 10.0], 0)
     xlim(10.0**nmin, 10.0**nmax)
-    ylim(1e-6, 1e12)
+    ylim(*yrng)
     legend(loc=0, prop={'size':8})
     
     subplot(2, 3, 5)
     for log10Gmech in [-50.0, -30.0, -25.0, -23.0, -22.0, -21.0]:
         plot_luminosity_vs_n([2.0, log10Gmech, 10.0], 1)
     xlim(10.0**nmin, 10.0**nmax)
-    ylim(1e-6, 1e12)    
+    ylim(*yrng)    
     legend(loc=0, prop={'size':8})
 
     subplot(2, 3, 6)
     for Av in [0.1, 1.0, 5.0, 10.0, 20.0]:
         plot_luminosity_vs_n([2.0, -22.0, Av], 2)
     xlim(10.0**nmin, 10.0**nmax)
-    ylim(1e-6, 1e12)
+    ylim(*yrng)
     legend(loc=0, prop={'size':8})
     
     #Av = 10.0

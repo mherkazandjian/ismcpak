@@ -128,11 +128,11 @@ class Xi2_line_ratios_single_component(object):
 
         
         # using gmech and Av section of the minimum        
-        #gmech   = data_Xi2_min[2] #-22.0 #numpy.linspace(-25.0, -20.0, 50)
-        #Av      = data_Xi2_min[3] #10.0 #numpy.linspace(1.0, 30.0, 50)
+        gmech   = data_Xi2_min[2] #-22.0 #numpy.linspace(-25.0, -20.0, 50)
+        Av      = data_Xi2_min[3] #10.0 #numpy.linspace(1.0, 30.0, 50)
         # using specific custom gmech and Av sections        
-        gmech   = -50.0
-        Av      = 3.0
+        #gmech   = -50.0
+        #Av      = 3.0
         
         data_i = numpy.meshgrid(
                                log10n,   # log10(n)  
@@ -155,15 +155,10 @@ class Xi2_line_ratios_single_component(object):
         
         l10Xi2 = numpy.log10(Xi2_i)
         extent = [log10n.min(), log10n.max(), log10G0.min(), log10G0.max()]
-        im = axs[0,0].imshow(l10Xi2,
-                            extent=[log10n.min(), log10n.max(), log10G0.min(), log10G0.max()], 
-                            origin='lower')
+        im = axs[0,0].imshow(l10Xi2, extent=extent, origin='lower')
         CS = axs[0,0].contour(l10Xi2, 
                               numpy.log10(numpy.linspace(1.0, 10.0, 6)),
-                              linewidth = 2,
-                              colors='k',
-                              extent=[log10n.min(), log10n.max(), log10G0.min(), log10G0.max()],
-                              origin='lower',
+                              linewidth = 2, colors='k', extent=extent,  origin='lower',
                               )
         #pylab.clabel(CS)
         #axs[0,0].colorbar(im)
@@ -323,7 +318,7 @@ class Xi2_line_ratios_single_component(object):
         plot_ratio_ladder(spec_num='HNC' , spec_denom='HCO+', in_denom='1-0', color='b', linestyle=':')
         plot_ratio_ladder(spec_num='HCO+', spec_denom='13CO', in_denom='1-0', color='m', linestyle=':')
 
-        plot_ratio_ladder(spec_num='13CO', spec_denom='13CO', in_denom='1-0', color='k', linestyle='--')
+        plot_ratio_ladder(spec_num='13CO', spec_denom='13CO', in_denom='1-0', color='r', linestyle='--')
         
         #plot_ratio_ladder(spec_num='HCO+', spec_denom='HCN' , in_denom='1-0', color='y')
         #plot_ratio_ladder(spec_num='HCN' , spec_denom='HNC' , in_denom='1-0', color='y')

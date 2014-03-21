@@ -154,13 +154,13 @@ if False:
     parms['radex']['writeDb'] = True
     
     #for Av in numpy.arange(10.0, 30.0+0.0001, 2.0):
-    for Av in numpy.arange(1.0, 10.0+0.0001, 1.0):
-    #for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
+    #for Av in numpy.arange(1.0, 10.0+0.0001, 1.0):
+    for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
     #for Av in numpy.array([0.01]):
         parms['radex']['Av_range'][1] = Av
-        #species = ['HCN'] #, 'HNC', 'HCO+',]
+        species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'SiO', 'CN', 'CS']
         #species = ['SiO'] #, 'HNC', 'HCO+',]
-        species = ['CN'] #, 'HNC', 'HCO+',]
+        #species = ['CN'] #, 'HNC', 'HCO+',]
         #species = ['CO', '13CO']
         #species = ['CO', '13CO'] 
         for specStr in species:

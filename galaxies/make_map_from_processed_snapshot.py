@@ -26,7 +26,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'species' : ['HCN'],#'CO'], #'13CO', 'HCN', 'HNC', 'HCO+'],
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
 #          'weights' : 'original-only', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
-          'weights' : 'matched', #by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'original', #by-number', #'matched',  #'original-only' ,#None ,#by-number          
 #          'weights' : #'matched',  #'original-only' ,#None ,#by-number          
           'snaps'   : numpy.arange(4, 4 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps

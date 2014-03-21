@@ -4,6 +4,7 @@ from galaxies import fi_utils
 from mylib.utils import templates
 import lineDict
 import mylib.units
+from mylib.utils.histogram import hist_nd
 
 def plot_methods_fig(gas, save_figs, fig_paths, params=None):
     
@@ -319,4 +320,93 @@ def plot_flux_maps(gas, hist, params, fig_save_path):
     #fig.preview(env='aa')
     
     show()
+    
+
+def luminosity_pdf_box(gas, params, fig_save_path):
+    '''plots the total luminosity formatted figure'''
+    
+    ## the coordinate of the pixel (with respect to the center of the image)
+    x_ind, y_ind = 0, 0
+    
+    ## translating the pixel coords relative to the center
+    x_ind, y_ind = params['obs_res']/2 + x_ind, params['obs_res']/2 + y_ind
+         
+    ## plotting the "observed mesh"
+    figure()
+    bs_min, bs_max = params['ranges']['box_size'].number
+
+    hist_obs = hist_nd(vstack((gas.x, gas.y)), 
+                       mn = bs_min, mx = bs_max, 
+                       nbins = params['obs_res'], 
+                       reverse_indicies = True, loc = True)
+    hist_obs.info()
+    
+    obs_mesh = hist_obs.f 
+    
+    plot(obs_mesh.spos[0], obs_mesh.spos[1], 'k+', markersize=100, linewidth=20)
+
+    plot(hist_obs.f.cntrd[0][x_ind], hist_obs.f.cntrd[1][y_ind], 'w+', zorder=2)
+    
+    inds_gas = hist_obs.get_indicies([x_ind, y_ind])
+
+    gas_in_pixel =gas[inds_gas]
+
+    plot(gas_in_pixel.x[::100], gas_in_pixel.y[::100], '.')
+    
+    ## dummy axis
+    figure()
+    ax = subplot(111) 
+    
+    ## setting up the figure where the PDFs will be plotted
+    fig = templates.subplots_grid(1,1, hspace=0.20, wspace=0.15,
+                                  fig = {'kwargs':{
+                                                   'figsize' : {3.55, 2.95}
+                                                   }
+                                         },
+                                  axs = {
+                                         'left' :0.18, 'bottom': 0.20, 'w':0.78, 'h':0.75
+                                        },
+                                  )
+    
+    gas_in_pixel.get_emission_pdf(qx='n', line='CO1-0', log10x=True, nbins=50, xrng=[-3, 6],
+                                  in_ax1=ax, in_ax2=fig.sub[0,0], legend=False,
+                                  color1='k', color2='r')
+
+    gas_in_pixel.get_emission_pdf(qx='n', line='HCO+1-0', log10x=True, nbins=50, xrng=[-3, 6],
+                                  in_ax1=ax, in_ax2=fig.sub[0,0], legend=False,
+                                  color1='k', color2='g')
+
+    gas_in_pixel.get_emission_pdf(qx='n', line='HCN1-0', log10x=True, nbins=50, xrng=[-3, 6],
+                                  in_ax1=ax, in_ax2=fig.sub[0,0], legend=False,
+                                  color1='k', color2='b')
+    
+    
+        
+    xlabel(r'$n [{\rm cm}^{-3}]$', size='small')    
+    ylabel(r'CDF', size='small')
+    
+    fig.sub[0,0].set_xlim([-3,6])
+    fig.sub[0,0].set_xticks( [-3, -2, -1, 0, 1, 2, 3, 4, 5, 6])
+    fig.sub[0,0].set_xticklabels([r'$10^{-3}$', r'$10^{-2}$', r'$10^{-1}$', 
+                                  r'$10^{0}$', r'$10^{1}$', r'$10^{2}$', 
+                                  r'$10^{3}$', r'$10^{4}$', r'$10^{5}$', r'$10^{6}$'], 
+                                 size='small')
+    fig.sub[0,0].set_yticks( [0, 0.2, 0.4, 0.6, 0.8, 1])
+    fig.sub[0,0].set_yticklabels([r'$0$', r'$0.2$', r'$0.4$', r'$0.6$', r'$0.8$', r'$1$'], 
+                                 size='small')
+
+    fig.sub[0,0].text(3.5, 0.6, 'n', size='small', color='k')
+    fig.sub[0,0].text(3.5, 0.7, 'CO(1-0)', size='small', color='r')
+    fig.sub[0,0].text(3.5, 0.8, 'HCO+(1-0)', size='small', color='g')
+    fig.sub[0,0].text(3.5, 0.9, 'HCN(1-0)', size='small', color='b')
+    fig.sub[0,0].grid()
+    
+    show()
+    
+    if fig_save_path != None:
+        fig.fig.savefig(fig_save_path)
+        print 'saved figure to\n\t%s' % fig_save_path
+        
+    return fig 
+
     

@@ -18,6 +18,7 @@ from scipy      import interpolate
 import scipy
 import chemicalNetwork
 import lineDict
+import line_ratio_utils
 
 try:
     from despotic import cloud
@@ -4249,7 +4250,47 @@ class meshArxv(object):
             setattr(arxv_ret, key, data_as_dict[key])
             
         return arxv_ret
-    
+
+    def get_model_emission_from_involved_line_ratios(self, line_ratios=None, lines=None, em_unit='Kkms'):
+        '''loading the emission info from all the models for all Avs (also we check for 
+        the consistenscy of the number of models...i.e same number of models 
+        for all the lines)
+        '''
+
+        if line_ratios != None:        
+            lines_involved = line_ratio_utils.all_lines_involved(line_ratios)
+        elif lines != None:
+            lines_involved = lines_involved
+        else:
+            raise ValueError('either line_ratios or lines should be passed')
+        
+        ## getting the emission of the lines involved in the ratios from the PDR archive
+        print 'getting the emission from the PDR models...'
+        print '\tusing untis : %s' % em_unit
+        
+        model_em = {}
+        for i, line in enumerate(lines_involved):
+            v, grid_coords = self.get_emission_from_all_radex_dbs_for_Av_range(
+                                                                               line = line,
+                                                                                Avs = 'all', 
+                                                                                quantity = 'flux' + em_unit,
+                                                                                keep_nans = True,
+                                                                               )
+            model_em[line] = 10.0**v
+            print '\t%-12s %d' % (line, v.size), grid_coords.shape
+        
+            ## some checks of the sizes
+            if v.size != grid_coords.shape[0]:
+                raise ValueError('number of elements in the emission values is different from the number of modesl.')
+            
+            if i == 0:
+                nModels = v.size
+            else:
+                if nModels != v.size:
+                    raise ValueError('the number of elements for this line differes at least from that of one of the other lines')
+        
+        return model_em, grid_coords
+        
 ######################################################################################################################
 #                utility functions               utility functions               utility functions
 ######################################################################################################################
