@@ -32,7 +32,7 @@ params = {
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'original-only', #'by-number', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'original-only', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
           'obs_res'      : 21,
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
@@ -50,8 +50,8 @@ params = {
                         },
           'check'   : 'default',          
           'em_unit'   : 'em_fluxKkms', # 'em_fluxcgs', 'em_fluxKkms'
-          'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'CS1-0', 'SiO1-0', 'HCO+1-0'],
-#          'lines'     : ['CO1-0'],
+#          'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'CS1-0', 'SiO1-0', 'HCO+1-0'],
+          'lines'     : ['CO1-0'],
           'save_data' : False,
         }
 
@@ -153,7 +153,7 @@ for i, specStr in enumerate(specsStrs):
     if em_unit == 'Kkms':
         y *= 1e6  # form K km /s kpc2 -> K km /s pc2
     elif em_unit == 'cgs':
-            y = y * ((mylib.units.KPC2CM)**2) / mylib.units.Lsun # from ergs/cm2/s kpc2 -> Lsun
+            y = y * ((mylib.units.KPC2CM)**2) / mylib.constants.Lsun_erg_s # from ergs/cm2/s kpc2 -> Lsun
     else:
         raise ValueError('unknown unit %s' % em_unit)
     
@@ -179,7 +179,7 @@ if True:
         if em_unit == 'Kkms':
             y *= 1e6  # form K km /s kpc2 -> K km /s pc2
         elif em_unit == 'cgs':
-            y = y * ((mylib.units.KPC2CM)**2) / mylib.units.Lsun # from ergs/cm2/s kpc2 -> Lsun
+            y = y * ((mylib.units.KPC2CM)**2) / mylib.constants.Lsun_erg_s # from ergs/cm2/s kpc2 -> Lsun
         else:
             raise ValueError('unknown unit %s' % em_unit)
         

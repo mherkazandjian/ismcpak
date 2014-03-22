@@ -32,7 +32,7 @@ params = {
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'matched', #'by-number', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'conserve-area', #'matched',  #'original-only' ,#None ,#by-number, 'conserve-area'          
           'obs_res'      : 21,
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
@@ -56,8 +56,6 @@ params = {
                          ['HCN1-0'   , 'HCN2-1'   , 'HCN3-2'   , 'HCN4-3' , 'HCN5-4'   , 'HCN6-5'     , 'HCN7-6'], 
                          ['HNC1-0'   , 'HNC2-1'   , 'HNC3-2'   , 'HNC4-3' , 'HNC5-4'   , 'HNC6-5'     , 'HNC7-6'], 
                          ['HCO+1-0'  , 'HCO+2-1'  , 'HCO+3-2'  , 'HCO+4-3', 'HCO+5-4'  , 'HCO+6-5'    , 'HCO+7-6'], 
-                         ['CS1-0'    , 'CS2-1'    , 'CS3-2'    , 'CS4-3'  , 'CS5-4'    , 'CS6-5'      , 'CS7-6'], 
-                         ['SiO1-0'   , 'SiO2-1'   , 'SiO3-2'   , 'SiO4-3' , 'SiO5-4'   , 'SiO6-5'     , 'SiO7-6'], 
                         ],
         }
 

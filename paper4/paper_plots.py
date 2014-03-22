@@ -200,11 +200,11 @@ def total_luminosity(gas, params, fig_save_path):
     
     ax = fig.sub[0,0]
     
-    specsStrs =  ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'CS', 'SiO']
-    colors    =  ['k' , 'r'   , 'g'  , 'b'  , 'c'   , 'y' , 'm']
+    specsStrs =  ['CO', '13CO', 'HCN', 'HNC', 'HCO+']
+    colors    =  ['k' , 'r'   , 'g'  , 'b'  , 'c'   ]
     
     ## plotting the total luminosity weighted by number of sampled points
-    gas.set_radii(weighting='matched', rundir=params['rundir'], snap_index=params['snap_index'])
+    gas.set_radii(weighting='conserve-area', rundir=params['rundir'], snap_index=params['snap_index'])
 
     sym       = '-'
 
@@ -219,7 +219,7 @@ def total_luminosity(gas, params, fig_save_path):
         if em_unit == 'Kkms':
             y *= 1e6  # form K km /s kpc2 -> K km /s pc2
         elif em_unit == 'cgs':
-                y = y * ((mylib.units.KPC2CM)**2) / mylib.units.Lsun # from ergs/cm2/s kpc2 -> Lsun
+                y = y * ((mylib.units.KPC2CM)**2) / mylib.constants.LSUN_ERG_S # from ergs/cm2/s kpc2 -> Lsun
         else:
             raise ValueError('unknown unit %s' % em_unit)
         
@@ -241,7 +241,7 @@ def total_luminosity(gas, params, fig_save_path):
             if em_unit == 'Kkms':
                 y *= 1e6  # form K km /s kpc2 -> K km /s pc2
             elif em_unit == 'cgs':
-                y = y * ((mylib.units.KPC2CM)**2) / mylib.units.Lsun # from ergs/cm2/s kpc2 -> Lsun
+                y = y * ((mylib.units.KPC2CM)**2) / mylib.constants.LSUN_ERG_S # from ergs/cm2/s kpc2 -> Lsun
             else:
                 raise ValueError('unknown unit %s' % em_unit)
             
@@ -252,7 +252,7 @@ def total_luminosity(gas, params, fig_save_path):
     xlim([1,15])
     xticks(size='small')
     
-    ylim([1e5, 1e10])
+    ylim([1e5, 2e9])
     yticks([1e5, 1e6, 1e7, 1e8, 1e9], size='small')
     legend(loc=0, prop={'size':'x-small'})
     
@@ -268,13 +268,13 @@ def plot_flux_maps(gas, hist, params, fig_save_path):
     
     import matplotlib.cm as cm
     
-    fig = templates.subplots_grid(7, 7, hspace=0.0, wspace=0.0,
+    fig = templates.subplots_grid(5, 7, hspace=0.0, wspace=0.0,
                                   fig = {'kwargs':{
-                                                   'figsize' : {7.2, 6.2}
+                                                   'figsize' : {7.2, 5.0}
                                                    }
                                          },
                                   axs = {
-                                         'left' :0.05, 'bottom': 0.05, 'w':0.82, 'h':0.94
+                                         'left' :0.05, 'bottom': 0.07, 'w':0.82, 'h':0.92
                                         },
                                   cbar = {'space':0.01, 'scale':0.7, 'sz':0.02,
                                           'orientation':'vertical', 'cmap':cm.OrRd},
@@ -313,7 +313,7 @@ def plot_flux_maps(gas, hist, params, fig_save_path):
             print latex_str
             fig.sub[r,c].text(-6, 5, latex_str, size=8)
         print '----------------'
-        
+     
     if fig_save_path != None:
         fig.fig.savefig(fig_save_path)
         print 'figure saved to:\n\t%s' % fig_save_path

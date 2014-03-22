@@ -29,7 +29,7 @@ params = {
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'matched', #'by-number', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'conserve-area', #'matched',  #'original-only' ,#None ,#by-number, 'conserve-area'          
           'obs_res'      : 17,
            
           'snap_index': numpy.arange(4, 4 + 1, 1),

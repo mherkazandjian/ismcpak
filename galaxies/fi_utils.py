@@ -7,7 +7,8 @@ import lineDict
 import line_ratio_utils
 import meshUtils
 import multiprocessing
-from mylib.constants import M_SUN_SI, M_SUN_SI
+from mylib.constants import M_SUN_SI, M_PROTON_CGS, LSUN_ERG_S, M_SUN_CGS
+from mylib.units import KPC2CM
 import mylib.units
 from mylib.utils import templates
 from mylib.utils.histogram import hist_nd
@@ -21,7 +22,6 @@ import shlex
 import subprocess
 import sys
 import time
-import time
 
 from matplotlib import ticker
 from numpy import *
@@ -32,8 +32,7 @@ from scipy import interpolate, stats
 import scipy
 from scipy.ndimage import zoom
 from scipy.stats import chisqprob
-
-
+#######################
 def parse_old_runinfo_file(path):
     """parses the old runinfo file and returns its contetnts as a dict"""
     
@@ -2118,7 +2117,7 @@ class gas_set(Particles):
             
     def get_emission_pdf(self, qx=None, line=None, log10x=False, nbins=50, xrng=None, wtitle='', 
                          in_ax1=None, in_ax2=None, linestyle='-', em_unit='Kkms', legend=True,
-                         color1='b', color2='r'):
+                         color1='b', color2='r', reverse=True):
         
         '''getting emission PDF vs a quantity qx
         
@@ -2189,10 +2188,17 @@ class gas_set(Particles):
         #ax1.set_title(' PDF')
         if legend == True: ax1.legend(loc=0, prop={'size':8})
         
-        ax2.plot(x_dist.f.cntrd[::-1], (xw_dist[::-1].cumsum())/xw_dist.sum(), color1, 
-                 linestyle=linestyle, label=qx, drawstyle='steps-mid')
-        ax2.plot(x_dist.f.cntrd[::-1], (y_dist[::-1].cumsum())/y_dist.sum(), color2, 
-                 linestyle=linestyle, label=line, drawstyle='steps-mid')
+        x = x_dist.f.cntrd
+        y1 = (xw_dist.cumsum())/xw_dist.sum()
+        y2 = (y_dist.cumsum())/y_dist.sum()
+
+        if reverse == True:
+            x = x[::-1]
+            y1 = y1[::-1]
+            y2 = y2[::-1]
+              
+        ax2.plot(x, y1, color1, linestyle=linestyle, label=qx, drawstyle='steps-mid')
+        ax2.plot(x, y2, color2, linestyle=linestyle, label=line, drawstyle='steps-mid')
         ax2.set_ylim([0, 1.1])
         #ax2.set_title(' CDF')
         if legend == True: ax2.legend(loc=0, prop={'size':8})
@@ -2665,8 +2671,6 @@ class gas_set(Particles):
         w_child =   1.0 / (npp + 1)
         '''
 
-        raise ValueError('check the units!!!!!!!! pc ?? kpc?? ''')
-    
         ## getting the indicies of the parents and the chidlren
         pinds = self.get_inds_has_children()
         cinds = self.get_inds_children()
@@ -2703,7 +2707,39 @@ class gas_set(Particles):
         r[cinds] = r[cinds] * (w[cinds] * n_o[inds_list_of_c_in_o_arrys]/n[cinds])**(1.0/3.0)
         
         self.radius = r
-    
+
+    def set_radii_using_by_conserving_total_area(self, rundir, snap_index):
+        '''
+        r_parent = r_child = r_parent_original * sqrt(N_sampled)
+        w_parent = ??
+        w_child =  ??
+        '''
+
+        ## getting the indicies of the parents and the chidlren
+        pinds = self.get_inds_has_children()
+        cinds = self.get_inds_children()
+
+        ## first set the radii of the parent particles back to their oringal
+        self.set_radii_using_original_weighting(rundir, snap_index)
+        
+        ## setting the radii of the children to the original radii of their parents       
+        self.set_radii_children_to_original_parent_radii(rundir, snap_index)
+
+        ## setting the new weights by number to the parents and the children
+        weights_filename = gen_weights_filename(rundir, snap_index)    
+        self.use_weights(weighting='by-number', weights_filename = weights_filename)
+        print '-'*100,'\n', '-'*100,'\n','-'*100,'\n'
+        print 'weights set by number'
+        print '-'*100,'\n', '-'*100,'\n','-'*100,'\n'
+        
+        w = self.weights
+        r = self.radius
+        
+        ## computing the new radii corresponding to the new weights of the parents
+        r = r * numpy.sqrt(w)
+        
+        self.radius = r
+        
     def set_radii(self, weighting=None, rundir=None, snap_index=None):
         '''sets the radii and weights of the particles based on the suggested weighting'''
         
@@ -2721,6 +2757,11 @@ class gas_set(Particles):
             ''' wegihts parent + weights children = 1'''
             self.set_radii_using_by_number_weighting(rundir, snap_index)
             print '\t---------> set radii and weights of childrent to ivnerse of number of sampling'
+            
+        elif weighting == 'conserve-area':
+            ''' the radii are set such that area_parent + area_children = original parent area'''
+            self.set_radii_using_by_conserving_total_area(rundir, snap_index)
+            print '\t---------> set radii and weights of children such that total area is conserved'
             
         else:
             raise ValueError('unknown weighting!!')
@@ -2802,6 +2843,9 @@ class gas_set(Particles):
         
         return getattr(self, attr_name)         
 
+    def get_luminosity_species(self, specs):
+        pass
+    
     def get_luminosity(self, line_str, em_unit='Kkms'):
         '''compute the luminosity of particles'''
     
@@ -2925,7 +2969,7 @@ def load_original_n_r_ids(rundir, snap_index):
     return n, r, ids
     
 
-def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
+def luminosity_from_pdf(nPDF, r_func, gaso, gas, arxvPDR, F, params, nmin, nmax):
     '''
     '''
     
@@ -2934,44 +2978,23 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
     
     ########################
     figure(figsize=(16,8))
-    ###
-    # getting the fit function for the radii as a function of density
-    # linear fit in log scale
-    ###
-    
-    subplot(231)
-    x, y = log10(gaso.n[ gaso.n > 1e-2]), log10(gaso.radius[ gaso.n > 1e-2])
-    z = polyfit(x, y, 1)
-    p = poly1d(z)
 
-    ## radius (in kpc) as a function of density (in cm-3)
-    # r(kpc) = R(n) (kpc) 
-    r_func = lambda n: 10.0**p(log10(n))
-    
+    subplot(231)
+    ## radius (in kpc) as a function of density (in cm-3)    
     # plotting the distribution of the radii vs n
     loglog(gas.n[::1000], gas.radius[::1000], 'b.')
-    loglog(10**x[::1000], 10**y[::1000], 'r.')
     # plotting the fit linear function
     xs = linspace(-3.0, 6.0, 100)
-    ys = p(xs)
     loglog(10.0**xs, r_func(10.0**xs), 'g--', linewidth=2)
     
     
     ## getting the fitted PDF of the density (reading it from the disk)
     subplot(232)
-    weights_filename = gen_weights_filename(params['rundir'], params['snap_index'])    
-    info = gas.load_weights_function(weights_filename)
-    log10nPDF_fit = scipy.interpolate.interp1d(log10(info['x_fit']), log10(info['y_fit']))
-
-    ## the interpolation function of the PDF
-    # nPDF(n) = probability density at that density (not in log scale
-    nPDF = lambda n: 10.0**log10nPDF_fit(log10(n))
     loglog(10.0**xs, nPDF(10.0**xs), 'r--', lw=1)
     
     ################################################################################################
     # computing the total luminosity discretely over the whole PDF
     
-    nmin, nmax = -3, 6.0
     log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
     
     ###################
@@ -3045,3 +3068,148 @@ def luminosity_from_pdf(gaso, gas, arxvPDR, F, params):
     
     pylab.show() 
     return info
+
+def effective_area_tests(gas, gasp, params):
+
+    def area_info(pid):
+        
+        r = gas.radius[ gas.id == pid ]
+        
+        area = pi * r**2
+        total_area = area.sum()
+        area_parent = pi*(gasp.radius[gasp.id == pid])**2
+        
+        return total_area, area_parent
+    '''
+    print 'number of particles which ave children', len(gasp)
+    
+    every = 1000
+    n = gasp.n[::every]
+    area_ratio = zeros(n.size, 'f8')
+     
+    for i, this_id in enumerate(gasp.id[::every]):
+        
+        r = gas.radius[ gas.id == this_id ]
+        
+        area = pi * r**2
+        total_area = area.sum() 
+        area_parent = pi*(gasp.radius[0])**2
+        
+        print r
+        print i
+        print 'total area = ', total_area
+        print 'area parent = ', area_parent 
+        print 'area ratios = ', total_area / area_parent
+    
+        area_ratio[i] = total_area / area_parent
+    
+    
+    semilogx(n, area_ratio, 'o')
+    '''
+    
+    '''
+    ids of particles with n > 1e5
+    1352118,  143025, 1850783,  636856, 1658545,  209078, 1956500,
+    127946,  300592, 1604612, 1548951, 1522416,  234501, 1209118,
+    1317109, 1212827, 1335993,  930197, 1321721, 1030499,  848041,
+    802810, 1022996, 1767978, 1878603, 1491714,  786006, 1026492,
+    1810486,  127299, 1318426, 1529623,  168216,  599553, 1601742,
+    1384949,   88511,  189546,    5310,  592677,  222482, 1650119,
+    1880076,  354930,  103668, 1256942,  212912,  858876, 1942415,
+    612252, 1909999,  327141,  606273,  239376, 1192756, 1537287,
+    589815, 1111410,  246552
+    '''
+    
+    pid = 5310
+    ind = where(gasp.id == pid)
+    line = 'HCN1-0'
+    unit = 'cgs'
+    
+    fluxp = gas.get_flux(line, em_unit=unit)
+    flux = gas.get_flux(line, em_unit=unit)
+    
+    r = gas.radius[ gas.id == gasp.id[ind] ]
+    n = gas.n[ gas.id == gasp.id[ind] ]
+    f = flux[ gas.id == gasp.id[ind] ]
+    
+    loglog(n, f, 'o')
+    loglog([1e2, 1e6], [fluxp[ind],fluxp[ind]],'--' )
+    ylim(1e-10, 1e1)
+    
+    areas = area_info(pid)
+     
+    print areas[0]/areas[1]
+
+#################################################
+class density_distribution(object):
+    
+    def __init__(self, dist, *args, **kwargs):
+        
+        self.pdf = None
+        
+        if dist == 'lognormal':
+            ''' '''
+            self.pdf = self.make_lognormal_pdf(*args, **kwargs)
+            
+            
+    def make_lognormal_pdf(self, *args, **kwargs):
+        
+        rv = stats.norm(
+                        loc=log(kwargs['mu']), 
+                        scale=log(kwargs['sigma'])
+                        )
+        
+        return lambda n: rv.pdf(log(n))
+                                
+
+def mass_from_pdf(n_pdf, r_func, n_min, n_max, res=100):
+    '''compute the total mass from a density PDF and the radii of the assumed spherical
+    clouds within a density range.
+    
+    # radius density scaling function, r(kpc) = R(n[cm-3]) (kpc)     
+    r_func = coset9_sol_info.r_sph_kpc
+
+    ## the probability density at that density (not in log scale
+    nPDF = coset9_sol_info.nPDF_sph.pdf
+    #nPDF = coset9_sol_info.nPDF_sph_test.pdf
+
+    fi_utils.mass_from_pdf(nPDF, r_func, 1.0, 1e6)
+    '''
+    
+    # the locations on the denisty pdf in log10
+    l10n, dlog10n = linspace(log10(n_min), log10(n_max), res, retstep=True)
+    dlogn = log(10.0**dlog10n)
+    l10n += (dlog10n*0.5)
+    
+    # the density in cgs
+    n_cgs = 10.0**l10n
+    
+    # the values of the PDF at these densities
+    p = n_pdf(n_cgs)*dlogn
+    subplot(311)
+    plot(l10n, p)
+    print 'print total probability in this interval = ', p.sum()
+    
+    # volume of the clouds in the denisty bins (cm3)
+    r = r_func(n_cgs)*KPC2CM  # radius in cm
+    v = (4.0/3.0)*pi*r**3  # in cm^3
+    subplot(312)
+    loglog(n_cgs, r / KPC2CM)
+
+    # mass of the clouds as a function of density
+    rho = n_cgs*M_PROTON_CGS 
+    m_cgs = rho*v # in grams
+    m_msun = m_cgs / M_SUN_CGS
+    print n_cgs[0], r[0] / KPC2CM, m_msun[0]
+
+    # mass in each density bin
+    m_bin_msun = p * m_msun
+    subplot(313)
+    loglog(n_cgs, m_msun)
+
+    # total mass
+    m_total = m_bin_msun.sum()
+    
+    return m_total 
+        
+        

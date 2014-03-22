@@ -48,7 +48,7 @@ params = {
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : True, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'matched', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'conserve-area',  #'conserve-area', 'matched',  #'original-only' ,#None ,#by-number          
            
           'snap_index': 4,
           'ranges'    : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
@@ -64,7 +64,7 @@ params = {
                         'box_size' : [-8.0, 8.0] | units.kpc, 
                         },
           'check'   : 'default',          
-          'em_unit'   : 'em_fluxKkms', #'em_fluxKkms', 'em_fluxcgs'
+          'em_unit'   : 'em_fluxcgs', #'em_fluxKkms', 'em_fluxcgs'
           'save_maps' : False,
 
           'error_bars'  : 0.2, 
@@ -272,11 +272,3 @@ estimator.setup_observed_grid()
 
 #print 'total H2 mass          :', estimator.H2_mass_mesh.sum()
 #print 'total H2 mass no gmech :', estimator.H2_mass_no_gmech_mesh.sum()
-
-
-
-
-
-
-
-

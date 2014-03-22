@@ -49,7 +49,7 @@ params = {
                         },
           'check'   : 'default',          
           'em_unit'   : 'em_fluxKkms',
-          'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'CS1-0', 'SiO1-0', 'HCO+1-0'],
+          'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'HCO+1-0'],
         }
 
 fig_save_path = '/home/mher/ism/docs/paper04/src/figs/results/total_luminosity.eps'
