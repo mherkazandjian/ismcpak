@@ -153,7 +153,7 @@ for i, specStr in enumerate(specsStrs):
     if em_unit == 'Kkms':
         y *= 1e6  # form K km /s kpc2 -> K km /s pc2
     elif em_unit == 'cgs':
-            y = y * ((mylib.units.KPC2CM)**2) / mylib.constants.Lsun_erg_s # from ergs/cm2/s kpc2 -> Lsun
+            y = y * ((mylib.units.KPC2CM)**2) / mylib.constants.LSUN_ERG_S # from ergs/cm2/s kpc2 -> Lsun
     else:
         raise ValueError('unknown unit %s' % em_unit)
     
@@ -179,7 +179,7 @@ if True:
         if em_unit == 'Kkms':
             y *= 1e6  # form K km /s kpc2 -> K km /s pc2
         elif em_unit == 'cgs':
-            y = y * ((mylib.units.KPC2CM)**2) / mylib.constants.Lsun_erg_s # from ergs/cm2/s kpc2 -> Lsun
+            y = y * ((mylib.units.KPC2CM)**2) / mylib.constants.LSUN_ERG_S # from ergs/cm2/s kpc2 -> Lsun
         else:
             raise ValueError('unknown unit %s' % em_unit)
         

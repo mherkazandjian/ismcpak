@@ -2967,104 +2967,120 @@ def load_original_n_r_ids(rundir, snap_index):
     n, r, ids = f['arr_0']
     
     return n, r, ids
-    
 
-def luminosity_from_pdf(nPDF, r_func, gaso, gas, arxvPDR, F, params, nmin, nmax):
+
+def luminosity_pdf_vs_n(n_bins, cloud_parms, F, nPDF, r_func, N, label, in_ax=None, no_plot=False, color=None):
     '''
     '''
+    n_bins = n_bins.copy()
     
-    #yrng = [1e-12, 1e2]
-    yrng = [1e-6, 1e12]
+    log10G0, log10Gmech, Av = cloud_parms
+    
+    dlog10n = log10(n_bins)[1] - log10(n_bins)[0]
+    
+    log10G0s = ones(n_bins.size, 'f8')*log10G0
+    log10gmechs = ones(n_bins.size, 'f8')*log10Gmech
+    Avs = ones(n_bins.size, 'f8')*Av
+    
+    data = numpy.array([log10(n_bins), log10G0s, log10gmechs, Avs]).T
+    
+    flux_bins = 10.0**F.get( data )
+
+    prob_n_bins = nPDF(n_bins)
+    r_nbins = r_func(n_bins)
+     
+    luminosity_nbins = (prob_n_bins*dlog10n)*flux_bins*(pi*(r_nbins*1e3)**2)
+    
+    inds = where( isnan(luminosity_nbins) == False )
+    luminosity_nbins = luminosity_nbins[inds]
+    n_bins = n_bins[inds]
+    
+    # computing the luminosuty for all the particles
+    luminosity_nbins *= N 
+    
+    if in_ax == None:
+        ax=gca()
+    else:
+        ax=in_ax
+        
+    if no_plot == False:
+        
+        x, y = n_bins, luminosity_nbins
+        ax.loglog(x, y, color, label=label)
+        
+        y_norm = y / y.sum()
+        y_norm_c = y_norm.cumsum()
+        
+        
+        finterp = interpolate.interp1d(log10(x), y_norm_c)
+        finterp2 = interpolate.interp1d(log10(x), y)
+        x_interp = linspace(log10(x.min()), log10(x.max()), 1000.0)
+        y_norm_c_interp = finterp(x_interp)
+        
+        inds = where(y_norm_c_interp > 0.9)[0]
+        x, y = x_interp[inds[0]], y_norm_c_interp[inds[0]]
+        ax.loglog(10.0**x, finterp2(x), color + 'o', markersize=4)
+        
+        #ind = where()
+
+    return luminosity_nbins
+
+def plot_luminosity_from_pdf(nPDF, r_func, arxvPDR, F, params, nmin, nmax,
+                        yrng=[1e-6, 1e12]):
+    '''
+    '''
     
     ########################
     figure(figsize=(16,8))
 
     subplot(231)
     ## radius (in kpc) as a function of density (in cm-3)    
-    # plotting the distribution of the radii vs n
-    loglog(gas.n[::1000], gas.radius[::1000], 'b.')
-    # plotting the fit linear function
     xs = linspace(-3.0, 6.0, 100)
-    loglog(10.0**xs, r_func(10.0**xs), 'g--', linewidth=2)
-    
+    loglog(10.0**xs, r_func(10.0**xs)*1e3, 'g--', linewidth=2)
+    xlabel('n (cm-3)')
+    ylabel('r (pc)')
     
     ## getting the fitted PDF of the density (reading it from the disk)
     subplot(232)
     loglog(10.0**xs, nPDF(10.0**xs), 'r--', lw=1)
     
     ################################################################################################
+
+
     # computing the total luminosity discretely over the whole PDF
     
     log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
     
     ###################
     n_bins = 10.0**(log10n + dlog10n*0.5)
-    prob_n_bins = nPDF(n_bins)
-    r_nbins = r_func(n_bins)
+    #prob_n_bins = nPDF(n_bins)
+    #r_nbins = r_func(n_bins)
     
     N_particles = 2e6
 
-    def plot_luminosity_vs_n(log10G0_log10Gmech_Av, k):
-        
-        log10G0, log10Gmech, Av = log10G0_log10Gmech_Av
-        
-        log10G0s = ones(n_bins.size, 'f8')*log10G0
-        log10gmechs = ones(n_bins.size, 'f8')*log10Gmech
-        Avs = ones(n_bins.size, 'f8')*Av
-        
-        data = numpy.array([log10(n_bins), log10G0s, log10gmechs, Avs]).T
-        
-        flux_bins = 10.0**F.get( data )
-        
-        luminosity_nbins = (prob_n_bins*dlog10n)*flux_bins*(pi*(r_nbins*1e3)**2)
-        
-        # computing the luminosuty for all the particles
-        luminosity_nbins *= N_particles 
-        
-        loglog(n_bins, luminosity_nbins, label=log10G0_log10Gmech_Av[k])
-        
-        '''
-        log10G0, log10gmech, Av = 2.0, -50.0, 10.0
-        
-        for i, n_bin in enumerate(n_bins):
-            
-            data = numpy.array([[log10(n_bin), log10G0, log10gmech, Av]])
-            
-            flux_bin = 10.0**F.get( data )
-        
-            luminosity_nbins[i] = prob_n_bins[i]*flux_bin*(pi*(r_nbins[i])**2)
-            print 'i = %03d, n = %.2e  log10(n) = %-+.2f  flux = %.1e, r = %.1e' % (i, n_bin, log10(n_bin), flux_bin, r_nbins[i]),
-            print 'luminostiy = %.1e' % luminosity_nbins[i] 
-        '''
-
     subplot(2, 3, 4)
     for log10G0 in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
-        plot_luminosity_vs_n([log10G0, -22, 10.0], 0)
+        luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,  
+                             nPDF, r_func, N_particles, log10G0)
     xlim(10.0**nmin, 10.0**nmax)
     ylim(*yrng)
     legend(loc=0, prop={'size':8})
     
     subplot(2, 3, 5)
     for log10Gmech in [-50.0, -30.0, -25.0, -23.0, -22.0, -21.0]:
-        plot_luminosity_vs_n([2.0, log10Gmech, 10.0], 1)
+        luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F, 
+                             nPDF, r_func, N_particles, log10Gmech)
     xlim(10.0**nmin, 10.0**nmax)
     ylim(*yrng)    
     legend(loc=0, prop={'size':8})
 
     subplot(2, 3, 6)
     for Av in [0.1, 1.0, 5.0, 10.0, 20.0]:
-        plot_luminosity_vs_n([2.0, -22.0, Av], 2)
+        luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
+                             nPDF, r_func, N_particles, Av)
     xlim(10.0**nmin, 10.0**nmax)
     ylim(*yrng)
     legend(loc=0, prop={'size':8})
-    
-    #Av = 10.0
-    #log10Gmech=-50.0
-
-    #for log10G0 in [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
-    
-        
-        
     
     pylab.show() 
     return info
@@ -3177,39 +3193,49 @@ def mass_from_pdf(n_pdf, r_func, n_min, n_max, res=100):
     '''
     
     # the locations on the denisty pdf in log10
-    l10n, dlog10n = linspace(log10(n_min), log10(n_max), res, retstep=True)
+    l10n, dlog10n = linspace(log10(n_min), log10(n_max), res, endpoint=False, retstep=True)
     dlogn = log(10.0**dlog10n)
     l10n += (dlog10n*0.5)
-    
+
     # the density in cgs
     n_cgs = 10.0**l10n
     
     # the values of the PDF at these densities
     p = n_pdf(n_cgs)*dlogn
-    subplot(311)
-    plot(l10n, p)
+    subplot(221)
+    loglog(n_cgs, p)
+    ylabel('PDF')    
     print 'print total probability in this interval = ', p.sum()
     
     # volume of the clouds in the denisty bins (cm3)
     r = r_func(n_cgs)*KPC2CM  # radius in cm
     v = (4.0/3.0)*pi*r**3  # in cm^3
-    subplot(312)
+    subplot(222)
     loglog(n_cgs, r / KPC2CM)
-
+    ylabel('r(kpc)')
     # mass of the clouds as a function of density
     rho = n_cgs*M_PROTON_CGS 
     m_cgs = rho*v # in grams
     m_msun = m_cgs / M_SUN_CGS
     print n_cgs[0], r[0] / KPC2CM, m_msun[0]
 
-    # mass in each density bin
+    # mass of the clouds in each density bin
     m_bin_msun = p * m_msun
-    subplot(313)
-    loglog(n_cgs, m_msun)
+    subplot(223)
+    loglog(n_cgs, m_bin_msun, label='mass PDF')
+    loglog(n_cgs, m_msun, label='mass cloud')
+    legend(loc=0)
+    print 'total mass of the distribution (M_sun) = %e' % m_bin_msun.sum()
+    
+    # mass of the clouds in each density bin
+    #m_bin_msun = p * m_msun
+    #subplot(413)
+    #loglog(n_cgs, m_msun)
 
     # total mass
     m_total = m_bin_msun.sum()
     
-    return m_total 
+    show()
+    return m_total
         
         

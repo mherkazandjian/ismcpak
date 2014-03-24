@@ -53,29 +53,6 @@ logger = default_logger()
 
 bs_min, bs_max = params['ranges']['box_size'].number
 
-## path to processed fi snapshot  
-snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % params['snap_index'] + '.states.npz'
-    
-## loading the processed sph simulation data with the emissions 
-logger.debug('loading proccessed snapshot %s : ' % snap_filename)
-gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'])
- 
-logger.debug('done reading fi snapshot : %s' % snap_filename)
-logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
-
-## setting the radii and weights based on the suggested weighting
-gas.set_radii(weighting=params['weights'], rundir=params['rundir'], snap_index=params['snap_index'])
-
-## checking for weird particles and taking care of them
-gas.check_particles(params['check'], logger)
-
-#keeping gas particles within the specified ranges
-gas = fi_utils.select_particles(gas, params['ranges'])
-logger.debug('got the sph particles in the required ranges')
-logger.debug('number of gas particles in the specified ranages = %d' %  len(gas))
-
-gaso = gas[gas.get_inds_original_set()]
-
 ################################################################################################
 arxvPDR = meshUtils.meshArxv(dirPath = params['pdrDb'], readDb=True)
 
@@ -92,6 +69,6 @@ nPDF = coset9_sol_info.nPDF_sph.pdf
 
 nmin, nmax = -3, 6.0
 
-fi_utils.luminosity_from_pdf(nPDF, r_func, gaso, gas, arxvPDR, F, params,  nmin, nmax)
+fi_utils.plot_luminosity_from_pdf(nPDF, r_func, arxvPDR, F, params,  nmin, nmax)
 
 print 'done'
