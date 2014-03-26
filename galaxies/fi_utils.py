@@ -1752,14 +1752,20 @@ class gas_set(Particles):
         ## fit a curve to the variates
         mu_fit, sigma_fit = stats.norm.fit(ln_fit)
 
+        print 'log10(mu), log10(std) = ', log10(exp(mu_fit)),  log10(exp(sigma_fit))
+
         ## generating the function with the fitted deviates
         rv = stats.norm(loc=mu_fit, scale=sigma_fit)
         
         return rv, ln_fit.size
     
-    def plot_PDF_CDF(self, fit_func_rng=None):
+    def plot_PDF_CDF(self, fit_func_rng=None, in_ax=None, color='r'):
         
-        fig, axs = pylab.subplots(2, 3, figsize=(12,8))
+        if in_ax == None:
+            fig, axs = pylab.subplots(2, 3, figsize=(12,8))
+        else:
+            axs = in_ax
+            fig = pylab.gcf()
     
         
         # getting the PDF and the CDF of all the particles
@@ -1772,17 +1778,17 @@ class gas_set(Particles):
         hpdf, bins = pylab.histogram(l10n, range=[l10min, l10max], bins=nBins, normed=True)
         
         # plotting the PDF of log10(n)
-        axs[0,0].plot(bins[1::], hpdf, 'b')
+        axs[0,0].plot(bins[1::], hpdf, color)
         axs[0,0].set_title('PDF log10(n)')
         
-        axs[0,1].semilogy(bins[1::], (hpdf*bin_sz).cumsum())
+        axs[0,1].semilogy(bins[1::], (hpdf*bin_sz).cumsum(), color)
         axs[0,1].set_title('CDF log10(n)')
         axs[0,1].set_ylim(ymax=10.0)
 
         # plotting PDF(log(x))
         ln = log(self.n) 
         hpdf, lbins = pylab.histogram(ln, range=[log(1e-6), log(1e6)], bins=nBins, normed=True)
-        axs[0,2].semilogy(lbins[1::], hpdf, 'b', linewidth=2)
+        axs[0,2].semilogy(lbins[1::], hpdf, color, linewidth=2)
         axs[0,2].set_title('PDF log(n)')
 
         ########################################################
@@ -1792,7 +1798,7 @@ class gas_set(Particles):
         #ranges = [ [1e-1, 1e1], [1e-2, 1e2], [1e-1, 1e2], [1e-1, 1e3], [1e-1, 1e4] ]
         #colors = [    'y'     ,   'g',         'k',          'c',        'm']
         ranges = [ fit_func_rng,  ]
-        colors = [    'y'     , ]
+        colors = [    color+':'     , ]
         x = numpy.linspace(log(1e-4), log(1e6), 100)
         
         plts = ()
@@ -1804,7 +1810,7 @@ class gas_set(Particles):
             
             plts += (plt,)
             labels += '%d,%d' % (log10(rng[0]), log10(rng[1])),
-            
+                
         axs[0,2].legend(plts, labels, loc=0)
         
         ## setting the appropriate labels on the x-axis
@@ -2444,8 +2450,8 @@ class gas_set(Particles):
         w[inds_s] = 0.0
         
         ## loading the sampling info from the saved file
-        info = self.load_weights_function(sampling_info_file_path)
-
+        info = self.load_weights_function(sampling_info_file_path)        
+        
         ## setting the weights of the original particles above the sampling interval to zero
         gas_orig_amuse = self[self.get_inds_original_set()]
         gas_orig = gas_set(len(gas_orig_amuse)) 
@@ -2493,7 +2499,7 @@ class gas_set(Particles):
         all_ln = numpy.hstack((ln_o, ln_s))
         all_weights = numpy.hstack((w_o, w_s))
 
-        if show_plot:        
+        if show_plot:
         
             hpdf_s, lbins_s = pylab.histogram(all_ln, 
                                               range=[log(1e-6), log(1e6)], bins=nbins, normed=True,
@@ -2998,12 +3004,13 @@ def luminosity_pdf_vs_n(n_bins, cloud_parms, F, nPDF, r_func, N, label, in_ax=No
     # computing the luminosuty for all the particles
     luminosity_nbins *= N 
     
-    if in_ax == None:
-        ax=gca()
-    else:
-        ax=in_ax
         
     if no_plot == False:
+        
+        if in_ax == None:
+            ax=gca()
+        else:
+            ax=in_ax
         
         x, y = n_bins, luminosity_nbins
         ax.loglog(x, y, color, label=label)

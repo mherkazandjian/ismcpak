@@ -18,8 +18,8 @@ import lineDict
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
-#home = '/home/mher'
-home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
+home = '/home/mher'
+#home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
 params = {
           ##################### parameters for making the mock maps #########################
@@ -52,8 +52,8 @@ params = {
           'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'HCO+1-0'],
         }
 
-fig_save_path = '/home/mher/ism/docs/paper04/src/figs/results/total_luminosity.eps'
-#fig_save_path = None
+#fig_save_path = '/home/mher/ism/docs/paper04/src/figs/results/total_luminosity.eps'
+fig_save_path = None
 
 #############################################################################################################
 #############################################################################################################
@@ -121,5 +121,5 @@ gas = gas[hist.inds_in]
 
 import paper_plots
 
-fig = paper_plots.total_luminosity(gas, params, fig_save_path)
+fig, specsStrs, idx, lum, lum_orig = paper_plots.total_luminosity(gas, params, fig_save_path)
 

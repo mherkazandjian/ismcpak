@@ -44,6 +44,11 @@ params = {
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
         }
 
+fig_save_path1 = None #'/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/luminosities.eps'
+fig_save_path2 = None #'/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/pdfs.eps'
+fig_save_path3 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/line_ratio_grid_HNC1-0_HCN1-0.eps'
+#fig_save_path1 = None
+#fig_save_path2 = None
 #############################################################################################################
 #############################################################################################################
 #############################################################################################################
@@ -53,29 +58,6 @@ logger = default_logger()
 
 bs_min, bs_max = params['ranges']['box_size'].number
 
-## path to processed fi snapshot  
-snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % params['snap_index'] + '.states.npz'
-    
-## loading the processed sph simulation data with the emissions 
-logger.debug('loading proccessed snapshot %s : ' % snap_filename)
-gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'])
- 
-logger.debug('done reading fi snapshot : %s' % snap_filename)
-logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
-
-## setting the radii and weights based on the suggested weighting
-gas.set_radii(weighting=params['weights'], rundir=params['rundir'], snap_index=params['snap_index'])
-
-## checking for weird particles and taking care of them
-gas.check_particles(params['check'], logger)
-
-#keeping gas particles within the specified ranges
-gas = fi_utils.select_particles(gas, params['ranges'])
-logger.debug('got the sph particles in the required ranges')
-logger.debug('number of gas particles in the specified ranages = %d' %  len(gas))
-
-gaso = gas[gas.get_inds_original_set()]
-
 ################################################################################################
 arxvPDR = meshUtils.meshArxv(dirPath = params['pdrDb'], readDb=True)
 
@@ -83,5 +65,12 @@ F = arxvPDR.load_interp_func(info={'source':'radex'}, line='HCN1-0', quantity='f
 
 ########################
 
-#fi_utils.luminosity_from_pdf(gaso, gas, arxvPDR, F, params)
+nmin, nmax = -3, 6.0
+
+import paper_plots
+
+paper_plots.synthetic_luminosity_from_pdf(arxvPDR, F, params, -3.0, 6.0, yrng=[1e-6, 1e12], fig_save_path=fig_save_path1)
+paper_plots.plot_PDFs_of_synthetic_luminosity_distribututions(-3.0, 8.0, fig_save_path=fig_save_path2)
+paper_plots.line_ratio_grid_from_pdf_sweep(arxvPDR, params, -3.0, 8.0, fig_save_path=fig_save_path3)
+
 print 'done'

@@ -2,6 +2,7 @@ import time, os
 
 import matplotlib
 matplotlib.use('Qt4Agg')
+import pylab
 
 from numpy import repeat, nan, arange, where, hstack, ones
 
@@ -173,4 +174,5 @@ if save_weights_func == True:
                                               save_weights_info=save_weights_func_path)
 
 
+pylab.show()
 print 'done'
