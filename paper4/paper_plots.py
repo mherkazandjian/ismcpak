@@ -420,8 +420,6 @@ def luminosity_pdf_box(gas, params, fig_save_path):
 def plot_PDFs_of_synthetic_luminosity_distribututions(nmin, nmax, fig_save_path=None):    
     '''plot the PDF of the luminosity distributions'''
     
-    import matplotlib.cm as cm
-    
     fig = templates.subplots_grid(1, 1, hspace=0.0, wspace=0.0,
                                   fig = {'kwargs':{
                                                    'figsize' : {3.55, 2.9}
@@ -445,6 +443,12 @@ def plot_PDFs_of_synthetic_luminosity_distribututions(nmin, nmax, fig_save_path=
     nPDF = coset9_sol_info.nPDF_sph.pdf
     ax = fig.sub[0,0]
     ax.loglog(n_bins, nPDF(n_bins), '-', label=r'$\log_{10}(\sigma$) = 0.93')
+
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale) (wada2001)
+    nPDF_obj = fi_utils.density_distribution('lognormal', mu=10.0**1.1, sigma=10.0**1.35)
+    nPDF = nPDF_obj.pdf
+    ax.loglog(n_bins, nPDF(n_bins), '-.', label=r'$\log_{10}(\sigma$) = 1.35')
     
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
@@ -458,11 +462,6 @@ def plot_PDFs_of_synthetic_luminosity_distribututions(nmin, nmax, fig_save_path=
     nPDF = nPDF_obj.pdf
     ax.loglog(n_bins, nPDF(n_bins), ':', label=r'$\log_{10}(\sigma$) = 2.7')
 
-    #--------------------------------------------------------------------------------------
-    ## the probability density at that density (not in log scale) (wada2001)
-    nPDF_obj = fi_utils.density_distribution('lognormal', mu=10.0**1.1, sigma=10.0**3.7)
-    nPDF = nPDF_obj.pdf
-    ax.loglog(n_bins, nPDF(n_bins), '-.', label=r'$\log_{10}(\sigma$) = 3.7')
     
     #--------------------------------------------------------------------------------------
 
@@ -544,25 +543,50 @@ def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
 
     ax.legend(loc=0, prop={'size':6})
     ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
-    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 0.93', size=6)    
-    #--------------------------------------------------------------------------------------
-    ## the probability density at that density (not in log scale)
-    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=exp(4.16))
+    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 0.93', size=6)
+    #--------------------------------------------------------------------------------------    
+    ## the probability density at that density (not in log scale) (wada2001)
+    nPDF_obj = fi_utils.density_distribution('lognormal', mu=10.0**1.11, sigma=10.0**1.35)
     nPDF = nPDF_obj.pdf
     
     ax = fig.sub[1,0]
     for i, log10G0 in enumerate([0.0, 2.0, 4.0, 6.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,          
+        fi_utils.luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,      
                                      nPDF, r_func, N_particles, log10G0, in_ax=ax,
                                      color=colors[i])
 
     ax = fig.sub[1,1]
     for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
         fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+                                    nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
+                                    color=colors[i])
+
+    ax = fig.sub[1,2]
+    for i, Av in enumerate([0.1, 1.0, 5.0, 10.0]):
+        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
+                                     nPDF, r_func, N_particles, Av, in_ax=ax,
+                                     color=colors[i])
+
+    ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 1.1', size=6) 
+    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 1.35', size=6)            
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale)
+    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=exp(4.16))
+    nPDF = nPDF_obj.pdf
+    
+    ax = fig.sub[2,0]
+    for i, log10G0 in enumerate([0.0, 2.0, 4.0, 6.0]):
+        fi_utils.luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,          
+                                     nPDF, r_func, N_particles, log10G0, in_ax=ax,
+                                     color=colors[i])
+
+    ax = fig.sub[2,1]
+    for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
+        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
                                      nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
                                      color=colors[i])
 
-    ax = fig.sub[1,2]
+    ax = fig.sub[2,2]
     for i, Av in enumerate([0.1, 1.0, 5.0, 10.0, 20.0]):
         fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
@@ -573,31 +597,6 @@ def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
     nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=exp(6.16))
-    nPDF = nPDF_obj.pdf
-    
-    ax = fig.sub[2,0]
-    for i, log10G0 in enumerate([0.0, 2.0, 4.0, 6.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,      
-                                     nPDF, r_func, N_particles, log10G0, in_ax=ax,
-                                     color=colors[i])
-
-    ax = fig.sub[2,1]
-    for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
-                                    nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
-                                    color=colors[i])
-
-    ax = fig.sub[2,2]
-    for i, Av in enumerate([0.1, 1.0, 5.0, 10.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
-                                     nPDF, r_func, N_particles, Av, in_ax=ax,
-                                     color=colors[i])
-
-    ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
-    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 2.7', size=6)    
-    #--------------------------------------------------------------------------------------
-    ## the probability density at that density (not in log scale) (wada2001)
-    nPDF_obj = fi_utils.density_distribution('lognormal', mu=10.0**1.1, sigma=10.0**3.7)
     nPDF = nPDF_obj.pdf
     
     ax = fig.sub[3,0]
@@ -618,8 +617,8 @@ def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
 
-    ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 1.1', size=6) 
-    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 3.7', size=6)    
+    ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
+    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 2.7', size=6)    
     #--------------------------------------------------------------------------------------
          
     fig.set_xticks([1e1, 1e3, 1e5], 

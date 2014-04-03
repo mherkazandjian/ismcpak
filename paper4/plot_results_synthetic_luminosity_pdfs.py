@@ -44,8 +44,8 @@ params = {
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
         }
 
-fig_save_path1 = None #'/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/luminosities.eps'
-fig_save_path2 = None #'/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/pdfs.eps'
+fig_save_path1 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/luminosities.eps'
+fig_save_path2 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/pdfs.eps'
 fig_save_path3 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/line_ratio_grid_HNC1-0_HCN1-0.eps'
 #fig_save_path1 = None
 #fig_save_path2 = None
