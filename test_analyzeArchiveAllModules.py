@@ -9,9 +9,9 @@ matplotlib.use('Qt4Agg')
 import pylab
 import meshUtils
 #########################################parameters##########################################################
-#home = '/home/mher'
+home = '/home/mher'
 #home = '/home/mher/data2/mher'
-home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
+#home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
 specStr_PDR   = 'CO'
 specStr_Radex = 'CO'
@@ -29,21 +29,21 @@ parms = {
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/uniformSweep2-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/', # <==============
-         'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0/', # <==============
+         #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0/', # <==============
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2-low-res/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-0.2/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-z-1.0-tmp/',
          #'dirPath'      : home + '/ism/runs/oneSided/sph-db-test/',
-         #'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
+         'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
          #'dirPath'      : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
                    
          #------------------------------------------
-         #'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
-         'relativeGmech' : False,  # False => 3rd dim is gMech 
-         #'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
+         'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+         #'relativeGmech' : False,  # False => 3rd dim is gMech 
+         'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
-         #'plotRanges'    : [[-1,7],[-1,7  ],[-12, 1.2]],     # adaptive gMech 
-         'plotRanges'     : [[-4,7],[-4,7],[-51, -15]],  # uniform gmech
+         'plotRanges'    : [[-1,7],[-1,7  ],[-12, 1.2]],     # adaptive gMech 
+         #'plotRanges'     : [[-4,7],[-4,7],[-51, -15]],  # uniform gmech
          #'plotRanges'    : [[-1,7],[-1,7  ],[-18, -12]],     # variable CR rate 
 
          #useful for variable CR runs

@@ -3709,7 +3709,7 @@ class meshArxv(object):
         .. code-block:: python
         
             CO1_0 = arxv.get_emissions_from_databases(
-                                                      line   = {'type':'pdr', 'code':'CO1-0'}
+                                                      line   = {'type':'radex-lvg|pdr', 'code':'CO1-0'} 
                                                       Av_use = 10.0,
                                                      )
         '''
@@ -3758,7 +3758,7 @@ class meshArxv(object):
         
         .. code-block:: python
         
-            v, data = arxv.get_emission_from_all_databases_for_Av_range(
+            v, data = arxv.get_emission_from_all_radex_dbs_for_Av_range(
                                                                         line = '13CO1-0',
                                                                         Avs  = [1.0, 2.0, 5.0, 10.0],
                                                                         quantity = 'fluxKkms',  
