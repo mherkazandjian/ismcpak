@@ -64,7 +64,7 @@ params = {
                         'box_size' : [-8.0, 8.0] | units.kpc, 
                         },
           'check'   : 'default',          
-          'em_unit'   : 'em_fluxcgs', #'em_fluxKkms', 'em_fluxcgs'
+          'em_unit'   : 'em_fluxKkms', #'em_fluxKkms', 'em_fluxcgs'
           'save_maps' : False,
 
           'error_bars'  : 0.2, 
@@ -124,11 +124,11 @@ params = {
 
                            'HCO+1-0/CO1-0', 'HCO+2-1/CO1-0', 'HCO+3-2/CO1-0', 'HCO+4-3/CO1-0', 'HCO+5-4/CO1-0',  'HCO+6-5/CO1-0', 'HCO+7-6/CO1-0',
 
-                           'SiO1-0/CO1-0', 'SiO2-1/CO1-0', 'SiO3-2/CO1-0', 'SiO4-3/CO1-0', 'SiO5-4/CO1-0',  'SiO6-5/CO1-0', 'SiO7-6/CO1-0',
+#                           'SiO1-0/CO1-0', 'SiO2-1/CO1-0', 'SiO3-2/CO1-0', 'SiO4-3/CO1-0', 'SiO5-4/CO1-0',  'SiO6-5/CO1-0', 'SiO7-6/CO1-0',
 
-                           'CS1-0/CO1-0', 'CS2-1/CO1-0', 'CS3-2/CO1-0', 'CS4-3/CO1-0', 'CS5-4/CO1-0',  'CS6-5/CO1-0', 'CS7-6/CO1-0',
+#                           'CS1-0/CO1-0', 'CS2-1/CO1-0', 'CS3-2/CO1-0', 'CS4-3/CO1-0', 'CS5-4/CO1-0',  'CS6-5/CO1-0', 'CS7-6/CO1-0',
 
-                           'CN1-0/CO1-0', 'CN2-1/CO1-0', 'CN3-2/CO1-0', 'CN4-3/CO1-0', 'CN5-4/CO1-0',  'CN6-5/CO1-0', 'CN7-6/CO1-0',
+#                           'CN1-0/CO1-0', 'CN2-1/CO1-0', 'CN3-2/CO1-0', 'CN4-3/CO1-0', 'CN5-4/CO1-0',  'CN6-5/CO1-0', 'CN7-6/CO1-0',
 
                         ],
 

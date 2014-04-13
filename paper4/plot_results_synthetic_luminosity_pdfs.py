@@ -46,7 +46,8 @@ params = {
 
 fig_save_path1 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/luminosities.eps'
 fig_save_path2 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/pdfs.eps'
-fig_save_path3 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/line_ratio_grid_HNC1-0_HCN1-0.eps'
+fig_save_path3 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/line_ratio_grid_HNC1-0_HCN1-0.pdf'
+fig_save_path4 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/line_ratio_grid_HCO+1-0_HCN1-0.pdf'
 #fig_save_path1 = None
 #fig_save_path2 = None
 #############################################################################################################
@@ -69,8 +70,10 @@ nmin, nmax = -3, 6.0
 
 import paper_plots
 
-paper_plots.synthetic_luminosity_from_pdf(arxvPDR, F, params, -3.0, 6.0, yrng=[1e-6, 1e12], fig_save_path=fig_save_path1)
-paper_plots.plot_PDFs_of_synthetic_luminosity_distribututions(-3.0, 8.0, fig_save_path=fig_save_path2)
-paper_plots.line_ratio_grid_from_pdf_sweep(arxvPDR, params, -3.0, 8.0, fig_save_path=fig_save_path3)
+#paper_plots.synthetic_luminosity_from_pdf(arxvPDR, F, params, -3.0, 6.0, yrng=[1e-6, 1e12], fig_save_path=fig_save_path1)
+#paper_plots.plot_PDFs_of_synthetic_luminosity_distribututions(-3.0, 8.0, fig_save_path=fig_save_path2)
+#paper_plots.line_ratio_grid_from_pdf_sweep(arxvPDR, params, -3.0, 8.0, fig_save_path=fig_save_path3)
+#paper_plots.line_ratio_grid_from_pdf_sweep_HCOP_HCN(arxvPDR, params, nmin, nmax, fig_save_path=fig_save_path4)
+
 
 print 'done'

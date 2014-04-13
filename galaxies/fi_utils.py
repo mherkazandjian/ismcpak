@@ -1235,7 +1235,7 @@ class galaxy_gas_mass_estimator(object):
             pylab.show()
             
             #plotting the emission distribution in the pixel
-            if self.inspect_species != None:
+            if self.inspect_species != '':
                 gas_in_pixel.get_emission_pdfs(qxs=['n', 'G0', 'gmech', 'Av'],
                                                line=self.inspect_species,
                                                log10xs=[True, True, True, False],
@@ -1243,6 +1243,11 @@ class galaxy_gas_mass_estimator(object):
                                                in_axes=axes, 
                                                em_unit=self.em_unit.replace('flux',''),
                                                )
+            else:
+                print '#'*100
+                print "self.inspect_species == '', nothing to inspect"
+                print '#'*100
+                                
         #computing the averages of the physical parameters of the particles inside the pixel 
         #-----------------------------------------------------------------------------------
         def get_pixel_mean_info(weights=None):
@@ -2115,7 +2120,7 @@ class gas_set(Particles):
             fig, axs = pylab.subplots(2, 4, figsize=(12, 6))
         else:
             axs = in_axes
-        
+
         for i, qx in enumerate(qxs):
             
             self.get_emission_pdf(qx=qx, line=line, log10x=log10xs[i], nbins=nbins, xrng=xrngs[i], 
