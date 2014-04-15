@@ -661,6 +661,8 @@ class meshArxv(object):
             
             :param check: if this is set (to any value) the self.checkIntegrity() is called.
         """ 
+
+        self.logger.debug('reading PDR database data ...')
         
         dbInfoFObj = file(self.dirPath + 'meshes.db.info', 'rb')
         dbDataFObj = file(self.dirPath + 'meshes.db'     , 'rb')
@@ -2516,13 +2518,20 @@ class meshArxv(object):
         '''
         Runs radex on a PDR model and return the output in self.radexObj.
         
-        :param pdr_mesh_obj: The mesh object from which the parameters needed by radex will be extracted and used.
+        :param pdr_mesh_obj: The mesh object from which the parameters needed by radex will be extracted and used. By
+         default self.mshTmp is used.
         :param radex_parms: The paramteres needed by radex (the parameters should be a dict of the form self.parms['radex'])
         :param Av_range: The range in Av of the pdr model to be considered.
         '''
         
         write_debug_info = False
         
+        ## setting the defualt objects of the pdr mesh and the radex object
+        if pdr_mesh_obj == None:
+            pdr_mesh_obj = self.mshTmp
+        if radex_obj == None:
+            radex_obj = self.radexObj
+            
         #getthing the stuff radex needs from the PDR mesh
         radex_parm_from_pdr_mesh = pdr_mesh_obj.get_radex_parameters(speciesStr = radex_parms['specStr'], 
                                                                      threshold  = radex_parms['xH2_Min'],

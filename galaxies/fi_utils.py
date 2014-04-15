@@ -317,7 +317,7 @@ def load_gas_particle_info(filename, load_pdr=None, load_only=None):
     '''load the particle states from the file'''
     
     data = numpy.load(filename)
-    print '\tloaded file:\n\t\t%s' % filename    
+    print '\tloaded file:\n\t\t%s' % filename
     n = data['arr_0'].size
 
     gas = gas_set(n)
@@ -388,10 +388,11 @@ def load_gas_particle_info_with_em(filename, species, load_pdr=None, load_only_e
     
     print 'att attributes loaded are : ', names_all
     
-    print '!'*100; print '!'*100; print '!'*100;
-    print '!!!! warning : converting loaded radii from pc to kpc'
-    print '!'*100; print '!'*100; print '!'*100;
-    gas.radius = gas.radius * 1e-3
+    if 'radius' in gas.all_attributes():
+        print '!'*100; print '!'*100; print '!'*100;
+        print '!!!! warning : converting loaded radii from pc to kpc'
+        print '!'*100; print '!'*100; print '!'*100;
+        gas.radius = gas.radius * 1e-3
     
     print 'warning: make sure the computed optical depths make sense!!! it doesnt seem so..'
     return gas
@@ -2580,7 +2581,7 @@ class gas_set(Particles):
         else:
             raise ValueError('unknown weighting!!')
         
-    def set_radii_children_to_original_parent_radii(self, rundir, snap_index):
+    def set_radii_children_to_original_parent_radii(self, rundir, snap_index, to_kpc=True):
         '''sets the radii to children to the the original radii of the parents'''
         
         cinds = self.get_inds_children()
@@ -2598,7 +2599,31 @@ class gas_set(Particles):
         ## computing the original radii assuing the radii were scaled using the 
         ## current weights 
         r[cinds] = r_o[inds_list_of_c_in_o_arrys] # these are in pc
-        r[cinds] *= 1e-3 # converting them to kpc
+        if to_kpc == True:
+            r[cinds] *= 1e-3 # converting them to kpc
+        
+        self.radius = r
+        
+    def set_radii_children_parent_radii(self, rundir, snap_index, to_kpc=True):
+        '''sets the radii to children to the the original radii of the parents'''
+        
+        cinds = self.get_inds_children()
+        cid = int32(self.id[cinds])
+        
+        r = self.radius
+        
+        ## loading the arrays holding the original information of the parents
+        n_o, r_o, ids_o = load_original_n_r_ids(rundir, snap_index)
+        ids_o = int32(ids_o)
+
+        ##         
+        inds_list_of_c_in_o_arrys = find_matching_indicies(ids_o, cid, check=False) 
+
+        ## computing the original radii assuing the radii were scaled using the 
+        ## current weights 
+        r[cinds] = r_o[inds_list_of_c_in_o_arrys] # these are in pc
+        if to_kpc == True:
+            r[cinds] *= 1e-3 # converting them to kpc
         
         self.radius = r
     
@@ -2631,6 +2656,33 @@ class gas_set(Particles):
 
         ## setting the appropriate weights
         self.use_weights(weighting='original-only')
+
+    def set_radii_from_Av_and_using_original_weighting(self):
+        '''sets the radii and weights such that the sampled population is ignored. 
+        and the radii are computed from the AV
+        '''
+        
+        ## set the radii of all the particles to the scale length determined by the Av of the cloud
+        r = self.Av / (0.016 * self.n) # computing the radii from the Av (in pc)
+        r *= 1e-3 # converting to kpc
+        
+        ## setting the radii of the childrent to zero
+        r[self.get_inds_children()] = 0.0
+        
+        self.radius = r
+        print '\t---------> set the radii from the Av'
+        ## setting the appropriate weights
+        self.use_weights(weighting='original-only')   # radii are not modified
+
+    def set_radii_from_Av(self):
+        '''sets the radii from the Av of the particles'''
+        
+        ## set the radii of all the particles to the scale length determined by the Av of the cloud
+        r = self.Av / (0.016 * self.n) # computing the radii from the Av (in pc)
+        r *= 1e-3 # converting to kpc
+        
+        self.radius = r
+        print '\t---------> set the radii from the Av'
         
     def set_radii_using_matched_weighting(self, rundir, snap_index):
         '''
@@ -2750,6 +2802,37 @@ class gas_set(Particles):
         r = r * numpy.sqrt(w)
         
         self.radius = r
+
+    def set_radii_from_Av_by_conserving_total_area(self, rundir, snap_index):
+        '''
+        r_parent = 
+        r_parent = r_child = r_parent_original * sqrt(N_sampled)
+        w_parent = ??
+        w_child =  ??
+        '''
+
+        ## getting the indicies of the parents and the chidlren
+        pinds = self.get_inds_has_children()
+        cinds = self.get_inds_children()
+
+        ## first set the radii of the particles to that computed from their Av
+        ## the children have the same Av as the parent consequently the same radius
+        self.set_radii_from_Av()
+        
+        ## setting the new weights by number to the parents and the children
+        weights_filename = gen_weights_filename(rundir, snap_index)
+        self.use_weights(weighting='by-number', weights_filename = weights_filename)
+        print '-'*100,'\n', '-'*100,'\n','-'*100,'\n'
+        print 'weights set by number'
+        print '-'*100,'\n', '-'*100,'\n','-'*100,'\n'
+        
+        w = self.weights
+        r = self.radius
+        
+        ## computing the new radii corresponding to the new weights of the parents
+        r = r * numpy.sqrt(w)
+        
+        self.radius = r
         
     def set_radii(self, weighting=None, rundir=None, snap_index=None):
         '''sets the radii and weights of the particles based on the suggested weighting'''
@@ -2774,6 +2857,17 @@ class gas_set(Particles):
             self.set_radii_using_by_conserving_total_area(rundir, snap_index)
             print '\t---------> set radii and weights of children such that total area is conserved'
             
+            """
+            elif weighting == 'by-Av-and-conserve-area':
+                '''the radii are set based on the Av of the particle'''
+                self.set_radii_from_Av(rundir, snap_index)
+                print '\t---------> set radii and weights of children such that total area is conserved'
+                
+            elif weighting == 'by-Av-and-conserve-area':
+                '''the radii are set based on the Av of the particle'''
+                self.set_radii_from_Av(rundir, snap_index)
+                print '\t---------> set radii and weights of children such that total area is conserved'
+            """ 
         else:
             raise ValueError('unknown weighting!!')
         

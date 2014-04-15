@@ -31,7 +31,7 @@ params = {
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'original-only', #'by-number', #'by-number', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'original-only', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
           'obs_res'      : 21,
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
@@ -52,8 +52,8 @@ params = {
           'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'HCO+1-0'],
         }
 
-#fig_save_path = '/home/mher/ism/docs/paper04/src/figs/results/total_luminosity.eps'
-fig_save_path = None
+fig_save_path = '/home/mher/ism/docs/paper04/src/figs/results/total_luminosity.eps'
+#fig_save_path = None
 
 #############################################################################################################
 #############################################################################################################
@@ -106,7 +106,7 @@ logger.debug('number of gas particles in the specified ranages = %d' %  len(gas)
 bs_min, bs_max = params['ranges']['box_size'].number
 
 print 'getting the spatial distrubutions....'
-hist = hist_nd(numpy.vstack((gas.x, gas.y)), mn = bs_min, mx = bs_max, 
+hist = hist_nd(numpy.vstack((gas.x, gas.y)), mn = bs_min, mx = bs_max,
                nbins = params['imres'], reverse_indicies = True, loc = True)
 hist.info()
 print '\t\tdone getting the spatial distributuions'

@@ -5,7 +5,7 @@ import matplotlib
 matplotlib.use('Qt4Agg')
 
 import numpy
-import pylab
+from pylab import *
 
 from amuse.units import units, nbody_system
 from mylib.utils.misc  import default_logger
@@ -20,7 +20,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100',  # the path of the dir containing the simulation
           'imres' : 200,                                                 # resolution of the maps to be produced imres x imres
-          'species' : ['CO'],
+          'species' : [],  # ['CO']
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
            
           'snap'    : 4,
@@ -78,7 +78,7 @@ snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % snap_index + '.sta
 
 #loading the processed sph simulation data with the emissions 
 logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
-gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], load_pdr=params['pdr_sph'])    
+gas = fi_utils.load_gas_particle_info_with_em(snap_filename, params['species'], load_pdr=params['pdr_sph'])
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
@@ -99,42 +99,29 @@ gas = gas[hist.inds_in]
 ### optional ###
 ## keeping only the original particles and discarding the sampled ones
 #gas = gas[gas.get_inds_original_set()]
-#gas.set_radii(weighting='original-only', rundir=params['rundir'], snap_index=params['snap'])
-#############################################################################
+gas.set_radii(weighting='original-only', rundir=params['rundir'], snap_index=params['snap'])
 
-x = gas.x
-y = gas.y
-mtot = gas.mass.sum()
-r = numpy.sqrt(x*x + y*y)
-r_max = r.max()*3.08567758e21 #max distance from center in cm
-number_of_hydrogen_atoms = mtot / 1.67e-24 
+n, vdisp, Pe, Av = gas.n, gas.vdisp, gas.Pe, gas.Av
+r_original = gas.radius.copy()
 
-## mean Av by computed from the actual number of H nuclei in the SPH particles
-NH2 = number_of_hydrogen_atoms / (numpy.pi * r_max**2)
-Z = 1.0
-Av = ismUtils.NH2Av(NH2, Z)
-print 'Av1 = ', Av
+## plotting stuff
+subplot(221)
+loglog(n[::100], vdisp[::100], '.')
+xlabel('n')
+ylabel('vdisp')
 
-## mean Av by computed from the mean H2 content of the SPH particles estmiated from the PDR models
-NH2 = numpy.mean(gas.pdr_NH2)
-Z = 1.0
-Av = ismUtils.NH2Av(NH2, Z)
-print 'Av2 = ', Av
+subplot(222)
 
-## mean Av 
-print 'Av3 = ', gas.Av.mean()
+loglog(n[::100], r_original[::100]*1000.0, 'b.', label='r_smooth', zorder=2)
 
-## mean Av
-print 'Av4 = ', numpy.average(gas.Av, weights=getattr(gas, 'em_fluxKkms_CO1-0') +\
-                                              getattr(gas, 'em_fluxKkms_CO2-1') +\
-                                              getattr(gas, 'em_fluxKkms_CO3-2') +\
-                                              getattr(gas, 'em_fluxKkms_CO4-3') +\
-                                              getattr(gas, 'em_fluxKkms_CO5-4') +\
-                                              getattr(gas, 'em_fluxKkms_CO6-5') 
-                             )
+#gas.set_radii_from_Av_and_using_original_weighting()
+gas.set_radii_from_Av_by_conserving_total_area(rundir=params['rundir'], snap_index=params['snap'])
+r_from_Av = gas.radius*1000.0
+loglog(n[::100], r_from_Av[::100], 'r.', label='r_Av', zorder=1)
+
+xlabel('n')
+ylabel('length')
+legend()
 
 
-
-print 'log10<n>     = ', numpy.log10(gas.n.mean()) 
-print 'log10<G0>    = ', numpy.log10(gas.G0.mean()) 
-print 'log10<gmech> = ', numpy.log10(gas.gmech.mean()) 
+show()
