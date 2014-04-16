@@ -20,7 +20,7 @@ arxvPDR = meshUtils.meshArxv(dirPath = dirPath, readDb=False)
 
 
 F = arxvPDR.load_interp_func(info={'source':'radex'},
-                             line='CO15-14', 
+                             line='HCN1-0', 
                              quantity='fluxKkms')
  
 
@@ -28,7 +28,7 @@ F = arxvPDR.load_interp_func(info={'source':'radex'},
 if True:
     gms = [-50.0, -30.0, -24.0, -23.0, -22.5, -22.0,]
     Av  = 10.0 
-    G0  = 2.5
+    G0  = 2.0
     
     for gm in gms:
          

@@ -31,7 +31,7 @@ if True:
         
     alphas = numpy.log10([1e-10, 0.01, 0.05, 0.25, 0.75])
     AvSec  = 10.0
-    G0Sec  = 5.0
+    G0Sec  = 2.0
     
     for alphaThis in alphas:
          

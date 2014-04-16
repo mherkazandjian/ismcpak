@@ -447,15 +447,15 @@ def plot_PDFs_of_synthetic_luminosity_distribututions(nmin, nmax, fig_save_path=
     
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
-    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=exp(4.16))
+    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=10.0**1.2)
     nPDF = nPDF_obj.pdf
-    ax.loglog(n_bins, nPDF(n_bins), 'g--', label=r'0.13, 1.8')
+    ax.loglog(n_bins, nPDF(n_bins), 'g--', label=r'0.13, 1.2')
 
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
-    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=exp(6.16))
+    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=10.0**1.5)
     nPDF = nPDF_obj.pdf
-    ax.loglog(n_bins, nPDF(n_bins), 'r:', label=r'0.13, 2.7')
+    ax.loglog(n_bins, nPDF(n_bins), 'r:', label=r'0.13, 1.5')
 
     #----------------------------------------------------------------------------------------    
     ## the probability density at that density (not in log scale) (different mean) 
@@ -494,7 +494,7 @@ def plot_PDFs_of_synthetic_luminosity_distribututions(nmin, nmax, fig_save_path=
     show()
     
 
-def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
+def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
                                   yrng=[1e0, 1e12], fig_save_path=None):
     '''
     '''
@@ -507,7 +507,7 @@ def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
                                                    }
                                          },
                                   axs = {
-                                         'left' :0.09, 'bottom': 0.1, 'w':0.8, 'h':0.89
+                                         'left' :0.09, 'bottom': 0.08, 'w':0.8, 'h':0.9
                                         },
                                   )
 
@@ -517,11 +517,11 @@ def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
     # density bins to be plotted
     log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
     n_bins = 10.0**(log10n + dlog10n*0.5)
-    N_particles = 2e6
+    N_particles = 1.0
 
     # setting the labels of the main axes
-    fig.set_xlabel(r'$n [{\rm cm}^{-3}]$', space=-0.05, size='large')
-    fig.set_ylabel('Luminosity ' + r'[K km s$^{-1}$ pc$^2$]', space=-0.05, size='large')    
+    fig.set_xlabel(r'$n [{\rm cm}^{-3}]$', space=-0.04, size='large')
+    fig.set_ylabel('Flux ' + r'[K km s$^{-1}$]', space=-0.05, size='large')    
 
     #----------------------------------------------------------------------------------------    
     ## the probability density at that density (not in log scale)
@@ -529,16 +529,16 @@ def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
     ax = fig.sub[0,0]
     colors = ['r', 'g', 'b', 'c', 'm', 'k']
     for i, log10G0 in enumerate([2.0, 4.0, 6.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,             
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,             
                                      nPDF, r_func, N_particles, log10G0, in_ax=ax,
-                                    color=colors[i])
+                                     color=colors[i])
 
     legend = ax.legend(loc=0, prop={'size':6}, title=r'$G$')
     setp(legend.get_title(),fontsize='xx-small')
     
     ax = fig.sub[0,1]
     for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,      
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,      
                                      nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
                                      color=colors[i])
 
@@ -547,65 +547,65 @@ def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
 
     ax = fig.sub[0,2]
     for i, Av in enumerate([0.1, 1.0, 5.0, 10.0, 20.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
 
     legend = ax.legend(loc=0, prop={'size':6}, title=r'$A_V$')
     setp(legend.get_title(),fontsize='xx-small')
     
-    ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
-    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 0.93', size=6)
+    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
+    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 0.93', size=6)
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
-    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=exp(4.16))
+    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=10.0**1.2)
     nPDF = nPDF_obj.pdf
     
     ax = fig.sub[1,0]
     for i, log10G0 in enumerate([2.0, 4.0, 6.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,          
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,          
                                      nPDF, r_func, N_particles, log10G0, in_ax=ax,
                                      color=colors[i])
 
     ax = fig.sub[1,1]
     for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
                                      nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
                                      color=colors[i])
 
     ax = fig.sub[1,2]
     for i, Av in enumerate([0.1, 1.0, 5.0, 10.0, 20.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
         
-    ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
-    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 1.8', size=6)    
+    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
+    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 1.2', size=6)    
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
-    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=exp(6.16))
+    nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=10.0**1.5)
     nPDF = nPDF_obj.pdf
     
     ax = fig.sub[2,0]
     for i, log10G0 in enumerate([0.0, 2.0, 4.0, 6.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,      
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,      
                                      nPDF, r_func, N_particles, log10G0, in_ax=ax,
                                      color=colors[i])
 
     ax = fig.sub[2,1]
     for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
                                     nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
                                     color=colors[i])
 
     ax = fig.sub[2,2]
     for i, Av in enumerate([0.1, 1.0, 5.0, 10.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
 
-    ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
-    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 2.7', size=6)
+    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
+    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 1.5', size=6)
         
     #--------------------------------------------------------------------------------------
     #--------------------------------------------------------------------------------------
@@ -617,24 +617,24 @@ def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
     
     ax = fig.sub[3,0]
     for i, log10G0 in enumerate([0.0, 2.0, 4.0, 6.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,      
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,      
                                      nPDF, r_func, N_particles, log10G0, in_ax=ax,
                                      color=colors[i])
 
     ax = fig.sub[3,1]
     for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
                                     nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
                                     color=colors[i])
 
     ax = fig.sub[3,2]
     for i, Av in enumerate([0.1, 1.0, 5.0, 10.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
 
-    ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 2.0', size=6) 
-    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 0.93', size=6)    
+    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 2.0', size=6) 
+    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 0.93', size=6)    
     #--------------------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------------------    
@@ -644,24 +644,24 @@ def synthetic_luminosity_from_pdf(arxvPDR, F, params, nmin, nmax,
     
     ax = fig.sub[4,0]
     for i, log10G0 in enumerate([2.0, 4.0, 6.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,      
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,      
                                      nPDF, r_func, N_particles, log10G0, in_ax=ax,
                                      color=colors[i])
 
     ax = fig.sub[4,1]
     for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
                                     nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
                                     color=colors[i])
 
     ax = fig.sub[4,2]
     for i, Av in enumerate([0.1, 1.0, 5.0, 10.0]):
-        fi_utils.luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
 
-    ax.text(1.1e6, 1e8, r'$\log_{10}$(<$n$>) = 1.1', size=6) 
-    ax.text(1.1e6, 1e6 , r'$\log_{10}(\sigma$) = 1.35', size=6)            
+    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 1.1', size=6) 
+    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 1.35', size=6)            
          
     fig.set_xticks([1e1, 1e3, 1e5], 
                    labels=[r'10$^1$', r'10$^3$', r'10$^5$'], 
@@ -709,19 +709,19 @@ def line_ratio_grid_from_pdf_sweep(arxvPDR, params, nmin, nmax, fig_save_path=No
     # density bins to be plotted
     log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
     n_bins = 10.0**(log10n + dlog10n*0.5)
-    N_particles = 2e6
+    N_particles = 1
 
     # setting the labels of the main axes
     fig.set_xlabel(r'<$n / {\rm cm}^{-3}$>', space=-0.07, size='large')
     fig.set_ylabel(r'$\sigma / {\rm cm}^{-3}$', space=-0.09, size='large')    
 
     #----------------------------------------------------------------------------------------
-    log10mus = linspace(0.0, 2.0, 100)
-    log10sigmas = linspace(1.0, 4.0, 100)
+    log10mus = linspace(0.0, 2.0, 20)
+    log10sigmas = linspace(1.0, 1.5, 20)
     
     line_ratio_grid1 = zeros((log10mus.size, log10sigmas.size), 'f8')
 
-    cloud_parms = [4.0, -23, 7.0]
+    cloud_parms = [4.0, -24, 10.0]
     
     for i, log10mu in enumerate(log10mus):
 
@@ -732,12 +732,12 @@ def line_ratio_grid_from_pdf_sweep(arxvPDR, params, nmin, nmax, fig_save_path=No
             nPDF_obj = fi_utils.density_distribution('lognormal', mu=10.0**log10mu, sigma=10.0**log10sigma)
             nPDF = nPDF_obj.pdf
 
-            lum1 = fi_utils.luminosity_pdf_vs_n(n_bins, cloud_parms, 
-                                                F1, nPDF, r_func, N_particles, '', no_plot=True)
-            lum2 = fi_utils.luminosity_pdf_vs_n(n_bins, cloud_parms, 
-                                                F2, nPDF, r_func, N_particles, '', no_plot=True)
+            flux1 = fi_utils.flux_contribution_vs_n(n_bins, cloud_parms, 
+                                                    F1, nPDF, r_func, N_particles, '', no_plot=True)
+            flux2 = fi_utils.flux_contribution_vs_n(n_bins, cloud_parms, 
+                                                    F2, nPDF, r_func, N_particles, '', no_plot=True)
             
-            line_ratio_grid1[i,j] = lum1.sum() / lum2.sum() 
+            line_ratio_grid1[i,j] = 0.5*flux1.sum() / flux2.sum() 
         print '-------------------'
 
     print line_ratio_grid1.min(), line_ratio_grid1.max()
@@ -745,31 +745,31 @@ def line_ratio_grid_from_pdf_sweep(arxvPDR, params, nmin, nmax, fig_save_path=No
     ax = fig.sub[0,0]
 
     fig.sub_setp('xlim', [0.0, 2.0])
-    fig.sub_setp('ylim', [1.0, 4.0])
+    fig.sub_setp('ylim', [1.0, 1.5])
     
     
-    CS = ax.contour(line_ratio_grid1.T, [0.6, 0.7, 0.88, 0.9, 0.92, 1.0, 1.1, 1.3, 1.5, 2.0],
+    CS = ax.contour(line_ratio_grid1.T, [0.6, 0.7, 0.81,0.88, 0.9, 0.92, 1.0, 1.1, 1.3, 1.5, 2.0],
                     origin='lower',
                     extent=[log10mus.min(), log10mus.max(), log10sigmas.min(), log10sigmas.max()],
                     aspect='auto',
                     colors='k',
                     zorder=10)
     clabel(CS, inline=1, fmt='%2.2f', fontsize=10, zorder=11)
-
+    '''
     CS2 = ax.contourf(line_ratio_grid1.T, CS.levels[-8:-4:],
                      origin='lower',
                      extent=[log10mus.min(), log10mus.max(), log10sigmas.min(), log10sigmas.max()],
                      aspect='auto',
                      colors='k',
                      alpha=0.2)
-    
+    '''
     fig.set_xticks([0.0, 0.5, 1.0, 1.5, 2.0],
                    labels=[r'$10^0$', r'$10^{0.5}$', r'$10^{1}$', r'$10^{1.5}$',  r'$10^2$'],
                    size='x-small')
     
-    fig.set_yticks(log10([10.0, 100.0, 1000.0, 10000.0]), 
-                   labels=[r'$10^{1}$', r'$10^{2}$', r'$10^{3}$', r'$10^4$'], 
-                   size='x-small')
+    #fig.set_yticks(log10([10.0, 100.0, 1000.0, 10000.0]), 
+    #               labels=[r'$10^{1}$', r'$10^{2}$', r'$10^{3}$', r'$10^4$'], 
+    #               size='x-small')
     
     #fig.sub[0,0].text(2.0, 3.0, , size='small')
     fig.set_title('HNC(1-0)/HCN(1-0)', space=[-0.3, -0.02])
@@ -807,15 +807,15 @@ def line_ratio_grid_from_pdf_sweep_HCOP_HCN(arxvPDR, params, nmin, nmax, fig_sav
     # density bins to be plotted
     log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
     n_bins = 10.0**(log10n + dlog10n*0.5)
-    N_particles = 2e6
+    N_particles = 1
 
     # setting the labels of the main axes
     fig.set_xlabel(r'<$n / {\rm cm}^{-3}$>', space=-0.07, size='large')
     fig.set_ylabel(r'$\sigma / {\rm cm}^{-3}$', space=-0.09, size='large')    
 
     #----------------------------------------------------------------------------------------
-    log10mus = linspace(0.0, 2.0, 100)
-    log10sigmas = linspace(1.0, 4.0, 100)
+    log10mus = linspace(0.0, 2.0, 10)
+    log10sigmas = linspace(1.0, 1.5, 10)
     
     line_ratio_grid1 = zeros((log10mus.size, log10sigmas.size), 'f8')
 
@@ -830,12 +830,12 @@ def line_ratio_grid_from_pdf_sweep_HCOP_HCN(arxvPDR, params, nmin, nmax, fig_sav
             nPDF_obj = fi_utils.density_distribution('lognormal', mu=10.0**log10mu, sigma=10.0**log10sigma)
             nPDF = nPDF_obj.pdf
 
-            lum1 = fi_utils.luminosity_pdf_vs_n(n_bins, cloud_parms, 
+            flux1 = fi_utils.flux_contribution_vs_n(n_bins, cloud_parms, 
                                                 F1, nPDF, r_func, N_particles, '', no_plot=True)
-            lum2 = fi_utils.luminosity_pdf_vs_n(n_bins, cloud_parms, 
+            flux2 = fi_utils.flux_contribution_vs_n(n_bins, cloud_parms, 
                                                 F2, nPDF, r_func, N_particles, '', no_plot=True)
             
-            line_ratio_grid1[i,j] = lum1.sum() / lum2.sum() 
+            line_ratio_grid1[i,j] = flux1.sum() / flux2.sum() 
         print '-------------------'
 
     print line_ratio_grid1.min(), line_ratio_grid1.max()
@@ -843,7 +843,7 @@ def line_ratio_grid_from_pdf_sweep_HCOP_HCN(arxvPDR, params, nmin, nmax, fig_sav
     ax = fig.sub[0,0]
 
     fig.sub_setp('xlim', [0.0, 2.0])
-    fig.sub_setp('ylim', [1.0, 4.0])
+    fig.sub_setp('ylim', [1.0, 1.5])
     
     
     CS = ax.contour(line_ratio_grid1.T, [2.0, 2.2, 2.5, 3, 4, 5, 10, 20, 50],
@@ -853,20 +853,20 @@ def line_ratio_grid_from_pdf_sweep_HCOP_HCN(arxvPDR, params, nmin, nmax, fig_sav
                     colors='k')
     clabel(CS, inline=1, fmt='%2.2f', fontsize=10)
 
-    CS2 = ax.contourf(line_ratio_grid1.T, CS.levels[-11:-5:],
-                     origin='lower',
-                     extent=[log10mus.min(), log10mus.max(), log10sigmas.min(), log10sigmas.max()],
-                     aspect='auto',
-                     colors='k',
-                     alpha=0.2)
+    #CS2 = ax.contourf(line_ratio_grid1.T, CS.levels[-11:-5:],
+    #                 origin='lower',
+    #                 extent=[log10mus.min(), log10mus.max(), log10sigmas.min(), log10sigmas.max()],
+    #                 aspect='auto',
+    #                 colors='k',
+    #                 alpha=0.2)
     
     fig.set_xticks([0.0, 0.5, 1.0, 1.5, 2.0],
                    labels=[r'$10^0$', r'$10^{0.5}$', r'$10^{1}$', r'$10^{1.5}$',  r'$10^2$'],
                    size='x-small')
     
-    fig.set_yticks(log10([10.0, 100.0, 1000.0, 10000.0]), 
-                   labels=[r'$10^{1}$', r'$10^{2}$', r'$10^{3}$', r'$10^4$'], 
-                   size='x-small')
+    #fig.set_yticks(log10([10.0, 100.0, 1000.0, 10000.0]), 
+    #               labels=[r'$10^{1}$', r'$10^{2}$', r'$10^{3}$', r'$10^4$'], 
+    #               size='x-small')
     
     #fig.sub[0,0].text(2.0, 3.0, , size='small')
     fig.set_title('HCO+(1-0)/HCN(1-0)', space=[-0.3, -0.02])

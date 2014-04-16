@@ -117,3 +117,10 @@ def startburst_gamma_mech_rate(SFR=None, n_PDR=None, d_PDR=None, d_SB=None, E_SN
     gamma_mech = E_SN_absorbed / V_total_PDRs_in_SB 
     
     print gamma_mech
+    
+    
+def LN_dispersion_to_mach_num(sigma):
+    '''computes and estimate of the mach number given the width of the Log normal denisty
+    distribution'''
+    
+    return numpy.sqrt( (numpy.exp(sigma**2.0) - 1.0)*(4.0/3.0))

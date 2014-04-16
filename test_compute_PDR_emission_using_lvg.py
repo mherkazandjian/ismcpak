@@ -94,9 +94,10 @@ print 'finished computing in %.2f seconds' % (time.time() - t0)
 
 # plot the flux of a transitions
 Jlow = 0
-pylab.semilogy(line_widths, [transition['fluxKkms'][Jlow] for transition in all_transitions], 'r-')
-Jlow = 10
-pylab.semilogy(line_widths, [transition['fluxKkms'][Jlow] for transition in all_transitions], 'b-')
+#pylab.semilogy(line_widths, [transition['fluxKkms'][Jlow] for transition in all_transitions], 'r-')
+pylab.plot(line_widths, [transition['fluxKkms'][Jlow] for transition in all_transitions], 'r-')
+#Jlow = 10
+#pylab.semilogy(line_widths, [transition['fluxKkms'][Jlow] for transition in all_transitions], 'b-')
 
 pylab.show()
 

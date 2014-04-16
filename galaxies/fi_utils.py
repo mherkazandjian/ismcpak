@@ -3074,7 +3074,7 @@ def load_original_n_r_ids(rundir, snap_index):
     return n, r, ids
 
 
-def luminosity_pdf_vs_n(n_bins, cloud_parms, F, nPDF, r_func, N, label, in_ax=None, no_plot=False, color=None):
+def flux_contribution_vs_n(n_bins, cloud_parms, F, nPDF, r_func, N, label, in_ax=None, no_plot=False, color=None):
     '''
     '''
     n_bins = n_bins.copy()
@@ -3092,17 +3092,15 @@ def luminosity_pdf_vs_n(n_bins, cloud_parms, F, nPDF, r_func, N, label, in_ax=No
     flux_bins = 10.0**F.get( data )
 
     prob_n_bins = nPDF(n_bins)
-    r_nbins = r_func(n_bins)
      
-    luminosity_nbins = (prob_n_bins*dlog10n)*flux_bins*(pi*(r_nbins*1e3)**2)
+    flux_nbins = (prob_n_bins*dlog10n)*flux_bins
     
-    inds = where( isnan(luminosity_nbins) == False )
-    luminosity_nbins = luminosity_nbins[inds]
+    inds = where( isnan(flux_nbins) == False )
+    flux_nbins = flux_nbins[inds]
     n_bins = n_bins[inds]
     
-    # computing the luminosuty for all the particles
-    luminosity_nbins *= N 
-    
+    # scaling the fluxes (assuming there are N clouds)
+    flux_nbins *= N     
         
     if no_plot == False:
         
@@ -3111,7 +3109,7 @@ def luminosity_pdf_vs_n(n_bins, cloud_parms, F, nPDF, r_func, N, label, in_ax=No
         else:
             ax=in_ax
         
-        x, y = n_bins, luminosity_nbins
+        x, y = n_bins, flux_nbins
         ax.loglog(x, y, color, label=label)
         
         y_norm = y / y.sum()
@@ -3129,7 +3127,7 @@ def luminosity_pdf_vs_n(n_bins, cloud_parms, F, nPDF, r_func, N, label, in_ax=No
         
         #ind = where()
 
-    return luminosity_nbins
+    return flux_nbins
 
 def plot_luminosity_from_pdf(nPDF, r_func, arxvPDR, F, params, nmin, nmax,
                         yrng=[1e-6, 1e12]):
@@ -3166,7 +3164,7 @@ def plot_luminosity_from_pdf(nPDF, r_func, arxvPDR, F, params, nmin, nmax,
 
     subplot(2, 3, 4)
     for log10G0 in [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]:
-        luminosity_pdf_vs_n(n_bins, [log10G0, -22, 10.0], F,  
+        flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,  
                              nPDF, r_func, N_particles, log10G0)
     xlim(10.0**nmin, 10.0**nmax)
     ylim(*yrng)
@@ -3174,7 +3172,7 @@ def plot_luminosity_from_pdf(nPDF, r_func, arxvPDR, F, params, nmin, nmax,
     
     subplot(2, 3, 5)
     for log10Gmech in [-50.0, -30.0, -25.0, -23.0, -22.0, -21.0]:
-        luminosity_pdf_vs_n(n_bins, [2.0, log10Gmech, 10.0], F, 
+        flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F, 
                              nPDF, r_func, N_particles, log10Gmech)
     xlim(10.0**nmin, 10.0**nmax)
     ylim(*yrng)    
@@ -3182,7 +3180,7 @@ def plot_luminosity_from_pdf(nPDF, r_func, arxvPDR, F, params, nmin, nmax,
 
     subplot(2, 3, 6)
     for Av in [0.1, 1.0, 5.0, 10.0, 20.0]:
-        luminosity_pdf_vs_n(n_bins, [2.0, -22.0, Av], F,  
+        flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
                              nPDF, r_func, N_particles, Av)
     xlim(10.0**nmin, 10.0**nmax)
     ylim(*yrng)
