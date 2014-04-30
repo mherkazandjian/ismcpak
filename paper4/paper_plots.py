@@ -6,6 +6,7 @@ import lineDict
 import mylib.units
 from mylib.utils.histogram import hist_nd
 import matplotlib.cm as cm
+import ismUtils
 
 def plot_methods_fig(gas, save_figs, fig_paths, params=None):
     
@@ -443,36 +444,36 @@ def plot_PDFs_of_synthetic_luminosity_distribututions(nmin, nmax, fig_save_path=
     ## the probability density at that density (not in log scale)
     nPDF = coset9_sol_info.nPDF_sph.pdf
     ax = fig.sub[0,0]
-    ax.loglog(n_bins, nPDF(n_bins), 'b-', label='0.13, 0.93')
+    ax.loglog(n_bins, nPDF(n_bins), 'b-',  label=r'1.3 , 2.1, 11.8')
     
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
     nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=10.0**1.2)
     nPDF = nPDF_obj.pdf
-    ax.loglog(n_bins, nPDF(n_bins), 'g--', label=r'0.13, 1.2')
+    ax.loglog(n_bins, nPDF(n_bins), 'b--', label=r'1.3 , 2.7, 49.8')
 
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
     nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=10.0**1.5)
     nPDF = nPDF_obj.pdf
-    ax.loglog(n_bins, nPDF(n_bins), 'r:', label=r'0.13, 1.5')
+    ax.loglog(n_bins, nPDF(n_bins), 'b:',  label=r'1.3 , 3.5, 594')
 
     #----------------------------------------------------------------------------------------    
     ## the probability density at that density (not in log scale) (different mean) 
     nPDF_obj = fi_utils.density_distribution('lognormal', mu=10.0**2, sigma=10.0**0.93)
     nPDF = nPDF_obj.pdf    
     ax = fig.sub[0,0]
-    ax.loglog(n_bins, nPDF(n_bins), 'b--', label='2.0, 0.93')
+    ax.loglog(n_bins, nPDF(n_bins), 'g--', label=r'100 , 2.1, 114')
 
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale) (wada2001)
     nPDF_obj = fi_utils.density_distribution('lognormal', mu=10.0**1.1, sigma=10.0**1.35)
     nPDF = nPDF_obj.pdf
-    ax.loglog(n_bins, nPDF(n_bins), 'c-.', label='1.1, 1.35')
+    ax.loglog(n_bins, nPDF(n_bins), 'r--', label=r'12.5, 3.1, 1537')
     
     #--------------------------------------------------------------------------------------
 
-    legend = ax.legend(loc=0, prop={'size':6}, title=r'$\log_{10}(<n>),\log_{10}(\sigma$)')
+    legend = ax.legend(loc=0, prop={'size':6}, title=r'       $n_{\rm med}$ ,$\sigma$, $<n>$')
     setp(legend.get_title(),fontsize='xx-small')
     
     fig.set_xticks([1e-1, 1e1, 1e3, 1e5, 1e7], 
@@ -518,7 +519,7 @@ def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
     log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
     n_bins = 10.0**(log10n + dlog10n*0.5)
     N_particles = 1.0
-
+    
     # setting the labels of the main axes
     fig.set_xlabel(r'$n [{\rm cm}^{-3}]$', space=-0.04, size='large')
     fig.set_ylabel('Flux ' + r'[K km s$^{-1}$]', space=-0.05, size='large')    
@@ -533,7 +534,7 @@ def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
                                      nPDF, r_func, N_particles, log10G0, in_ax=ax,
                                      color=colors[i])
 
-    legend = ax.legend(loc=0, prop={'size':6}, title=r'$G$')
+    legend = ax.legend(loc=0, prop={'size':6}, title=r'$\log_{10} G$')
     setp(legend.get_title(),fontsize='xx-small')
     
     ax = fig.sub[0,1]
@@ -542,7 +543,7 @@ def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
                                      nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
                                      color=colors[i])
 
-    legend = ax.legend(loc=0, prop={'size':6}, title=r'$\Gamma_{\rm mech}$')
+    legend = ax.legend(loc=0, prop={'size':6}, title=r'$\log_{10} \Gamma_{\rm mech}$')
     setp(legend.get_title(),fontsize='xx-small')
 
     ax = fig.sub[0,2]
@@ -554,8 +555,10 @@ def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
     legend = ax.legend(loc=0, prop={'size':6}, title=r'$A_V$')
     setp(legend.get_title(),fontsize='xx-small')
     
-    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
-    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 0.93', size=6)
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 1.3 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 2.1$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 11.8 {\rm cm}^{-3}$', size=6)
+    
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
     nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=10.0**1.2)
@@ -579,8 +582,9 @@ def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
         
-    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
-    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 1.2', size=6)    
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 1.3 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 2.7$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 49.8 {\rm cm}^{-3}$', size=6)
     #--------------------------------------------------------------------------------------
     ## the probability density at that density (not in log scale)
     nPDF_obj = fi_utils.density_distribution('lognormal', mu=exp(0.31), sigma=10.0**1.5)
@@ -604,9 +608,9 @@ def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
 
-    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 0.13', size=6) 
-    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 1.5', size=6)
-        
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 1.3 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 3.5$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 594 {\rm cm}^{-3}$', size=6)        
     #--------------------------------------------------------------------------------------
     #--------------------------------------------------------------------------------------
     #--------------------------------------------------------------------------------------
@@ -633,8 +637,9 @@ def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
 
-    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 2.0', size=6) 
-    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 0.93', size=6)    
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 100 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 2.1$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 114 {\rm cm}^{-3}$', size=6)        
     #--------------------------------------------------------------------------------------
 
     #--------------------------------------------------------------------------------------    
@@ -660,8 +665,9 @@ def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
                                      nPDF, r_func, N_particles, Av, in_ax=ax,
                                      color=colors[i])
 
-    ax.text(1.1e6, 1e1, r'$\log_{10}$(<$n$>) = 1.1', size=6) 
-    ax.text(1.1e6, 1e0 , r'$\log_{10}(\sigma$) = 1.35', size=6)            
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 12.5 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 3.1$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 1537 {\rm cm}^{-3}$', size=6)        
          
     fig.set_xticks([1e1, 1e3, 1e5], 
                    labels=[r'10$^1$', r'10$^3$', r'10$^5$'], 
@@ -689,19 +695,18 @@ def line_ratio_grid_from_pdf_sweep(arxvPDR, params, nmin, nmax, fig_save_path=No
 
     import matplotlib.cm as cm
     
-
     fig = templates.subplots_grid(1, 1, hspace=0.0, wspace=0.0,
                                   fig = {'kwargs':{
                                                    'figsize' : {3.55, 2.9}
                                                    }
                                          },
                                   axs = {
-                                         'left' :0.15, 'bottom': 0.15, 'w':0.8, 'h':0.75
+                                         'left' :0.12, 'bottom': 0.14, 'w':0.73, 'h':0.75
                                         },
                                   )
     
-    F1 = arxvPDR.load_interp_func(info={'source':'radex'}, line='HNC1-0', quantity='fluxKkms')
-    F2 = arxvPDR.load_interp_func(info={'source':'radex'}, line='HCN1-0', quantity='fluxKkms')
+    F1 = arxvPDR.load_interp_func(info={'source':'radex'}, line='HCN1-0', quantity='fluxKkms')
+    F2 = arxvPDR.load_interp_func(info={'source':'radex'}, line='HNC1-0', quantity='fluxKkms')
     
     # radius density scaling function, r(kpc) = R(n[cm-3]) (kpc) 
     r_func = coset9_sol_info.r_sph_kpc
@@ -712,16 +717,16 @@ def line_ratio_grid_from_pdf_sweep(arxvPDR, params, nmin, nmax, fig_save_path=No
     N_particles = 1
 
     # setting the labels of the main axes
-    fig.set_xlabel(r'<$n / {\rm cm}^{-3}$>', space=-0.07, size='large')
-    fig.set_ylabel(r'$\sigma / {\rm cm}^{-3}$', space=-0.09, size='large')    
+    fig.set_xlabel(r'$n_{\rm med} [{\rm cm}^{-3}]$', space=-0.07, size='large')
+    fig.set_ylabel(r'$\sigma$', space=-0.09, size='large')
 
     #----------------------------------------------------------------------------------------
-    log10mus = linspace(0.0, 2.0, 20)
-    log10sigmas = linspace(1.0, 1.5, 20)
+    log10mus = linspace(0.0, 2.0, 100)
+    log10sigmas = linspace(1.0, 1.5, 100)
     
     line_ratio_grid1 = zeros((log10mus.size, log10sigmas.size), 'f8')
 
-    cloud_parms = [4.0, -24, 10.0]
+    cloud_parms = [2.0, -23, 5.0] # log10G, log10Gmech, Av
     
     for i, log10mu in enumerate(log10mus):
 
@@ -737,42 +742,58 @@ def line_ratio_grid_from_pdf_sweep(arxvPDR, params, nmin, nmax, fig_save_path=No
             flux2 = fi_utils.flux_contribution_vs_n(n_bins, cloud_parms, 
                                                     F2, nPDF, r_func, N_particles, '', no_plot=True)
             
-            line_ratio_grid1[i,j] = 0.5*flux1.sum() / flux2.sum() 
+            line_ratio_grid1[i,j] = flux1.sum() / flux2.sum() 
         print '-------------------'
 
     print line_ratio_grid1.min(), line_ratio_grid1.max()
     
     ax = fig.sub[0,0]
+    twiny = ax.twinx()
+    twiny.set_xlim([0.0, 2.0])
+    twiny.set_ylim([1.0, 1.5])
 
     fig.sub_setp('xlim', [0.0, 2.0])
     fig.sub_setp('ylim', [1.0, 1.5])
     
     
-    CS = ax.contour(line_ratio_grid1.T, [0.6, 0.7, 0.81,0.88, 0.9, 0.92, 1.0, 1.1, 1.3, 1.5, 2.0],
+    CS = ax.contour(line_ratio_grid1.T, [0.74, 0.8, 0.85, 0.9, 1.0, 1.05, 1.07],
                     origin='lower',
                     extent=[log10mus.min(), log10mus.max(), log10sigmas.min(), log10sigmas.max()],
                     aspect='auto',
                     colors='k',
                     zorder=10)
-    clabel(CS, inline=1, fmt='%2.2f', fontsize=10, zorder=11)
-    '''
-    CS2 = ax.contourf(line_ratio_grid1.T, CS.levels[-8:-4:],
+
+
+    fmt = {}
+    strs = [ '0.1', '0.3', '0.5', '1', '2', '4', '7', '12' ]
+    for l,s in zip( CS.levels, strs ):
+        fmt[l] = s
+    clabel(CS, inline=1, fmt=fmt, fontsize=10, zorder=11)
+
+    #clabel(CS, inline=1, fmt='%2.2f', fontsize=10, zorder=11)
+    
+
+    CS2 = ax.contourf(line_ratio_grid1.T, CS.levels[-4:-1:],
                      origin='lower',
                      extent=[log10mus.min(), log10mus.max(), log10sigmas.min(), log10sigmas.max()],
                      aspect='auto',
                      colors='k',
                      alpha=0.2)
-    '''
+
     fig.set_xticks([0.0, 0.5, 1.0, 1.5, 2.0],
-                   labels=[r'$10^0$', r'$10^{0.5}$', r'$10^{1}$', r'$10^{1.5}$',  r'$10^2$'],
+                   labels=[r'$10^{0.0}$', r'$10^{0.5}$', r'$10^{1}$', r'$10^{1.5}$',  r'$10^2$'],
                    size='x-small')
     
-    #fig.set_yticks(log10([10.0, 100.0, 1000.0, 10000.0]), 
-    #               labels=[r'$10^{1}$', r'$10^{2}$', r'$10^{3}$', r'$10^4$'], 
-    #               size='x-small')
+    fig.set_yticks([1.0, 1.1, 1.2, 1.3, 1.4, 1.5], 
+                   labels=[r'$1.0$', r'$1.1$', r'$1.2$', r'$1.3$', r'$1.4$', r'$1.5$'], 
+                   size='x-small')
+
+    twiny.set_yticks([1.0, 1.1, 1.2, 1.3, 1.4, 1.5])    
+    twiny.set_yticklabels([r'$16$', r'$28$', r'$52$', r'$100$', r'$210$', r'$450$'],size='x-small')
+    twiny.set_ylabel(r'$\mathcal{M}$', size='large')    
     
     #fig.sub[0,0].text(2.0, 3.0, , size='small')
-    fig.set_title('HNC(1-0)/HCN(1-0)', space=[-0.3, -0.02])
+    fig.set_title('HCN(1-0)/HNC(1-0)', space=[-0.3, -0.02])
     if fig_save_path != None:
         fig.fig.savefig(fig_save_path)
         print 'figure saved to:\n\t%s' % fig_save_path
@@ -794,12 +815,12 @@ def line_ratio_grid_from_pdf_sweep_HCOP_HCN(arxvPDR, params, nmin, nmax, fig_sav
                                                    }
                                          },
                                   axs = {
-                                         'left' :0.15, 'bottom': 0.15, 'w':0.8, 'h':0.75
+                                         'left' :0.12, 'bottom': 0.14, 'w':0.73, 'h':0.75
                                         },
                                   )
     
-    F1 = arxvPDR.load_interp_func(info={'source':'radex'}, line='HCO+1-0', quantity='fluxKkms')
-    F2 = arxvPDR.load_interp_func(info={'source':'radex'}, line='HCN1-0', quantity='fluxKkms')
+    F1 = arxvPDR.load_interp_func(info={'source':'radex'}, line='13CO1-0', quantity='fluxKkms')
+    F2 = arxvPDR.load_interp_func(info={'source':'radex'}, line='CO1-0', quantity='fluxKkms')
     
     # radius density scaling function, r(kpc) = R(n[cm-3]) (kpc) 
     r_func = coset9_sol_info.r_sph_kpc
@@ -810,16 +831,16 @@ def line_ratio_grid_from_pdf_sweep_HCOP_HCN(arxvPDR, params, nmin, nmax, fig_sav
     N_particles = 1
 
     # setting the labels of the main axes
-    fig.set_xlabel(r'<$n / {\rm cm}^{-3}$>', space=-0.07, size='large')
-    fig.set_ylabel(r'$\sigma / {\rm cm}^{-3}$', space=-0.09, size='large')    
+    fig.set_xlabel(r'$n_{\rm med} [{\rm cm}^{-3}]$', space=-0.07, size='large')
+    fig.set_ylabel(r'$\sigma$', space=-0.09, size='large')
 
     #----------------------------------------------------------------------------------------
-    log10mus = linspace(0.0, 2.0, 10)
-    log10sigmas = linspace(1.0, 1.5, 10)
+    log10mus = linspace(0.0, 2.0, 100)
+    log10sigmas = linspace(1.0, 1.5, 100)
     
     line_ratio_grid1 = zeros((log10mus.size, log10sigmas.size), 'f8')
 
-    cloud_parms = [4.0, -23, 7.0]
+    cloud_parms = [3.0, -23, 10.0]
     
     for i, log10mu in enumerate(log10mus):
 
@@ -835,41 +856,56 @@ def line_ratio_grid_from_pdf_sweep_HCOP_HCN(arxvPDR, params, nmin, nmax, fig_sav
             flux2 = fi_utils.flux_contribution_vs_n(n_bins, cloud_parms, 
                                                 F2, nPDF, r_func, N_particles, '', no_plot=True)
             
-            line_ratio_grid1[i,j] = flux1.sum() / flux2.sum() 
+            line_ratio_grid1[i,j] = flux1.sum() / flux2.sum()
         print '-------------------'
 
     print line_ratio_grid1.min(), line_ratio_grid1.max()
     
     ax = fig.sub[0,0]
+    twiny = ax.twinx()
+    twiny.set_xlim([0.0, 2.0])
+    twiny.set_ylim([1.0, 1.5])
 
     fig.sub_setp('xlim', [0.0, 2.0])
     fig.sub_setp('ylim', [1.0, 1.5])
     
     
-    CS = ax.contour(line_ratio_grid1.T, [2.0, 2.2, 2.5, 3, 4, 5, 10, 20, 50],
+    
+    CS = ax.contour(line_ratio_grid1.T, 10, #[2.0, 2.2, 2.5, 3, 4, 5, 10, 20, 50],
                     origin='lower',
                     extent=[log10mus.min(), log10mus.max(), log10sigmas.min(), log10sigmas.max()],
                     aspect='auto',
                     colors='k')
-    clabel(CS, inline=1, fmt='%2.2f', fontsize=10)
 
-    #CS2 = ax.contourf(line_ratio_grid1.T, CS.levels[-11:-5:],
-    #                 origin='lower',
-    #                 extent=[log10mus.min(), log10mus.max(), log10sigmas.min(), log10sigmas.max()],
-    #                 aspect='auto',
-    #                 colors='k',
-    #                 alpha=0.2)
+    fmt = {}
+    strs = [ '0.001', '0.01', '0.1', '0.2', '0.3', '0.5', '1', '3' ]
+    for l,s in zip( CS.levels, strs ):
+        fmt[l] = s
+    clabel(CS, inline=1, fmt=fmt, fontsize=10)
+    
+    #clabel(CS, inline=1, fmt='%2.2f', fontsize=10)
+
+    CS2 = ax.contourf(line_ratio_grid1.T, CS.levels[-3::],
+                     origin='lower',
+                     extent=[log10mus.min(), log10mus.max(), log10sigmas.min(), log10sigmas.max()],
+                     aspect='auto',
+                     colors='k',
+                     alpha=0.2)
     
     fig.set_xticks([0.0, 0.5, 1.0, 1.5, 2.0],
-                   labels=[r'$10^0$', r'$10^{0.5}$', r'$10^{1}$', r'$10^{1.5}$',  r'$10^2$'],
+                   labels=[r'$10^{0.0}$', r'$10^{0.5}$', r'$10^{1}$', r'$10^{1.5}$',  r'$10^2$'],
                    size='x-small')
     
-    #fig.set_yticks(log10([10.0, 100.0, 1000.0, 10000.0]), 
-    #               labels=[r'$10^{1}$', r'$10^{2}$', r'$10^{3}$', r'$10^4$'], 
-    #               size='x-small')
+    fig.set_yticks([1.0, 1.1, 1.2, 1.3, 1.4, 1.5], 
+                   labels=[r'$1.0$', r'$1.1$', r'$1.2$', r'$1.3$', r'$1.4$', r'$1.5$'], 
+                   size='x-small')
+
+    twiny.set_yticks([1.0, 1.1, 1.2, 1.3, 1.4, 1.5])    
+    twiny.set_yticklabels([r'$16$', r'$28$', r'$52$', r'$100$', r'$210$', r'$450$'],size='x-small')
+    twiny.set_ylabel(r'$\mathcal{M}$', size='large')    
     
     #fig.sub[0,0].text(2.0, 3.0, , size='small')
-    fig.set_title('HCO+(1-0)/HCN(1-0)', space=[-0.3, -0.02])
+    fig.set_title('HCN(1-0)/HCO$^{+}$(1-0)', space=[-0.3, -0.02])
     if fig_save_path != None:
         fig.fig.savefig(fig_save_path)
         print 'figure saved to:\n\t%s' % fig_save_path
