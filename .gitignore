@@ -10,3 +10,4 @@ despotic
 LAMDA
 *.pyc
 .settings
+.pydevproject
