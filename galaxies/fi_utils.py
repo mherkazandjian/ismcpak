@@ -6,6 +6,7 @@ import constraining
 import lineDict
 import line_ratio_utils
 import meshUtils
+import ismUtils
 import multiprocessing
 from mylib.constants import M_SUN_SI, M_PROTON_CGS, LSUN_ERG_S, M_SUN_CGS
 from mylib.units import KPC2CM
@@ -353,6 +354,10 @@ def load_gas_particle_info(filename, load_pdr=None, load_only=None):
 def load_gas_particle_info_with_em(filename, species, load_pdr=None, load_only_em=None):
     '''loads the specified file foo.states.npz, also looks for files
      foo.states.npz.em_XYZ.npz, where XYZ is an entry in the list of strings in species
+     
+     load_only_em = ['flux_cgs_CO1-0', 'flux_cgs_CO2-1']
+        or
+     load_only_em = ['CO1-0', 'CO2-1']        
     '''
     
     names_all = []
@@ -2560,7 +2565,7 @@ class gas_set(Particles):
         
         weights_filename = fi_utils.gen_weights_filename(params['rundir'], params['snap_index'])
         gas.use_weights(weighting=params['weights'], weights_filename = weights_filename)
-        
+
         '''
         
         if weighting == 'matched':
@@ -2833,6 +2838,149 @@ class gas_set(Particles):
         r = r * numpy.sqrt(w)
         
         self.radius = r
+
+    def set_radii_custom1(self, rundir, snap_index):
+        '''
+        weights parents = 0, weight children match the PDF
+        mass = weights_matched * mass
+        Av = Av already set before calling this (not changed)
+        Area = mass / (mu * mH * N(H) ) # N(H) computed from Av2NH 
+        r = sqrt(area / pi) 
+        
+        !!! this assumes the metallicity is 1
+        '''
+        
+        ## getting the indicies of the parents and the chidlren
+        pinds = self.get_inds_has_children()
+        cinds = self.get_inds_children()
+        
+        ## setting the new weights by number to the parents and the children
+        weights_filename = gen_weights_filename(rundir, snap_index)    
+        self.use_weights(weighting='matched', weights_filename = weights_filename)
+
+        m = self.mass
+        w = self.weights
+        r = self.radius
+        n = self.n
+        Av = self.Av
+        
+        ## setting the masses
+        m *= w
+        
+        ## computing the column denisty of H
+        NH = ismUtils.Av2NH(Av, 1.0)
+        
+        ## computing the effective area from the mass of the particle and NH
+        area_cm2 = m / ( 1.6 * mylib.constants.M_PROTON_CGS * NH)
+        
+        ## converting the are to kpc2
+        area_kpc2 = area_cm2 * (1.0 / mylib.units.KPC2CM)**2.0 
+
+        ## computing the radii
+        r = sqrt(area_kpc2 / pi) 
+
+        ## setting the attributes                
+        self.radius = r
+        self.weights = w
+        self.mass = m
+
+    def set_radii_custom2(self, rundir, snap_index):
+        '''
+        weights parents = 1, weight children = 0
+        mass = weights_matched * mass
+        Av = Av already set before calling this (not changed)
+        Area = mass / (mu * mH * N(H) ) # N(H) computed from Av2NH 
+        r = sqrt(area / pi) 
+        
+        !!! this assumes the metallicity is 1
+        '''
+        
+        metallicity = 1.0
+        
+        ## getting the indicies of the parents and the chidlren
+        pinds = self.get_inds_has_children()
+        cinds = self.get_inds_children()
+        
+        ## setting the new weights by number to the parents and the children
+        weights_filename = gen_weights_filename(rundir, snap_index)    
+        self.use_weights(weighting='original-only', weights_filename = weights_filename)
+
+        m = self.mass
+        m[pinds] *= 101.0
+        m[cinds] = 0.0
+        
+        w = self.weights
+        r = self.radius
+        n = self.n
+        Av = self.Av
+        
+        Pe = (1.085 * self.T + 54.0 * self.vdisp**2)*self.n #how to set the unit to the same untis as  (units.K*gas.n.unit*constants.kB.unit)
+        Av = 0.22 * metallicity * ( 1520.0 / 100.0) * sqrt(Pe/1e4)
+        
+        ## computing the column denisty of H
+        NH = ismUtils.Av2NH(Av, metallicity)
+        
+        ## computing the effective area from the mass of the particle and NH
+        area_cm2 = m / ( 1.6 * mylib.constants.M_PROTON_CGS * NH)
+        
+        ## converting the area to kpc2
+        area_kpc2 = area_cm2 * (1.0 / mylib.units.KPC2CM)**2.0 
+
+        ## computing the radii
+        r = sqrt(area_kpc2 / pi) 
+        r[cinds] = 0.0
+        
+        ## setting the attributes
+        self.radius = r
+        self.weights = w
+        self.mass = m
+        self.Av = Av
+        
+    def set_radii_custom3(self, rundir, snap_index):
+        '''
+        weights parents = 1/101, weight children = 1/101
+        mass = weights_matched * mass
+        Av = Av already set before calling this (not changed)
+        Area = mass / (mu * mH * N(H) ) # N(H) computed from Av2NH 
+        r = sqrt(area / pi) 
+        
+        !!! this assumes the metallicity is 1
+        '''
+
+        metallicity = 1.0
+                
+        ## getting the indicies of the parents and the chidlren
+        pinds = self.get_inds_has_children()
+        cinds = self.get_inds_children()
+        
+        m = self.mass
+        w = self.weights
+        n = self.n
+
+        Pe = (1.085 * self.T + 54.0 * self.vdisp**2)*self.n #how to set the unit to the same untis as  (units.K*gas.n.unit*constants.kB.unit)
+        Av = 0.22 * metallicity * ( 1520.0 / 100.0) * sqrt(Pe/1e4)
+
+        ## setting the new weights by number to the parents and the children
+        w[pinds] = 1.0/101.0
+        w[cinds] = 1.0/101.0
+        
+        ## computing the column denisty of H
+        NH = ismUtils.Av2NH(Av, metallicity)
+        
+        ## computing the effective area from the mass of the particle and NH
+        area_cm2 = m / ( 1.6 * mylib.constants.M_PROTON_CGS * NH)
+        
+        ## converting the are to kpc2
+        area_kpc2 = area_cm2 * (1.0 / mylib.units.KPC2CM)**2.0 
+
+        ## computing the radii
+        r = sqrt(area_kpc2 / pi) 
+
+        ## setting the attributes                
+        self.radius = r
+        self.weights = w
+        self.mass = m
+        self.Av = Av 
         
     def set_radii(self, weighting=None, rundir=None, snap_index=None):
         '''sets the radii and weights of the particles based on the suggested weighting'''
@@ -2867,7 +3015,20 @@ class gas_set(Particles):
                 '''the radii are set based on the Av of the particle'''
                 self.set_radii_from_Av(rundir, snap_index)
                 print '\t---------> set radii and weights of children such that total area is conserved'
-            """ 
+            """
+        elif weighting == 'custom1':
+            ''' customized weighting and setting radii'''
+            self.set_radii_custom1(rundir, snap_index)
+            print '\t--------> set radii and weights using customized weights (custom1)'
+        elif weighting == 'custom2':
+            ''' customized weighting and setting radii'''
+            self.set_radii_custom2(rundir, snap_index)
+            print '\t--------> set radii and weights using customized weights (custom2)'
+        elif weighting == 'custom3':
+            ''' customized weighting and setting radii'''
+            self.set_radii_custom3(rundir, snap_index)
+            print '\t--------> set radii and weights using customized weights (custom3)'
+             
         else:
             raise ValueError('unknown weighting!!')
         

@@ -44,15 +44,19 @@ params = {
           'pdrDb' : home + '/ism/runs/oneSided/sph-db-z-1.0-low-res/',   # the path to the dir containing the PDR database
         }
 
-fig_save_path1 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/luminosities.eps'
-fig_save_path2 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/pdfs.eps'
-fig_save_path3 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/line_ratio_grid_HCN1-0_HNC1-0.svg'
-fig_save_path4 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/line_ratio_grid_HCN1-0_HCO+1-0.svg'
+#fig_save_path1 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/luminosities.eps'
+#fig_save_path2 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/pdfs.eps'
+#fig_save_path3 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/line_ratio_grid_HCN1-0_HNC1-0.svg'
+#fig_save_path4 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/line_ratio_grid_HCN1-0_HCO+1-0.svg'
 
 #fig_save_path1 = None
 #fig_save_path2 = None
 #fig_save_path3 = None
 #fig_save_path4 = None
+
+fig_save_path_app_1 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/pdfs_app1.eps'
+fig_save_path_app_2 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/pdfs_app2.eps'
+fig_save_path_app_3 = '/home/mher/ism/docs/paper04/src/figs/results/synthetic_pdfs/luminosities_app3.eps'
 
 #############################################################################################################
 #############################################################################################################
@@ -78,6 +82,13 @@ import paper_plots
 #paper_plots.plot_PDFs_of_synthetic_luminosity_distribututions(-3.0, 8.0, fig_save_path=fig_save_path2)
 #paper_plots.line_ratio_grid_from_pdf_sweep(arxvPDR, params, nmin, nmax, fig_save_path=fig_save_path3)
 #paper_plots.line_ratio_grid_from_pdf_sweep_HCOP_HCN(arxvPDR, params, nmin, nmax, fig_save_path=fig_save_path4)
+
+
+## appendix plots
+#paper_plots.plot_PDFs_of_synthetic_luminosity_distribututions_app1(-3.0, 8.0, fig_save_path=fig_save_path_app_1)
+#paper_plots.plot_PDFs_of_synthetic_luminosity_distribututions_app2(-3.0, 8.0, fig_save_path=fig_save_path_app_2)
+
+paper_plots.synthetic_flux_contribution_from_pdf_app3(arxvPDR, F, params, -3.0, 6.0, yrng=[1e-8, 1e2], fig_save_path=fig_save_path_app_3)
 
 
 print 'done'

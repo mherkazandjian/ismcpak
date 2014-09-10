@@ -31,7 +31,7 @@ params = {
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'original-only', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'custom2', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
           'obs_res'      : 21,
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
@@ -49,11 +49,11 @@ params = {
                         },
           'check'   : 'default',          
           'em_unit'   : 'em_fluxKkms',
-          'lines'     : ['CO1-0', '13CO1-0', 'HCN1-0', 'HNC1-0', 'HCO+1-0'],
+          'lines'     : ['CO1-0']#, '13CO1-0', 'HCN1-0', 'HNC1-0', 'HCO+1-0'],
         }
 
-fig_save_path = '/home/mher/ism/docs/paper04/src/figs/results/total_luminosity.eps'
-#fig_save_path = None
+#fig_save_path = '/home/mher/ism/docs/paper04/src/figs/results/total_luminosity.eps'
+fig_save_path = None
 
 #############################################################################################################
 #############################################################################################################

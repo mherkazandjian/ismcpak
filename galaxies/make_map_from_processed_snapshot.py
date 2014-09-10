@@ -25,9 +25,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
           'species' : ['HCN'],#'CO'], #'13CO', 'HCN', 'HNC', 'HCO+'],
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-#          'weights' : 'original-only', #'by-number', #'matched',  #'original-only' ,#None ,#by-number          
-          'weights' : 'original', #by-number', #'matched',  #'original-only' ,#None ,#by-number          
-#          'weights' : #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'original', #'matched',  #'original-only' ,#None ,#by-number          
           'snaps'   : numpy.arange(4, 4 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
@@ -90,7 +88,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
 #                             },
 
                   'map1'   : {
-                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
+                              'attr'    : 'em_fluxKkms_CO1-0', #'mass', 'G0', 'gmech', 'Av'
                               'v_rng'   : [-8.0, 4.0],
                               'title'   : r'', 
                               'as_log10': True,
@@ -99,7 +97,7 @@ params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the p
                              },
 
                   'map2'   : {
-                              'attr'    : 'em_fluxKkms_HCN3-2', #'mass', 'G0', 'gmech', 'Av'
+                              'attr'    : 'em_fluxKkms_HCN1-0', #'mass', 'G0', 'gmech', 'Av'
                               'v_rng'   : [-8.0, 4.0],
                               'title'   : r'', 
                               'as_log10': True,

@@ -1,5 +1,5 @@
 '''
-plots the total luminosity of all the SPH particles.
+plots the luminosity map
 '''
 #########################################################################################################
 import os
@@ -25,12 +25,15 @@ home = '/home/mher'
 params = {
           ##################### parameters for making the mock maps #########################
           
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
           'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100',  # the path of the dir containing the simulation
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'custom3', #'matched',  #'original-only' ,#None ,#by-number, 'conserve-area'          
-          'obs_res'      : 17,
+          'weights' : 'custom2', #'custom#', #'matched',  #'original-only' ,#None ,#by-number, 'conserve-area'          
+          'obs_res' : 21,
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
           'ranges'    : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
@@ -46,21 +49,23 @@ params = {
                         'box_size' : [-8.0, 8.0] | units.kpc, 
                         },
           'check'   : 'default',          
-          'em_unit'   : 'em_fluxKkms',
-          'lines'     : [
-                         'CO1-0'  , 'CO15-14',
-                         'HCO+1-0', 'HCO+7-6', 
-                         'HCN1-0' , 'HCN7-6', 
-                        ],
+          'em_unit' : 'em_fluxKkms',
+          'lines'   : [
+                       #['CO1-0',   'CO3-2'    , 'CO5-4'    , 'CO7-6'  , 'CO9-8'    , 'CO11-10'    , 'CO13-12'], 
+                       #['13CO1-0'  ], #'13CO3-2'  , '13CO5-4'  , '13CO7-6', '13CO9-8'  , '13CO11-10'  , '13CO13-12'], 
+                       #['HCN1-0'   ], #'HCN2-1'   , 'HCN3-2'   , 'HCN4-3' , 'HCN5-4'   , 'HCN6-5'     , 'HCN7-6'], 
+                       ['HNC1-0'], #,  'HNC2-1'   , 'HNC3-2'   , 'HNC4-3' , 'HNC5-4'   , 'HNC6-5'     , 'HNC7-6'], 
+                       #['HCO+1-0'  ], #'HCO+2-1'  , 'HCO+3-2'  , 'HCO+4-3', 'HCO+5-4'  , 'HCO+6-5'    , 'HCO+7-6'], 
+                      ],
         }
 
-#fig_save_path = '/home/mher/ism/docs/paper04/src/figs/results/luminosity_pdf_box.eps'
+#fig_save_path = '/home/mher/ism/docs/paper04/src/figs/results/flux_maps.eps'
 fig_save_path = None
 
 #############################################################################################################
 #############################################################################################################
 #############################################################################################################
-
+    
 ## setting up the logger object
 logger = default_logger()
 
@@ -68,7 +73,7 @@ em_unit = params['em_unit'].replace('em_flux','')
 
 ## setting up the line attribute array whose emission will be retried from the snapshot
 attrs = {}
-for i, line in enumerate(params['lines']):
+for i, line in enumerate(numpy.array(params['lines']).flatten()):
     
         attr = params['em_unit'] + '_' + line
         
@@ -77,19 +82,20 @@ for i, line in enumerate(params['lines']):
 
 ## getting the unique transitions whose maps will be constructed
 curve_attrs = attrs.keys()
-print 'emissions to be extracted from the processed snapshopt'
-for attr in curve_attrs: print '\t%s' % attr
 
 ## getting the species involved in those emissions
-species = line_ratio_utils.species_involved(params['lines'])
-print 'Species invloved = ', species
+species = line_ratio_utils.species_involved(numpy.array(params['lines']).flatten())
+#print 'Species invloved = ', species
 
 ## path to processed fi snapshot  
 snap_filename = params['rundir'] + '/firun/' + 'fiout.%06d' % params['snap_index'] + '.states.npz'  
 
 ## loading the processed sph simulation data with the emissions 
 logger.debug('loading proccessed snapshot %s : ' % snap_filename) 
-gas = fi_utils.load_gas_particle_info_with_em(snap_filename, species, load_pdr=params['pdr_sph'], load_only_em=curve_attrs)    
+gas = fi_utils.load_gas_particle_info_with_em(snap_filename, species, 
+                                              load_pdr=params['pdr_sph'],)
+#                                              load_only_em = curve_attrs)   
+
 logger.debug('done reading fi snapshot : %s' % snap_filename)
 logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
 
@@ -116,6 +122,7 @@ print '\t\tdone getting the spatial distributuions'
 ## keeping the gas particles which are within the ranges of the histogram
 gas = gas[hist.inds_in]
 
+
 ###################################################################################################
 ###################################################################################################
 ###################################################################################################
@@ -123,5 +130,4 @@ gas = gas[hist.inds_in]
 
 import paper_plots
 
-fig = paper_plots.luminosity_pdf_box(gas, params, fig_save_path)
-
+fig = paper_plots.plot_flux_maps(gas, hist, params, fig_save_path)

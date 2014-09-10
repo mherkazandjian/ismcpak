@@ -17,8 +17,8 @@ import lineDict
 home = '/home/mher'
 
 parameters = {
-             'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
-             #'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
+             #'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
+             'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
              'range_logn'  : [0.0, 6.0],    #range in log n of models to be considered
              'range_logG0' : [0.0, 6.0],    #range in log G0 of models to be considered
              'range_alpha' : [0.0, 1],      #range in alpha of models to be considered (not in log10)
@@ -61,13 +61,29 @@ parameters = {
                               ['lvg', 'radex' , '13CO', '7-6'],   
                               #
                               ['lvg', 'radex' , 'HCO+', '1-0'],   
-                              ['lvg', 'radex' , 'HCO+', '4-3'],   
+                              ['lvg', 'radex' , 'HCO+', '2-1'],   
+                              ['lvg', 'radex' , 'HCO+', '3-2'],   
+                              ['lvg', 'radex' , 'HCO+', '4-3'],
+                              ['lvg', 'radex' , 'HCO+', '5-4'],   
+                              ['lvg', 'radex' , 'HCO+', '6-5'],   
                               ['lvg', 'radex' , 'HCO+', '7-6'],   
-                              ['lvg', 'radex' , 'HCN' , '1-0'],
-                              ['lvg', 'radex' , 'HCN' , '3-2'],
-                              ['lvg', 'radex' , 'HCN' , '4-3'],
-                              ['lvg', 'radex' , 'HNC' , '1-0'],
-                              ['lvg', 'radex' , 'HNC' , '3-2'],
+                              #
+                              ['lvg', 'radex' , 'HCN', '1-0'],   
+                              ['lvg', 'radex' , 'HCN', '2-1'],   
+                              ['lvg', 'radex' , 'HCN', '3-2'],   
+                              ['lvg', 'radex' , 'HCN', '4-3'],
+                              ['lvg', 'radex' , 'HCN', '5-4'],   
+                              ['lvg', 'radex' , 'HCN', '6-5'],   
+                              ['lvg', 'radex' , 'HCN', '7-6'],   
+                              #
+                              ['lvg', 'radex' , 'HNC', '1-0'],   
+                              ['lvg', 'radex' , 'HNC', '2-1'],   
+                              ['lvg', 'radex' , 'HNC', '3-2'],   
+                              ['lvg', 'radex' , 'HNC', '4-3'],
+                              ['lvg', 'radex' , 'HNC', '5-4'],   
+                              ['lvg', 'radex' , 'HNC', '6-5'],   
+                              ['lvg', 'radex' , 'HNC', '7-6'],
+                              #   
                               ['pdr', 'leiden', 'C'   , '609'],
                               ['pdr', 'leiden', 'C'   , '369'],
                              ),
@@ -94,7 +110,7 @@ parameters = {
                                            ['13CO', 'N_COL'],
                                           ),
 
-             'outFname'    : home + '/tmp/test.txt',
+             'outFname'    : home + '/tmp/models-z-1.0-750-MW-CR.txt',
              }
 
 # 

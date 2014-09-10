@@ -202,14 +202,14 @@ def total_luminosity(gas, params, fig_save_path):
     
     ax = fig.sub[0,0]
     
-    specsStrs =  ['CO', '13CO', 'HCN', 'HNC', 'HCO+']
+    specsStrs =  ['CO']#, '13CO', 'HCN', 'HNC', 'HCO+']
     colors    =  ['k' , 'r'   , 'g'  , 'b'  , 'c'   ]
     idx       =  []
     lum       =  []
     lum_orig  =  []
     
     ## plotting the total luminosity weighted by number of sampled points
-    gas.set_radii(weighting='conserve-area', rundir=params['rundir'], snap_index=params['snap_index'])
+    #gas.set_radii(weighting='custom3', rundir=params['rundir'], snap_index=params['snap_index'])
 
     sym       = '-'
 
@@ -228,14 +228,14 @@ def total_luminosity(gas, params, fig_save_path):
         else:
             raise ValueError('unknown unit %s' % em_unit)
         
-        semilogy(x+1, y, colors[i] + sym, label=specStr)
+        semilogy(x+1, y*100, colors[i] + sym, label=specStr)
 
         idx.append(x+1)        
         lum.append(y)
         
-    if True:
+    if False:
         ## plotting the total luminosity of the original points
-        gas.set_radii(weighting='original-only', rundir=params['rundir'], snap_index=params['snap_index'])
+        gas.set_radii(weighting='custom3', rundir=params['rundir'], snap_index=params['snap_index'])
         
         sym       = '--'
         
@@ -263,7 +263,7 @@ def total_luminosity(gas, params, fig_save_path):
     xticks(size='small')
     
     ylim([1e5, 2e9])
-    yticks([1e5, 1e6, 1e7, 1e8, 1e9], size='small')
+    yticks([1e4, 1e6, 1e7, 1e8, 1e9], size='small')
     legend(loc=0, prop={'size':'x-small'})
     
     show()
@@ -376,6 +376,7 @@ def luminosity_pdf_box(gas, params, fig_save_path):
                                   axs = {
                                          'left' :0.18, 'bottom': 0.20, 'w':0.78, 'h':0.75
                                         },
+                                  bbox=False,
                                   )
     
     gas_in_pixel.get_emission_pdf(qx='n', line='CO1-0', log10x=True, nbins=50, xrng=[-3, 6],
@@ -419,7 +420,9 @@ def luminosity_pdf_box(gas, params, fig_save_path):
         
     return fig 
 
-def plot_PDFs_of_synthetic_luminosity_distribututions(nmin, nmax, fig_save_path=None):    
+def plot_PDFs_of_synthetic_luminosity_distribututions(nmin, 
+                                                      nmax,                                                       
+                                                      fig_save_path=None):    
     '''plot the PDF of the luminosity distributions'''
     
     fig = templates.subplots_grid(1, 1, hspace=0.0, wspace=0.0,
@@ -493,7 +496,177 @@ def plot_PDFs_of_synthetic_luminosity_distribututions(nmin, nmax, fig_save_path=
     #fig.preview(env='aa')
 
     show()
+
+def plot_PDFs_of_synthetic_luminosity_distribututions_app1(nmin,    
+                                                           nmax,                                                       
+                                                           fig_save_path=None):    
+    '''plot the PDF of the luminosity distributions'''
     
+    fig = templates.subplots_grid(1, 1, hspace=0.0, wspace=0.0,
+                                  fig = {'kwargs':{
+                                                   'figsize' : {3.55, 2.9}
+                                                   }
+                                         },
+                                  axs = {
+                                         'left' :0.2, 'bottom': 0.2, 'w':0.75, 'h':0.75
+                                        },
+                                  )
+
+    # density bins to be plotted
+    log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
+    n_bins = 10.0**(log10n + dlog10n*0.5)
+
+    # setting the labels of the main axes
+    fig.set_xlabel(r'$n [{\rm cm}^{-3}]$', space=-0.1, size='large')
+    fig.set_ylabel('probability density', space=-0.17, size='large')    
+    ax = fig.sub[0,0]
+
+    #----------------------------------------------------------------------------------------    
+    ## the probability density at that density (not in log scale)
+    nPDF = coset9_sol_info.nPDF_sph.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'b-',  label=r'1.3 , 2.1, 11.8')
+    
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale)
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**1.1, 
+                                             sigma=10.0**0.93)
+    nPDF = nPDF_obj.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'b--', label=r'12.5, 2.1, 113')
+
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale)
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**1.1, 
+                                             sigma=10.0**1.18)
+    nPDF = nPDF_obj.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'b:', label=r'12.5, 2.7, 478')
+
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale) (wada2001)
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**1.1, 
+                                             sigma=10.0**1.35)
+    nPDF = nPDF_obj.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'r--', label=r'12.5, 3.1, 1537')
+
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale) 
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**1.1, 
+                                             sigma=10.0**1.5)
+    nPDF = nPDF_obj.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'g--', label=r'12.5, 3.5, 5714')
+
+    
+    #--------------------------------------------------------------------------------------
+
+    legend = ax.legend(loc=0, prop={'size':6}, title=r'       $n_{\rm med}$ ,$\sigma$, $<n>$')
+    setp(legend.get_title(),fontsize='xx-small')
+    
+    fig.set_xticks([1e-1, 1e1, 1e3, 1e5, 1e7], 
+                   labels=[r'10$^{-1}$', r'10$^1$', r'10$^3$', r'10$^5$', r'10$^7$'], 
+                   size='x-small')
+    fig.set_yticks([1e-6, 1e-4, 1e-2, 1e-0], 
+                   labels=[r'10$^{-6}$', r'10$^{-4}$', r'10$^{-2}$', r'10$^{0}$'], 
+                   size='x-small')
+            
+
+    fig.sub_setp('xlim', [10.0**-1, 10.0**8])
+    fig.sub_setp('ylim', [1e-6, 1.0])
+
+    if fig_save_path != None:
+        fig.fig.savefig(fig_save_path)
+        print 'figure saved to:\n\t%s' % fig_save_path
+    #fig.preview(env='aa')
+
+    show()
+
+def plot_PDFs_of_synthetic_luminosity_distribututions_app2(nmin,    
+                                                           nmax,                                                       
+                                                           fig_save_path=None):    
+    '''plot the PDF of the luminosity distributions'''
+    
+    fig = templates.subplots_grid(1, 1, hspace=0.0, wspace=0.0,
+                                  fig = {'kwargs':{
+                                                   'figsize' : {3.55, 2.9}
+                                                   }
+                                         },
+                                  axs = {
+                                         'left' :0.2, 'bottom': 0.2, 'w':0.75, 'h':0.75
+                                        },
+                                  )
+
+    # density bins to be plotted
+    log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
+    n_bins = 10.0**(log10n + dlog10n*0.5)
+
+    # setting the labels of the main axes
+    fig.set_xlabel(r'$n [{\rm cm}^{-3}]$', space=-0.1, size='large')
+    fig.set_ylabel('probability density', space=-0.17, size='large')    
+    ax = fig.sub[0,0]
+
+    #----------------------------------------------------------------------------------------    
+    ## the probability density at that density (not in log scale)
+    nPDF = coset9_sol_info.nPDF_sph.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'b-',  label=r'1.3 , 2.1, 11.8')
+    
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale)
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**2, 
+                                             sigma=10.0**0.93)
+    nPDF = nPDF_obj.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'b--', label=r'100, 2.1, 907')
+
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale)
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**2, 
+                                             sigma=10.0**1.18)
+    nPDF = nPDF_obj.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'b:', label=r'100, 2.7, 3828')
+
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale) (wada2001)
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**1.1, 
+                                             sigma=10.0**1.35)
+    nPDF = nPDF_obj.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'r--', label=r'12.5, 3.1, 1537')
+
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale) 
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**2, 
+                                             sigma=10.0**1.5)
+    nPDF = nPDF_obj.pdf
+    ax.loglog(n_bins, nPDF(n_bins), 'g--', label=r'100, 3.5, 45714')
+
+    
+    #--------------------------------------------------------------------------------------
+
+    legend = ax.legend(loc=0, prop={'size':6}, title=r'       $n_{\rm med}$ ,$\sigma$, $<n>$')
+    setp(legend.get_title(),fontsize='xx-small')
+    
+    fig.set_xticks([1e-1, 1e1, 1e3, 1e5, 1e7], 
+                   labels=[r'10$^{-1}$', r'10$^1$', r'10$^3$', r'10$^5$', r'10$^7$'], 
+                   size='x-small')
+    fig.set_yticks([1e-6, 1e-4, 1e-2, 1e-0], 
+                   labels=[r'10$^{-6}$', r'10$^{-4}$', r'10$^{-2}$', r'10$^{0}$'], 
+                   size='x-small')
+            
+
+    fig.sub_setp('xlim', [10.0**-1, 10.0**8])
+    fig.sub_setp('ylim', [1e-6, 1.0])
+
+    if fig_save_path != None:
+        fig.fig.savefig(fig_save_path)
+        print 'figure saved to:\n\t%s' % fig_save_path
+    #fig.preview(env='aa')
+
+    show()
+
 
 def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
                                   yrng=[1e0, 1e12], fig_save_path=None):
@@ -669,6 +842,201 @@ def synthetic_flux_contribution_from_pdf(arxvPDR, F, params, nmin, nmax,
     ax.text(1.1e6, 1e0, r'$\sigma = 3.1$', size=6)
     ax.text(1.1e6, 1e-1, r'$<n> = 1537 {\rm cm}^{-3}$', size=6)        
          
+    fig.set_xticks([1e1, 1e3, 1e5], 
+                   labels=[r'10$^1$', r'10$^3$', r'10$^5$'], 
+                   size='x-small')
+    fig.set_yticks([1e-6, 1e-2, 1e2, 1e6, 1e10], 
+                   labels=[r'10$^{-6}$', r'10$^{-2}$', r'10$^{2}$', r'10$^6$', r'10$^{10}$'], 
+                   size='x-small')
+
+    fig.clean_subplot_labels()
+            
+    if fig_save_path != None:
+        fig.fig.savefig(fig_save_path)
+        print 'figure saved to:\n\t%s' % fig_save_path
+    #fig.preview(env='aa')
+
+    fig.sub_setp('xlim', [10.0**0.0, 10.0**nmax])
+    fig.sub_setp('ylim', yrng)
+    show()
+
+def synthetic_flux_contribution_from_pdf_app3(arxvPDR, F, params, nmin, nmax,
+                                              yrng=[1e0, 1e12], fig_save_path=None):
+    '''
+    '''
+
+    import matplotlib.cm as cm
+    
+    fig = templates.subplots_grid(5, 3, hspace=0.0, wspace=0.0,
+                                  fig = {'kwargs':{
+                                                   'figsize' : {7.2, 7.0}
+                                                   }
+                                         },
+                                  axs = {
+                                         'left' :0.09, 'bottom': 0.08, 'w':0.8, 'h':0.9
+                                        },
+                                  )
+
+    # radius density scaling function, r(kpc) = R(n[cm-3]) (kpc) 
+    r_func = coset9_sol_info.r_sph_kpc
+    
+    # density bins to be plotted
+    log10n, dlog10n  = linspace(nmin, nmax, 100, retstep=True, endpoint=False)
+    n_bins = 10.0**(log10n + dlog10n*0.5)
+    N_particles = 1.0
+    
+    # setting the labels of the main axes
+    fig.set_xlabel(r'$n [{\rm cm}^{-3}]$', space=-0.04, size='large')
+    fig.set_ylabel('Flux ' + r'[K km s$^{-1}$]', space=-0.05, size='large')    
+    colors = ['r', 'g', 'b', 'c', 'm', 'k']
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale)
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**1.1, 
+                                             sigma=10.0**0.93)
+    nPDF = nPDF_obj.pdf
+    
+    ax = fig.sub[0,0]
+    for i, log10G0 in enumerate([2.0, 4.0, 6.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,          
+                                     nPDF, r_func, N_particles, log10G0, in_ax=ax,
+                                     color=colors[i])
+
+    ax = fig.sub[0,1]
+    for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+                                     nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
+                                     color=colors[i])
+
+    ax = fig.sub[0,2]
+    for i, Av in enumerate([0.1, 1.0, 5.0, 10.0, 20.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
+                                     nPDF, r_func, N_particles, Av, in_ax=ax,
+                                     color=colors[i])
+        
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 12.5 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 2.1$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 113 {\rm cm}^{-3}$', size=6)
+
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale)
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**1.1, 
+                                             sigma=10.0**1.18)
+    nPDF = nPDF_obj.pdf
+    
+    ax = fig.sub[1,0]
+    for i, log10G0 in enumerate([0.0, 2.0, 4.0, 6.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,      
+                                     nPDF, r_func, N_particles, log10G0, in_ax=ax,
+                                     color=colors[i])
+
+    ax = fig.sub[1,1]
+    for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+                                    nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
+                                    color=colors[i])
+
+    ax = fig.sub[1,2]
+    for i, Av in enumerate([0.1, 1.0, 5.0, 10.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
+                                     nPDF, r_func, N_particles, Av, in_ax=ax,
+                                     color=colors[i])
+
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 12.5 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 2.7$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 478 {\rm cm}^{-3}$', size=6)        
+    #--------------------------------------------------------------------------------------
+    #--------------------------------------------------------------------------------------
+    #--------------------------------------------------------------------------------------
+    ## the probability density at that density (not in log scale)
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**1.1, 
+                                             sigma=10.0**1.5)
+    nPDF = nPDF_obj.pdf
+    
+    ax = fig.sub[2,0]
+    for i, log10G0 in enumerate([0.0, 2.0, 4.0, 6.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,      
+                                     nPDF, r_func, N_particles, log10G0, in_ax=ax,
+                                     color=colors[i])
+
+    ax = fig.sub[2,1]
+    for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+                                    nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
+                                    color=colors[i])
+
+    ax = fig.sub[2,2]
+    for i, Av in enumerate([0.1, 1.0, 5.0, 10.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
+                                     nPDF, r_func, N_particles, Av, in_ax=ax,
+                                     color=colors[i])
+
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 12.5 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 3.5$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 5714 {\rm cm}^{-3}$', size=6)        
+    #--------------------------------------------------------------------------------------
+
+    #--------------------------------------------------------------------------------------    
+    ## the probability density at that density (not in log scale) 
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**2, 
+                                             sigma=10.0**1.18)
+    nPDF = nPDF_obj.pdf
+    
+    ax = fig.sub[3,0]
+    for i, log10G0 in enumerate([2.0, 4.0, 6.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,      
+                                     nPDF, r_func, N_particles, log10G0, in_ax=ax,
+                                     color=colors[i])
+
+    ax = fig.sub[3,1]
+    for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+                                    nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
+                                    color=colors[i])
+
+    ax = fig.sub[3,2]
+    for i, Av in enumerate([0.1, 1.0, 5.0, 10.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
+                                     nPDF, r_func, N_particles, Av, in_ax=ax,
+                                     color=colors[i])
+
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 100 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 2.7$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 3828 {\rm cm}^{-3}$', size=6)        
+
+    #--------------------------------------------------------------------------------------    
+    ## the probability density at that density (not in log scale) 
+    nPDF_obj = fi_utils.density_distribution('lognormal', 
+                                             mu=10.0**2, 
+                                             sigma=10.0**1.5)
+    nPDF = nPDF_obj.pdf
+    
+    ax = fig.sub[4,0]
+    for i, log10G0 in enumerate([2.0, 4.0, 6.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [log10G0, -22, 10.0], F,      
+                                     nPDF, r_func, N_particles, log10G0, in_ax=ax,
+                                     color=colors[i])
+
+    ax = fig.sub[4,1]
+    for i, log10Gmech in enumerate([-50.0, -30.0, -25.0, -22.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, log10Gmech, 10.0], F,   
+                                    nPDF, r_func, N_particles, log10Gmech, in_ax=ax,
+                                    color=colors[i])
+
+    ax = fig.sub[4,2]
+    for i, Av in enumerate([0.1, 1.0, 5.0, 10.0]):
+        fi_utils.flux_contribution_vs_n(n_bins, [2.0, -22.0, Av], F,  
+                                     nPDF, r_func, N_particles, Av, in_ax=ax,
+                                     color=colors[i])
+
+    ax.text(1.1e6, 1e1, r'$n_{\rm med} = 100 {\rm cm}^{-3}$', size=6) 
+    ax.text(1.1e6, 1e0, r'$\sigma = 3.5$', size=6)
+    ax.text(1.1e6, 1e-1, r'$<n> = 45714 {\rm cm}^{-3}$', size=6)        
+    #---------------------------------------------------------------------------
+    
     fig.set_xticks([1e1, 1e3, 1e5], 
                    labels=[r'10$^1$', r'10$^3$', r'10$^5$'], 
                    size='x-small')

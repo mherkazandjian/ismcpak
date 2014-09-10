@@ -15,8 +15,8 @@ from galaxies import fi_utils
 home = '/home/mher'
 #home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
-params = {'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # the path of the dir containing the simulation
-          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100', # the path of the dir containing the simulation
+params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100', # the path of the dir containing the simulation
           'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
@@ -62,6 +62,7 @@ print 'number of sph particles in snapshot = %d' %  len(gas)
 
 ###########################################################################################################
 
+asdad
 ## extending the densities to include higher ones
 n_s, w_s, gas_gt, w_gt, gas_lt = gas.sample_higher_densities(npp = npp, 
                                                              n_min_sample = n_min_sample, 

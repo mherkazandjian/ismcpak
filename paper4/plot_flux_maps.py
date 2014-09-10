@@ -19,8 +19,8 @@ import line_ratio_utils
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
-#home = '/home/mher'
-home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
+home = '/home/mher'
+#home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
 params = {
           ##################### parameters for making the mock maps #########################
@@ -32,7 +32,7 @@ params = {
           
           'imres'   : 100,   # resolution of the image (over which the beams will be ovelayed)
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'conserve-area', #'matched',  #'original-only' ,#None ,#by-number, 'conserve-area'          
+          'weights' : 'custom2', #'matched',  #'original-only' ,#None ,#by-number, 'conserve-area'          
           'obs_res'      : 21,
            
           'snap_index': numpy.arange(4, 4 + 1, 1),
