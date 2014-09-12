@@ -98,7 +98,7 @@ class chemicalNetwork(specie, reaction):
     def setup(self, networkFname, baseSpecies):
         """Setup all the chemical network."""
 
-        self.read_network_file(networkFname)  # read the database into a buffer
+        self.read_network_file(networkFname)  # read the             database into a buffer
         self.parse_reactions()                # parse the reaction lines from the database
         self.set_base_species(baseSpecies)    # setup the base species into the appropriate data structs
         self.get_unique_species()             # fileter the unique species and parse them in their components
@@ -106,7 +106,6 @@ class chemicalNetwork(specie, reaction):
         self.set_reaction_hash_codes()        # compute the hashcodes of the reactions
         self.update_reactions_types()         # make sure reaction types are correct
         self.check_reactions_types()          # make sure reaction types are correct
-        self.set_all_rxn_bounds()             # set the rxns at the edges of the defined T limits
         
     def read_network_file(self, fileName):
         """Read and parses the UMIST 2006 or UMIST 99 reaction file (without the header) and assigns 

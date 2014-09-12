@@ -143,7 +143,7 @@ class reaction():
         """method that computes the reaction constant.
         
            .. todo:: SETS THE FUNCTION WHICH COMPUTES THE REACTION CONSTANT FROM A FUNCTION NAME DICTIONARY
-           .. warning:: not implmented yet. 
+           .. warning:: not implmented yet. (see chemicalNetwork.set_rxn_cst_functions)
         """  
         pass
 

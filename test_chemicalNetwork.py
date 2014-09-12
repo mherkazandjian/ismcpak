@@ -83,7 +83,7 @@ net.remove_species( species = manualRemoveList )
 #re-assign numbers to species(this is not neccessary, just to check if 
 #there are species which do not have a number and that remove_species
 #does what is supposed to do 
-net.assign_numbers_to_species(fileName = speciesNums)
+net.assign_numbers_to_species(fileName = speciesNums) 
 
 #setting the abundances from a file (after this, all the species in the 
 #network (being used [not the one which was read since we modified it
@@ -91,14 +91,8 @@ net.assign_numbers_to_species(fileName = speciesNums)
 #excpet PHOTON, CRP, CRPHOT, M 
 net.set_abundances(fromFile = specAbunFname) 
 
-print '------------------------------------------------------------------------------'
-print 'computing the constants and rates of the reactions'
-net.set_environment_state(T, zeta, Av, albedo, nDens, G0)
-net.compute_rxn_constants()
-net.compute_rxn_rates()
-
 #printing all the reactions involving a CRP (with rates and rxn constants)
 print 'reactions of type CP with decreasing reaction rates'
-idsCP = net.filter_reactions(withType='CP', show=True, fmt='id type rxn abg cst rate', sort = True)
+idsCP = net.filter_reactions(withType='CP', show=True, fmt='id type rxn abg')
 
 print 'done'
