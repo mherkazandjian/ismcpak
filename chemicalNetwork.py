@@ -106,7 +106,8 @@ class chemicalNetwork(specie, reaction):
         self.set_reaction_hash_codes()        # compute the hashcodes of the reactions
         self.update_reactions_types()         # make sure reaction types are correct
         self.check_reactions_types()          # make sure reaction types are correct
-         
+        self.set_all_rxn_bounds()             # set the rxns at the edges of the defined T limits
+        
     def read_network_file(self, fileName):
         """Read and parses the UMIST 2006 or UMIST 99 reaction file (without the header) and assigns 
            the variable fileStr and counts the number of reactions in the file sets : self.fileStr
