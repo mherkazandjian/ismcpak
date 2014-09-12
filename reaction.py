@@ -148,13 +148,12 @@ class reaction():
         pass
 
     def compute_reaction_constant(self, state):
-        """method that computes the reaction constant using the constants from the the 
-           appropriate temperature range.  The computed value is set to self.cst
-           and to the reaction which was used to compute the constant.
+        """method that computes the reaction constant using the constants from 
+        the the appropriate temperature range.  The computed value is set to 
+        self.cst and to the reaction which was used to compute the constant.
         
-           :param dict state: a dictionary holding all the parameters needed by the
-            functions which compute the constants to do their job. 
-            
+        :param dict state: a dictionary holding all the parameters needed by the
+         functions which compute the constants to do their job.
         """
         
         rxn = self.get_rxn_in_trange(state['T'])
