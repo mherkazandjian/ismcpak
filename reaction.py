@@ -75,9 +75,9 @@ class reaction():
         """
         
         self.compute_rxn_cst_func = None
-        """The function which computes the reaction constant. It should take as first  
-           argument a dictonary which has all the parameters it needs to compute 
-           the reaction constant.
+        """The function which computes the reaction constant. It should take as 
+        first argument a dictonary which has all the parameters it needs to 
+        compute the reaction constant.
         """
         
         self.rxn_in_trng = None #: the reaction which is chosen to compute the reaction rate
@@ -288,14 +288,14 @@ class reaction():
             return False
     
     def set_bound_rxns(self):
-        """In this method, we setup a dictionary of complementaty reactions. They
-           keys of the dictonary are 'below' and 'above'. Those point to the
+        """In this method, we setup a dictionary of complementary reactions. The
+           keys of the dictionary are 'below' and 'above'. Those point to the
            reaction objects which are used when the temperature is above or 
-           below the gloab ranges where the reactions are defined: For example, if 
-           a reaction with ranges [30,300] for rxn1 and [300, 1000] for rxn2, 
-           and [1000,30000] for rxn3. Then 'above' would be rxn3 and below would
-           be rxn1.  Such that the rates of those are used whenever the temperature
-           range is not withing 30 and 30000.
+           below the global ranges where the reactions are defined: For example, 
+           if a reaction with ranges [30,300] for rxn1 and [300, 1000] for rxn2, 
+           and [1000,30000] for rxn3. Then 'above' would correspond to rxn3 and 
+           below would correspond to rxn1.  Such that the rates of those are 
+           used whenever the temperature range is not within 30 and 30000.
         """
         
         below = {'T':self.Tl, 'rxn':self}
