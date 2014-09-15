@@ -17,19 +17,18 @@ import lineDict
 home = '/home/mher'
 
 parameters = {
-             #'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0-750-mw-CR/',
-             'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-1.0/',
+             'dirPath'    : home + '/ism/runs/oneSided/dynamicMesh-z-2.0/',
+             'outFname'    : home + '/tmp/models-z-2.0.txt',
+
              'range_logn'  : [0.0, 6.0],    #range in log n of models to be considered
              'range_logG0' : [0.0, 6.0],    #range in log G0 of models to be considered
              'range_alpha' : [0.0, 1],      #range in alpha of models to be considered (not in log10)
-             'Av_values'   : [3.0, 4.0, 5.0, 10.0, 20.0, 30.0], #values in Av to be considered
-             #'Av_values'   : [5.0, 10.0, 30.0], #values in Av to be considered
+             'Av_values'   : [5.0, 10.0, 30.0], #values in Av to be considered
              #the emissions to be extracted from the LVG models
              'emissions'   : (
                               ['lvg', 'radex' , 'CO'  , '1-0'],   
                               ['lvg', 'radex' , 'CO'  , '2-1'],        
                               ['lvg', 'radex' , 'CO'  , '3-2'],
-                                 
                               ['lvg', 'radex' , 'CO'  , '4-3'],   
                               ['lvg', 'radex' , 'CO'  , '5-4'],  
                               ['lvg', 'radex' , 'CO'  , '6-5'], 
@@ -43,22 +42,23 @@ parameters = {
                               ['lvg', 'radex' , 'CO'  , '14-13'], 
                               ['lvg', 'radex' , 'CO'  , '15-14'], 
                               ['lvg', 'radex' , 'CO'  , '16-15'], 
-                              ['lvg', 'radex' , 'CO'  , '17-16'], 
-                              ['lvg', 'radex' , 'CO'  , '18-17'], 
-                              ['lvg', 'radex' , 'CO'  , '19-18'], 
-                              ['lvg', 'radex' , 'CO'  , '20-19'], 
-                              ['lvg', 'radex' , 'CO'  , '21-20'], 
-                              ['lvg', 'radex' , 'CO'  , '22-21'], 
-                              ['lvg', 'radex' , 'CO'  , '23-22'], 
-                              ['lvg', 'radex' , 'CO'  , '24-23'], 
                              #
-                              ['lvg', 'radex' , '13CO', '1-0'],   
-                              ['lvg', 'radex' , '13CO', '2-1'],   
-                              ['lvg', 'radex' , '13CO', '3-2'],   
-                              ['lvg', 'radex' , '13CO', '4-3'],   
-                              ['lvg', 'radex' , '13CO', '5-4'],  
-                              ['lvg', 'radex' , '13CO', '6-5'], 
-                              ['lvg', 'radex' , '13CO', '7-6'],   
+                              ['lvg', 'radex' , '13CO'  , '1-0'],   
+                              ['lvg', 'radex' , '13CO'  , '2-1'],        
+                              ['lvg', 'radex' , '13CO'  , '3-2'],
+                              ['lvg', 'radex' , '13CO'  , '4-3'],   
+                              ['lvg', 'radex' , '13CO'  , '5-4'],  
+                              ['lvg', 'radex' , '13CO'  , '6-5'], 
+                              ['lvg', 'radex' , '13CO'  , '7-6'],   
+                              ['lvg', 'radex' , '13CO'  , '8-7'],   
+                              ['lvg', 'radex' , '13CO'  , '9-8'],
+                              ['lvg', 'radex' , '13CO'  , '10-9'],  
+                              ['lvg', 'radex' , '13CO'  , '11-10'], 
+                              ['lvg', 'radex' , '13CO'  , '12-11'], 
+                              ['lvg', 'radex' , '13CO'  , '13-12'],
+                              ['lvg', 'radex' , '13CO'  , '14-13'], 
+                              ['lvg', 'radex' , '13CO'  , '15-14'], 
+                              ['lvg', 'radex' , '13CO'  , '16-15'], 
                               #
                               ['lvg', 'radex' , 'HCO+', '1-0'],   
                               ['lvg', 'radex' , 'HCO+', '2-1'],   
@@ -67,6 +67,8 @@ parameters = {
                               ['lvg', 'radex' , 'HCO+', '5-4'],   
                               ['lvg', 'radex' , 'HCO+', '6-5'],   
                               ['lvg', 'radex' , 'HCO+', '7-6'],   
+                              ['lvg', 'radex' , 'HCO+', '8-7'],   
+                              ['lvg', 'radex' , 'HCO+', '9-8'],   
                               #
                               ['lvg', 'radex' , 'HCN', '1-0'],   
                               ['lvg', 'radex' , 'HCN', '2-1'],   
@@ -75,6 +77,8 @@ parameters = {
                               ['lvg', 'radex' , 'HCN', '5-4'],   
                               ['lvg', 'radex' , 'HCN', '6-5'],   
                               ['lvg', 'radex' , 'HCN', '7-6'],   
+                              ['lvg', 'radex' , 'HCN', '8-7'],   
+                              ['lvg', 'radex' , 'HCN', '9-8'],   
                               #
                               ['lvg', 'radex' , 'HNC', '1-0'],   
                               ['lvg', 'radex' , 'HNC', '2-1'],   
@@ -83,9 +87,21 @@ parameters = {
                               ['lvg', 'radex' , 'HNC', '5-4'],   
                               ['lvg', 'radex' , 'HNC', '6-5'],   
                               ['lvg', 'radex' , 'HNC', '7-6'],
+                              ['lvg', 'radex' , 'HNC', '8-7'],
+                              ['lvg', 'radex' , 'HNC', '9-8'],
+                              #
+                              ['lvg', 'radex' , 'CS', '1-0'],   
+                              ['lvg', 'radex' , 'CS', '2-1'],   
+                              ['lvg', 'radex' , 'CS', '3-2'],   
+                              ['lvg', 'radex' , 'CS', '4-3'],
+                              #
+                              ['lvg', 'radex' , 'CN', '1-0'],   
+                              ['lvg', 'radex' , 'CN', '3-2'],   
                               #   
                               ['pdr', 'leiden', 'C'   , '609'],
                               ['pdr', 'leiden', 'C'   , '369'],
+                              ['pdr', 'leiden', 'O'   , '63'],
+                              ['pdr', 'leiden', 'C+'  , '158'],
                              ),
              #the column densities to be written
              'col_dense'   : (
@@ -95,22 +111,19 @@ parameters = {
              #integrated quantities to be written to the file
              'int_quantities' : (
                                  ['total_heating', ['therm', 'heating']],
-                                 ['heating_CR', ['heating', 'cr']],
+#                                 ['heating_CR', ['heating', 'cr']],
                                 ), 
              #quantities at a certain Av
              'quantities_at_AV' : (
                                    ['T_kin', ['state', 'gasT']],                                      
                                   ),
-              
              #parameters used by radex for emission of                                
-             'quantities_used_by_radex' : (
-                                           ['CO', 'TMean'],
-                                           ['CO', 'N_COL'],
-                                           ['13CO', 'TMean'],
-                                           ['13CO', 'N_COL'],
-                                          ),
-
-             'outFname'    : home + '/tmp/models-z-1.0-750-MW-CR.txt',
+#             'quantities_used_by_radex' : (
+#                                           ['CO', 'TMean'],
+#                                           ['CO', 'N_COL'],
+#                                           ['13CO', 'TMean'],
+#                                           ['13CO', 'N_COL'],
+#                                          ),
              }
 
 # 
@@ -135,18 +148,26 @@ def main(parms):
         fObj.write('c%-10d' % (i+7+1))
     fObj.write('\n')
     
-    ## writing the column quantities
+    ## writing the column quantities (if they exist in the params dict)
     fObj.write('#indx  n_gas      G0         gmech      alpha   Z       Av    ')
     for i, p in enumerate(parms['emissions']):
         fObj.write('%-10s ' % (p[2]+p[3]))
-    for i, p in enumerate(parms['col_dense']):
-        fObj.write('N(%-7s) ' % (p[1]))
-    for i, q in enumerate(parms['int_quantities']):
-        fObj.write('%s ' % q[0])
-    for i, q in enumerate(parms['quantities_at_AV']):
-        fObj.write('%s ' % q[0])
-    for i, q in enumerate(parms['quantities_used_by_radex']):
-        fObj.write('%s-%s ' % (q[0], q[1]))
+
+    if 'col_dense' in parms:
+        for i, p in enumerate(parms['col_dense']):
+            fObj.write('N(%-7s) ' % (p[1]))
+
+    if 'int_quantities' in parms:        
+        for i, q in enumerate(parms['int_quantities']):
+            fObj.write('%s ' % q[0])
+
+    if 'quantities_at_AV' in parms:
+        for i, q in enumerate(parms['quantities_at_AV']):
+            fObj.write('%s ' % q[0])
+        
+    if 'quantities_used_by_radex' in parms: 
+        for i, q in enumerate(parms['quantities_used_by_radex']):
+            fObj.write('%s-%s ' % (q[0], q[1]))
     fObj.write('\n')
 
     idx = 0 #an index written at the beginning of each line
@@ -239,20 +260,20 @@ def main(parms):
             #
                         
             ## getting the input parameters used by Radex to compute the emission
-            for quantity in parms['quantities_used_by_radex']:
-                arxv.mshTmp.setData(msh)
-                
-                specStr,q = quantity
-                
-                TMean, nDenseColl, N_specLVG, Av_range = arxv.mshTmp.get_radex_parameters(specStr, threshold=-1, Av_range=[0, Av])
-
-                if q == 'TMean':
-                    v = TMean
-                if q == 'N_COL':
-                    v = N_specLVG
+            if 'quantities_used_by_radex' in parms:
+                for quantity in parms['quantities_used_by_radex']:
+                    arxv.mshTmp.setData(msh)
                  
-                outStr += '%+10.3e ' % v 
-
+                    specStr,q = quantity
+                 
+                    TMean, nDenseColl, N_specLVG, Av_range = arxv.mshTmp.get_radex_parameters(specStr, threshold=-1, Av_range=[0, Av]) 
+ 
+                    if q == 'TMean':
+                        v = TMean
+                    if q == 'N_COL':
+                        v = N_specLVG
+                   
+                    outStr += '%+10.3e ' % v 
             outStr += '\n'
             fObj.write(outStr)
             
