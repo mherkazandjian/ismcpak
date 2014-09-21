@@ -7,3 +7,19 @@ amuse  - mpich
 PyQt4
 ipython
 
+
+Installing the PDR code
+-----------------------
+The PDR code should be copied into:
+      amuse/src/amuse/community/pdr
+
+Compiling the PDR code
+-----------------------
+The PDR code can be compiled using:
+    ~> cd amuse/src/amuse/community/pdr
+    ~> make all
+The generates the libpdr.a library
+
+Running the code
+----------------
+    ~> python run_singleMesh.py 
