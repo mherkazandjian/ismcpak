@@ -1,0 +1,75 @@
+The 396 species are classified by their number of atoms and are vertically ordered by mass.
+1	2	3	4	5	6	7	8	9+
+H-	H2+	H3+	CH3+	CH4+	CH5+	C2H5+	C2H6+	C2H7+
+H+ 	H2 	CH2+ 	CH3 	CH4 	C2H4+	C2H5 	C2H6 	CH3OCH3+
+H 	HeH+ 	CH2 	NH3+ 	NH4+ 	C2H4 	CH3OH2+ C3H5+	C2H5OH+
+He+ 	CH+ 	NH2+ 	NH3 	C2H3+	CH2NH2+ C3H4+	H5C2O+ 	CH3OCH3
+He 	CH 	NH2 	H3O+ 	C2H3 	CH4N+	C3H4 	C4H4+	C2H5OH
+C- 	NH+ 	H2O+ 	C2H2+	CH2NH	CH3OH+ 	H4C2N+ 	H4C3N+ 	C2H7O+
+C+ 	NH 	H2O 	C2H2 	H3CO+	CH3OH	CH3CHO+ COOCH4+ C2H6OH+
+C 	OH+ 	C2H+ 	HCNH+	SiH4+	SiH5+	CH3CHO 	HCOOCH3 C4H5+
+N+ 	OH- 	C2H 	H2CN 	SiH4 	C3H3+	C4H3+	C5H3+	C2H6CO+
+N 	OH 	HCN+ 	H2NC+	C3H2+	H2C3H+ 	C4H3 	H3C4N+ 	C2H6CO
+O- 	C2+ 	HNC 	H2CO+	C3H2 	C3H3 	H3C3N	H3C4N	C3H6OH+
+O+ 	C2 	HCN 	H2CO 	H2CCC	CH3CN	H3C3O+ 	C6H2+	H5C2O2+
+O 	CN+ 	HOC+ 	HOCH 	CH2CN+ 	CH3CN+ 	PC2H4+ 	C6H2 	C5H4+
+Na+ 	CN- 	HCO+ 	SiH3+	CH2CN	CH3CO+ 	C5H2+	H2C5N+ 	C5H4
+Na 	CN 	HCO 	SiH3 	CH2CO+ 	SiCH4+ 	C5H2 	C7H+ 	C5H5+
+Mg+ 	CO+ 	HN2+ 	H2NO+	CH2CO	PCH4+	H2C4N+ 	C7H 	H4C4N+
+Mg 	CO 	SiH2+	PH3+ 	SiCH3+ 	HCOOH2+ C6H+ 	C8+ 	C6H3+
+Si+ 	N2+ 	SiH2 	H2O2 	SiCH3	C4H2+	C6H 	C8 	C6H4+
+Si 	N2 	HNO+ 	H3S+ 	CH2PH	C4H2 	HC5N+	C7N+ 	H3C5N+
+P+ 	SiH+ 	HNO 	C3H+ 	PCH3+	H2C3N+ 	HC5N 	C7N 	C6H5+
+P 	SiH 	PH2+ 	C3H 	HCOOH	C3H2O+ 	PC4H2+ 		C6H6
+S- 	NO+ 	PH2 	C2NH+	H3CS+	SiC2H3+ C7+ 		C6H7+
+S+ 	NO 	O2H+ 	HC2O+	H3SiO+ 	PC2H3+ 	C7 		C7H2+
+S 	PH+ 	O2H 	SiCH2+ 	PNH3+	C5H+ 			C7H2
+Cl+ 	PH 	H2S+ 	SiCH2	C4H+ 	C5H 			C7H3+
+Cl 	O2+ 	H2S 	HNCO+	C4H 	HC4N+			C7H4+
+Fe+ 	O2 	C3+ 	SiNH2+ 	HC3N+	SiC3H2+ 		C7H4
+Fe 	HS+ 	C3 	PCH2+	HC3N 	C6+ 			H3C6N
+e- 	HS 	H2Cl+	HCO2+	HC3O+	C6 			C7H5+
+	HCl 	CNC+ 	H2CS+	SiC2H2+ C5N+ 			H4C6N+
+	HCl+ 	C2N+ 	H2CS 	SiC2H2 	C5N 			C8H+
+	SiC+ 	C2N 	H2SiO+ 	PC2H2+ 	SiC4H+ 			C8H
+	SiC 	C2O+ 	H2SiO	C5+ 	PC4H+			C8H2+
+	SiN+ 	C2O 	PNH2+	C5 	HC4S+			C8H2
+	SiN 	HCSi+	C4+ 	C4N+ 				HC7N+
+	CP+ 	HCSi 	C4 	SiC3H+ 				HC7N
+	CP 	OCN+ 	H2PO+	SiC3H				C8H3+
+	CS+ 	OCN 	H2CCl+ 	H3S2+				H2C7N+
+	CS 	HNSi+	C3N+ 	PC3H+				C8H4+
+	SiO+ 	HNSi 	C3N 	HC3S+				H3C7N+
+	SiO 	HCP+ 	C3O+ 	SiC4+				C8H5+
+	PN+ 	HCP 	C3O 	SiC4 				C9+
+	PN 	CO2+ 	C2N2+	C4P+ 				C9
+	NS+ 	CO2 	SiC2H+ 	C4P 				C9H+
+	NS 	N2O 	SiC2H	C4S+ 				C9H
+	PO+ 	HCS+ 	SiNCH+ 	C4S 				C9H2+
+	PO 	HCS 	HC2P+					C9H2
+	CCl+ 	SiOH+	HC2P 					C9H3+
+	CCl 	HPN+ 	HC2S+					C9H4+
+	SO+ 	NO2+ 	HOCS+					H3C8N
+	SO 	NO2 	HSiO2+ 					C9H5+
+	ClO+ 	HNS+ 	SiC3+					H4C8N+
+	ClO 	HPO+ 	SiC3 					C10+
+	SiS 	HPO 	HSO2+					C9N+
+	SiS+ 	HSO+ 	H2S2 					C9N
+	S2+ 	SiC2+	H2S2+					HC9N
+	S2 	SiC2 	C3P 					HC9N+
+		SiNC+	C3S+ 					H2C9N+
+		SiNC 	C3S 					H3C9N+
+		CCP+ 						
+		CCP 						
+		C2S 						
+		C2S+ 						
+		OCS+ 						
+		OCS 						
+		SiO2 						
+		HSiS+						
+		SO2+ 						
+		SO2 						
+		HS2 						
+		HS2+ 				
+
+29	57	71	59	46	34	23	20	59   =  398

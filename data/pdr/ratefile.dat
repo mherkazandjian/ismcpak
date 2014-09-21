@@ -1,0 +1,371 @@
+32 species	
+5  elementen (inclusief electronen)		
+
+Nummer van de elementen in molno array
+31	1	29	15	6
+Totale abundanties
+0e0	1e0	1e-1	1e-4	3e-4
+
+		e	h	he	c	o
+1	h	0	1	0	0	0
+2	h+	1	1	0	0	0
+3	h2	0	2	0	0	0
+4	h2+	1	2	0	0	0
+5	h3+	1	3	0	0	0
+6	o 	0	0	0	0	1
+7	o+	1	0	0	0	1
+8	oh+	1	1	0	0	1
+9	oh	0	1	0	0	1
+10	o2	0	0	0	0	2
+11	o2+	1	0	0	0	2
+12	h2o	0	2	0	0	1
+13	h2o+	1	2	0	0	1
+14	h3o+	1	3	0	0	1
+15	c	0	0	0	1	0
+16	c+	1	0	0	1	0
+17	ch	0	1	0	1	0
+18	ch+	1	1	0	1	0
+19	ch2	0	2	0	1	0
+20	ch2+	1	2	0	1	0
+21	ch3	0	3	0	1	0
+22	ch3+	1	3	0	1	0
+23	ch4	0	4	0	1	0
+24	ch4+	1	4	0	1	0
+25	ch5+	1	5	0	1	0
+26	co	0	0	0	1	1
+27	co+	1	0	0	1	1
+28	hco+	1	1	0	1	1
+29	he	0	0	1	0	0
+30	he+	1	0	1	0	0
+31	e-	-1	0	0	0	0
+32	H2V	0	2	0	0	0
+
+Neutral-Neutral reactions
+
+1	H        CH                C        H2                 2.70e-11    0.38       0.0
+2	H        CH2               CH       H2                 6.64e-11    0.00       0.0
+3	H        CH3               CH2      H2                 1.00e-10    0.00    7600.0
+4	H        CH4               CH3      H2                 5.94e-13    3.00    4045.0
+5	H        OH                O        H2                 6.99e-14    2.80    1950.0
+6	H        H2O               OH       H2                 1.59e-11    1.20    9610.0
+7	H        CO                OH       C                  1.10e-10    0.50   77700.0
+8	H        O2                OH       O                  2.61e-10    0.00    8156.0
+9	H2       C                 CH       H                  6.64e-10    0.00   11700.0
+10	H2       CH                CH2      H                  5.46e-10    0.00    1943.0
+11	H2       CH2               CH3      H                  5.18e-11    0.17    6400.0
+12	H2       CH3               CH4      H                  6.86e-14    2.74    4740.0
+13	H2       O                 OH       H                  3.14e-13    2.70    3150.0
+14	H2       OH                H2O      H                  2.05e-12    1.52    1736.0
+15	H2       O2                OH       OH                 3.16e-10    0.00   21890.0
+16	C        CH2               CH       CH                 2.69e-12    0.00   23550.0
+17	C        OH                O        CH                 2.25e-11    0.50   14800.0
+18	C        OH                CO       H                  1.10e-10    0.50       0.0
+19	C        O2                CO       O                  3.30e-11    0.00       0.0
+20	CH       O                 OH       C                  2.52e-11    0.00    2381.0
+21	CH       O                 CO       H                  6.60e-11    0.00       0.0
+22	CH       CH4               CH3      CH2                2.28e-11    0.70    3000.0
+23	CH       O2                CO       OH                 2.60e-11    0.00       0.0
+24	CH2      CH2               CH3      CH                 4.00e-10    0.00    5000.0
+25	CH2      O                 OH       CH                 4.98e-10    0.00    6000.0
+26	CH2      O                 CO       H        H         1.33e-10    0.00       0.0
+27	CH2      O                 CO       H2                 8.00e-11    0.00       0.0
+28	CH2      CH4               CH3      CH3                7.13e-12    0.00    5050.0
+29	CH2      OH                O        CH3                1.44e-11    0.50    3000.0
+30	CH2      OH                H2O      CH                 1.44e-11    0.50    3000.0
+31	CH2      O2                CO       H2O                2.48e-10   -3.30    1443.0
+32	CH3      CH3               CH4      CH2                7.13e-12    0.00    5052.0
+33	CH3      OH                CH4      O                  3.27e-14    2.20    2240.0
+34	CH3      OH                H2O      CH2                1.20e-10    0.00    1400.0
+35	CH3      H2O               OH       CH4                2.30e-15    3.47    6681.0
+36	O        CH4               OH       CH3                2.29e-12    2.20    3820.0
+37	O        OH                O2       H                  4.34e-11   -0.50      30.0
+38	O        H2O               OH       OH                 1.85e-11    0.95    8571.0
+39	CH4      OH                H2O      CH3                3.77e-13    2.42    1162.0
+40	OH       OH                H2O      O                  1.65e-12    1.14      50.0
+
+Ion-molecule reactions
+
+1	H        CH+               C+       H2                 7.50e-10    0.00       0.0
+2	H+       CH2               CH+      H2                 1.40e-09    0.00       0.0
+3	H        CH2+              CH+      H2                 1.00e-09    0.00    7080.0
+4	H        CH3+              CH2+     H2                 7.00e-10    0.00   10560.0
+5	H+       CH4               CH3+     H2                 2.30e-09    0.00       0.0
+6	H        CH4+              CH3+     H2                 1.00e-11    0.00       0.0
+7	H        CH5+              CH4+     H2                 2.00e-11    0.00       0.0
+8	H2+      H2                H3+      H                  2.08e-09    0.00       0.0
+9	H2       He+               He       H+       H         3.70e-14    0.00      35.0
+10	H2+      C                 CH+      H                  2.40e-09    0.00       0.0
+11	H2       C+                CH+      H                  1.00e-10    0.00    4640.0
+12	H2+      CH                CH2+     H                  7.10e-10    0.00       0.0
+13	H2       CH+               CH2+     H                  1.20e-09    0.00       0.0
+14	H2+      CH2               CH3+     H                  1.00e-09    0.00       0.0
+15	H2       CH2+              CH3+     H                  1.60e-09    0.00       0.0
+16	H2+      O                 OH+      H                  1.50e-09    0.00       0.0
+17	H2       O+                OH+      H                  1.70e-09    0.00       0.0
+18	H2+      CH4               CH5+     H                  1.14e-10    0.00       0.0
+19	H2       CH4+              CH5+     H                  3.30e-11    0.00       0.0
+20	H2+      CH4               CH3+     H2       H         2.30e-09    0.00       0.0
+21	H2+      OH                H2O+     H                  7.60e-10    0.00       0.0
+22	H2       OH+               H2O+     H                  1.01e-09    0.00       0.0
+23	H2+      H2O               H3O+     H                  3.40e-09    0.00       0.0
+24	H2       H2O+              H3O+     H                  6.40e-10    0.00       0.0
+25	H2+      CO                HCO+     H                  2.16e-09    0.00       0.0
+26	H2       CO+               HCO+     H                  1.80e-09    0.00       0.0
+27	H3+      C                 CH+      H2                 2.00e-09    0.00       0.0
+28	H3+      CH                CH2+     H2                 1.20e-09    0.00       0.0
+29	H3+      CH2               CH3+     H2                 1.70e-09    0.00       0.0
+30	H3+      CH3               CH4+     H2                 2.10e-09    0.00       0.0
+31	H3+      O                 OH+      H2                 8.00e-10    0.00       0.0
+32	H3+      CH4               CH5+     H2                 2.40e-09    0.00       0.0
+33	H3+      OH                H2O+     H2                 1.30e-09    0.00       0.0
+34	H3+      H2O               H3O+     H2                 5.90e-09    0.00       0.0
+35	H3+      CO                HCO+     H2                 1.70e-09    0.00       0.0
+36	He+      CH                C+       He       H         1.10e-09    0.00       0.0
+37	He+      CH2               C+       He       H2        7.50e-10    0.00       0.0
+38	He+      CH2               CH+      He       H         7.50e-10    0.00       0.0
+39	He+      CH3               CH+      He       H2        1.80e-09    0.00       0.0
+40	He+      CH4               CH+      He       H2   H    2.40e-10    0.00       0.0
+41	He+      CH4               CH2+     He       H2        9.50e-10    0.00       0.0
+42	He+      CH4               CH3      He       H+        4.80e-10    0.00       0.0
+43	He+      CH4               CH3+     He       H         8.50e-11    0.00       0.0
+44	He+      OH                O+       He       H         1.10e-09    0.00       0.0
+45	He+      H2O               OH       He       H+        2.04e-10    0.00       0.0
+46	He+      H2O               OH+      He       H         2.86e-10    0.00       0.0
+47	He+      CO                O        C+       He        1.60e-09    0.00       0.0
+48	He+      CO                O+       C        He        1.40e-16   -0.50       0.0
+49	He+      O2                O+       O        He        1.00e-09    0.00       0.0
+50	C        OH+               O        CH+                1.20e-09    0.00       0.0
+51	C+       OH                CO+      H                  7.70e-10    0.00       0.0
+52	C+       OH                CO       H+                 7.70e-10    0.00       0.0 
+53	C        CH5+              CH4      CH+                1.20e-09    0.00       0.0
+54	C        H2O+              OH       CH+                1.10e-09    0.00       0.0
+55	C+       H2O               HCO+     H                  9.00e-10    0.00       0.0
+56	C        H3O+              HCO+     H2                 1.00e-11    0.00       0.0
+57	C        HCO+              CO       CH+                1.10e-09    0.00       0.0
+58	C+       O2                CO+      O                  3.80e-10    0.00       0.0
+59	C+       O2                CO       O+                 6.20e-10    0.00       0.0
+60	C        O2+               CO+      O                  5.20e-11    0.00       0.0
+61	CH+      O                 CO+      H                  3.50e-10    0.00       0.0
+62	CH       O+                CO+      H                  3.50e-10    0.00       0.0
+63	CH       OH+               O        CH2+               3.50e-10    0.00       0.0
+64	CH+      OH                CO+      H2                 7.50e-10    0.00       0.0
+65	CH       CH5+              CH4      CH2+               6.90e-10    0.00       0.0
+66	CH+      H2O               H3O+     C                  5.80e-10    0.00       0.0
+67	CH       H2O+              OH       CH2+               3.40e-10    0.00       0.0
+68	CH+      H2O               HCO+     H2                 2.90e-09    0.00       0.0
+69	CH       H3O+              H2O      CH2+               6.80e-10    0.00       0.0
+70	CH       CO+               HCO+     C                  3.20e-10    0.00       0.0
+71	CH       HCO+              CO       CH2+               6.30e-10    0.00       0.0
+72	CH+      O2                CO+      OH                 1.00e-11    0.00       0.0
+73	CH+      O2                HCO+     O                  9.70e-10    0.00       0.0
+74	CH       O2+               HCO+     O                  3.10e-10    0.00       0.0
+75	CH2+     O                 HCO+     H                  7.50e-10    0.00       0.0
+76	CH2      OH+               O        CH3+               4.80e-10    0.00       0.0
+77	CH2      CH5+              CH4      CH3+               9.60e-10    0.00       0.0
+78	CH2      H2O+              OH       CH3+               4.70e-10    0.00       0.0
+79	CH2      H3O+              H2O      CH3+               9.40e-10    0.00       0.0
+80	CH2      CO+               HCO+     CH                 4.30e-10    0.00       0.0
+81	CH2      HCO+              CO       CH3+               8.60e-10    0.00       0.0
+82	CH2+     O2                HCO+     OH                 9.10e-10    0.00       0.0
+83	CH3+     O                 HCO+     H2                 4.00e-10    0.00       0.0
+84	O+       CH4               OH       CH3+               1.10e-10    0.00       0.0
+85	O        CH4+              OH       CH3+               1.00e-09    0.00       0.0
+86	O+       OH                O2+      H                  3.60e-10    0.00       0.0
+87	O        OH+               O2+      H                  7.10e-10    0.00       0.0
+88	O        CH5+              H3O+     CH2                2.20e-10    0.00       0.0
+89	O        H2O+              O2+      H2                 4.00e-11    0.00       0.0
+90	CH4+     CH4               CH5+     CH3                1.50e-09    0.00       0.0
+91	CH4      OH+               CH5+     O                  1.95e-10    0.00       0.0
+92	CH4      OH+               H3O+     CH2                1.31e-09    0.00       0.0
+93	CH4+     H2O               H3O+     CH3                2.60e-09    0.00       0.0
+94	CH4      H2O+              H3O+     CH3                1.40e-09    0.00       0.0
+95	CH4+     CO                HCO+     CH3                1.40e-09    0.00       0.0
+96	CH4      CO+               HCO+     CH3                4.55e-10    0.00       0.0
+97	OH+      OH                H2O+     O                  7.00e-10    0.00       0.0
+98	OH       CH5+              H2O+     CH4                7.00e-10    0.00       0.0
+99	OH+      H2O               H3O+     O                  1.30e-09    0.00       0.0
+100	OH       H2O+              H3O+     O                  6.90e-10    0.00       0.0
+101	OH+      CO                HCO+     O                  1.05e-09    0.00       0.0
+102	OH       CO+               HCO+     O                  3.10e-10    0.00       0.0
+103	OH       HCO+              CO       H2O+               6.20e-10    0.00       0.0
+104	CH5+     H2O               H3O+     CH4                3.70e-09    0.00       0.0
+105	CH5+     CO                HCO+     CH4                1.00e-09    0.00       0.0
+106	H2O+     H2O               H3O+     OH                 2.10e-09    0.00       0.0
+107	H2O+     CO                HCO+     OH                 5.00e-10    0.00       0.0
+108	H2O      CO+               HCO+     OH                 8.84e-10    0.00       0.0
+109	H2O      HCO+              CO       H3O+               2.50e-09    0.00       0.0
+
+Charge exchange reactions
+
+1	H+       H2                H2+      H                  1.00e-10    0.00   21200.0
+2	H        H2+               H2       H+                 6.40e-10    0.00       0.0
+3	H        He+               He       H+                 4.85e-15    0.18       0.0
+4	H+       CH                CH+      H                  1.90e-09    0.00       0.0
+5	H+       CH2               CH2+     H                  1.40e-09    0.00       0.0
+6	H+       CH3               CH3+     H                  3.40e-09    0.00       0.0
+7	H        O+                O        H+                 5.66e-10    0.36      -8.6
+8	H+       O                 O+       H                  7.31e-10    0.23     225.9
+9	H+       CH4               CH4+     H                  1.50e-09    0.00       0.0
+10	H+       OH                OH+      H                  2.10e-09    0.00       0.0
+11	H+       H2O               H2O+     H                  6.90e-09    0.00       0.0
+12	H        CO+               CO       H+                 7.50e-10    0.00       0.0
+13	H+       O2                O2+      H                  2.00e-09    0.00       0.0
+14	H2       He+               He       H2+                7.20e-15    0.00       0.0
+15	H2+      CH                CH+      H2                 7.10e-10    0.00       0.0
+16	H2+      CH2               CH2+     H2                 1.00e-09    0.00       0.0
+17	H2+      CH4               CH4+     H2                 1.40e-09    0.00       0.0
+18	H2+      OH                OH+      H2                 7.60e-10    0.00       0.0
+19	H2+      H2O               H2O+     H2                 3.90e-09    0.00       0.0
+20	H2+      CO                CO+      H2                 6.40e-10    0.00       0.0
+21	H2+      O2                O2+      H2                 8.00e-10    0.00       0.0
+22	He+      C                 C+       He                 6.30e-15    0.75       0.0
+23	He+      CH                CH+      He                 5.00e-10    0.00       0.0
+24	He+      CH4               CH4+     He                 5.10e-11    0.00       0.0
+25	He+      H2O               H2O+     He                 6.05e-11    0.00       0.0
+26	He+      O2                O2+      He                 3.30e-11    0.00       0.0
+27	C+       CH                CH+      C                  3.80e-10    0.00       0.0
+28	C+       CH2               CH2+     C                  5.20e-10    0.00       0.0
+29	C        CO+               CO       C+                 1.10e-10    0.00       0.0
+30	C        O2+               O2       C+                 5.20e-11    0.00       0.0
+31	CH       O+                O        CH+                3.50e-10    0.00       0.0
+32	CH       OH+               OH       CH+                3.50e-10    0.00       0.0
+33	CH       H2O+              H2O      CH+                3.40e-10    0.00       0.0
+34	CH       CO+               CO       CH+                3.20e-10    0.00       0.0
+35	CH       O2+               O2       CH+                3.10e-10    0.00       0.0
+36	CH2      O+                O        CH2+               9.70e-10    0.00       0.0
+37	CH2      OH+               OH       CH2+               4.80e-10    0.00       0.0
+38	CH2      H2O+              H2O      CH2+               4.70e-10    0.00       0.0
+39	CH2      CO+               CO       CH2+               4.30e-10    0.00       0.0
+40	CH2      O2+               O2       CH2+               4.30e-10    0.00       0.0
+41	O+       CH4               CH4+     O                  8.90e-10    0.00       0.0
+42	O+       OH                OH+      O                  3.60e-10    0.00       0.0
+43	O+       H2O               H2O+     O                  3.20e-09    0.00       0.0
+44	O        CO+               CO       O+                 1.40e-10    0.00       0.0
+45	O+       CO                CO+      O                  4.90e-12    0.50    4580.0
+46	O+       O2                O2+      O                  1.90e-11    0.00       0.0
+47	CH4      CO+               CO       CH4+               7.93e-10    0.00       0.0
+48	CH4+     O2                O2+      CH4                4.00e-10    0.00       0.0
+49	OH+      H2O               H2O+     OH                 1.59e-09    0.00       0.0
+50	OH       CO+               CO       OH+                3.10e-10    0.00       0.0
+51	OH+      O2                O2+      OH                 5.90e-10    0.00       0.0
+52	H2O      CO+               CO       H2O+               1.72e-09    0.00       0.0
+53	H2O+     O2                O2+      H2O                4.60e-10    0.00       0.0
+54	CO+      O2                O2+      CO                 1.20e-10    0.00       0.0
+
+Electron recombination reactions
+
+1	H2+      e-                H        H                  1.60e-08   -0.43       0.0
+2	H3+      e-                H        H        H         7.50e-08   -0.30       0.0
+3	H3+      e-                H2       H                  2.50e-08   -0.30       0.0
+4	CH+      e-                C        H                  1.50e-07   -0.42       0.0
+5	CH2+     e-                CH       H                  1.60e-07   -0.60       0.0   
+6	CH2+     e-                C        H        H         4.03e-07   -0.60       0.0   
+7	CH2+     e-                C        H2                 7.68e-08   -0.60       0.0   
+8	CH3+     e-                CH2      H                  1.40e-07   -0.50       0.0   
+9	CH3+     e-                CH       H2                 4.90e-08   -0.50       0.0   
+10	CH3+     e-                CH       H        H         5.60e-08   -0.50       0.0   
+11	CH3+     e-                C        H2       H         1.05e-07   -0.5        0.0   
+12	CH4+     e-                CH3      H                  1.75e-07   -0.50       0.0
+13	CH4+     e-                CH2      H        H         1.75e-07   -0.50       0.0
+14	OH+      e-                O        H                  3.75e-08   -0.50       0.0
+15	CH5+     e-                CH3      H2                 5.50e-07   -0.30       0.0
+16	CH5+     e-                CH4      H                  5.50e-07   -0.30       0.0
+17	H2O+     e-                O        H        H         2.45e-07   -0.50       0.0   
+18	H2O+     e-                O        H2                 3.60e-08   -0.50       0.0   
+19	H2O+     e-                OH       H                  7.92e-08   -0.50       0.0   
+20	H3O+     e-                O        H2       H         5.59e-09   -0.50       0.0   
+21	H3O+     e-                OH       H        H         2.58e-07   -0.50       0.0   
+22	H3O+     e-                OH       H2                 6.45e-08   -0.50       0.0   
+23	H3O+     e-                H2O      H                  1.08e-07   -0.50       0.0   
+24	CO+      e-                O        C                  2.00e-07   -0.48       0.0
+25	HCO+     e-                CO       H                  1.10e-07   -1.00       0.0
+26	O2+      e-                O        O                  1.95e-07   -0.70       0.0
+27	H+       e-                H        PHOTON             3.50e-12   -0.75       0.0
+28	He+      e-                He       PHOTON             2.36e-12   -0.64       0.0
+29	C+       e-                C        PHOTON             4.67e-12   -0.60       0.0
+30	CH3+     e-                CH3      PHOTON             1.10e-10   -0.50       0.0
+31	O+       e-                O        PHOTON             3.24e-12   -0.66       0.0
+
+Radiative association reactions
+
+1	H+       H                 H2+      PHOTON             5.13e-19    1.85       0.0
+2	H        C                 CH       PHOTON             1.00e-17    0.00       0.0
+3	H        C+                CH+      PHOTON             1.70e-17    0.00       0.0
+4	H        O                 OH       PHOTON             9.90e-19   -0.38       0.0
+5	H        OH                H2O      PHOTON             5.26e-18   -5.22      90.0
+6	H2       C                 CH2      PHOTON             1.00e-17    0.00       0.0
+7	H2       C+                CH2+     PHOTON             4.00e-16   -0.20       0.0
+8	H2       CH                CH3      PHOTON             5.09e-18   -0.71      11.6
+9	H2       CH3+              CH5+     PHOTON             1.30e-14   -1.00       0.0
+10	C        O                 CO       PHOTON             2.10e-19    0.00       0.0
+11	C+       O                 CO+      PHOTON             2.50e-18    0.00       0.0
+12	O        O                 O2       PHOTON             4.90e-20    1.58       0.0
+
+Photo-ionization reactions
+
+1	H2+      PHOTON            H+       H                  5.70e-10    0.00       1.9
+2	H3+      PHOTON            H2+      H                  5.00e-13    0.00       2.3
+3	H3+      PHOTON            H2       H+                 5.00e-13    0.00       1.8
+4	C        PHOTON            C+       e-                 3.00e-10    0.00       3.0
+5	CH       PHOTON            CH+      e-                 7.60e-10    0.00       2.8
+6	CH       PHOTON            C        H                  8.60e-10    0.00       1.2
+7	CH+      PHOTON            C+       H                  2.50e-10    0.00       2.5
+8	CH2      PHOTON            CH2+     e-                 1.00e-09    0.00       2.3
+9	CH2      PHOTON            CH       H                  7.20e-10    0.00       1.7
+10	CH2+     PHOTON            CH+      H                  1.70e-09    0.00       1.7
+11	CH3      PHOTON            CH3+     e-                 1.00e-10    0.00       2.1
+12	CH3      PHOTON            CH2      H                  2.50e-10    0.00       1.9
+13	CH3+     PHOTON            CH2+     H                  1.00e-09    0.00       1.7
+14	CH3      PHOTON            CH       H2                 2.50e-10    0.00       1.9
+15	CH3+     PHOTON            CH+      H2                 1.00e-09    0.00       1.7
+16	CH4      PHOTON            CH3      H                  2.20e-10    0.00       2.2
+17	CH4      PHOTON            CH2      H2                 9.80e-10    0.00       2.2
+18	CH4      PHOTON            CH       H2       H         2.20e-10    0.00       2.2
+19	OH       PHOTON            OH+      e-                 1.60e-12    0.00       3.1
+20	OH       PHOTON            O        H                  3.50e-10    0.00       1.7
+21	OH+      PHOTON            O        H+                 1.00e-12    0.00       1.8
+22	H2O      PHOTON            OH       H                  5.90e-10    0.00       1.7
+23	H2O      PHOTON            H2O+     e-                 3.30e-11    0.00       3.9
+24	CO       PHOTON            O        C                  2.00e-10    0.00       2.5
+25	O2       PHOTON            O        O                  6.90e-10    0.00       1.8
+26	O2       PHOTON            O2+      e-                 5.60e-11    0.00       3.7
+
+Cosmic ray reactions
+
+1	H        CRP               H+       e-                 5.98e-18    0.00       0.0
+2	H2       CRP               H+       H        e-        2.20e-19    0.00       0.0
+3	H2       CRP               H        H                  1.30e-18    0.00       0.0
+4	H2       CRP               H2+      e-                 1.20e-17    0.00       0.0
+5	He       CRP               He+      e-                 6.50e-18    0.00       0.0
+6	C        CRP               C+       e-                 2.30e-17    0.00       0.0
+7	O        CRP               O+       e-                 3.40e-17    0.00       0.0
+8	CO       CRP               CO+      e-                 3.90e-17    0.00       0.0
+9	C        CRPHOT            C+       e-                 1.30e-17    0.00     510.0
+10	CH       CRPHOT            C        H                  1.30e-17    0.00     756.0
+11	CH+      CRPHOT            C+       H                  1.30e-17    0.00     183.0
+12	CH2      CRPHOT            CH2+     e-                 1.30e-17    0.00     500.0
+13	CH2      CRPHOT            CH       H                  1.30e-17    0.00     500.0
+14	CH3      CRPHOT            CH3+     e-                 1.30e-17    0.00     500.0
+15	CH3      CRPHOT            CH2      H                  1.30e-17    0.00     500.0
+16	CH3      CRPHOT            CH       H2                 1.30e-17    0.00     500.0
+17	CH4      CRPHOT            CH2      H2                 1.30e-17    0.00    2272.0
+18	OH       CRPHOT            O        H                  1.30e-17    0.00     522.0
+19	H2O      CRPHOT            OH       H                  1.30e-17    0.00     979.0
+20	CO       CRPHOT            O        C                  1.30e-17    1.17      10.0
+21	O2       CRPHOT            O        O                  1.30e-17    0.00     730.0
+22	O2       CRPHOT            O2+      e-                 1.30e-17    0.00      88.0
+
+Reactions with an activation barrier
+
+1	H        H2                H        H        H         4.67e-07   -1.00   55000.0
+2	H        CH                C        H        H         6.00e-09    0.00   40200.0
+3	H        OH                O        H        H         6.00e-09    0.00   50900.0
+4	H        H2O               OH       H        H         5.80e-09    0.00   52900.0
+5	H        O2                O        O        H         6.00e-09    0.00   52300.0
+6	H2       e-                H        H        e-        3.22e-09    0.35  102000.0
+7	H2       H2                H2       H        H         1.00e-08    0.00   84100.0
+8	H2       CH                C        H2       H         6.00e-09    0.00   40200.0
+9	H2       OH                O        H2       H         6.00e-09    0.00   50900.0
+10	H2       H2O               OH       H2       H         5.80e-09    0.00   52900.0
+11	H2       O2                O        O        H2        6.00e-09    0.00   52300.0
+12	CH       O                 HCO+     e-                 2.00e-11    0.44       0.0

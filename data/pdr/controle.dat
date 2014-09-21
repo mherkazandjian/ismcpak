@@ -1,0 +1,653 @@
+       1    C             C+     e-                  
+       2    Mg            Mg+    e-                  
+       3    S             S+     e-                  
+       4    Si            Si+    e-                  
+       5    Fe            Fe+    e-                  
+       6    CH            CH+    e-                  
+       7    CH            C      H                   
+       8    CH2           CH     H                   
+       9    CH2           CH2+   e-                  
+      10    CH+           C+     H                   
+      11    CH2+          CH+    H                   
+      12    CH3+          CH2+   H                   
+      13    CH3+          CH+    H2                  
+      14    H2+           H      H+                  
+      15    H3+           H2+    H                   
+      16    H3+           H2     H+                  
+      17    H2            H      H                   
+      18    O2            O      O                   
+      19    OH            O      H                   
+      20    CO            C      O                   
+      21    H2O           OH     H                   
+      22    H2O           H2O+   e-                  
+      23    SiO           Si     O                   
+      24    N2            N      N                   
+      25    CN            C      N                   
+      26    HCN           CN     H                   
+      27    HNC           CN     H                   
+      28    NH            N      H                   
+      29    NH+           N+     H                   
+      30    NH2           NH     H                   
+      31    NH2           NH2+   e-                  
+      32    NH3           NH2    H                   
+      33    NH3           NH     H2                  
+      34    NH3           NH3+   e-                  
+      35    NO            NO+    e-                  
+      36    NO            N      O                   
+      37    CH4           CH3    H                   
+      38    CH4           CH2    H2                  
+      39    CH4           CH     H2     H            
+      40    CH3           CH3+   e-                  
+      41    CH3           CH2    H                   
+      42    CH3           CH     H2                  
+      43    HCO           HCO+   e-                  
+      44    HCO           CO     H                   
+      45    HS            HS+    e-                  
+      46    HS            S      H                   
+      47    H2S           H2S+   e-                  
+      48    H2S           HS     H                   
+      49    CS            S      C                   
+      50    CS            CS+    e-                  
+      51    SO            SO+    e-                  
+      52    SO            S      O                   
+      53    OCS           S      CO                  
+      54    H+     H      H2+                        
+      55    H+     O      O+     H                   
+      56    H+     S      S+     H                   
+      57    H+     Si     Si+    H                   
+      58    H+     Mg     Mg+    H                   
+      59    H+     Fe     Fe+    H                   
+      60    H+     CH     CH+    H                   
+      61    H+     OH     OH+    H                   
+      62    H+     O2     02+    H                   
+      63    H+     H2O    H2O+   H                   
+      64    H+     CH2    CH+    H2                  
+      65    H+     CH2    CH2+   H                   
+      66    H+     CH3    CH3+   H                   
+      67    H+     HNC    H+     HCN                 
+      68    H+     HCN    H+     HNC                 
+      69    H+     HCN    HCN+   H                   
+      70    H+     NH     NH+    H                   
+      71    H+     NH2    NH2+   H                   
+      72    H+     NH3    NH3+   H                   
+      73    H+     CN     CN+    H                   
+      74    H+     NO     NO+    H                   
+      75    H+     HCO    HCO+   H                   
+      76    H+     HCO    CO     H2+                 
+      77    H+     HCO    CO+    H2                  
+      78    H+     SiO    SiO+   H                   
+      79    H+     CH4    CH4+   H                   
+      80    H+     CH4    CH3+   H2                  
+      81    H+     CS     CS+    H                   
+      82    H+     HS     HS+    H                   
+      83    H+     HS     S+     H2                  
+      84    H+     H2S    H2S+   H                   
+      85    He+    H      H+     He                  
+      86    He+    Si     Si+    He                  
+      87    He+    H2     H+     H      He           
+      88    He+    H2     He     H2+                 
+      89    He+    O2     O+     O      He           
+      90    He+    CO     C+     O      He           
+      91    He+    CH     C+     H      He           
+      92    He+    CH     CH+    He                  
+      93    He+    CH2    CH+    H      He           
+      94    He+    CH2    C+     H2     He           
+      95    He+    H2O    OH+    H      He           
+      96    He+    H2O    OH     H+     He           
+      97    He+    H2O    H2O+   He                  
+      98    He+    OH     O+     H      He           
+      99    He+    NH     N+     H      He           
+     100    He+    NH2    NH+    H      He           
+     101    He+    NH2    N+     H2     He           
+     102    He+    NH3    NH3+   He                  
+     103    He+    NH3    NH2+   H      He           
+     104    He+    NH3    NH+    H2     He           
+     105    He+    CN     C+     N      He           
+     106    He+    CN     N+     C      He           
+     107    He+    HCN    CN+    H      He           
+     108    He+    HCN    CH+    N      He           
+     109    He+    HCN    C+     N      He     H     
+     110    He+    HCN    N+     CH     He           
+     111    He+    HNC    CN+    H      He           
+     112    He+    HNC    C+     N      He     H     
+     113    He+    HNC    NH+    C      He           
+     114    He+    N2     N+     N      He           
+     115    He+    N2     N2+    He                  
+     116    He+    NO     N+     O      He           
+     117    He+    NO     O+     N      He           
+     118    He+    CH4    CH4+   He                  
+     119    He+    HS     S+     He     H            
+     120    He+    H2S    S+     He     H2           
+     121    He+    H2S    HS+    He     H            
+     122    He+    H2S    H2S+   He                  
+     123    He+    CS     S+     C      He           
+     124    He+    CS     C+     S      He           
+     125    He+    S2     S+     S      He           
+     126    He+    HNCS   CN+    S      H      He    
+     127    He+    CH3SH  CS+    H2     H      He    
+     128    He+    CH3SH  H2CS+  H2     He           
+     129    C+     H      CH+                        
+     130    C+     H2     CH+    H                   
+     131    C+     H2     CH2+                       
+     132    C+     S      S+     C                   
+     133    C+     Si     Si+    C                   
+     134    C+     Mg     Mg+    C                   
+     135    C+     Fe     Fe+    C                   
+     136    C+     O2     O+     CO                  
+     137    C+     O2     CO+    O                   
+     138    C+     OH     CO+    H                   
+     139    C+     H2O    HCO+   H                   
+     140    C+     CH     CH+    C                   
+     141    C+     CH2    CH2+   C                   
+     142    C+     SiC    Si+    C2                  
+     143    C+     SiC    SiC+   C                   
+     144    C+     SiO    Si+    CO                  
+     145    C+     SiO    SiO+   C                   
+     146    C+     SiO    SiC+   O                   
+     147    C+     SiS    Si+    CS                  
+     148    C+     SiS    SiC+   S                   
+     149    C+     SiS    SiS+   C                   
+     150    C+     NH     CN+    H                   
+     151    C+     NH2    HCN+   H                   
+     152    C+     NH3    NH3+   C                   
+     153    C+     NH3    H2NC+  H                   
+     154    C+     NH3    HCN+   H2                  
+     155    C+     HCN    C2N+   H                   
+     156    C+     HNC    C2N+   H                   
+     157    C+     NO     NO+    C                   
+     158    C+     HCO    CO     CH+                 
+     159    C+     HCO    HCO+   C                   
+     160    C+     HS     CS+    H                   
+     161    C+     H2S    H2S+   C                   
+     162    C+     H2S    HCS+   H                   
+     163    C+     H2CS   H2CS+  C                   
+     164    C+     H2CS   CS     CH2+                
+     165    C+     CS     CS+    C                   
+     166    C+     SO     S+     CO                  
+     167    C+     SO     S      CO+                 
+     168    C+     SO     CS+    O                   
+     169    C+     SO     SO+    C                   
+     170    C+     OCS    CS+    CO                  
+     171    C+     SO2    SO+    CO                  
+     172    O+     H      O      H+                  
+     173    O+     H2     OH+    H                   
+     174    O+     H2S    H2S+   O                   
+     175    O+     H2S    HS+    OH                  
+     176    O+     H2S    S+     H2O                 
+     177    OH+    H2     H2O+   H                   
+     178    OH+    S      S+     OH                  
+     179    OH+    S      SO+    H                   
+     180    OH+    S      HS+    O                   
+     181    OH+    CS     CH+    SO                  
+     182    OH+    H2S    H3S+   O                   
+     183    CO+    H      CO     H+                  
+     184    CO+    H2     HCO+   H                   
+     185    CO+    S      S+     CO                  
+     186    CO+    S      CS+    O                   
+     187    H2O+   H2     H3O+   H                   
+     188    H2O+   S      S+     H2O                 
+     189    H2O+   S      HS+    OH                  
+     190    HCO+   C      CH+    CO                  
+     191    HCO+   CH     CH2+   CO                  
+     192    HCO+   OH     H2O+   CO                  
+     193    HCO+   CH2    CH3+   CO                  
+     194    HCO+   H2O    H3O+   CO                  
+     195    HCO+   NH     NH2+   CO                  
+     196    HCO+   NH2    NH3+   CO                  
+     197    HCO+   NH3    NH4+   CO                  
+     198    HCO+   HCN    H2CN+  CO                  
+     199    HCO+   HNC    H2CN+  CO                  
+     200    HCO+   N2     N2H+   CO                  
+     201    HCO+   Fe     HCO    Fe+                 
+     202    HCO+   Mg     HCO    Mg+                 
+     203    HCO+   H2     H3CO+                      
+     204    HCO+   HS     H2S+   CO                  
+     205    HCO+   CS     HCS+   CO                  
+     206    H3O+   C      HCO+   H2                  
+     207    H3O+   CH     CH2+   H2O                 
+     208    H3O+   CH2    CH3+   H2O                 
+     209    H3O+   NH3    NH4+   H2O                 
+     210    H3O+   NH2    NH3+   H2O                 
+     211    H3O+   HCN    H2CN+  H2O                 
+     212    H3O+   HNC    H2CN+  H2O                 
+     213    H3O+   SiO    HOSi+  H2O                 
+     214    H3O+   S      HS+    H2O                 
+     215    H2+    H      H+     H2                  
+     216    H2+    H2     H3+    H                   
+     217    H3+    C      CH+    H2                  
+     218    H3+    O      OH+    H2                  
+     219    H3+    CH     CH2+   H2                  
+     220    H3+    OH     H2O+   H2                  
+     221    H3+    CO     HCO+   H2                  
+     222    H3+    H2O    H3O+   H2                  
+     223    H3+    CH2    CH3+   H2                  
+     224    H3+    N      NH2+   H                   
+     225    H3+    NH     NH2+   H2                  
+     226    H3+    NH2    NH3+   H2                  
+     227    H3+    NH3    NH4+   H2                  
+     228    H3+    NH3    NH3+   H2     H            
+     229    H3+    CN     HCN+   H2                  
+     230    H3+    HCN    H2CN+  H2                  
+     231    H3+    HNC    H2CN+  H2                  
+     232    H3+    N2     N2H+   H2                  
+     233    H3+    NO     HNO+   H2                  
+     234    H3+    CH3    CH4+   H2                  
+     235    H3+    CH4    CH5+   H2                  
+     236    H3+    HS     H2S+   H2                  
+     237    H3+    CS     HCS+   H2                  
+     238    H3+    Si     SiH+   H2                  
+     239    H3+    Si     SiH2+  H                   
+     240    H3+    S      HS+    H2                  
+     241    H3+    SiO    HOSi+  H2                  
+     242    H3+    SiS    SiSH+  H2                  
+     243    H3+    H2S    H3S+   H2                  
+     244    H3+    HCO    H2CO+  H2                  
+     245    CH+    H      C+     H2                  
+     246    CH+    H2     CH2+   H                   
+     247    CH+    O      CO+    H                   
+     248    CH+    S      S+     CH                  
+     249    CH+    S      HS+    C                   
+     250    CH+    S      CS+    H                   
+     251    CH+    SO     OH+    CS                  
+     252    CH+    SO     HS+    CO                  
+     253    CH2+   H      CH+    H2                  
+     254    CH2+   O      HCO+   H                   
+     255    CH2+   H2     CH3+   H                   
+     256    CH2+   N      HCN+   H                   
+     257    CH2+   S      HCS+   H                   
+     258    CH2+   S      HS+    CH                  
+     259    CH2+   SO     H2O+   CS                  
+     260    CH2+   SO     H2S+   CO                  
+     261    CH3+   N      H2NC+  H                   
+     262    CH3+   NH     H2CN+  H2                  
+     263    CH3+   H      CH2+   H2                  
+     264    CH3+   O      HCO+   H2                  
+     265    CH3+   S      HCS+   H2                  
+     266    CH3+   Fe     Fe+    CH3                 
+     267    CH3+   Mg     Mg+    CH3                 
+     268    CH3+   H2     CH5+                       
+     269    CH3+   H2S    H3CS+  H2                  
+     270    CH3+   H2S    CH3SH2+                      
+     271    CH4+   CO     HCO+   CH3                 
+     272    CH4+   H2O    H3O+   CH3                 
+     273    CH4+   O      CH3+   OH                  
+     274    CH4+   H      CH3+   H2                  
+     275    CH4+   H2     CH5+   H                   
+     276    CH5+   CO     CH4    HCO+                
+     277    CH5+   HCN    H2CN+  CH4                 
+     278    CH5+   HNC    H2CN+  CH4                 
+     279    CH5+   H2O    H3O+   CH4                 
+     280    CH5+   OH     H2O+   CH4                 
+     281    CH5+   Mg     Mg+    CH4    H            
+     282    CH5+   C      CH+    CH                  
+     283    CH5+   H      CH4+   H2                  
+     284    CH5+   H2     H3O+   CH2                 
+     285    SiH+   H      Si+    H2                  
+     286    SiH+   O      SiO+   H                   
+     287    SiH+   Mg     SiH    Mg+                 
+     288    SiC+   Mg     SiC    Mg+                 
+     289    SiO+   H2     HOSi+  H                   
+     290    SiO+   HCO    HCO+   SiO                 
+     291    SiO+   N      Si     NO+                 
+     292    SiO+   N      Si+    NO                  
+     293    SiO+   O      Si+    O2                  
+     294    SiO+   Mg     SiO    Mg+                 
+     295    SiS+   H2     SiSH+  H                   
+     296    SiH2+  O      HOSi+  H                   
+     297    HOSi+  CO     SiO    HCO+                
+     298    S+     Si     Si+    S                   
+     299    S+     Mg     Mg+    S                   
+     300    S+     Fe     Fe+    S                   
+     301    S+     HCO    HCO+   S                   
+     302    S+     H2     HS+    H                   
+     303    S+     CH     CS+    H                   
+     304    S+     CH2    HCS+   H                   
+     305    S+     OH     SO+    H                   
+     306    S+     OH     HS+    O                   
+     307    S+     HS     HS+    S                   
+     308    S+     H2     H2S+                       
+     309    S+     SiH    SiS    H+                  
+     310    S+     SiH    SiS+   H                   
+     311    S+     SiH    S      SiH+                
+     312    S+     O2     SO+    O                   
+     313    S+     CH4    H3CS+  H                   
+     314    Si+    H2     SiH2+                      
+     315    Si+    Mg     Mg+    Si                  
+     316    Si+    Fe     Fe+    Si                  
+     317    Si+    S      S+     Si                  
+     318    Si+    OH     SiO+   H                   
+     319    Si+    H2O    HOSi+  H                   
+     320    CN+    H2     HCN+   H                   
+     321    C2N+   NH3    H2CN+  HCN                 
+     322    N+     H2     NH+    H                   
+     323    N+     O2     NO+    O                   
+     324    N+     O2     O+     NO                  
+     325    N+     CO     CO+    N                   
+     326    N+     CO     NO+    C                   
+     327    N+     NO     NO+    N                   
+     328    N+     NO     N2+    O                   
+     329    N2+    H2     N2H+   H                   
+     330    N2H+   H      N2+    H2                  
+     331    N2H+   H2     H3+    N2                  
+     332    N2H+   O      OH+    N2                  
+     333    N2H+   H2O    H3O+   N2                  
+     334    N2H+   CO     HCO+   N2                  
+     335    N2H+   NH3    NH4+   N2                  
+     336    N2H+   NO     HNO+   N2                  
+     337    NH+    H2     NH2+   H                   
+     338    NH+    H2     H3+    N                   
+     339    NH2+   H2     NH3+   H                   
+     340    NH2+   CO     HCO+   NH                  
+     341    NH3+   H2     NH4+   H                   
+     342    NH3+   H2O    NH4+   OH                  
+     343    NH3+   CS     H3NCS+                      
+     344    NH4+   OH     NH3+   H2O                 
+     345    NH4+   N2     N2H+   NH3                 
+     346    HCN+   H2     H2CN+  H                   
+     347    HCN+   H      H+     HCN                 
+     348    H2CN+  H2O    H3O+   HCN                 
+     349    H2CN+  H2O    H3O+   HNC                 
+     350    HNO+   C      CH+    NO                  
+     351    HNO+   CO     HCO+   NO                  
+     352    HNO+   OH     H2O+   NO                  
+     353    HNO+   H2O    H3O+   NO                  
+     354    NO+    Fe     Fe+    NO                  
+     355    HS+    H2     H2S+   H                   
+     356    HS+    H      S+     H2                  
+     357    HS+    S      HS     S+                  
+     358    HS+    H2     H2S+   H                   
+     359    HS+    C      CS+    H                   
+     360    HS+    CH     S      CH2+                
+     361    HS+    OH     H2S+   O                   
+     362    HS+    OH     H2O+   S                   
+     363    HS+    H2O    S      H3O+                
+     364    HS+    H2S    H2S+   HS                  
+     365    HS+    H2S    H3S+   S                   
+     366    HS+    O      S+     OH                  
+     367    HS+    O      SO+    H                   
+     368    HS+    Mg     HS     Mg+                 
+     369    HS+    H2     H3S+                       
+     370    HS+    CH4    H3CS+  H2                  
+     371    H2S+   H2     H3S+   H                   
+     372    H2S+   H      HS+    H2                  
+     373    H2S+   O      SO+    H2                  
+     374    H2S+   HS     HS+    H2S                 
+     375    H2S+   O      HS+    OH                  
+     376    H2S+   Mg     H2S    Mg+                 
+     377    H2S+   H2O    HS     H3O+                
+     378    CS+    H2     HCS+   H                   
+     379    CS+    O      S      CO+                 
+     380    HCS+   O      S      HCO+                
+     381    NS+    Mg     NS     Mg+                 
+     382    SO+    H      S+     OH                  
+     383    SO+    N      NS+    O                   
+     384    SO+    Mg     SO     Mg+                 
+     385    H3S+   H      H2S+   H2                  
+     386    H+     e-     H                          
+     387    He+    e-     He                         
+     388    C+     e-     C                          
+     389    S+     e-     S                          
+     390    Si+    e-     Si                         
+     391    Mg+    e-     Mg                         
+     392    Fe+    e-     Fe                         
+     393    OH+    e-     O      H                   
+     394    CO+    e-     C      O                   
+     395    CS+    e-     C      S                   
+     396    NS+    e-     N      S                   
+     397    SO+    e-     S      O                   
+     398    02+    e-     O      O                   
+     399    H2O+   e-     OH     H                   
+     400    H2O+   e-     O      H2                  
+     401    H2O+   e-     O      H      H            
+     402    HCO+   e-     CO     H                   
+     403    H2CO+  e-     CO     H      H            
+     404    H2CO+  e-     HCO    H                   
+     405    H2CO+  e-     H2CO                       
+     406    H3CO+  e-     HCO    H2                  
+     407    H3CO+  e-     CO     H2     H            
+     408    H3CO+  e-     HCO    H      H            
+     409    H3CO+  e-     H2CO   H                   
+     410    H3O+   e-     O      H2     H            
+     411    H3O+   e-     OH     H      H            
+     412    H3O+   e-     OH     H2                  
+     413    H3O+   e-     H2O    H                   
+     414    H2+    e-     H      H                   
+     415    H3+    e-     H2     H                   
+     416    H3+    e-     H      H      H            
+     417    CH+    e-     C      H                   
+     418    CH2+   e-     CH     H                   
+     419    CH2+   e-     C      H      H            
+     420    CH2+   e-     C      H2                  
+     421    CH3+   e-     CH2    H                   
+     422    CH3+   e-     CH     H2                  
+     423    CH3+   e-     CH     H      H            
+     424    CH3+   e-     CH3                        
+     425    CH4+   e-     CH2    H      H            
+     426    CH4+   e-     CH3    H                   
+     427    CH5+   e-     CH3    H2                  
+     428    CH5+   e-     CH4    H                   
+     429    SiH+   e-     Si     H                   
+     430    SiH2+  e-     Si     H      H            
+     431    SiH2+  e-     Si     H2                  
+     432    SiH2+  e-     SiH    H                   
+     433    SiC+   e-     Si     C                   
+     434    SiO+   e-     Si     O                   
+     435    HOSi+  e-     SiO    H                   
+     436    HOSi+  e-     Si     OH                  
+     437    SiSH+  e-     SiS    H                   
+     438    SiSH+  e-     HS     Si                  
+     439    N+     e-     N                          
+     440    CN+    e-     C      N                   
+     441    C2N+   e-     CN     C                   
+     442    HCN+   e-     CN     H                   
+     443    N2H+   e-     N2     H                   
+     444    NH+    e-     N      H                   
+     445    NH2+   e-     NH     H                   
+     446    NH2+   e-     N      H      H            
+     447    NH3+   e-     NH     H      H            
+     448    NH3+   e-     NH2    H                   
+     449    NH4+   e-     NH2    H      H            
+     450    NH4+   e-     NH2    H2                  
+     451    NH4+   e-     NH3    H                   
+     452    H2CN+  e-     CN     H      H            
+     453    H2CN+  e-     HNC    H                   
+     454    H2CN+  e-     HCN    H                   
+     455    H2NC+  e-     CN     H2                  
+     456    H2NC+  e-     HNC    H                   
+     457    NO+    e-     N      O                   
+     458    HNO+   e-     NO     H                   
+     459    HS+    e-     S      H                   
+     460    H2S+   e-     HS     H                   
+     461    H2S+   e-     S      H      H            
+     462    H2S+   e-     H2S                        
+     463    H3S+   e-     H2S    H                   
+     464    H3S+   e-     HS     H2                  
+     465    H3S+   e-     HS     H      H            
+     466    HCS+   e-     H      CS                  
+     467    H2CS+  e-     CS     H      H            
+     468    H3CS+  e-     H2CS   H                   
+     469    H3CS+  e-     HS     CH2                 
+     470    H3CS+  e-     CS     H2     H            
+     471    H3NCS+  e-     HNCS   H2                  
+     472    CH3SH2+  e-     CH3SH  H                   
+     473    H      C      CH                         
+     474    H      O      OH                         
+     475    H      NH     N      H2                  
+     476    H      NH2    NH     H2                  
+     477    H      NH3    NH2    H2                  
+     478    H      HCO    CO     H2                  
+     479    H      HCO    O      CH2                 
+     480    H      HNC    HCN    H                   
+     481    H      SO     S      OH                  
+     482    H      HS     S      H2                  
+     483    H      H2S    HS     H2                  
+     484    H      OH     H2     O                   
+     485    H      OH     H2O                        
+     486    H      OH     H      H      O            
+     487    H      H2O    H2     OH                  
+     488    H      H2O    OH     H      H            
+     489    H      O2     OH     O                   
+     490    H      O2     O      O      H            
+     491    H      CH     H2     C                   
+     492    H      CH     C      H      H            
+     493    H      CH2    CH     H2                  
+     494    H      H2     H      H      H            
+     495    H2     CN     HCN    H                   
+     496    H2     CH3    CH4    H                   
+     497    H2     N      NH     H                   
+     498    H2     NH     NH2    H                   
+     499    H2     NH2    NH3    H                   
+     500    H2     HS     H2S    H                   
+     501    H2     H2     H2     H      H            
+     502    H2     O      OH     H                   
+     503    H2     C      CH     H                   
+     504    H2     OH     H2O    H                   
+     505    H2     OH     O      H2     H            
+     506    H2     CH     CH2    H                   
+     507    H2     CH     C      H2     H            
+     508    H2     O2     OH     OH                  
+     509    H2     O2     O      O      H2           
+     510    C      OH     CO     H                   
+     511    C      OH     CH     O                   
+     512    C      O2     CO     O                   
+     513    C      HCO    CO     CH                  
+     514    C      NO     CN     O                   
+     515    C      NO     CO     N                   
+     516    C      NH     CN     H                   
+     517    C      NH     N      CH                  
+     518    C      NH2    HCN    H                   
+     519    C      NH2    HNC    H                   
+     520    C      HS     CS     H                   
+     521    O      OH     O2     H                   
+     522    O      CH     CO     H                   
+     523    O      CH     HCO+   e-                  
+     524    O      CH     OH     C                   
+     525    O      CH2    CO     H      H            
+     526    O      CH2    OH     CH                  
+     527    O      CH2    CO     H2                  
+     528    O      CH2    HCO    H                   
+     529    O      NO     O2     N                   
+     530    O      SiH    SiO    H                   
+     531    O      CN     CO     N                   
+     532    O      CN     NO     C                   
+     533    O      NH     OH     N                   
+     534    O      NH     NO     H                   
+     535    O      NH2    NH     OH                  
+     536    O      NH2    NO     H2                  
+     537    O      NH3    NH2    OH                  
+     538    O      HCO    CO     OH                  
+     539    O      HS     SO     H                   
+     540    O      HS     S      OH                  
+     541    O      C2     CO     C                   
+     542    O      CS     CO     S                   
+     543    O      NS     NO     S                   
+     544    O      CH3    H2CO   H                   
+     545    O      H2CO   HCO    OH                  
+     546    O      H2CO   CO     OH     H            
+     547    O      H2O    OH     OH                  
+     548    O      OH     H      O2                  
+     549    O2     CH2    HCO    OH                  
+     550    O2     CH2    CO     H2O                 
+     551    O2     N      NO     O                   
+     552    N      CN     N2     C                   
+     553    N      OH     NO     H                   
+     554    N      OH     O      NH                  
+     555    N      HCO    HCN    O                   
+     556    N      CH     CN     H                   
+     557    N      CH2    HCN    H                   
+     558    N      CH2    HNC    H                   
+     559    N      CH3    HCN    H2                  
+     560    N      NO     N2     O                   
+     561    N      NH     N2     H                   
+     562    N      HS     NS     H                   
+     563    N      SO     NO     S                   
+     564    Si     OH     SiO    H                   
+     565    S      CH     CS     H                   
+     566    S      H2     HS     H                   
+     567    S      OH     SO     H                   
+     568    S      OH     HS     O                   
+     569    S      HS     S2     H                   
+     570    S      O2     SO     O                   
+     571    S      CH3    H2CS   H                   
+     572    OH     NH3    NH2    H2O                 
+     573    OH     CO     CO     O      H            
+     574    OH     SO     SO2    H                   
+     575    OH     OH     H2O    O                   
+     576    HS     CO     OCS    H                   
+     577    H             H+     e-                  
+     578    He            He+    e-                  
+     579    H2            H+     H      e-           
+     580    H2            H      H                   
+     581    H2            H2+    e-                  
+     582    N             N+     e-                  
+     583    CN            C      N                   
+     584    NH2           NH     H                   
+     585    NH2           NH2+   e-                  
+     586    NH3           NH3+   e-                  
+     587    NH3           NH     H2                  
+     588    NH3           NH2    H                   
+     589    NO            N      O                   
+     590    NO            NO+    e-                  
+     591    HCN           CN     H                   
+     592    HNC           CN     H                   
+     593    H      e-     H-                         
+     594    S      e-     S-                         
+     595    H-            H      e-                  
+     596    S-     O      SO     e-                  
+     597    S-     CO     OCS    e-                  
+     598    H      H-     H2     e-                  
+     599    H+     H-     H      H                   
+     600    H2+    H-     H2     H                   
+     601    H3+    H-     H2     H2                  
+     602    He+    H-     He     H                   
+     603    O      H-     OH     e-                  
+     604    C      H-     CH     e-                  
+     605    C+     H-     C      H                   
+     606    O+     H-     O      H                   
+     607    S+     H-     S      H                   
+     608    Si+    H-     Si     H                   
+     609    Fe+    H-     Fe     H                   
+     610    OH     H-     H2O    e-                  
+     611    HCO+   H-     CO     H2                  
+     612    H3O+   H-     OH     H2     H            
+     613    H3O+   H-     H2O    H2                  
+     614    PAH           PAH+   e-                  
+     615    PAH-          PAH    e-                  
+     616    PAH+   e-     PAH                        
+     617    PAH    e-     PAH-                       
+     618    PAH    H+     PAH+   H                   
+     619    PAH    He+    PAH+   He                  
+     620    PAH    C+     PAH+   C                   
+     621    PAH    N+     PAH+   N                   
+     622    PAH    Mg+    PAH+   Mg                  
+     623    PAH    Si+    PAH+   Si                  
+     624    PAH    S+     PAH+   S                   
+     625    PAH    Fe+    PAH+   Fe                  
+     626    PAH-   H+     PAH    H                   
+     627    PAH-   He+    PAH    He                  
+     628    PAH-   C+     PAH    C                   
+     629    PAH-   N+     PAH    N                   
+     630    PAH-   Mg+    PAH    Mg                  
+     631    PAH-   Si+    PAH    Si                  
+     632    PAH-   S+     PAH    S                   
+     633    PAH-   Fe+    PAH    Fe                  
+     634    H2V    H      H2     H                   
+     635    H2V    H      H      H      H            
+     636    H2V    H2     H2     H      H            
+     637    H2V    H2V    H      H      H2           
+     638    H2V    O      OH     H                   
+     639    H2V    OH     H2O    H                   
+     640    H2V    O2     OH     OH                  
+     641    H2V    C      CH     H                   
+     642    H2V    CH     CH2    H                   
+     643    H2V    C+     CH+    H                   
+     644    N      H2V    NH     H                   
+     645    NH     H2V    NH2    H                   
+     646    NH2    H2V    NH3    H                   
+     647    CN     H2V    HCN    H                   
+     648    CH2    H2V    CH3    H                   
+     649    H2V           H2                         
+     650    H2            H2V                        
+     651    H2V           H      H                   
+     652    H2V    H2     H2     H2                  
+     653    H             H2                         
