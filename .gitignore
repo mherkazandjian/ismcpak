@@ -11,3 +11,4 @@ LAMDA
 *.pyc
 .settings
 .pydevproject
+.project
