@@ -67,7 +67,6 @@ radexView.py
 reaction.py
 run_dynamicGmechGrid.py
 run_oneSidedPDRGrid.py
-run_singleMesh.py
 run_singleModelDynamicsGmech.py
 setdev
 setdev.bash

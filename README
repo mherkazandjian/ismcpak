@@ -16,7 +16,8 @@ The PDR code should be copied into:
 Compiling the PDR code
 -----------------------
 The PDR code can be compiled using:
-    ~> cd amuse/src/amuse/community/pdr
+    ~> source bashrc_amuse.sh
+    ~> cd ${HOME}/amuse/src/amuse/community/pdr
     ~> make all
 The generates the libpdr.a library
 

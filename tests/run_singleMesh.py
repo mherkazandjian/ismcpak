@@ -1,10 +1,16 @@
+"""
+<keywords>
+test, pdr
+</keywords>
+<description>
+an example code to demonstrate how to execute the PDR code via the amuse 
+interface.
+</description>
+"""
 import os
+
 from amuse.community.pdr import interface
-#from chemicalNetwork import *
-#from mesh import *
-#from meshUtils import *
-#from enumSpecies import *
-#---------------------------------------------------------------------------
+
 HOME = os.environ['HOME']
 
 nWorker = 1  # number of proccesses
@@ -42,7 +48,9 @@ pdr.initialize()
 ids, err = pdr.add_mesh(log10_nGas, 1000.0, log10_G0, lMech)
 
 pdr.calc_equilibrium()
+
 mshErr, err = pdr.get_errorFlags(ids)
+
 T, err = pdr.get_temperature(ids)
 
 print 'done'
