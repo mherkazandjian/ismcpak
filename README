@@ -1,2 +1,9 @@
 This is a package which implements some utilities useful for modelling and 
 analyzing simulation output of PDRs.
+
+Prerequisites
+-------------
+amuse  - mpich
+PyQt4
+ipython
+
