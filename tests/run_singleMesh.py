@@ -1,6 +1,6 @@
 """
 <keywords>
-test, pdr
+test, pdr, amuse
 </keywords>
 <description>
 an example code to demonstrate how to execute the PDR code via the amuse 
@@ -15,7 +15,7 @@ HOME = os.environ['HOME']
 
 nWorker = 1  # number of proccesses
 
-dataDir     = HOME + '/ism/code/tmp/ismcpak/data/' 
+dataDir     = HOME + '/ism/code/ismcpak/data/' 
 outputDir   = HOME + '/ism/runs/tests/oneSided/single_mesh/'
 
 pdr = interface.pdrInterface( number_of_workers = nWorker, redirection='none') 
