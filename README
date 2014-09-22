@@ -2,24 +2,35 @@ This is a package which implements some utilities useful for modelling and
 analyzing simulation output of PDRs.
 
 Prerequisites
--------------
+=============
 amuse  - mpich
 PyQt4
 ipython
 
 
 Installing the PDR code
------------------------
+=======================
 The PDR code should be copied into:
       amuse/src/amuse/community/pdr
 
 Compiling the PDR code
------------------------
+======================
 The PDR code can be compiled using:
     ~> cd amuse/src/amuse/community/pdr
     ~> make all
 The generates the libpdr.a library
 
 Running the code
-----------------
-    ~> python run_singleMesh.py 
+================
+  Basic test - single model
+  -------------------------
+  The PDR code can only be run through the AMUSE ( http://amusecode.org ).
+  Depending on the mpi environment installed with AMUSE, it might be 
+  necessary to launch the mpd deamon before executing either:
+  
+    ~> mpirun -np 1 python run_singleMesh.py
+    
+  or via
+  
+    ~> python run_singleMesh.py
+   
