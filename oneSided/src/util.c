@@ -220,7 +220,6 @@ int find_mesh_equilibrium(mesh *mesh)
   k = 0;
   getSystemEquilibrium(mesh, k); CHECK_ERR;  
 
-  //printf("xxx c heating = %e\n", mesh->heating.cIon[0]);
 #ifdef FIRST_SLAB_ONLY
   mesh->nxFilled = 1;
   printf("SKIPPING - MAX Av Reached\n");
@@ -333,17 +332,14 @@ int getSystemEquilibrium(mesh *msh, int k)
 
   if( verbose & VERB1_MASK) fprintf(outputFd, "%s----------------------------------------\n", INDENT1);
   
-  AvL = position2Av(msh->xc[k], pv.dens0, pv.metalicity); //;;; use Av @ the centroid of the slab 
-  //AvL = position2Av( msh->xs[k] + 0.1*msh->dx[k], pv.dens0, pv.metalicity); //;;; use Av @ 0.1 the width away from the 
-                                                                         //    the starting point of the slab
+  AvL = position2Av(msh->xc[k], pv.dens0, pv.metalicity);
   Td  = getDustTemp(AvL);  
-  
+
   /* SETTING THE GUESSES FOR THE TEMPERATURE AND THE DENSITIES */
   if( verbose & VERB1_MASK) fprintf(outputFd, "%ssetting the guesses for the temperature and the densities\n", INDENT1);
   setEquilibriumGuesses( msh, k, &T); /* sets T and chemNet.ymol */
 
   /* dump the flux for the whole temperature range of interest for each slab */
-  //dumpFluxVsTSweep(msh, k, T, Td, AvL);  //llllll
   
   MAKE_1D_ARRAY(buffer_a, chemNet.nSpec+1, double); /* local copies of the abudances to use as guesses */
   MAKE_1D_ARRAY(buffer_b, chemNet.nSpec+1, double); /* for each side of the bracket                    */
@@ -462,8 +458,6 @@ void convergeToTemperatureRoot(mesh *msh, double Ta, double Tb, double Fa, doubl
 	     if( Fb == 0 ) { *Tx = Tb; Ta=Tb; Fa=Fb; Fx=0.0; break; }
 	     /* acheived predefined tolerence for the temperatures */
 	     if( (Tb-Ta)/(0.5*(Ta+Tb)) < pv.TTol  ) break;
-	     /* acheived predefined tolerence for the temperatures and thermal timescale is large enough ( > 1Gyr) */
-	     //if( (Tb-Ta)/(0.5*(Ta+Tb)) < pv.TTol  && (((3.0/2.0)*pv.dens0*KB*(*Tx))/fabs(Fx))/(YEAR*1e9) > 1.0 ) break;
 	}
 	
 	nIterations=nBisectLocal+nSecantLocal;

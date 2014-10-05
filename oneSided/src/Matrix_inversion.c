@@ -94,7 +94,6 @@ double reduceElement2( double **A, int i, int j, int n)
     a=b;\
     b=tmp;\
 }
-/* get the max colon pivot ?? */
 int getColonPivot(double **A, double *vv, int j, int n)
 {
     double big, tmp;
@@ -112,7 +111,6 @@ int getColonPivot(double **A, double *vv, int j, int n)
     }
     return(imax);
 }
-/* swap the rows with pivot row?? */
 void swapRow(double **A, double *vv, int j, int imax, int n)
 {
     int k;
@@ -188,7 +186,7 @@ void mprove(double **A, double **Al, int n, int *indx, double *b, double *bl, in
 	    for (j=1; j<=n; j++) sdp += A[i][j]*bl[j];
 	    res[i]=sdp;
 	}
-	lubksb(Al, res, n, indx);     //my version
+	lubksb(Al, res, n, indx);
 	
 	for (i=1; i<=n; i++) bl[i] -= res[i];
     }

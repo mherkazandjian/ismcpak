@@ -45,7 +45,7 @@ double big_tau(double tau) {
 }
 /* Self-shlding for CO is retreived through interpolation in table 5 of Van Dishoeck & Black, 1988
  * table-5. The self sheilding is returned based on which istope of CO is provided by the what_is
- *  parameter. NCO and NH2 are the column densities (not in log10) of CO (which isotope????) and H2 respectively.
+ *  parameter. NCO and NH2 are the column densities (not in log10) of CO  and H2 respectively.
  */
 double self_shlding_CO(double NCO, double NH2, int what_iso) 
 {

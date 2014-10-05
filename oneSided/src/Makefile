@@ -2,35 +2,7 @@ CC = gcc
 
 MACH=$(HOSTNAME)
 
-#ICC stuff
-#----------
-ifeq ($(CC),icc)
-
- OPTS += -vec-report1
- #OPTS += -fp-model precise
- OPTS += -align
-
- #ruineraa
- ifeq ($(MACH),ruineraa)
-   CC = /software/local/intel/compiler91/bin/icc
-   LIBS += -L/software/local/intel/compiler91/lib 
-   OPTS += -msse3
- endif
-
- #particle2
- ifeq ($(MACH),particle2)
-  CC = $(PROGSDIR)/intel/bin/intel64/icc
-  LIBS += -L$(PROGSDIR)/intel/lib64
-  OPTS += -msse4.1
-  OPTS += -axSSE4.1
-  OPTS += -msse4.1
-  LIBS += -L$(PROGSDIR)/intel/lib/intel64 -lintlc
- endif
-
-  LIBS += -limf
-else
- LIBS += -lm
-endif
+LIBS += -lm
 
 OPTS += -O3
 OPTS += -g
