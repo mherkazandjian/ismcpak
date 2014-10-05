@@ -2,5 +2,7 @@
 .settings
 .pydevproject
 .project
-
-
+radex
+radex.tgz
+*.log
+foo

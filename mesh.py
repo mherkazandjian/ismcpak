@@ -2,7 +2,7 @@ import numpy
 import pylab
 
 from ismUtils import getSlabThicknessFromAv, AvToLength
-from mylib.utils.misc import fetchNestedDtypeValue
+from misc import fetchNestedDtypeValue
 
 class mesh(object):
     """This class read a PDR mesh and returns an object containing all the data of that mesh.
