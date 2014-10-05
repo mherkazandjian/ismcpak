@@ -44,7 +44,6 @@ leidenLambda
 lineDict.py
 line_ratio_app.py
 line_ratio_utils.py
-Makefile
 merge_dbs_into_one_set_new_parameter.py
 mesh.py
 meshUtils.py

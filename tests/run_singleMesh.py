@@ -15,8 +15,8 @@ HOME = os.environ['HOME']
 
 nWorker = 1  # number of proccesses
 
-dataDir     = HOME + '/ism/code/tmp/ismcpak/data/' 
-outputDir   = HOME + '/ism/runs/tmp/tests/oneSided/single_mesh/'
+dataDir     = HOME + '/ism/code/ismcpak/data/' 
+outputDir   = HOME + '/ism/runs/tests/oneSided/single_mesh/'
 
 pdr = interface.pdrInterface( number_of_workers = nWorker, redirection='none') 
 
