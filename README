@@ -44,7 +44,60 @@ Running the code
   or via
   
     ~> python run_singleMesh.py
-   
+
+Running a Grid of models
+========================
+
+# setup the working environment variables
+1) source setdev
+
+# install the pdr code into amuse (make sure the correct 
+# path of amuse is set in setenv
+2) make pdr_install
+
+# after these two steps, the tests 
+   run_singleMesh.py
+   chemical_network_pdr_code.py
+should run without errors
+
+
+3) to run a grid, use the following under ismcpak:
+   ~>  ipython --pylab=qt tests/run_oneSidedGrid.py
+
+4) after the model data is written to 
+      tests/oneSidedGrid/meshes
+   we need to construct the database files .db using constructReadArchive.py
+   ~> ipython --pylab=qt constructReadArchive.py
+
+   after the database is constructed we must have the file 
+         meshes.db  meshes.db.info
+   in the output directory and a message 
+         archive integrity test passed
+   must be displayed
+
+5) after creating the database, a reference file must be generated which 
+   stores information about the parameters which have been used in 
+   generating the data. A template of this file is located under
+        runs/tests/templateDir/used_params.py
+   where the parameters used by run_oneSidedGrid.py should be filled in
+   by hand. Once the values are changed :
+       ~> python used_parms.py
+   generates the pickle file
+
+6) set the desired display parameters in analyzeArchive.py and invoke :
+     ~> ipython --pylab=qt analyzeArchive.py
+
+7) to generate the radex databases, the bottom part of analyzeArchive.py should be enabled to
+   allow radex databases to be computed and written do disk. Set the desired values of 
+   Av to compute and the species whose emission will be computed and re-run: 
+     ~> ipython --pylab=qt analyzeArchive.py
+   As a check, the data in 
+        tests/oneSidedGrid/radexDbs
+   should have directories with the Avs we have set and each directory should 
+   have files for each species we have specified.
+
+8) after producing the radex database files, we can convert that data to ascii data using :
+     ~> ipython ismcpak2Ascii.py   
    
 Disclaimer
 ==========
