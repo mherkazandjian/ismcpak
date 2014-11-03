@@ -4,7 +4,7 @@ import os
 
 home = os.environ['HOME']
 
-runDirPath =  home + '/ism/runs/tests/oneSidedGrid/'
+runDirPath =  home + '/ism/runs/tests/dynamicGrid/'
 
 # constructing the archive
 t0 = time()

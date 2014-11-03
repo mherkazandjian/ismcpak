@@ -1,4 +1,4 @@
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 import matplotlib
 #matplotlib.use('Qt4Agg')
 matplotlib.use('PS')
@@ -15,42 +15,43 @@ from ismUtils import *
 from meshUtils import *
 from time import *
 
-home =  '/home/mher'
+HOME      =  os.environ['HOME']
 
-nWorker = 3  # number of proccesses
+dataDir   = HOME + '/ism/code/ismcpak/data/'
+outputDir = HOME + '/ism/runs/tests/dynamicGrid/'
+
+nWorker = 7  # number of proccesses
 pdr     = interface.pdrInterface(channel_type = 'mpi', 
                                  number_of_workers = nWorker, 
                                  redirection='none') 
 
-# path where the model data will be dumped
-outputDir     = home + '/ism/runs/oneSided/foo/'
-
 metallicity  =  1.0   # in terms of solar metallicity
 plotRangenG0 = [[0,6],[0,6]]
 
-# path of the database from which the surface mech heating rates will be extracted
-databasePath  = home + '/ism/runs/oneSided/surfaceGrid-z-%.1f-high-res-no-gmech/' % metallicity
+# path of the database from which the surface mech heating 
+# rates will be extracted
+databasePath  = os.path.join(outputDir,'../oneSidedGrid_no_gmech/')
 
 #---------chemical network parameters (not used in the modelling)-------------------
-rxnFile       = home + '/ism/code/ismcpak/data/rate99Fixed.inp'
-specNumFile   = home + '/ism/code/ismcpak/data/species.inp'
-underAbunFile = home + '/ism/code/ismcpak/data/underabundant.inp'
+rxnFile       = HOME + '/ism/code/ismcpak/data/rate99Fixed.inp'
+specNumFile   = HOME + '/ism/code/ismcpak/data/species.inp'
+underAbunFile = HOME + '/ism/code/ismcpak/data/underabundant.inp'
 removeManual  = ['13CH3']
 
-#----------------amuse modeling parameters---------------------------------------- 
+#----------------amuse modeling parameters----------------------------------------
 pdr.set_outputDir                  (outputDir + 'meshes/');
-pdr.set_species_fName              (home + '/ism/speciesInfo/species.inp');
-pdr.set_underUbundant_fName        (home + '/ism/speciesInfo/underabundant.inp');
-pdr.set_rate99_fName               (home + '/ism/speciesInfo/rate99.inp');
-pdr.set_selfSheilding_CO_fName     (home + '/ism/speciesInfo/self_shielding_CO.inp');
-pdr.set_rotationalCooling_baseName (home + '/ism/speciesInfo/rotationalcooling/rotcool');
-pdr.set_vibrationalCooling_baseName(home + '/ism/speciesInfo/vibrationalcooling/vibcool');
-pdr.set_database_fName             (home + '/ism/database/z-%.1f.dat' % metallicity);
+pdr.set_species_fName              (dataDir + 'pdr/species.inp');
+pdr.set_underUbundant_fName        (dataDir + 'pdr/underabundant.inp');
+pdr.set_rate99_fName               (dataDir + 'pdr/rate99.inp');
+pdr.set_selfSheilding_CO_fName     (dataDir + 'pdr/self_shielding_CO.inp');
+pdr.set_rotationalCooling_baseName (dataDir + 'pdr/rotationalcooling/rotcool');
+pdr.set_vibrationalCooling_baseName(dataDir + 'pdr/vibrationalcooling/vibcool');
+pdr.set_database_fName             (dataDir + 'pdr/z-1.0.dat');
 pdr.set_zeta                       (5.0e-17);
 pdr.set_S_depletion                (200.0);
 pdr.set_TTol                       (1e-3);
 pdr.set_CTol                       (1e-3);
-pdr.set_metalicity                 (metallicity);
+pdr.set_metalicity                 (1.0);
 pdr.set_AvMax                      (30.0);
 pdr.set_slabSizeCrit               (0.5);
 pdr.set_min_deltaAv                (0.01);
@@ -68,16 +69,17 @@ arxv = meshArxv(dirPath = databasePath, readDb = True)
 print 'time reading %f' % (time() - t0)
 
 #--------------------------grid point to be modelled-------------------------------
-dx   = 0.5      # log10 density
+dx   = 3.0      # log10 density
 xMin = 0.0
 xMax = 6.01
 
-dy   = 0.5     # log10 G0
+dy   = 3.0     # log10 G0
 yMin = 0.0  
 yMax = 6.01
 
 # factor of surface heating to be added as mechanical heating
-z = [1e-10, 0.001, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 1.0,]
+#z = [1e-10, 0.001, 0.01, 0.05, 0.1, 0.25, 0.50, 0.75, 1.0,]
+z = [1e-10, 0.01, 0.05, 0.1,]
 #z = [0.0001, 0.001]
 
 #-----------------------getting the mech heating rates at grid points--------------

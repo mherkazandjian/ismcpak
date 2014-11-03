@@ -18,7 +18,9 @@ dataDir   = HOME + '/ism/code/ismcpak/data/'
 outputDir = HOME + '/ism/runs/tests/oneSidedGrid/'
 
 nWorker   = 4  # number of proccesses
-pdr       = interface.pdrInterface( channel_type = 'mpi', number_of_workers = nWorker, redirection='none') 
+pdr       = interface.pdrInterface( channel_type = 'mpi', 
+                                    number_of_workers = nWorker, 
+                                    redirection='none') 
 
 pdr.set_outputDir                  (outputDir + 'meshes/');
 pdr.set_species_fName              (dataDir + 'pdr/species.inp');

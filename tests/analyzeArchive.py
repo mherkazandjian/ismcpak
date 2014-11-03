@@ -15,14 +15,14 @@ specStr_Radex = 'CO'
 
 parms = {
          #path to the database files
-         'dirPath'      : home + '/ism/runs/tests/oneSidedGrid/',
+         'dirPath'      : home + '/ism/runs/tests/dynamicGrid/',
          #------------------------------------------
-         #'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
-         'relativeGmech' : False,  # False => 3rd dim is gMech 
+         'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
+         #'relativeGmech' : False,  # False => 3rd dim is gMech 
          'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
-         #'plotRanges'    : [[-1,7],[-1,7  ],[-12, 1.2]],     # adaptive gMech 
-         'plotRanges'     : [[-4,7],[-4,7],[-51, -15]],  # uniform gmech
+         'plotRanges'    : [[-1,7],[-1,7  ],[-12, 1.2]],     # adaptive gMech 
+         #'plotRanges'     : [[-4,7],[-4,7],[-51, -15]],  # uniform gmech
          #'plotRanges'    : [[-1,7],[-1,7  ],[-18, -12]],     # variable CR rate 
 
          #useful for variable CR runs
@@ -51,7 +51,7 @@ parms = {
                                     'specStr'  : specStr_PDR,
                                     },
                              '11' : { # line intensitities
-                                     'show'           : True,
+                                     'show'           : False,
                                      ##------------------comment those if radex parms is 'pdr' is selected below this------------                                    
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','C+','rate','1-0'], # for use with 'pdr'
@@ -70,8 +70,8 @@ parms = {
          'nThreads'      : 1,
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
-         'radex'         : { 'use'                  : True,
-                             'loadAllDbs'           : True,
+         'radex'         : { 'use'                  : False,
+                             'loadAllDbs'           : False,
                              'plot_model_from_Db'   : False,   #plot the emission ladder from the database [do not run radex]
                              ###-----------radex database parms-----------------
                              'compute'              : False, #if true, runns radex on all meshes
