@@ -59,8 +59,12 @@ parameters = {
                                 ), 
              #quantities at a certain Av
              'quantities_at_AV' : (
-                                   ['T_kin', ['state', 'gasT']],                                      
+                                   ['T_kin', ['state', 'gasT']],
                                   ),
+            # custom quantities at a certain Av
+            'custom_quantities_at_Av' : (
+                                         ['T_radex'],
+                                        ),
              'outFname'    : home + '/tmp/models-z-1.0.txt',
              }
 
@@ -82,20 +86,27 @@ def main(parms):
 
     ## writing the column numbers
     fObj.write('#c1    c2         c3         c4         c5      c6      c7    ')
-    for i, p in enumerate(parms['emissions'] + parms['col_dense'] + parms[ 'quantities_at_AV']):
-        fObj.write('c%-10d' % (i+7+1))
+
+    for i, p in enumerate(parms['emissions'] + 
+                          parms['col_dense'] + 
+                          parms['int_quantities'] +
+                          parms['quantities_at_AV'] +
+                          parms['custom_quantities_at_Av']):
+        fObj.write('c%-15d' % (i+7+1))
     fObj.write('\n')
     
     ## writing the column quantities
     fObj.write('#indx  n_gas      G0         gmech      alpha   Z       Av    ')
     for i, p in enumerate(parms['emissions']):
-        fObj.write('%-10s ' % (p[2]+p[3]))
+        fObj.write('%-15s ' % (p[2]+p[3]))
     for i, p in enumerate(parms['col_dense']):
-        fObj.write('N(%-7s) ' % (p[1]))
+        fObj.write('%-15s ' % ('N(%s) ' % (p[1])))
     for i, q in enumerate(parms['int_quantities']):
-        fObj.write('%s ' % q[0])
+        fObj.write('%-15s ' % q[0])
     for i, q in enumerate(parms['quantities_at_AV']):
-        fObj.write('%s ' % q[0])
+        fObj.write('%-15s ' % q[0])
+    for i, q in enumerate(parms['custom_quantities_at_Av']):
+        fObj.write('%-15s ' % q[0])
     fObj.write('\n')
 
     idx = 0 #an index written at the beginning of each line
@@ -138,9 +149,9 @@ def main(parms):
                         
                         transIdx = lineDict.lines[specStr + trans]['radexIdx'] 
                         flux =  arxv.meshesRadex[i][transIdx]['fluxcgs']
-                        outStr += '%+10.3e ' % flux 
+                        outStr += '%-+15.3e ' % flux 
                     else:
-                        outStr += '%+10.3e ' % numpy.nan
+                        outStr += '%-+15.3e ' % numpy.nan
                         
                 ## getting info of a line from the PDR 
                 if line_model == 'pdr' and code == 'leiden':
@@ -149,7 +160,7 @@ def main(parms):
                     arxv.mshTmp.setData(msh)
                     quantity = lineDict.lines[specStr + trans]['ismcpak']
                     flux =  arxv.mshTmp.compute_integrated_quantity(quantity, Av_range = [0.0, Av])
-                    outStr += '%+10.3e ' % flux 
+                    outStr += '%-+15.3e ' % flux 
 
             ## getting the column density of each specie in parms['col_dense'] and writing them to each row in the output file
             for model_type, specStr in parms['col_dense']:
@@ -160,7 +171,7 @@ def main(parms):
                     ## using the current mesh as the temporary mesh in the mesh arxv object
                     arxv.mshTmp.setData(msh)
                     colDens = arxv.mshTmp.getColumnDensity(specsStrs = [specStr], maxAv = Av)
-                    outStr += '%+10.3e ' % colDens[0] 
+                    outStr += '%-+15.3e ' % colDens[0] 
             #
             
             ## getting the column density of each specie in parms['col_dense'] and writing them to each row in the output file
@@ -169,7 +180,7 @@ def main(parms):
                 ## using the current mesh as the temporary mesh in the mesh arxv object
                 arxv.mshTmp.setData(msh)
                 q = arxv.mshTmp.compute_integrated_quantity(quantity, Av_range=[0.0, Av])
-                outStr += '%+10.3e ' % q
+                outStr += '%-+15.3e ' % q
             #
 
             ## getting a certain quantity at a certain Av from the meshes and writing them to each row in the output file
@@ -184,8 +195,25 @@ def main(parms):
                 
                 q = q_vs_Av_this_mesh[ind]
                 
-                outStr += '%+10.3e ' % q
+                outStr += '%-+15.3e ' % q
             #
+            
+            ## writing custom quantities computed at this Av
+            for quantity in parms['custom_quantities_at_Av']:
+                
+                if quantity[0] == 'T_radex':
+                    
+                    arxv.mshTmp.setData(msh)
+
+                    radex_parms = arxv.mshTmp.get_radex_parameters( speciesStr = 'CO', 
+                                                                    threshold  = -1.0,
+                                                                    Av_range   = [0.0, Av])
+                    
+                    q = radex_parms[0]
+
+                    outStr += '%-+15.3e ' % q
+                    
+
             outStr += '\n'
             fObj.write(outStr)
             
@@ -194,7 +222,7 @@ def main(parms):
     #
       
     fObj.close()
-    return arxv    
+    return arxv
     print 'done'
 #
 
