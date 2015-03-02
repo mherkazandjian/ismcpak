@@ -17,19 +17,19 @@ home = '/home/mher'
 #home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
 params = {#'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std', # the path of the dir containing the simulation
-          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
+          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',  # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext',  # the path of the dir containing the simulation
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100',  # the path of the dir containing the simulation
+          #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-ext-100',  # the path of the dir containing the simulation
           #'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol-test',  # the path of the dir containing the simulation
           
           'imres' : 100,                                                 # resolution of the maps to be produced imres x imres
-          'species' : ['HCN'],#'CO'], #'13CO', 'HCN', 'HNC', 'HCO+'],
+          'species' : ['CO'],#'CO'], #'13CO', 'HCN', 'HNC', 'HCO+'],
           'pdr_sph' : False, #if set to true looks for the file fiout.xxxxxx.states.npz.pdr.npz and tries to load it
-          'weights' : 'original', #'matched',  #'original-only' ,#None ,#by-number          
+          'weights' : 'original-only', #'matched',  #'original-only' ,#None ,#by-number          
           'snaps'   : numpy.arange(4, 4 + 1, 1),
           'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                       'sph':{
-                             'min_log_n_use'  : -3.0,      
+                             'min_log_n_use'  : -3.0,
                              'min_log_G0_use' : -3.0,
                              'min_log_gm_use' : -50.0,
                              'Av_use'         :  [0.0, 20000000.0],
@@ -238,6 +238,7 @@ def generate_maps(snap_index, params):
                                                   )
     logger.debug('done reading fi snapshot : %s' % snap_filename)
     logger.debug('number of sph particles in proccessed snapshot = %d' %  len(gas))
+    '''
     
     ## setting the radii and weights based on the suggested weighting
     gas.set_radii(weighting=params['weights'], rundir=params['rundir'], snap_index=snap_index)
@@ -276,6 +277,7 @@ def generate_maps(snap_index, params):
                           snap_filename
                           )
     #
+    '''
     return gas
 #
 

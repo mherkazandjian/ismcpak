@@ -19,20 +19,21 @@ fig, axs = subplots(2, 3, figsize=(12,8))
 home = '/home/mher'
 #home = os.path.join('/net', os.environ['HOST'], 'data2', 'mher')
 
-params = {
-          'rundir': home + '/ism/runs/galaxies/coset2run4/coset-5-std',    # the path of the dir containing the simulation
-          'snap_index' : 20,
-          'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
-          'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
-                      'sph':{
-                             'min_log_n_use'  : -3.0,      
-                             'min_log_G0_use' : -3.0,
-                             'min_log_gm_use' : -50.0,
-                            },
-                      #the size of the box to be displayed (particles outside the range are discarded)
-                      'box_size' : [-20, 20] | units.kpc,
-                      },
-          }
+params =\
+ {
+   'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',    # the path of the dir containing the simulation
+   'snap_index' : 4,
+   'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
+   'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
+               'sph':{
+                      'min_log_n_use'  : -3.0,      
+                      'min_log_G0_use' : -3.0,
+                      'min_log_gm_use' : -50.0,
+                     },
+               #the size of the box to be displayed (particles outside the range are discarded)
+               'box_size' : [-20, 20] | units.kpc,
+               },
+ }
 #===========================================================================================================
  
 
