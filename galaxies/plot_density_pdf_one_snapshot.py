@@ -83,7 +83,7 @@ data = numpy.array(
                    ]
                   )
 
-numpy.savetxt('/home/mher/snapshot.out', data)
+#numpy.savetxt('/home/mher/snapshot.out', data)
 
 #===========================
 show()
