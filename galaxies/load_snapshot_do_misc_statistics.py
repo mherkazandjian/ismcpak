@@ -115,6 +115,7 @@ if True:
         #pylab.show()
         
         
+        print 'n    ', g_within_smooth.n.min(), g_within_smooth.n.max() 
         print 'Av   ', g_within_smooth.Av.mean(), g_within_smooth.Av.std()
         print 'G0   ', g_within_smooth.G0.mean(), g_within_smooth.G0.std()
         print 'gmech', g_within_smooth.gmech.mean(), g_within_smooth.gmech.std() 
