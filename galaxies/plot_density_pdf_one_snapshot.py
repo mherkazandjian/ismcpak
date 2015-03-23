@@ -1,3 +1,11 @@
+"""
+<keywords>
+python, pdf, galaxies, coset, density, distribution 
+</keywords>
+<description>
+plot the density PDF of one snapshot
+</description>
+"""
 import time, os
 
 import matplotlib
@@ -20,12 +28,14 @@ home = '/home/mher'
 
 params =\
  {
-   'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',    # the path of the dir containing the simulation
-   'snap_index' : 4,
+   'rundir': home + '/tmp/sandbox/coset2run4/coset-6-sol',    # the path of the dir containing the simulation
+#   'rundir': home + '/ism/runs/galaxies/coset2run4/coset-2-std',    # the path of the dir containing the simulation
+#   'rundir': home + '/ism/runs/galaxies/coset2run4/coset-9-sol',    # the path of the dir containing the simulation
+   'snap_index' : 20,
    'imres' : 100,                                                  # resolution of the maps to be produced imres x imres
    'ranges' : {#ranges in n,g0 and gm of the sph particles to be included in producing the maps
                'sph':{
-                      'min_log_n_use'  : -3.0,      
+                      'min_log_n_use'  : -3.0,
                       'min_log_G0_use' : -3.0,
                       'min_log_gm_use' : -50.0,
                      },

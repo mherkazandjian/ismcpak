@@ -1825,8 +1825,11 @@ class gas_set(Particles):
         axs[0,2].legend(plts, labels, loc=0)
         
         ## setting the appropriate labels on the x-axis
-        axs[0,2].set_xticks( [log(1e-4), log(1e-2), log(1e-0), log(1e2), log(1e4), log(1e6) ])
-        axs[0,2].set_xticklabels([-4, -2, 0, 2, 4, 6 ])
+        axs[0,2].set_xticks( [log(1e-4), log(1e-2), log(1e-0), log(1e1), log(1e2), log(1e4), log(1e6) ])
+        axs[0,2].set_xticklabels([-4, -2, 0, 1, 2, 4, 6 ])
+        xx = numpy.linspace(-4, 6, 10)
+        #axs[0,2].set_xticks( xx )
+        #axs[0,2].set_xticklabels( xx )
     
         axs[0,2].set_ylim(1e-10, 1)    
         #########################################################
