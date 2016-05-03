@@ -1,4 +1,6 @@
-from amuse.datamodel import Particles
+from IPython.core.debugger import Tracer
+
+from amuse.datamodel import Particles, Particle
 from amuse.io import read_set_from_file, fi_io
 from amuse.units import units, constants, nbody_system
 import collections
@@ -1653,84 +1655,65 @@ class galaxy_gas_mass_estimator(object):
         
 class gas_set(Particles):
 
+    def __init__(self, *args):
+        super(gas_set, self).__init__(*args)
+
+    # def __getitem__(self, index):
+    #
+    #     subset = super(gas_set, self).__getitem__(index)
+    #     gas_ret = gas_set(len(subset))
+    #
+    #     Tracer()()
+    #     if index is None:
+    #         keys = self.get_all_keys_in_store()
+    #         index = self.get_all_indices_in_store()
+    #     else:
+    #         keys = self.get_all_keys_in_store()[index]
+    #         index = self.get_all_indices_in_store()[index]
+    #
+    #     if hasattr(keys, '__iter__'):
+    #         subset = self._subset(keys)
+    #         Tracer()()
+    #         gas_ret = gas_set()
+    #         return gas_set(self._original_set(), keys)
+    #         return
+    #     else:
+    #         return Particle(keys, self, index, self._get_version())
 
     def __getitem__(self, items):
         '''overriding the slicing method of the amuse particle set class'''
-        
-        n = getattr(self, 'key')[items].size 
-        
+
+        n = getattr(self, 'key')[items].size
+
+        # get the subset of particles of the specific indices
+        keys = self.get_all_keys_in_store()[items]
+        subset = self._subset(keys)
+
+        # create new gas set
         gas_ret = gas_set(n)
-        
-        for attr_name in self.all_attributes():
-            
-            if attr_name in ['connected_components', 'mass_segregation_Gini_coefficient', 'total_mass',
-                             'bound_subset', 'LagrangianRadii', 'acceleration', 'thermal_energy',
-                             'total_angular_momentum', 'get_binaries', 'angular_momentum', 'potential',
-                             'Qparameter', 'potential_energy', 'center_of_mass', 'potential_energy_in_field',
-                             'moment_of_inertia', 'cluster_core', 'total_momentum', 
-                             'new_particle_from_cluster_core', 'position', 'kinetic_energy',
-                             'densitycentre_coreradius_coredens', 'oblateness', 'rotate', 'move_to_center',
-                             'center_of_mass_velocity', 'virial_radius', 'total_radius', 'scale_to_standard',
-                             'find_closest_particle_to', 'velocity', 'binaries', 'specific_kinetic_energy']:
-                continue
-            
-            data = getattr(self, attr_name)
-            
-            if type(getattr(self, attr_name)) == type(numpy.ndarray([])):
-                
-                setattr(gas_ret, attr_name, data[items])
-                        
+
+        # copy the attributes of the subset to the new gas set to be returned
+        for attr_name in self.get_attribute_names_defined_in_store():
+            attr_value = subset.get_all_values_of_attribute_in_store(attr_name)
+            setattr(gas_ret, attr_name, attr_value)
+
         return gas_ret
 
     def copy(self):
         '''overriding the slicing method of the amuse particle set class'''
-        
-        n = len(self) 
-        
+        n = len(self)
         gas_ret = gas_set(n)
-        
-        for attr_name in self.all_attributes():
-            
-            if attr_name in ['connected_components', 'mass_segregation_Gini_coefficient', 'total_mass',
-                             'bound_subset', 'LagrangianRadii', 'acceleration', 'thermal_energy',
-                             'total_angular_momentum', 'get_binaries', 'angular_momentum', 'potential',
-                             'Qparameter', 'potential_energy', 'center_of_mass', 'potential_energy_in_field',
-                             'moment_of_inertia', 'cluster_core', 'total_momentum', 
-                             'new_particle_from_cluster_core', 'position', 'kinetic_energy',
-                             'densitycentre_coreradius_coredens', 'oblateness', 'rotate', 'move_to_center',
-                             'center_of_mass_velocity', 'virial_radius', 'total_radius', 'scale_to_standard',
-                             'find_closest_particle_to', 'velocity', 'binaries', 'specific_kinetic_energy']:
-                continue
-            
+        for attr_name in self.get_attribute_names_defined_in_store():
             data = getattr(self, attr_name).copy()
-            
-            if type(getattr(self, attr_name)) == type(numpy.ndarray([])):
-                
-                setattr(gas_ret, attr_name, data)
-                        
+            setattr(gas_ret, attr_name, data)
         return gas_ret
 
     def delete(self):            
-    
-        for attr_name in self.all_attributes():
-            
-            if attr_name in ['connected_components', 'mass_segregation_Gini_coefficient', 'total_mass',
-                             'bound_subset', 'LagrangianRadii', 'acceleration', 'thermal_energy',
-                             'total_angular_momentum', 'get_binaries', 'angular_momentum', 'potential',
-                             'Qparameter', 'potential_energy', 'center_of_mass', 'potential_energy_in_field',
-                             'moment_of_inertia', 'cluster_core', 'total_momentum', 
-                             'new_particle_from_cluster_core', 'position', 'kinetic_energy',
-                             'densitycentre_coreradius_coredens', 'oblateness', 'rotate', 'move_to_center',
-                             'center_of_mass_velocity', 'virial_radius', 'total_radius', 'scale_to_standard',
-                             'find_closest_particle_to', 'velocity', 'binaries', 'specific_kinetic_energy']:
-                continue
-            
+        """"""
+        for attr_name in self.get_attribute_names_defined_in_store():
             data = getattr(self, attr_name)
-            
-            if type(getattr(self, attr_name)) == type(numpy.ndarray([])):
-            
-                del data
-                print '\t deleting attribute %s' % attr_name
+            del data
+            print '\t deleting attribute %s' % attr_name
                         
     def copy_attr_from_amuse_set(self, gas_amuse, attr_list):
         '''copies the attributes from the amuse set to the gas_set'''
