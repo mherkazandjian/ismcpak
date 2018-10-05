@@ -86,7 +86,7 @@ for i, p in enumerate( parms ):
             ax = axs
         
         print 'number of iterations = %d' % radexObj.getNIter() 
-        radexObj.plotModelInFigureColumn(Jall, ax, '%.1f' % p[1],   )
+        radexObj.plot_model_in_figure_column(Jall, ax, '%.1f' % p[1], )
 
     else:
         print 'radex status = ', radexObj.getStatus()
@@ -99,5 +99,5 @@ for i, p in enumerate( parms ):
     print 'time running radex = %f ' % (t1 - t0)    
 
 
-radexObj.setLabels()
+radexObj.set_labels()
 pyl.show()

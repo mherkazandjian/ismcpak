@@ -1,22 +1,18 @@
+import os
 import numpy
 import pylab
 import subprocess
 import logging, sys
 import os
 
-from misc import default_logger
-
-radex_bin_path = os.environ['HOME'] + '/ism/code/ismcpak/radex/Radex/bin-gcc/radex'
-radex_moldata_path = os.environ['HOME'] + '/ism/ismcpak/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
-print('default radex path       {}'.format(radex_bin_path))
-print('defualt radex data path  {}'.format(radex_moldata_path))
+from ismcpak.misc import default_logger
 
 
 class Radex(object):
     """
     Wrapper class which runs radex parses its output into objects.
 
-    - test_radex.py is a sample script for using this wrapper
+    - radex_example.py is a sample script for using this wrapper
     - radex_view.py is a UI that makes use of this wrapper
 
     Upon a successull executation, all the transitions are stored in
@@ -36,20 +32,20 @@ class Radex(object):
         :param mol_datadir:
         :param logger:
         """
-        self.exec_path = exec_path
+        self.exec_path = os.path.expanduser(exec_path)
         """str: The path to the radex executable"""
 
-        self.mol_datadir = mol_datadir
+        self.mol_datadir = os.path.expanduser(mol_datadir)
         """
         str: Path to the directory containing the transition data for
         the species
         """
 
-        self.molDataFiles = {
+        self.mol_data_files = {
             'CO':   'co.dat',
             '13CO': '13co.dat',
             'HCO+': 'hco+@xpol.dat',
-            'HCN':  'hcn.dat',  #hcn@xpol.dat, hcn.dat
+            'HCN':  'hcn.dat',  # hcn@xpol.dat, hcn.dat
             'HNC':  'hnc.dat',
             'CS':   'cs@xpol.dat',
             'C':    'catom.dat',
@@ -85,49 +81,49 @@ class Radex(object):
           .. code-block:: python
              :linenos:
 
-             inFile = {
-              'specStr':                'CO',  
-              'freqRange':              [0, 50000],
-              'tKin':                   10.0,
-              'collisionPartners':      ['H2'],
-              'nDensCollisionPartners': [1e3],
-              'tBack':                  2.73,
-              'molnDens':               1e14, # column density of 'specStr'
-              'lineWidth':              1.0,
-              'runAnother':             1
+             infile = {
+              'spec_str':                  'CO',  
+              'freq_range':                [0, 50000],
+              't_kin':                     10.0,
+              'collision_partners':        ['H2'],
+              'n_dens_collision_partners': [1e3],
+              't_back':                    2.73,
+              'mol_n_dens':                1e14, # column density of 'specStr'
+              'line_width':                1.0,
+              'run_another':               1
              }
 
         All of the items in this dict correspond to the same parameters in
         radex except: 
-           'collisionPartners'
-           'nDensCollisionPartners'
+           'collision_partners'
+           'n_dens_collision_partners'
            'molDataDir'
            'specStr' 
 
-        'collisionPartners' is a list of strs of species such as 'H2' or 'H'
+        'collision_partners' is a list of strs of species such as 'H2' or 'H'
 
         .. code-block:: python
 
-           'collisionPartners' : ['H2'] 
+           'collision_partners' : ['H2'] 
 
         or
 
         .. code-block:: python
 
-           'collisionPartners' : ['H2','H+','e-']
+           'collision_partners' : ['H2','H+','e-']
 
-        'nDensCollisionPartners' should be a list of the same length holding the 
+        'n_dens_collision_partners' should be a list of the same length holding the 
         number density of each collision partner respectively. For example :
         
         .. code-block:: python
           
-           'nDensCollisionPartners' : [1e3]
+           'n_dens_collision_partners' : [1e3]
 
         or
            
         .. code-block:: python
         
-           'nDensCollisionPartners' : [1e3, 1e1, 1e-2]
+           'n_dens_collision_partners' : [1e3, 1e1, 1e-2]
            
         the parameter molData in the input parameter file is constructed by appending
         the value of 'specStr' to self.molDataDir 
@@ -136,7 +132,7 @@ class Radex(object):
         self.n_coll_partner = None
         """
         integer : number of collision partners. This is the length of the
-        list self.inFile['collisionPartners']
+        list self.inFile['collision_partners']
         """
 
         self.proccess = None
@@ -159,7 +155,7 @@ class Radex(object):
         self.n_iter = None
         """integer: number of iterations used when the run finishes."""
 
-        self.output_hdr    = None
+        self.output_hdr = None
         """string : the header of the raw output. This is useful for inspecting
         wheather the input parameters were constructed properly.
         """
@@ -198,7 +194,7 @@ class Radex(object):
             'WARNING': 0x010,
             'ITERWARN': 0x020,
 
-            #out of range parameter flags
+            # out of range parameter flags
             'TKIN_OUT_OF_RANGE': 0x100,
             'N_DENS_COLLIOSION_PARTERS_OUT_OF_RANGE': 0x110,
             'MOL_N_DENS_OUT_OF_RANGE': 0x120,
@@ -246,10 +242,10 @@ class Radex(object):
         self.axs = pylab.subplots(4, nx )
         """
 
-        self.nx  = None
+        self.nx = None
         """integer : number of models to run and plot"""
 
-        self.ny  = 4
+        self.ny = 4
         """integer : number of horizontal division in the figure (default)"""
 
         self.logger = None
@@ -351,15 +347,15 @@ class Radex(object):
         """
         # removing the colliders which have abundances less than the one range
         # that radex accepts
-        for i, nDense in enumerate(self.infile['nDensCollisionPartners']):
+        for i, nDense in enumerate(self.infile['n_dens_collision_partners']):
             if nDense <= 1e-3:
                 self.logger.debug(
                     'poped %e %s' % (
-                        self.infile['nDensCollisionPartners'][i],
-                        self.infile['collisionPartners'][i])
+                        self.infile['n_dens_collision_partners'][i],
+                        self.infile['collision_partners'][i])
                 )
-                self.infile['nDensCollisionPartners'].pop(i)
-                self.infile['collisionPartners'].pop(i)
+                self.infile['n_dens_collision_partners'].pop(i)
+                self.infile['collision_partners'].pop(i)
 
     def gen_input_file_content_as_str(self):
         """
@@ -369,31 +365,31 @@ class Radex(object):
 
         :return: (str)
         """
-        self.n_coll_partner = len(self.infile['collisionPartners'])
+        self.n_coll_partner = len(self.infile['collision_partners'])
         
         strng = ''
 
-        strng  += '%s/%s\n' % (
-            self.mol_datadir, self.molDataFiles[ self.infile['specStr']]
+        strng += '%s/%s\n' % (
+            self.mol_datadir, self.mol_data_files[self.infile['spec_str']]
         )
-        strng  += 'foo\n'
-        strng  += '%d %d\n' % (
-            self.infile['freqRange'][0], self.infile['freqRange'][1]
+        strng += 'radex_output.out\n'
+        strng += '%d %d\n' % (
+            self.infile['freq_range'][0], self.infile['freq_range'][1]
         )
-        strng  += '%f\n' % (self.infile['tKin'])
-        strng  += '%d\n' % self.n_coll_partner
-        
-        for i in numpy.arange(self.n_coll_partner):
-            strng += '%s\n' % self.infile['collisionPartners'][i]
-            strng += '%e\n' % self.infile['nDensCollisionPartners'][i]
+        strng += '%f\n' % (self.infile['t_kin'])
+        strng += '%d\n' % self.n_coll_partner
 
-        strng += '%f\n' % self.infile['tBack']
-        strng += '%e\n' % self.infile['molnDens']
-        strng += '%f\n' % self.infile['lineWidth']
-        strng += '%d'   % self.infile['runAnother']
+        for i in numpy.arange(self.n_coll_partner):
+            strng += '%s\n' % self.infile['collision_partners'][i]
+            strng += '%e\n' % self.infile['n_dens_collision_partners'][i]
+
+        strng += '%f\n' % self.infile['t_back']
+        strng += '%e\n' % self.infile['mol_n_dens']
+        strng += '%f\n' % self.infile['line_width']
+        strng += '%d' % self.infile['run_another']
 
         # DEBUG
-        #print '------------\n%s\n-----------------\n' % strng
+        # print '------------\n%s\n-----------------\n' % strng
         return strng
 
     def check_parameters(self):
@@ -413,19 +409,19 @@ class Radex(object):
                 raise NameError(strng)
             
         # check for correct range for the kinetic temperature
-        if infile['tKin'] <= 0.1 or infile['tKin'] >= 1e4 :
+        if infile['t_kin'] <= 0.1 or infile['t_kin'] >= 1e4:
             self.set_flag('TKIN_OUT_OF_RANGE')
             self.set_flag('ERROR')
 
         # check for correct range for the densities of the collion partners
-        for i, collPartner in enumerate(infile['collisionPartners']):
-            n_dens = infile['nDensCollisionPartners'][i]
+        for i, collPartner in enumerate(infile['collision_partners']):
+            n_dens = infile['n_dens_collision_partners'][i]
             if n_dens < 1e-3 or n_dens > 1e12 :
                 self.set_flag('N_DENS_COLLIOSION_PARTERS_OUT_OF_RANGE')
                 self.set_flag('ERROR')
 
         # check for correct range for the species column density
-        if infile['molnDens'] < 1e5 or infile['molnDens'] > 1e25:
+        if infile['mol_n_dens'] < 1e5 or infile['mol_n_dens'] > 1e25:
             self.set_flag('MOL_N_DENS_OUT_OF_RANGE')
             self.set_flag('ERROR')
 
@@ -435,10 +431,10 @@ class Radex(object):
             self.set_flag('PARMSOK')
             return self.FLAGS['PARMSOK']
 
-    def run(self, check_input=None, verbose = None):
+    def run(self, check_input=None, verbose=None):
         """
         Run the radex executable.
-        
+
         :param bool check_input: By default this is False. In this case, the
          input parameters are not checked and the flag 'PARMSOK' (see #FLAGS) is
          set to :data:`status`. Otherwise, set this to True to force a paremter
@@ -467,7 +463,7 @@ class Radex(object):
 
         if self.flag_is_set('PARMSOK'):
             radex_input = self.gen_input_file_content_as_str()
-            
+
             if verbose is True:
                 print('-'*100)
                 print('{}{}{}'.format(
@@ -483,27 +479,33 @@ class Radex(object):
                 self.exec_path,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+                close_fds=False
             )
-            radex_output = self.proccess.communicate(input=radex_input)[0]
-            
-            self.raw_output = radex_output
+
+            # inp = radex_input + '\n' + radex_input.replace('.out', '.out2')
+            radex_stdout, radex_stderr = self.proccess.communicate(
+                input=radex_input
+            )
+
+            self.raw_output = radex_stdout
             self.parse_output()
             self.set_flag('RUNOK')
-        
+
             if self.n_iter == 10000:  # .. todo:: get this from radex.inc
                 self.set_flag('WARNING')
                 self.set_flag('ITERWARN')
             else:
                 self.set_flag('SUCCESS')
-            
+
             if verbose is True:
                 print('{}{}{}'.format(
                     '-------------',
                     'raw output of Radex stdout',
                     '------------------'
                 ))
-                print(radex_output)
+                print(radex_stdout)
                 print('-'*100)
         else:
             if verbose is True:
@@ -655,10 +657,10 @@ class Radex(object):
         apart. The shifted parameters are set to self.inFile
         """
         
-        self.infile['tKin']     = inFileOrig['tKin'] * (1.0 + numpy.random.rand() * factor)
-        self.infile['molnDens'] = inFileOrig['molnDens'] * (1.0 + numpy.random.rand() * factor)
-        for i, dens in enumerate(self.infile['nDensCollisionPartners']):
-            self.infile['nDensCollisionPartners'][i] = inFileOrig['nDensCollisionPartners'][i] * (1.0 + numpy.random.rand() * factor)
+        self.infile['t_kin']     = inFileOrig['t_kin'] * (1.0 + numpy.random.rand() * factor)
+        self.infile['mol_n_dens'] = inFileOrig['mol_n_dens'] * (1.0 + numpy.random.rand() * factor)
+        for i, dens in enumerate(self.infile['n_dens_collision_partners']):
+            self.infile['n_dens_collision_partners'][i] = inFileOrig['n_dens_collision_partners'][i] * (1.0 + numpy.random.rand() * factor)
 
     def print_warnings(self):
         """prints the warning strings dumped by Radex"""
@@ -671,17 +673,17 @@ class Radex(object):
         """generates the trasition dtype which will be used in assigning the transition info in self.transitionsNdArry.
         """
         fmt = [
-               ('upper'   , numpy.str_, 10),   
-               ('lower'   , numpy.str_, 10),   
-               ('E_up'    , numpy.float64),
-               ('Tex'     , numpy.float64), 
-               ('tau'     , numpy.float64), 
-               ('T_R'     , numpy.float64), 
-               ('pop_up'  , numpy.float64), 
-               ('pop_down', numpy.float64), 
-               ('fluxKkms', numpy.float64), 
-               ('fluxcgs' , numpy.float64), 
-              ] # 2 * 10b + 8 * 8b = 84b per transition 
+            ('upper',    numpy.str_, 10),
+            ('lower',    numpy.str_, 10),
+            ('E_up',     numpy.float64),
+            ('Tex',      numpy.float64),
+            ('tau',      numpy.float64),
+            ('T_R',      numpy.float64),
+            ('pop_up',   numpy.float64),
+            ('pop_down', numpy.float64),
+            ('fluxKkms', numpy.float64),
+            ('fluxcgs',  numpy.float64),
+        ]  # 2 * 10b + 8 * 8b = 84b per transition
        
         return numpy.dtype(fmt)
     
@@ -711,18 +713,18 @@ class Radex(object):
         """
         try:
             output = self.raw_output
-            lines  =  output.splitlines()
+            lines = output.splitlines()
             n_lines = len(lines)
 
             # looking for the part of the output after the warning
-            i = 4 # 5th line (skipping into)
+            i = 4  # 5th line (skipping into)
             while True:
                 if lines[i][0] == '*' and lines[i+1][0] == '*':
                     break
                 i += 1
             
             self.warnings = lines[4:i]  # extracting the warning
-            #print self.warnings
+            # print(self.warnings)
             
             # collecting the header (lines starting with a '*')
             line_num_hdr_start = i
@@ -730,17 +732,19 @@ class Radex(object):
                 if lines[i][0] == '*' and lines[i+1][0] != '*':
                     break
                 i += 1
-            line_num_hdr_end = i+1
+            line_num_hdr_end = i + 1
             
             self.output_hdr = lines[line_num_hdr_start:line_num_hdr_end]
-            #print  self.outputHdr
-    
+            # print(self.outputHdr)
+
+            # get the number of iterations used from the line that contains
+            # 'Calculation finished in'
             line_num = line_num_hdr_end
             line_splt = lines[line_num].split()
             self.n_iter = numpy.int32(line_splt[3])
 
             transitions = []
-            #-----------------------------------------------------------------
+            # -----------------------------------------------------------------
             # parses a line containing the info of a transition line and returns
             # a dict of the into
             def parse_line_data(line):
@@ -761,17 +765,18 @@ class Radex(object):
                 info['fluxcgs'] = numpy.float64(line_splt[11])
                 
                 return info
-            #------------------------------------------------------------------
+            # ------------------------------------------------------------------
 
             # look for the first line which starts with a '1' indicating the
             # first transition line
             while True:
-                line_num += 1
-                if 'transition data' in lines[line_num + 1]:
-                    line_num += 2
+                line = lines[line_num + 1]
+                if 'LINE         E_UP       FREQ' in line:
+                    line_num += 3
                     break
+                line_num += 1
 
-            #parse the output lines info
+            # parse the output lines info
             for line in lines[line_num:n_lines-1]:
                 transition = parse_line_data(line)
                 transitions.append(transition)
@@ -779,7 +784,7 @@ class Radex(object):
             # copy the content of self.transitions into self.transitionsNdarrya
             # :note: do this at one go without storing things first in
             # self.transitiosn
-            #******************************************************
+            # ******************************************************
             self.n_transitions = len(transitions)
             transitions_ndarray = numpy.ndarray(
                 self.n_transitions,
@@ -789,7 +794,7 @@ class Radex(object):
                 for key in trans.keys():
                     transitions_ndarray[i][key] = trans[key]
             self.transitions = transitions_ndarray
-            #******************************************************
+            # ******************************************************
 
         except (ValueError, IndexError):
             print(self.raw_output)
@@ -896,144 +901,176 @@ class Radex(object):
         )
         self.set_axes(fig, axs)
         
-    def plotModelInFigureColumn(self, allTrans = None, inAxes = None, title = None, em_unit='fluxcgs'):
-        """Plots the output of a certain model in a certain column in a predefined figure
-        
-          :param allTrans (integer list or numpy.int32): The indicies of the transitions in self.#transitions whose
-             data should be plotted, ex : numpy. 
-          :param inAxes ( nump.ndarray matplorlib.axes ): The axes colomn in which the model info will
-             be plotted. Fluxes are plotted in inAxes[0], T_ex, T_rot are plotted in inAxes[1], 
-             optical depth in inAxes[2] and population densiities in inAxes[3]
-          :param title (string): The title to be written at the top of the axes column. 
+    def plot_model_in_figure_column(self,
+                                    all_transitions=None,
+                                    in_axes=None,
+                                    title=None,
+                                    em_unit='fluxcgs'):
         """
-        
-        if allTrans == None:
-            allTrans =  numpy.arange( len(self.transitions) )
+        Plot the output of a certain model in a certain column in self.fig
 
-        nTrans = len(allTrans)
-        #----------------flux-------------------------
-        axes = inAxes[0]
+        :param all_transitions (integer list or numpy.int32): The indicies of
+         the transitions in self.#transitions whose data should be plotted,
+         ex : numpy.
+        :param in_axes ( nump.ndarray matplorlib.axes ): The axes colomn in
+         which the model info will be plotted. Fluxes are plotted in inAxes[0],
+         T_ex, T_rot are plotted in inAxes[1], optical depth in inAxes[2] and
+         population densiities in inAxes[3]
+        :param title (string): The title to be written at the top of the axes
+         column.
+        """
+        if all_transitions is None:
+            all_transitions = numpy.arange(len(self.transitions))
+
+        n_trans = len(all_transitions)
+        # ----------------flux-------------------------
+        axes = in_axes[0]
         axes.lines = []
-        xticksStrs = ()
+        xticks_strs = ()
         
-        xPlot = allTrans
-        yPlot = numpy.ndarray(nTrans, dtype=numpy.float64)
-        for i in numpy.arange(nTrans):
+        x_plot = all_transitions
+        y_plot = numpy.ndarray(n_trans, dtype=numpy.float64)
+        for i in numpy.arange(n_trans):
     
-            thisTrans = allTrans[i]
-            xPlot[i] = thisTrans
+            this_trans = all_transitions[i]
+            x_plot[i] = this_trans
 
-            transition = self.get_transition(thisTrans)
-            yThis = transition[em_unit]
+            transition = self.get_transition(this_trans)
+            y_this = transition[em_unit]
              
-            yPlot[i] = yThis
+            y_plot[i] = y_this
             
             # construncting the latex string of the transitions
-            upperStr = transition['upper'].split('_')
-            if len(upperStr) == 2:
-                upperStr = '%s_{%s}'% (upperStr[0], upperStr[1])
+            upper_str = transition['upper'].split('_')
+            if len(upper_str) == 2:
+                upper_str = '%s_{%s}'% (upper_str[0], upper_str[1])
             else:
-                upperStr = upperStr[0]
-            lowerStr = transition['lower'].split('_')
-            if len(lowerStr) == 2:
-                lowerStr = '%s_{%s}'% (lowerStr[0], lowerStr[1])
+                upper_str = upper_str[0]
+            lower_str = transition['lower'].split('_')
+            if len(lower_str) == 2:
+                lower_str = '%s_{%s}'% (lower_str[0], lower_str[1])
             else:
-                lowerStr = lowerStr[0]
+                lower_str = lower_str[0]
             
-            thisTickStr = '$%s-%s$' %( upperStr, lowerStr )
-            xticksStrs = xticksStrs + (thisTickStr ,)
+            this_tick_str = '$%s-%s$' %( upper_str, lower_str )
+            xticks_strs = xticks_strs + (this_tick_str ,)
 
-        #plotting the intensities    
-        axes.semilogy(xPlot, yPlot, 'b')
+        # plotting the intensities
+        axes.semilogy(x_plot, y_plot, 'b')
         if em_unit == 'fluxcgs':
-            axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-15, 1e-1])
+            axes.axis([
+                numpy.min(all_transitions),
+                numpy.max(all_transitions),
+                1e-15, 1e-1]
+            )
         if em_unit == 'fluxKkms':
-            axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-4, 1e4])            
-        axes.set_xticks( allTrans, minor = False )
-        yticks = 10.0**numpy.linspace(numpy.log10(axes.get_ylim()[0]), numpy.log10(axes.get_ylim()[1]), 5)
+            axes.axis([
+                numpy.min(all_transitions),
+                numpy.max(all_transitions),
+                1e-4, 1e4]
+            )
+        axes.set_xticks(all_transitions, minor=False)
+        yticks = 10.0**numpy.linspace(
+            numpy.log10(axes.get_ylim()[0]),
+            numpy.log10(axes.get_ylim()[1]),
+            5
+        )
         print(yticks)
-        axes.set_yticks(yticks , minor = False )
-        axes.set_xticklabels( xticksStrs, rotation = -45 )
-        ##numpy.savetxt('/home/mher/ism/tmp/intensities.out', numpy.array([xPlot, yPlot]).T, '%e')
-        ##print '-----------> saved the file /home/mher/intensities.out'
-        
-        #---------------Tex and T_R--------------------------
-        axes = inAxes[1]
+        axes.set_yticks(yticks, minor=False)
+        axes.set_xticklabels(xticks_strs, rotation=-45)
+
+        # ---------------Tex and T_R--------------------------
+        axes = in_axes[1]
         axes.lines = []        
 
-        xPlot = allTrans
-        yPlot1 = numpy.ndarray(nTrans, dtype=numpy.float64)
-        yPlot2 = numpy.ndarray(nTrans, dtype=numpy.float64)
-        for i in numpy.arange(nTrans):
+        x_plot = all_transitions
+        y_plot1 = numpy.ndarray(n_trans, dtype=numpy.float64)
+        y_plot2 = numpy.ndarray(n_trans, dtype=numpy.float64)
+        for i in numpy.arange(n_trans):
     
-            thisTrans = allTrans[i]
+            this_trans = all_transitions[i]
     
-            xPlot[i] = thisTrans
+            x_plot[i] = this_trans
     
-            transition = self.get_transition(thisTrans)
-            yThis1 = transition['Tex']
-            yThis2 = transition['T_R'] 
+            transition = self.get_transition(this_trans)
+            y_this1 = transition['Tex']
+            y_this2 = transition['T_R']
     
-            yPlot1[i] = yThis1
-            yPlot2[i] = yThis2
+            y_plot1[i] = y_this1
+            y_plot2[i] = y_this2
             
-        axes.semilogy(xPlot, yPlot1, 'b')
-        axes.semilogy(xPlot, yPlot2, 'r')
-        if self.infile != None: #plotting the horizontal line corresponding to the input kinetic temp
-            axes.semilogy([0, 1000], [self.infile['tKin'], self.infile['tKin']], 'k--')
-        
-        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1, 10000])
-        axes.set_xticks( allTrans, minor = False )
-        axes.set_xticklabels( xticksStrs, rotation = -45 )
-        
-        #------------------optical depth----------------------------------
-        axes = inAxes[2]
-        axes.lines = []        
+        axes.semilogy(x_plot, y_plot1, 'b')
+        axes.semilogy(x_plot, y_plot2, 'r')
+        if self.infile is not None:
+            # plot the horizontal line corresponding to the input kinetic temp
+            axes.semilogy(
+                [0, 1000],
+                [self.infile['t_kin'],
+                 self.infile['t_kin']],
+                'k--'
+            )
 
-        xPlot = allTrans
-        yPlot = numpy.ndarray(nTrans, dtype=numpy.float64)
-        for i in numpy.arange(nTrans):
-    
-            thisTrans = allTrans[i]
-    
-            xPlot[i] = thisTrans
-    
-            transition = self.get_transition(thisTrans)
-            yThis = transition['tau'] 
-    
-            yPlot[i] = yThis
-        axes.plot(xPlot, yPlot, 'b')
-        axes.axis([numpy.min(allTrans), numpy.max(allTrans), -1, numpy.max(yPlot)])
-        axes.set_xticks( allTrans, minor = False )
-        axes.set_xticklabels( xticksStrs, rotation = -45 )
-        ##numpy.savetxt('/home/mher/ism/tmp/tau.out', numpy.array([xPlot, yPlot]).T, '%f')
-        ##print '-----------> saved the file /home/mher/tau.out'
-        
-        #------------------population densities-----------------------------
-        axes = inAxes[3]
-        axes.lines = []        
+        axes.axis([
+            numpy.min(all_transitions),
+            numpy.max(all_transitions),
+            1, 10000]
+        )
+        axes.set_xticks(all_transitions, minor=False)
+        axes.set_xticklabels( xticks_strs, rotation=-45)
 
-        xPlot = allTrans
-        yPlot1 = numpy.ndarray(nTrans, dtype=numpy.float64)
-        yPlot2 = numpy.ndarray(nTrans, dtype=numpy.float64)
-        for i in numpy.arange(nTrans):
+        # ------------------optical depth----------------------------------
+        axes = in_axes[2]
+        axes.lines = []
+
+        x_plot = all_transitions
+        y_plot = numpy.ndarray(n_trans, dtype=numpy.float64)
+        for i in numpy.arange(n_trans):
     
-            thisTrans = allTrans[i]
+            this_trans = all_transitions[i]
     
-            xPlot[i] = thisTrans
+            x_plot[i] = this_trans
     
-            transition = self.get_transition(thisTrans)
-            yThis1     = transition['pop_up']
-            yPlot1[i]  = yThis1
-            
-        axes.semilogy(xPlot, yPlot1, 'b')
-        axes.axis([numpy.min(allTrans), numpy.max(allTrans), 1e-16, 1])
-        axes.set_xticks( allTrans, minor = False )
-        axes.set_xticklabels( xticksStrs, rotation = -45 )
+            transition = self.get_transition(this_trans)
+            y_this = transition['tau']
+    
+            y_plot[i] = y_this
+
+        axes.plot(x_plot, y_plot, 'b')
+        axes.axis([
+            numpy.min(all_transitions),
+            numpy.max(all_transitions),
+            -1,
+            numpy.max(y_plot)]
+        )
+        axes.set_xticks(all_transitions, minor = False)
+        axes.set_xticklabels( xticks_strs, rotation = -45 )
+        # ------------------population densities-----------------------------
+
+        axes = in_axes[3]
+        axes.lines = []
+
+        x_plot = all_transitions
+        y_plot1 = numpy.ndarray(n_trans, dtype=numpy.float64)
+        y_plot2 = numpy.ndarray(n_trans, dtype=numpy.float64)
+        for i in numpy.arange(n_trans):
+            this_trans = all_transitions[i]
+            x_plot[i] = this_trans
+            transition = self.get_transition(this_trans)
+            y_this1 = transition['pop_up']
+            y_plot1[i] = y_this1
+
+        axes.semilogy(x_plot, y_plot1, 'b')
+        axes.axis([
+            numpy.min(all_transitions),
+            numpy.max(all_transitions),
+            1e-16, 1]
+        )
+        axes.set_xticks(all_transitions, minor=False)
+        axes.set_xticklabels(xticks_strs, rotation=-45)
+
+        self.set_labels(em_unit=em_unit)
         
-        self.setLabels(em_unit=em_unit)
-        
-    def clearCurves(self):
+    def clear_curves(self):
         """Clears the curves in an axes column. This is usually used when radex fails
         and the data in a certain column need to be removed. Here it is assumes there
         is one column."""
@@ -1041,75 +1078,83 @@ class Radex(object):
         for ax in self.axs:            
             ax.lines = []
                 
-    def setLabels(self, em_unit=''):
+    def set_labels(self, em_unit=''):
         """Set the appropriate labels of all the axes"""
 
         axs = self.axs
-        def removeAll_xLabels(ax):
+        def remove_all_x_labels(ax):
             for tick in ax.axes.xaxis.get_major_ticks():
                 tick.label1On = False
-        def removeAll_yLabels(ax):
+        def remove_all_y_labels(ax):
             for tick in ax.axes.yaxis.get_major_ticks():
                 tick.label1On = False
                         
         if self.nx == 1:
-            axsLeft = axs.tolist()
-            axsBotm = [axs[3]]
+            axs_left = axs.tolist()
+            axs_botm = [axs[3]]
         else:
-            axsLeft = axs[:,0].tolist()
-            axsBotm = axs[3,:].tolist()
+            axs_left = axs[:,0].tolist()
+            axs_botm = axs[3,:].tolist()
 
             # removing all x and y labels from axes to the left
             # of th zeroth column and above the bottom row
             for axRow in axs[0:-1]:
                 for ax in axRow[1:]:
-                    removeAll_xLabels(ax)
-                    removeAll_yLabels(ax)
+                    remove_all_x_labels(ax)
+                    remove_all_y_labels(ax)
         
-        #removing the x labeles of from axes on the zeroth column
-        #excluding the one in the bottom one (lower-left corner)            
-        for ax in axsLeft[0:-1]:
-            removeAll_xLabels(ax)
+        # remove the x labeles of from axes on the zeroth column
+        # exclude the one in the bottom one (lower-left corner)
+        for ax in axs_left[0:-1]:
+            remove_all_x_labels(ax)
         
-        #removing the y labeles of from axes on the bottom row, to the right of the 
-        #one on the lower-left corner
-        for ax in axsBotm[1:]:
-            removeAll_yLabels(ax)
+        # remove the y labeles of from axes on the bottom row, to the right of
+        # the one on the lower-left corner
+        for ax in axs_botm[1:]:
+            remove_all_y_labels(ax)
                     
         # plotting the ylabels of the axes
-        axsLeft[0].set_ylabel('Flux[%s]' % em_unit)
-        axsLeft[1].set_ylabel('Tex, Trot')
-        axsLeft[2].set_ylabel('tau')
-        axsLeft[3].set_ylabel('pop dens')
-        # plotting the xlabels
-        for ax in axsBotm:
-            ax.set_xlabel('Trans') #;;; use the up-down string (rotated 90 deg) to plot the trans labele
+        axs_left[0].set_ylabel('Flux[%s]' % em_unit)
+        axs_left[1].set_ylabel('Tex, Trot')
+        axs_left[2].set_ylabel('tau')
+        axs_left[3].set_ylabel('pop dens')
 
-        # removing the firt and last labels from the bottom and left axes
+        # plotting the xlabels
+        for ax in axs_botm:
+            ax.set_xlabel('Trans')
+            # .. todo:: use the up-down string (rotated 90 deg) to plot the
+            # .. todo:: trans labele
+
+        # remove the firt and last labels from the bottom and left axes
         if self.nx > 1:
-            for ax in axsBotm + axsLeft:
+            for ax in axs_botm + axs_left:
                 xticks = ax.axes.xaxis.get_major_ticks()
                 yticks = ax.axes.yaxis.get_major_ticks()
                 for tick in [ xticks[0], xticks[-1], yticks[0], yticks[-1] ]:
                     tick.label1On = False
-        
-        #removing all labels from axes with no lines (only for multiple models)
+
+        # remove all labels from axes with no lines (only for multiple models)
         if self.nx > 1:
-            for ax in axsBotm:
+            for ax in axs_botm:
                 if len(ax.lines) == 0:
-                    removeAll_xLabels(ax)
+                    remove_all_x_labels(ax)
                     ax.set_xlabel('')
     
-    def plotModel(self):
-        """plotting a single model
-           todo allow for a choice of the number of transitions to be plotted
+    def plot_model(self):
         """
+        plotting a single model
 
-        self.setup_plot(nx = 1)
-        self.plotModelInFigureColumn(allTrans=None, inAxes = self.axs, title='')
-        self.setLabels()   
+        .. todo:: allow for a choice of the number of transitions to be plotted
+        """
+        self.setup_plot(nx=1)
+        self.plot_model_in_figure_column(
+            all_transitions=None,
+            in_axes=self.axs,
+            title=''
+        )
+        self.set_labels()
         pylab.show()
-        
+
     def clear(self):
         self.n_coll_partner = None
         self.raw_output = None
@@ -1181,40 +1226,40 @@ try:
             #-----------------------------------------------------------------------
     
             #---------laying out the line edit feilds-------------------------------        
-            self.lbl_specStr = QtGui.QLabel('specie')
-            default_text = self.radexObj.inFile['specStr']
-            self.qle_specStr = QtGui.QLineEdit(default_text, self)
-            self.qle_specStr.textChanged[str].connect(self.onChanged_specStr)
+            self.lbl_spec_str = QtGui.QLabel('specie')
+            default_text = self.radexObj.inFile['spec_str']
+            self.qle_spec_str = QtGui.QLineEdit(default_text, self)
+            self.qle_spec_str.textChanged[str].connect(self.onChanged_spec_str)
     
-            self.lbl_freqRange = QtGui.QLabel('freqRange')
-            default_text = '%d, %d' % (self.radexObj.inFile['freqRange'][0],self.radexObj.inFile['freqRange'][1])
-            self.qle_freqRange = QtGui.QLineEdit(default_text, self)
-            self.qle_freqRange.textChanged[str].connect(self.onChanged_freqRange)
+            self.lbl_freq_range = QtGui.QLabel('freq_range')
+            default_text = '%d, %d' % (self.radexObj.inFile['freq_range'][0],self.radexObj.inFile['freq_range'][1])
+            self.qle_freq_range = QtGui.QLineEdit(default_text, self)
+            self.qle_freq_range.textChanged[str].connect(self.onChanged_freq_range)
     
             self.lbl_T = QtGui.QLabel('T')
-            default_text = '%.2e' % (self.radexObj.inFile['tKin'])
+            default_text = '%.2e' % (self.radexObj.inFile['t_kin'])
             self.qle_T = QtGui.QLineEdit(default_text, self)        
             self.qle_T.textChanged[str].connect(self.onChanged_T)
     
             self.lbl_n_coll = QtGui.QLabel('n(H2)')
-            default_text = '%.2e' % (self.radexObj.inFile['nDensCollisionPartners'][0])        
+            default_text = '%.2e' % (self.radexObj.inFile['n_dens_collision_partners'][0])
             self.qle_n_coll = QtGui.QLineEdit(default_text, self)
             self.qle_n_coll.textChanged[str].connect(self.onChanged_n_coll)
     
             self.lbl_t_back = QtGui.QLabel('t_back')
-            default_text = '%.2e' % (self.radexObj.inFile['tBack'])        
+            default_text = '%.2e' % (self.radexObj.inFile['t_back'])
             self.qle_t_back = QtGui.QLineEdit(default_text, self)
             self.qle_t_back.textChanged[str].connect(self.onChanged_t_back)
             
-            self.lbl_molnDens = QtGui.QLabel('N(mol)')
-            default_text = '%.2e' % (self.radexObj.inFile['molnDens'])
-            self.qle_molnDens = QtGui.QLineEdit(default_text, self)
-            self.qle_molnDens.textChanged[str].connect(self.onChanged_molnDens)
+            self.lbl_mol_n_dens = QtGui.QLabel('N(mol)')
+            default_text = '%.2e' % (self.radexObj.inFile['mol_n_dens'])
+            self.qle_mol_n_dens = QtGui.QLineEdit(default_text, self)
+            self.qle_mol_n_dens.textChanged[str].connect(self.onChanged_mol_n_dens)
     
-            self.lbl_lineWidth = QtGui.QLabel('lineWidth')
-            default_text = '%.2e' % (self.radexObj.inFile['lineWidth'])        
-            self.qle_lineWidth = QtGui.QLineEdit(default_text, self)
-            self.qle_lineWidth.textChanged[str].connect(self.onChanged_lineWidth)
+            self.lbl_line_width = QtGui.QLabel('line_width')
+            default_text = '%.2e' % (self.radexObj.inFile['line_width'])
+            self.qle_line_width = QtGui.QLineEdit(default_text, self)
+            self.qle_line_width.textChanged[str].connect(self.onChanged_line_width)
             #-----------------------------------------------------------------
             
             # Just some button connected to `plot` method
@@ -1227,11 +1272,11 @@ try:
             grid.addWidget(self.toolbar, 1, 0, 1, 3) #location 1,0 on the grid spanning 1 row and 3 columns
     
             #-----------------------------------------
-            grid.addWidget(self.lbl_specStr, 1, 4)
-            grid.addWidget(self.qle_specStr, 1, 5, 1, 2)
+            grid.addWidget(self.lbl_spec_str, 1, 4)
+            grid.addWidget(self.qle_spec_str, 1, 5, 1, 2)
     
-            grid.addWidget(self.lbl_freqRange, 2, 4)
-            grid.addWidget(self.qle_freqRange, 2, 5, 1, 2)
+            grid.addWidget(self.lbl_freq_range, 2, 4)
+            grid.addWidget(self.qle_freq_range, 2, 5, 1, 2)
     
             grid.addWidget(self.lbl_T, 3, 4)
             grid.addWidget(self.qle_T, 3, 5, 1, 2)
@@ -1242,11 +1287,11 @@ try:
             grid.addWidget(self.lbl_t_back, 5, 4)
             grid.addWidget(self.qle_t_back, 5, 5, 1, 2)
             
-            grid.addWidget(self.lbl_molnDens, 6, 4)
-            grid.addWidget(self.qle_molnDens, 6, 5, 1, 2)
+            grid.addWidget(self.lbl_mol_n_dens, 6, 4)
+            grid.addWidget(self.qle_mol_n_dens, 6, 5, 1, 2)
     
-            grid.addWidget(self.lbl_lineWidth, 7, 4)
-            grid.addWidget(self.qle_lineWidth, 7, 5, 1, 2)        
+            grid.addWidget(self.lbl_line_width, 7, 4)
+            grid.addWidget(self.qle_line_width, 7, 5, 1, 2)
             #----------------------------------------
             
             grid.addWidget(self.button , 15, 5)
@@ -1260,21 +1305,21 @@ try:
             self.setWindowTitle('Radex')    
             self.show()
     
-        def onChanged_specStr(self, text):
-            self.radexObj.inFile['specStr'] = str(text)
-        def onChanged_freqRange(self, text):
+        def onChanged_spec_str(self, text):
+            self.radexObj.inFile['spec_str'] = str(text)
+        def onChanged_freq_range(self, text):
             #range = parse text into an object [rangemin, rangemax] 
-            self.radexObj.inFile['freqRange'] = [0,0]
+            self.radexObj.inFile['freq_range'] = [0,0]
         def onChanged_T(self, text):
-            self.radexObj.inFile['tKin'] = numpy.float(text)
+            self.radexObj.inFile['t_kin'] = numpy.float(text)
         def onChanged_n_coll(self, text):
-            self.radexObj.inFile['nDensCollisionPartners'][0] = numpy.float(text)
+            self.radexObj.inFile['n_dens_collision_partners'][0] = numpy.float(text)
         def onChanged_t_back(self, text):
-            self.radexObj.inFile['tBack'] = numpy.float(text)
-        def onChanged_molnDens(self, text):
-            self.radexObj.inFile['molnDens'] = numpy.float(text)
-        def onChanged_lineWidth(self, text):
-            self.radexObj.inFile['lineWidth'] = numpy.float(text)
+            self.radexObj.inFile['t_back'] = numpy.float(text)
+        def onChanged_mol_n_dens(self, text):
+            self.radexObj.inFile['mol_n_dens'] = numpy.float(text)
+        def onChanged_line_width(self, text):
+            self.radexObj.inFile['line_width'] = numpy.float(text)
     
         def plot(self):
     
@@ -1297,7 +1342,7 @@ try:
                             transition['lower'],
                             transition['fluxcgs']
                         )
-                    radexObj.plotModelInFigureColumn(inAxes = radexObj.axs, title='')
+                    radexObj.plot_model_in_figure_column(in_axes= radexObj.axs, title='')
     
                     self.canvas.draw()                
             else:
@@ -1321,19 +1366,21 @@ try:
             molDataDirPath = radex_moldata_path
 
             # parameters that will be passed to radex single partner
-            inFile = { 'specStr'                : 'CO'   ,
-                       'freqRange'              : [0, 0] ,
-                       'tKin'                   : 100.0  ,
-                       'collisionPartners'      : ['H2'] ,
-                       'nDensCollisionPartners' : [1e3]  ,
-                       'tBack'                  : 2.73   ,
-                       'molnDens'               : 1e14   ,
-                       'lineWidth'              : 1.0    ,
-                       'runAnother'             : 0      }
-            
+            infile = {
+                'spec_str':                  'CO',
+                'freq_range':                [0, 0],
+                't_kin':                     100.0,
+                'collision_partners':        ['H2'],
+                'n_dens_collision_partners': [1e3],
+                't_back':                    2.73,
+                'mol_n_dens':                1e14,
+                'line_width':                1.0,
+                'run_another':               0
+            }
+
             # creating the radex process instance
             self.radexObj = Radex(radexPath, molDataDirPath)
-            self.radexObj.set_infile(inFile)
+            self.radexObj.set_infile(infile)
             self.radexObj.setup_plot(1)
                     
     def run_radex_gui():

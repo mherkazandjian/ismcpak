@@ -2678,7 +2678,7 @@ class meshArxv(object):
         radex_obj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
                                                      inAxes = self.pltRadex,     
                                                      title = '')                             
-        #radex_obj.setLabels()
+        #radex_obj.set_labels()
         strng = 'transitions from DB [index = %d], Av = %.2f of clicked mesh' % (ind, self.currentRadexDb['Av'])
         self.gui['em_lines']['title1'].set_text(strng)
         #Av_range_used = [0.0, self.currentRadexDb['Av']]
@@ -2736,7 +2736,7 @@ class meshArxv(object):
             radexObj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
             radexObj.set_logger(self.logger)
             #clearing them in case there was anything
-            radexObj.clearCurves()
+            radexObj.clear_curves()
         
         """
         #determining what gas density to use for the collider for H2
@@ -2786,10 +2786,11 @@ class meshArxv(object):
             #    strng += '%s\n%e\n' % (specStr, radexObj.inFile['nDensCollisionPartners'][i])                
             self.gui['em_lines']['title2'].set_text(strng)
             
-        radexObj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
-                                         inAxes = self.pltRadex,     
-                                         title = '')                             
-        radexObj.setLabels()            
+        radexObj.plot_model_in_figure_column(
+            all_transitions= np.arange(radex_parms['maxDisplayTranistion']),
+            in_axes= self.pltRadex,
+            title = '')
+        radexObj.set_labels()
     
         """
         if len(radexObj.inFile['collisionPartners']) == 0:
@@ -2821,10 +2822,10 @@ class meshArxv(object):
                 if compute_only == None:
                     # plotting the data (even if it does not converge)
                     if radexObj.flag_is_set('SUCCESS'):
-                        radexObj.plotModelInFigureColumn(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
+                        radexObj.plot_model_in_figure_column(allTrans = np.arange(radex_parms['maxDisplayTranistion']),
                                                          inAxes = self.pltRadex,     
                                                          title = '')                             
-                    radexObj.setLabels()
+                    radexObj.set_labels()
                 else:
                     radexObj.print_warnings() #printing the warnings
         """

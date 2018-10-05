@@ -40,5 +40,5 @@ pylab.show()
 """
 r = radex('','')
 r.set_attributes_from_despotic(specStr, mycloud, lines1)
-r.plotModel()
+r.plot_model()
 """

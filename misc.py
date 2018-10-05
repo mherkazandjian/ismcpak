@@ -6,6 +6,7 @@ import pylab
 import collections
 import pickle
     
+
 def scale(array, bottomTmp, topTmp, minm, maxm, *args1, **args2):
     """Copied from the original IDL implementation scale.pro
 
@@ -62,6 +63,7 @@ def scale(array, bottomTmp, topTmp, minm, maxm, *args1, **args2):
 
     return xs
 
+
 def fetchNestedDtypeValue(var, namesLst):
     """Returns the value of a nested dtype given the names to look for as a list. 
        For example, to return the value of var['xx']['yy']['zz'], u can use :
@@ -91,6 +93,7 @@ def fetchNestedDtypeValue(var, namesLst):
             raise NameError('name *%s* not found in the variable "currVar"' % name)
         
     return currVar
+
 
 def default_logger():
     """sets up the logger which will prepend info about the printed stuff. Assignes a value to self.logger."""
