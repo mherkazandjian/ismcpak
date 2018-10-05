@@ -823,7 +823,7 @@ class meshArxv(object):
             
             # reading the meshes in database into a list 
             meshesRadex = []
-            radexTransitionsDtype = radex(None,None).generateTransitionDtype()
+            radexTransitionsDtype = radex(None,None).generate_transition_dtype()
     
             for i in np.arange(self.nMeshes):
     
@@ -1793,7 +1793,7 @@ class meshArxv(object):
             if has_lines == None:
                 infoAllRadex[i]['info'][1] = 0 #no trainsitions
                 meshesRadex[i] = None
-                radex_obj_utility.printSetFlags()
+                radex_obj_utility.print_set_flags()
             else:                
                 #setting the basic radex run info into the attribute
                 #-----------------------------------------------------------
@@ -1802,7 +1802,7 @@ class meshArxv(object):
                 if radex_obj_utility.flag_is_set('ERROR') or (has_lines is False): # radex failed, no transition data available
                     infoAllRadex[i]['info'][1] = 0 #no trainsitions
                     meshesRadex[i] = None
-                    radex_obj_utility.printSetFlags()
+                    radex_obj_utility.print_set_flags()
                 else: # radex succeeded, wirint the transition data
                     infoAllRadex[i]['info'][1] = radex_obj_utility.nTransitions
                     meshesRadex[i] = radex_obj_utility.transitions
@@ -1820,7 +1820,7 @@ class meshArxv(object):
                 else:
                     self.logger.debug('radexGrid : converged with warnings')
                     self.logger.debug('------------------------------------')
-                    print radex_obj_utility.getWarnings()
+                    print radex_obj_utility.get_warnings()
                     self.logger.debug('------------------------------------')
     
                 self.logger.debug('---------------------------------------------------------')
@@ -3140,7 +3140,7 @@ class meshArxv(object):
                   'molnDens'               : None  ,  # depending on the model
                   'lineWidth'              : radex_parms['lineWidth'],  # fixed
                   'runAnother'             : 1     }
-        radexObj.setInFile( inFile )
+        radexObj.set_infile(inFile)
         
         self.radexObj = radexObj
         
