@@ -8,8 +8,8 @@ lines = {
                         'type'    : 'pdr',
                         'specStr' : 'C+',
                         'radexIdx': 0,
-                        'u'       : {'P':'2', 'J':'3/2'}, #;;; .. todo:: check if the QN are correct 
-                        'l'       : {'P':'2', 'J':'1/2'}, #;;; .. todo:: check if the QN are correct 
+                        'u'       : {'P':'2', 'J':'3/2'}, 
+                        'l'       : {'P':'2', 'J':'1/2'}, 
                        },
          'C609'      : {'ismcpak' : ['fineStructureCoolingComponents','C','rate','1-0'], 
                         'latex'   : r'[CI] 609$\mu m$', 
@@ -17,8 +17,8 @@ lines = {
                         'type'    : 'pdr',
                         'specStr' : 'C',
                         'radexIdx': 0,
-                        'u'       : {'J':'1'}, #;;; .. todo:: check if the QN are correct 
-                        'l'       : {'J':'0'}, #;;; .. todo:: check if the QN are correct 
+                        'u'       : {'J':'1'},
+                        'l'       : {'J':'0'},
                        },
          'C369'      : {'ismcpak' : ['fineStructureCoolingComponents','C','rate','2-1'], 
                         'latex'   : r'[CI] 369$\mu m$', 
@@ -26,8 +26,8 @@ lines = {
                         'type'    : 'pdr',
                         'specStr' : 'C',
                         'radexIdx': 2,                        
-                        'u'       : {'J':'2'}, #;;; .. todo:: check if the QN are correct 
-                        'l'       : {'J':'1'}, #;;; .. todo:: check if the QN are correct     
+                        'u'       : {'J':'2'}, 
+                        'l'       : {'J':'1'},     
                        },
          'O63'       : {'ismcpak' : ['fineStructureCoolingComponents','O','rate','1-0'], 
                         'latex'   : r'[OI] 63$\mu m$', 
@@ -35,8 +35,8 @@ lines = {
                         'type'    : 'pdr',
                         'specStr' : 'O',
                         'radexIdx': 0,                        
-                        'u'       : {'P':'2', 'J':'3'}, #;;; .. todo:: check if the QN are correct 
-                        'l'       : {'P':'1', 'J':'3'}, #;;; .. todo:: check if the QN are correct 
+                        'u'       : {'P':'2', 'J':'3'}, 
+                        'l'       : {'P':'1', 'J':'3'}, 
                        },
          #----------------------------------------------------------------------------------------------------------
          'CO1-0'     : {'radexIdx'  : 0,  'latex' : 'CO(1-0)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },

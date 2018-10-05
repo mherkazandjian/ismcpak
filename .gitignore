@@ -12,3 +12,12 @@ LAMDA
 .settings
 .pydevproject
 .project
+
+*.pyc
+.settings
+.pydevproject
+.project
+radex
+radex.tgz
+*.log
+foo

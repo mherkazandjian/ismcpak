@@ -1,0 +1,5 @@
+data files ued by the python analysis tools. Some of these are also in the 
+subdirectory pdr/
+The difference between these is only formatting, since the python tools 
+can parse the data files in a better way than C, so the headers in 
+the current directory of the chemical networks info are removed for example.
