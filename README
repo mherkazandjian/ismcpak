@@ -1,4 +1,14 @@
-This is a package which implements some utilities useful for modelling and 
+[![https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg](https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/2343)
+
+Jumpstart
+=========
+To run a quick example, the following container can be used:
+
+    $ singularity shell shub://mherkazandjian/ismcpak
+    $ cd /ism/ismcpak/tests
+    $ mpiexec python run_singleMesh.py
+
+This is a package which implements some utilities useful for modelling and
 analyzing simulation output of PDRs.
 
 Prerequisites
