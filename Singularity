@@ -9,7 +9,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     export PATH=/prerequisites/bin:${PATH}
     export LD_LIBRARY_PATH=/prerequisites/lib:${LD_LIBRARY_PATH}
     export PYTHONPATH=/prerequisites/python2.7/site-packages:/ism/amuse-11.2/test:/ism/amuse-11.2/src:${PYTHONPATH}
-    export AMUSE_DIR=/opt/amuse-11.2
+    export AMUSE_DIR=/ism/amuse-11.2
 
 %post
     sed -i 's/$/ universe/' /etc/apt/sources.list
@@ -77,6 +77,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
          libhdf5-serial-dev \
          hdf5-tools \
          gettext \
+    apt-get clean
 
     pip install nose==1.3.7
     pip install numpy==1.16.1
@@ -101,11 +102,17 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 
     # download the ismcpak project
     cd /ism
-    wget https://github.com/mherkazandjian/ismcpak/archive/1.0.0.tar.gz
-    tar -xzvf 1.0.0.tar.gz
-    mv ismcpak-1.0.0 ismcpak
-    ln -s ismcpak/oneSided amuse-11.2/src/amuse/community/pdr
-    cd ismcpak/oneSided amuse-11.2/src/amuse/community/pdr
+    git clone https://github.com/mherkazandjian/ismcpak.git
+    cd ismcpak
+    git checkout alpha-master
+    cd ..
+    ln -s $PWD/ismcpak/oneSided $PWD/amuse-11.2/src/amuse/community/pdr
+    cd amuse-11.2/src/amuse/community/pdr
     make all
 
-    apt-get clean
+    # setup the dirs for a first quick run
+    mkdir -p /ism/runs/tests/oneSided/single_mesh/meshes
+
+    # to test the build/config
+    cd /ism/ismcpak/tests
+    mpiexec python run_singleMesh.py
