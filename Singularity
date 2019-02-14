@@ -47,6 +47,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 
     export PATH=/prerequisites/bin:${PATH}
     export LD_LIBRARY_PATH=/prerequisites/lib:${LD_LIBRARY_PATH}
+    export AMUSE_DIR=/ism/amuse-11.2
 
     # download and install easy_install, pip, pipenv
     cd /prerequisites/install
@@ -108,7 +109,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     git checkout alpha-master
     cd ..
     ln -s $PWD/ismcpak/oneSided $PWD/amuse-11.2/src/amuse/community/pdr
-    cd amuse-11.2/src/amuse/community/pdr
+    cd /ism/amuse-11.2/src/amuse/community/pdr
     make all
 
     # setup the dirs for a first quick run
