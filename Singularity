@@ -67,7 +67,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
          gfortran \
          mpich \
          libmpich-dev \
-         libgsl0-dev \
+         libgsl-dev \
          cmake \
          libfftw3-3 \
          libfftw3-dev \
@@ -76,7 +76,8 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
          libmpfr-dev \
          libhdf5-serial-dev \
          hdf5-tools \
-         gettext \
+         gettext
+
     apt-get clean
 
     pip install nose==1.3.7
@@ -114,5 +115,5 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     mkdir -p /ism/runs/tests/oneSided/single_mesh/meshes
 
     # to test the build/config
-    cd /ism/ismcpak/tests
-    mpiexec python run_singleMesh.py
+    #cd /ism/ismcpak/tests
+    #mpiexec python run_singleMesh.py
