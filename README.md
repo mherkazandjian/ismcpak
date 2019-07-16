@@ -5,7 +5,7 @@ Jumpstart
 To run a quick example, the following container can be used:
 
     $ singularity shell library://mherkazandjian/default/ismcpak
-    $ git clone git@github.com:mherkazandjian/ismcpak.git
+    $ git clone -b alpha-master git@github.com:mherkazandjian/ismcpak.git
     $ cd ismcpak/tests
     $ mpiexec python run_singleMesh.py
     $ mpiexec python run_oneSidedPDRGrid.py 
