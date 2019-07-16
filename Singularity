@@ -8,7 +8,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 %environment
     export PATH=/prerequisites/bin:${PATH}
     export LD_LIBRARY_PATH=/prerequisites/lib:${LD_LIBRARY_PATH}
-    export PYTHONPATH=/prerequisites/python2.7/site-packages:/ism/amuse-11.2/test:/ism/amuse-11.2/src:${PYTHONPATH}
+    export PYTHONPATH=/prerequisites/python2.7/site-packages:/ism/amuse-11.2/test:/ism/amuse-11.2/src:/ism/ismcpak:${PYTHONPATH}
     export AMUSE_DIR=/ism/amuse-11.2
 
 %post
@@ -82,6 +82,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     apt-get clean
 
     pip install nose==1.3.7
+    pip install scipy==1.2.2
     pip install numpy==1.16.1
     pip install docutils==0.14
     pip install h5py==2.9.0
