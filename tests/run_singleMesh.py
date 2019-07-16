@@ -14,7 +14,7 @@ from amuse.community.pdr import interface
 nWorker = 1  # number of proccesses
 
 dataDir     = '/ism/ismcpak/data/'
-outputDir   = '../ism/data/oneSided/single_mesh/'
+outputDir   = '../../data/oneSided/single_mesh/'
 
 pdr = interface.pdrInterface(number_of_workers = nWorker, redirection='none')
 
@@ -42,6 +42,17 @@ pdr.set_min_deltaAv                (0.01)
 pdr.set_max_deltaAv                (0.5)
 pdr.set_maxSlabs                   (200)
 #------------------------------------------------------------------------------------
+
+# create the needed directories for the data output
+for dirpath in [outputDir, os.path.join(outputDir, 'meshes')]:
+    if not os.path.isdir(dirpath):
+        os.makedirs(dirpath)
+        print 'create directory'
+        print '\t\t{}'.format(dirpath)
+    else:
+        print 'directory'
+        print '\t\t{}'.format(dirpath)
+        print 'already exists'
 
 # initializing variables and running the models
 pdr.initialize()

@@ -17,7 +17,7 @@ import meshUtils
 # make sure to use the appropriate database when changing metallicities
 #---------------------------------------------------------------------------------------------------
 dataDir   = '/ism/ismcpak/data/'
-outputDir = '../data/oneSided/oneSidedGrid/'
+outputDir = '../../data/oneSided/oneSidedGrid/'
 
 nWorker   = 1  # number of proccesses
 pdr       = interface.pdrInterface( channel_type = 'mpi', 

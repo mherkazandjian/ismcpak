@@ -4,9 +4,11 @@ Jumpstart
 =========
 To run a quick example, the following container can be used:
 
-    $ singularity shell shub://mherkazandjian/ismcpak
-    $ cd /ism/ismcpak/tests
+    $ singularity shell library://mherkazandjian/default/ismcpak
+    $ git clone git@github.com:mherkazandjian/ismcpak.git
+    $ cd ismcpak/tests
     $ mpiexec python run_singleMesh.py
+    $ mpiexec python run_oneSidedPDRGrid.py 
 
 This is a package which implements some utilities useful for modelling and
 analyzing simulation output of PDRs.
