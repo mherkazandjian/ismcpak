@@ -1,8 +1,11 @@
 #---------------------------------------------------------------------------------------------------
 import numpy
-import pylab
+import matplotlib
+matplotlib.use("PS")
+#import pylab
 
 from amuse.community.pdr import interface
+
 from mesh import *
 from chemicalNetwork import *
 from ismUtils import *
@@ -12,12 +15,10 @@ import meshUtils
 #---------------------------------------------------------------------------------------------------
 # make sure to use the appropriate database when changing metallicities
 #---------------------------------------------------------------------------------------------------
-HOME      = os.environ['HOME']
+dataDir   = '/ism/ismcpak/data/'
+outputDir = '../ism/data/oneSided/oneSidedGrid/'
 
-dataDir   = HOME + '/ism/code/ismcpak/data/'
-outputDir = HOME + '/ism/runs/tests/oneSidedGrid/'
-
-nWorker   = 4  # number of proccesses
+nWorker   = 1  # number of proccesses
 pdr       = interface.pdrInterface( channel_type = 'mpi', 
                                     number_of_workers = nWorker, 
                                     redirection='none') 
@@ -69,21 +70,21 @@ print numpy.unique(z)
 
 n = x.size
 
-pylab.ioff()
-fig = pylab.figure()
-ax = fig.add_subplot(111, projection='3d')
+#pylab.ioff()
+#fig = pylab.figure()
+#ax = fig.add_subplot(111, projection='3d')
 
-ax.plot( x, y, z, 'ro', markersize=4)
-ax.set_xlim( [-4, 8] )
-ax.set_ylim( [-4, 8] )
-ax.set_zlim( [-51, -15] )
+#ax.plot( x, y, z, 'ro', markersize=4)
+#ax.set_xlim( [-4, 8] )
+#ax.set_ylim( [-4, 8] )
+#ax.set_zlim( [-51, -15] )
 
-ax.set_xlabel('n')
-ax.set_ylabel('g0')
-ax.set_zlabel('gm')
+#ax.set_xlabel('n')
+#ax.set_ylabel('g0')
+#ax.set_zlabel('gm')
 
-pylab.draw()
-pylab.show()
+#pylab.draw()
+#pylab.show()
 print 'number of models to run = ', n
 
 rho   = x

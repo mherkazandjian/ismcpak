@@ -11,12 +11,10 @@ import os
 
 from amuse.community.pdr import interface
 
-root = '/'
-
 nWorker = 1  # number of proccesses
 
-dataDir     = os.path.join(root, 'ism/ismcpak/data/')
-outputDir   = os.path.join(root, 'ism/runs/tests/oneSided/single_mesh')
+dataDir     = '/ism/ismcpak/data/'
+outputDir   = '../ism/data/oneSided/single_mesh/'
 
 pdr = interface.pdrInterface(number_of_workers = nWorker, redirection='none')
 
