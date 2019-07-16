@@ -1,4 +1,5 @@
 #---------------------------------------------------------------------------------------------------
+import os
 import numpy
 import matplotlib
 matplotlib.use("PS")
@@ -16,7 +17,7 @@ import meshUtils
 # make sure to use the appropriate database when changing metallicities
 #---------------------------------------------------------------------------------------------------
 dataDir   = '/ism/ismcpak/data/'
-outputDir = '../ism/data/oneSided/oneSidedGrid/'
+outputDir = '../data/oneSided/oneSidedGrid/'
 
 nWorker   = 1  # number of proccesses
 pdr       = interface.pdrInterface( channel_type = 'mpi', 
@@ -57,7 +58,7 @@ zMax = -23.0
 ###########################################################################################
 ###########################################################################################
 ###########################################################################################
-# generating the parameter space 
+# generating the parameter space
 x, y, z = numpy.mgrid[xMin:xMax:nx, yMin:yMax:ny, zMin:zMax:nz]
 x, y, z = x.flatten(), y.flatten(), z.flatten()
 
@@ -95,8 +96,19 @@ Lmech = 10.0**z
 pdr.initialize()
 ids,err = pdr.add_mesh(rho, 1000.0, G0, Lmech)
 
+# create the needed directories for the data output
+for dirpath in [outputDir, os.path.join(outputDir, 'meshes')]:
+    if not os.path.isdir(dirpath):
+        os.makedirs(dirpath)
+        print 'create directory'
+        print '\t\t{}'.format(dirpath)
+    else:
+        print 'directory'
+        print '\t\t{}'.format(dirpath)
+        print 'already exists'
+
 # writing the parameter into an ascii file
-f = file(outputDir+'parameters.out', 'w')
+f = file(outputDir + 'parameters.out', 'w')
 for i in numpy.arange(n):
     f.write( format(int(ids[i]), '06') + ' ' + format(rho[i], '.3f') + ' ' + format(G0[i], '.3f') + ' ' + format(Lmech[i], '.3e') + '\n' )
 f.close()
@@ -107,7 +119,7 @@ mshErr,err = pdr.get_errorFlags(ids)
 T,err = pdr.get_temperature(ids)
 
 # writing the results to an ascii file
-f = file(outputDir+'results.out', 'w')
+f = file(outputDir + 'results.out', 'w')
 for i in numpy.arange(n):
     f.write( '%d %.3f %.3f %.3e %.d\n' % (ids[i], rho[i], G0[i], Lmech[i], mshErr[i]))
 f.close()
