@@ -1,6 +1,5 @@
-BootStrap: debootstrap
-OSVersion: xenial
-MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+Bootstrap: docker
+From: ubuntu:16.04
 
 %runscript
     bash
@@ -12,7 +11,6 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     export AMUSE_DIR=/ism/amuse-11.2
 
 %post
-    sed -i 's/$/ universe/' /etc/apt/sources.list
     apt-get update
     apt-get install -y --no-install-recommends locales
     echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
@@ -20,6 +18,12 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     /usr/sbin/update-locale LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
     export LANG=en_US.UTF-8
+
+    export DEBIAN_FRONTEND=noninteractive
+    ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
+    apt-get install -y tzdata
+    dpkg-reconfigure --frontend noninteractive tzdata
+
     apt-get install -y wget bzip2 zip
     apt-get -y install emacs vim
     apt-get -y install build-essential checkinstall
@@ -35,7 +39,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 
     mkdir -p /prerequisites/install
 
-    # download and install python
+    ## download and install python
     cd /prerequisites/install
     wget https://www.python.org/ftp/python/2.7.15/Python-2.7.15.tgz
     tar -xzvf Python-2.7.15.tgz
@@ -49,7 +53,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     export LD_LIBRARY_PATH=/prerequisites/lib:${LD_LIBRARY_PATH}
     export AMUSE_DIR=/ism/amuse-11.2
 
-    # download and install easy_install, pip, pipenv
+    ## download and install easy_install, pip, pipenv
     cd /prerequisites/install
     wget https://files.pythonhosted.org/packages/c2/f7/c7b501b783e5a74cf1768bc174ee4fb0a8a6ee5af6afa92274ff964703e0/setuptools-40.8.0.zip
     unzip setuptools-40.8.0.zip
@@ -61,7 +65,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 
     rm -fr /prerequisites/install/*
 
-    # install the amuse prerequisites
+    ## install the amuse prerequisites
     apt-get install -y \
          git \
          curl \
@@ -91,19 +95,20 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     pip install ipython==5.8.0
     pip install matplotlib==2.2.3
 
-    # download and configure and build amuse
+    ## download and configure and build amuse
     mkdir /ism
     chmod 777 /ism
     cd /ism
-    wget http://www.amusecode.org/releases/amuse-11.2.tar.gz
+    wget https://github.com/amusecode/amuse/archive/release-11.2.tar.gz -O amuse-11.2.tar.gz
     tar -xzvf amuse-11.2.tar.gz
+    mv amuse-release-11.2 amuse-11.2 
     rm -f amuse-11.2.tar.gz
     cd amuse-11.2
     ./configure
     make clean
     make
 
-    # download the ismcpak project
+    ## download the ismcpak project
     cd /ism
     git clone https://github.com/mherkazandjian/ismcpak.git
     cd ismcpak
@@ -113,9 +118,9 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     cd /ism/amuse-11.2/src/amuse/community/pdr
     make all
 
-    # setup the dirs for a first quick run
+    ## setup the dirs for a first quick run
     mkdir -p /ism/runs/tests/oneSided/single_mesh/meshes
 
-    # to test the build/config
-    #cd /ism/ismcpak/tests
-    #mpiexec python run_singleMesh.py
+    ## to test the build/config
+    # cd /ism/ismcpak/tests
+    # mpiexec python run_singleMesh.py
