@@ -5,6 +5,12 @@ test, pdr, amuse
 <description>
 an example code to demonstrate how to execute the PDR code via the amuse 
 interface.
+
+run using the command:
+
+    $ cd $ISMCPAK/test
+    $ mpirun -np run_singleMesh.py
+
 </description>
 """
 import os
