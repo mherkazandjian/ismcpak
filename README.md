@@ -4,14 +4,20 @@ Jumpstart
 =========
 To run a quick example, the following container can be used:
 
-    $ singularity shell library://mherkazandjian/default/ismcpak
-    $ git clone -b alpha-master https://github.com/mherkazandjian/ismcpak.git
-    $ cd ismcpak/tests
-    $ mpiexec python run_singleMesh.py
-    $ mpiexec python run_oneSidedPDRGrid.py 
+    $ git clone -b alpha-master https://github.com/mherkazandjian/ismcpak.git ~/ismcpak
+    $ cd ~/ismcpak/tests
+    $ singularity exec library://mher/default/ismcpak:master mpiexec python run_singleMesh.py 
 
 This is a package which implements some utilities useful for modelling and
 analyzing simulation output of PDRs.
+
+Build the container locally
++++++++++++++++++++++++++++
+
+The following command build the singularity container on a local machine. The
+only prerequisite is to have singularity installed and to have sudo access. 
+
+    $ sudo make singularity
 
 Prerequisites
 =============

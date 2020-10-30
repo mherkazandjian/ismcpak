@@ -1,3 +1,18 @@
+"""
+<keywords>
+example, pdr, amuse, dynamic, mechanical, heating
+</keywords>
+<description>
+run a grid of PDR models using the amuse interface as a function of
+n, G0 and gmech
+
+run using the command:
+
+    $ cd $ISMCPAK/test
+    $ mpirun -np run_oneSidedPDRGrid.py
+
+</description>
+"""
 #-------------------------------------------------------------------------------
 import matplotlib
 #matplotlib.use('Qt4Agg')

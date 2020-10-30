@@ -10,5 +10,8 @@ pdr_install:
 pdr_clean:
 	@rm -fvr ${AMUSE_DIR}/src/amuse/community/pdr
 
+singularity:
+	@singularity build container.sif Singularity
+
 clean:pdr_clean
 	rm -rvf *.pyc *~ .*~ *.log 
