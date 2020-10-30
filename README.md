@@ -12,7 +12,7 @@ This is a package which implements some utilities useful for modelling and
 analyzing simulation output of PDRs.
 
 Build the container locally
-+++++++++++++++++++++++++++
+---------------------------
 
 The following command build the singularity container on a local machine. The
 only prerequisite is to have singularity installed and to have sudo access. 
