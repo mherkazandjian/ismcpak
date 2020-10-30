@@ -1,7 +1,7 @@
 [![https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg](https://www.singularity-hub.org/static/img/hosted-singularity--hub-%23e32929.svg)](https://singularity-hub.org/collections/2343)
 
-Jumpstart
-=========
+Quickstart
+==========
 To run a quick example, the following container can be used:
 
     $ git clone -b alpha-master https://github.com/mherkazandjian/ismcpak.git ~/ismcpak
