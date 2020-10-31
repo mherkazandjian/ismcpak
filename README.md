@@ -17,7 +17,11 @@ Build the container locally
 The following command build the singularity container on a local machine. The
 only prerequisite is to have singularity installed and to have sudo access. 
 
+    $ git clone -b alpha-master https://github.com/mherkazandjian/ismcpak.git ~/ismcpak
+    $ cd ~/ismcpak
     $ sudo make singularity
+    $ cd tests
+    $ singularity exec ../container.sif mpiexec python run_singleMesh.py 
 
 Prerequisites
 =============
