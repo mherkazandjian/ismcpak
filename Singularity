@@ -94,6 +94,7 @@ From: ubuntu:16.04
     pip install cython==0.29.5
     pip install ipython==5.8.0
     pip install matplotlib==2.2.3
+    pip install pdbpp
 
     ## download and configure and build amuse
     mkdir /ism

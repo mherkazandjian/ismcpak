@@ -3,7 +3,8 @@ import time
 import sys
 import os
 import matplotlib
-matplotlib.use('Qt4Agg')
+# matplotlib.use('Qt4Agg')
+matplotlib.use('TkAgg')
 
 import pylab
 import meshUtils
@@ -15,13 +16,14 @@ specStr_Radex = 'CO'
 
 parms = {
          #path to the database files
+         # 'dirPath'      : home + '/ism/runs/tests/dynamicMesh-z-1.0/',
          'dirPath'      : home + '/ism/runs/tests/dynamicGrid/',
          #------------------------------------------
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
          #'relativeGmech' : False,  # False => 3rd dim is gMech 
          'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
          
-         'plotRanges'    : [[-1,7],[-1,7  ],[-12, 1.2]],     # adaptive gMech 
+         'plotRanges'    : [[0, 6], [0, 6], [-10, 0]],     # adaptive gMech
          #'plotRanges'     : [[-4,7],[-4,7],[-51, -15]],  # uniform gmech
          #'plotRanges'    : [[-1,7],[-1,7  ],[-18, -12]],     # variable CR rate 
 
