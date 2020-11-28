@@ -150,4 +150,12 @@ if False:
             parms['radex']['specStr'] = specStr
             arxv.constructRadexDatabase(writeDb = True)
             
+
+if False:
+    for x, y, z in zip(arxv.grid_x, arxv.grid_y, arxv.grid_z):
+        m = arxv.get_mesh_data(x, y, z)
+        col_den = m.getColumnDensity(specsStrs=['HN2+'])
+        print '%-21.18e %-21.18e %-21.18e %-21.18e' % (x, y, z, col_den[0])
+
+
 print 'done'
