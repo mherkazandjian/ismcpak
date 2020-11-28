@@ -9,7 +9,7 @@ n, G0 and gmech
 run using the command:
 
     $ cd $ISMCPAK/test
-    $ mpirun -np run_oneSidedPDRGrid.py
+    $ mpirun -np run_dynamicGmechGrid.py
 
 </description>
 """
