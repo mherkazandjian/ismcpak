@@ -1654,7 +1654,7 @@ class meshArxv(object):
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
 
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
-        panel['axes'].clabel(panel['contour'], levels, fmt = '%.1f' )
+        #panel['axes'].clabel(panel['contour'], levels, fmt = '%.1f' )
         
         cbar = pyl.colorbar(im00, cax = panel['axesCbar'], ax = panel['axes'], 
                             orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
@@ -1678,7 +1678,7 @@ class meshArxv(object):
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
 
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
-        panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
+        #panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im01, cax = panel['axesCbar'], ax = panel['axes'],
                      orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
@@ -1701,7 +1701,7 @@ class meshArxv(object):
         levels = np.arange( np.nanmin(grd), np.nanmax(grd), dl )
         
         panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
-        panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
+        #panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im10, cax = panel['axesCbar'], ax = panel['axes'],
                      orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
@@ -1730,7 +1730,7 @@ class meshArxv(object):
         # computing and displaying the contour levels to be plotted
         if pltParms['showContours'] is True:
             panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
-            panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
+            #panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
         pyl.colorbar(im11, cax = panel['axesCbar'], ax = panel['axes'], orientation = 'horizontal', ticks = levels[::2], format = '%.1f')
 
@@ -3128,7 +3128,7 @@ class meshArxv(object):
            and 'molnDens' as None. Also sets the attribute self.radexObj
         """
         #making the instance            
-        radexObj = radex(radex_parms['path'], radex_parms['molDataDirPath'], logger = self.logger)
+        radexObj = Radex(radex_parms['path'], radex_parms['molDataDirPath'], logger = self.logger)
         #setting some default radex paraemeters
         inFile = {'specStr'                : radex_parms['specStr'],
                   'outPath'                : 'foo' ,
