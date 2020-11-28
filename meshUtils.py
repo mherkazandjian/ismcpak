@@ -321,17 +321,17 @@ class meshArxv(object):
     
             #setting up the auxiliary attributes if the parms are available
             #self.mshTmp and self.radexObj
-            if 'radex' in self.parms and  self.parms['radex']['use'] == True:
+            if 'radex' in self.parms and  self.parms['radex']['use'] is True:
                 if self.parms['radex']['use']:
                     #making the instance            
                     self.setup_default_radex_instance(self.parms['radex'])
     
             self.mshTmp = None
             """a mesh object which is used to store single mesh data just for plotting purposes"""
-            if self.chemNet != None and self.metallicity != None:
+            if self.chemNet is not None and self.metallicity is not None:
                 self.mshTmp = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
     
-            if 'readDb' in kwargs and kwargs['readDb'] == True:
+            if 'readDb' in kwargs and kwargs['readDb'] is True:
                 kwargs.pop('readDb')
                 self.readDb(check=True)
     
@@ -339,7 +339,7 @@ class meshArxv(object):
             #-------------------------------------------
             if 'radex' in self.parms:
                 if self.parms['radex']['use']:
-                    if 'gridsInfo' in self.parms and 'show' in self.parms['gridsInfo']['11'] and self.parms['gridsInfo']['11']['show'] == True:
+                    if 'gridsInfo' in self.parms and 'show' in self.parms['gridsInfo']['11'] and self.parms['gridsInfo']['11']['show'] is True:
                         #----
                         if self.parms['gridsInfo']['11']['type'] == 'radex':
                             if self.parms['radex']['compute']:
@@ -363,7 +363,7 @@ class meshArxv(object):
             #-------------------------------------------
     
             #set some default attributes (the quantities of the grids) if meshes have been read
-            if self.meshes != None:
+            if self.meshes is not None:
                 
                 if 'grid_qx' in self.parms and 'grid_qy' in self.parms and 'grid_qz' in self.parms:
                     #specifying the grid quantities explicityly
@@ -408,7 +408,7 @@ class meshArxv(object):
             matching name prefix are looked for resusively in the 'meshes' directory.
         """
         
-        if meshNamePrefix == None:
+        if meshNamePrefix is None:
             meshNamePrefix = ''
         
         sourceDir = os.path.join(self.dirPath, 'meshes')
@@ -467,7 +467,7 @@ class meshArxv(object):
             
         self.infoAll = infoAll
         
-        if writeDb != None:
+        if writeDb is not None:
             self.writeDb()
 
     def writeDb(self, dirName = None):
@@ -478,7 +478,7 @@ class meshArxv(object):
         :param string dirName: The directory where to write the database files.
         """
         
-        if dirName == None:
+        if dirName is None:
             dirName = self.dirPath
         
         # writing the mesh to the database file
@@ -532,7 +532,7 @@ class meshArxv(object):
         :param string dirName: The directory where to write the database files.
         """
         
-        if dirName == None:
+        if dirName is None:
             raise ValueError('keyword dirName not set...please provide it')
         if dirName.replace('/','') == self.parms['dirPath'].replace('/',''):
             raise ValueError("keyword dirName should be different from self.params['dirPath']")
@@ -585,7 +585,7 @@ class meshArxv(object):
         :param string dirName: The directory where to write the database files.
         """
         
-        if dirName == None:
+        if dirName is None:
             raise ValueError('keyword dirName not set...please provide it')
         if dirName.replace('/','') == self.parms['dirPath'].replace('/',''):
             raise ValueError("keyword dirName should be different from self.params['dirPath']")
@@ -596,7 +596,7 @@ class meshArxv(object):
 
         #creating the Av_XX.XX dir is neccessary
         dirPath_this_db = dbFname.replace(dbFname.split('/')[-1],'')
-        if os.path.exists(dirPath_this_db) == False:
+        if os.path.exists(dirPath_this_db) is False:
             os.mkdir(dirPath_this_db)
             self.logger.debug('created directory : %s' % dirPath_this_db)
         
@@ -625,7 +625,7 @@ class meshArxv(object):
                 infoAllRadex_new[counter]['info'][0] = counter # mesh number
                 
                 #writing the transition info to the transiotions db file
-                if self.meshesRadex[i] != None:
+                if self.meshesRadex[i] is not None:
                     #writing the transition data
                     self.meshesRadex[i].tofile( dbDataFObj )
                     #filling the necessary values in infoAllRadex
@@ -700,7 +700,7 @@ class meshArxv(object):
         The path to the .db and to the .info.db files
         """
 
-        if dirpath == None:
+        if dirpath is None:
             dirName = self.parms['dirPath']
         else:
             dirName = dirpath
@@ -725,7 +725,7 @@ class meshArxv(object):
         :param string dirName: The directory where to write the database files.
         """
     
-        if dirName == None:
+        if dirName is None:
             dirName = self.dirPath
 
         Av_end, specStr = self.currentRadexDb['Av'], self.currentRadexDb['specStr']
@@ -734,7 +734,7 @@ class meshArxv(object):
 
         #creating the Av_XX.XX dir is neccessary
         dirPath_this_db = dbFname.replace(dbFname.split('/')[-1],'')
-        if os.path.exists(dirPath_this_db) == False:
+        if os.path.exists(dirPath_this_db) is False:
             os.mkdir(dirPath_this_db)
             self.logger.debug('created directory : %s' % dirPath_this_db)
              
@@ -750,7 +750,7 @@ class meshArxv(object):
             thisMeshParms.tofile( dbDataFObj )
 
             #writing the transition info to the transiotions db file
-            if self.meshesRadex[i] != None:
+            if self.meshesRadex[i] is not None:
                 #writing the transition data
                 self.meshesRadex[i].tofile( dbDataFObj )
                 #filling the necessary values in infoAllRadex
@@ -801,7 +801,7 @@ class meshArxv(object):
                 
         #reading the database only if it is not already read. If it is read, it would
         #have a key in radexDbs
-        if self.radex_db_has_been_read(Av, specStr) == False:
+        if self.radex_db_has_been_read(Av, specStr) is False:
             
             #paths of the files of this db
             dbFname, dbInfoFname = self.getRadexDbPath(Av, specStr)
@@ -896,19 +896,19 @@ class meshArxv(object):
          parameters Av and species are ignored 
         """
   
-        if allDbs == None:
+        if allDbs is None:
             #loading the specified radex Dbs
-            if species == None and Av == None and  in_Av_rng == None:
+            if species is None and Av is None and  in_Av_rng is None:
                 raise ValueError('one of the keywords "species", "Av" or "in_Av_rng" must be provided.')
             
-            if hasattr(species, '__iter__') == False:
+            if hasattr(species, '__iter__') is False:
                 species = [species]
-            
-            if Av != None and in_Av_rng != None:
+
+            if Av is not None and in_Av_rng is not None:
                 raise ValueError('either Av or in_Av_rng must be provided, not both')
-            elif Av != None and hasattr(Av, '__iter__') == False:
+            elif Av is not None and not hasattr(Av, '__iter__'):
                 Av = [Av]
-            elif in_Av_rng != None:
+            elif in_Av_rng is not None:
                 Avs_on_disk = self.query_available_radex_dbs()
                 inds_in_rng = numpy.where((Avs_on_disk >= in_Av_rng[0])*(Avs_on_disk <= in_Av_rng[1]))[0]
                 
@@ -916,7 +916,7 @@ class meshArxv(object):
                     Av = Avs_on_disk[inds_in_rng]
                 else:
                     raise ValueError('no radex Dbs were found in the Av range [%f, %f]' % (in_Av_rng[0],in_Av_rng[1]))
-            
+
             for AvThis in Av:   
                 for specStr in species:
                     self.readDbRadex(AvThis, specStr, check = True)
@@ -988,17 +988,17 @@ class meshArxv(object):
     def use_radexDb(self, Av=None, specStr=None, silent=None, load_if_not_in_memory=None):
         """A method which sets a radex database from the databases available in self.radexDbs."""
 
-        if self.radex_db_has_been_read(Av, specStr) == False:
+        if self.radex_db_has_been_read(Av, specStr) is False:
             self.readDbRadex(Av, specStr)
         
-        if self.radex_db_has_been_read(Av, specStr) == True:
+        if self.radex_db_has_been_read(Av, specStr) is True:
 
             if self.currentRadexDb['Av'] != Av or self.currentRadexDb['specStr'] != specStr:
                 #setting the new Db only if it is different from the specified one 
                 self.meshesRadex    = self.radexDbs['%.2f' % Av][specStr]['meshes']
                 self.infoAllRadex   = self.radexDbs['%.2f' % Av][specStr]['infoAll']
                 self.currentRadexDb = {'Av':Av, 'specStr':specStr}
-                if silent != None and silent == False:
+                if silent is not None and silent is False:
                     self.logger.debug('swithced to %s radex database at Av = %f' % (specStr, Av))
         else:
             raise ValueError('radex Db for Av %.2f for the specie %s has not been read into memory' % (Av, specStr))
@@ -1014,7 +1014,7 @@ class meshArxv(object):
             arxv2.readDb( newDbRunDirPath )
             arxv2.checkIntegrity()
         else:
-            if new_arxv != None:
+            if new_arxv is not None:
                 arxv2=new_arxv 
             
         if self.ver[0] != arxv2.ver[0] and self.ver[1] != arxv2.ver[1] and self.ver[2] != arxv2.ver[2]:
@@ -1033,7 +1033,7 @@ class meshArxv(object):
         for i in np.arange( self.nMeshes ):
             self.infoAll[i]['info'][0] = i # mesh number             
         
-        if outDirPath != None:
+        if outDirPath is not None:
             self.writeDb(outDirPath)
         
     def arxvHdrFormat(self):
@@ -1167,7 +1167,7 @@ class meshArxv(object):
                          }
         """
         
-        if parms == None:
+        if parms is None:
             parms =  self.parms['chemistry']
             
         #importing the module which holds the definitions of the base species
@@ -1231,7 +1231,7 @@ class meshArxv(object):
         #checking if all the reactions have the functions set
         found = 0
         for rxn in net.reactions:
-            if rxn.compute_rxn_cst_func == None:
+            if rxn.compute_rxn_cst_func is None:
                 found = 0
                 rxn.display(fmt='id rxn')
                 
@@ -1277,9 +1277,9 @@ class meshArxv(object):
                 
                 q = fetchNestedDtypeValue(self.meshes[i], quantity )
             
-                if slabIdx != None and arrIdx != None:
+                if slabIdx is not None and arrIdx is not None:
                     v = q[arrIdx][slabIdx]
-                elif slabIdx != None and arrIdx == None:
+                elif slabIdx is not None and arrIdx is None:
                     v = q[slabIdx]
                 else:
                     v = q
@@ -1312,7 +1312,7 @@ class meshArxv(object):
 
         """
         
-        if func_kw == None: func_kw = {}
+        if func_kw is None: func_kw = {}
             
         dataRet = []
 
@@ -1326,7 +1326,7 @@ class meshArxv(object):
         """Applies func to all the radex meshes in self.meshesRadex. func_kw are passed to func. The 
         results are returned as a list which is the same length as self.nMeshes"""
 
-        if func_kw == None: func_kw = {}
+        if func_kw is None: func_kw = {}
         
         dataRet = []
         
@@ -1377,19 +1377,19 @@ class meshArxv(object):
         self.set_grid_axes_quantity_values(**kwargs)
         self.set_attributes(**kwargs)
         
-        if f_interp_dim == None:
+        if f_interp_dim is None:
             f_interp_dim = '3D'
         
-        if values == None:
+        if values is None:
             # the quantitiy we are intiesrested in showing
             values = self.getQuantityFromAllMeshes( quantity, slabIdx = slabIdx, arrIdx = arrIdx)
         else:
             values = values
 
-        if log10 != None and log10 == True:
+        if log10 is not None and log10 is True:
             values[:] = np.log10(values[:])
 
-        if data == None:
+        if data is None:
             if f_interp_dim == '3D':
                 data = np.array([self.grid_x, self.grid_y, self.grid_z]).T  #3D coordinates
             elif f_interp_dim == '2D':
@@ -1403,7 +1403,7 @@ class meshArxv(object):
         if data.shape[0] != values.size:
             raise ValueError('data and values are of incompatible shape')
             
-        if remove_nan_inf != None and remove_nan_inf == True:
+        if remove_nan_inf is not None and remove_nan_inf is True:
             inds_valid = numpy.where(numpy.isfinite(values))[0]
             
             if inds_valid.size == 0:
@@ -1414,7 +1414,7 @@ class meshArxv(object):
              
         # getting the interpolation function
         ti = time()
-        if interpolator == None or interpolator == 'linear':        
+        if interpolator is None or interpolator == 'linear':
             f = interpolate.LinearNDInterpolator(data, values) 
         elif interpolator == 'nearest':
             f = interpolate.NearestNDInterpolator(data, values) # getting the interpolation function
@@ -1461,7 +1461,7 @@ class meshArxv(object):
         yNew = grid_y.reshape(nPts)
         zNew = xNew.copy()
         
-        if zSec != None:
+        if zSec is not None:
             # setting the values of mechanical heating to interpolate on
             zNew[:] = zSec      # all the grid points have the same mechanical heating
             dataNew = np.array( [xNew, yNew, zNew] ).T            
@@ -1493,7 +1493,7 @@ class meshArxv(object):
         self.set_default_attributes()
         
         # getting the grid
-        if fInterp == None:
+        if fInterp is None:
             f = self.construct3DInterpolationFunction(quantity = quantity, slabIdx  = slabIdx, *args, **kwargs)
         else:
             f = fInterp
@@ -1582,7 +1582,7 @@ class meshArxv(object):
                 #transition data to be displayed
                 for i in np.arange(self.nMeshes):
                     
-                    if self.meshesRadex[i] != None:
+                    if self.meshesRadex[i] is not None:
                             
                             x, y, z = self.grid_x[i], self.grid_y[i], self.grid_z[i]
                             v = self.meshesRadex[i][transitionIdx][quantity]
@@ -1728,7 +1728,7 @@ class meshArxv(object):
         levels = np.arange( mn, mx, dl )
         
         # computing and displaying the contour levels to be plotted
-        if pltParms['showContours'] == True:
+        if pltParms['showContours'] is True:
             panel['contour'] = panel['axes'].contour(grd, levels, extent=(ranges[0][0], ranges[0][1], ranges[1][0], ranges[1][1]), origin='lower', colors = 'black')
             panel['axes'].clabel(panel['contour'],levels, fmt = '%.1f' )
         
@@ -1790,7 +1790,7 @@ class meshArxv(object):
                                                                               radex_parms = radex_parms,    
                                                                               Av_range = Av_range)
             
-            if has_lines == None:
+            if has_lines is None:
                 infoAllRadex[i]['info'][1] = 0 #no trainsitions
                 meshesRadex[i] = None
                 radex_obj_utility.print_set_flags()
@@ -1898,7 +1898,7 @@ class meshArxv(object):
         #setting state attributes related to the current radexDb
         self.append_radex_db_related_attributes(meshesRadex, infoAllRadex, Av_end, specStr)
         
-        if writeDb == True:
+        if writeDb is True:
             self.writeDbRadex()
     
     def append_radex_db_related_attributes(self, meshesRadex, infoAllRadex, Av_end, specStr):
@@ -1928,7 +1928,7 @@ class meshArxv(object):
         
         for i in numpy.arange(self.nMeshes):
             
-            if self.meshesRadex[i] != None:
+            if self.meshesRadex[i] is not None:
                 
                 self.radexObj.transitions = self.meshesRadex[i] 
  
@@ -2409,10 +2409,10 @@ class meshArxv(object):
                 
                 if self.parms['radex']['use']:
                     
-                    if self.parms['radex']['plot_model_from_Db'] == False:
+                    if self.parms['radex']['plot_model_from_Db'] is False:
                         self.compute_and_set_radex_curves(pdr_mesh_obj = self.mshTmp)
                     else:
-                        if self.meshesRadex[indMin] != None:
+                        if self.meshesRadex[indMin] is not None:
                             self.set_radex_curves_from_db(indMin)
                         else:
                             self.logger.debug('No radex data available for this PDR model clicked on.')
@@ -2464,7 +2464,7 @@ class meshArxv(object):
 
                 pyl.draw()
 
-            if clickedInAxes == True:
+            if clickedInAxes is True:
                 tf = time()
                 self.logger.debug('time elapased after click : %f\n' % (tf - ti))
 
@@ -2496,12 +2496,12 @@ class meshArxv(object):
         
         self.meshesRadex[ind][:] = self.radexObj.transitions[:]
         
-        if no_write != None and no_write == False:
+        if no_write is not None and no_write is False:
             pass
         else:
             self.writeDbRadex()
 
-        if no_refresh != None and no_refresh == False:
+        if no_refresh is not None and no_refresh is False:
             pass
         else:
             self.computeAndSetInterpolationFunctions()
@@ -2519,9 +2519,9 @@ class meshArxv(object):
         write_debug_info = False
         
         ## setting the defualt objects of the pdr mesh and the radex object
-        if pdr_mesh_obj == None:
+        if pdr_mesh_obj is None:
             pdr_mesh_obj = self.mshTmp
-        if radex_obj == None:
+        if radex_obj is None:
             radex_obj = self.radexObj
             
         #getthing the stuff radex needs from the PDR mesh
@@ -2575,7 +2575,7 @@ class meshArxv(object):
                 fObj.write(radex_obj.genInputFileContentAsStr() )
                 self.logger.debug('input radex file written to %s' % fName)
             
-            if radex_parms['checkOutputIntegrity'] == False:
+            if radex_parms['checkOutputIntegrity'] is False:
                 radex_obj.setDefaultStatus()
                 radex_obj.run(checkInput = True, verbose = radex_parms['verbose'])
                 
@@ -2606,11 +2606,11 @@ class meshArxv(object):
           if compute_only is passed, nothing is plotted, only the emissions are computed and set
           to self.radexObj
         """
-        if pdr_mesh_obj == None: pdr_mesh_obj = self.mshTmp
-        if radex_obj    == None: radex_obj = self.radexObj
-        if radex_parms  == None: radex_parms = self.parms['radex']
+        if pdr_mesh_obj is None: pdr_mesh_obj = self.mshTmp
+        if radex_obj    is None: radex_obj = self.radexObj
+        if radex_parms  is None: radex_parms = self.parms['radex']
         
-        if compute_only == None:
+        if compute_only is None:
             #setting the axes
             radex_obj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
             radex_obj.set_logger(self.logger)
@@ -2626,7 +2626,7 @@ class meshArxv(object):
         #what they should be up to a certain tolerence)
         if radexOutputMakesSense:
             
-            if compute_only == None:
+            if compute_only is None:
                 # plotting the data (even if it does not converge)                
                 if radex_obj.flag_is_set('SUCCESS'):
                     radex_obj.plotModelInFigureColumn(
@@ -2641,9 +2641,9 @@ class meshArxv(object):
         else:
             self.logger.debug('radex output doesnt make sesne')
 
-        if compute_only == None:
+        if compute_only is None:
             
-            if radex_parm_from_pdr_mesh != None:
+            if radex_parm_from_pdr_mesh is not None:
                 Av_range_used = radex_parm_from_pdr_mesh[3]
             else:
                 Av_range_used = [-1, -1]
@@ -2656,9 +2656,9 @@ class meshArxv(object):
           
           if Av_range is not passed, currenlty used Av of the gui is used.
         """
-        if radex_obj == None:
+        if radex_obj is None:
             
-            if self.radexObj == None:
+            if self.radexObj is None:
                 self.setup_default_radex_instance(self.parms['radex'])
             else:   
                 radex_obj = self.radexObj
@@ -2716,7 +2716,7 @@ class meshArxv(object):
             y = fetchNestedDtypeValue(m, qy)
             plt, = ax.plot(x, y)
             
-            if qz != None:
+            if qz is not None:
                 z = fetchNestedDtypeValue(m, qz)
                 plts  = plts  + (plt,)
                 names = names + (z,)
@@ -2736,7 +2736,7 @@ class meshArxv(object):
            :return: (figure, axes, plt) 
         """
 
-        if self.grid_x == None or self.grid_y == None or self.grid_z == None:
+        if self.grid_x is None or self.grid_y is None or self.grid_z is None:
             raise TypeError('data of one or more coordinates not set!!.')
          
         if 'figure' not in kwargs:
@@ -2745,7 +2745,7 @@ class meshArxv(object):
             fig = kwargs['figure'] 
             
         # setting the x,y,z coordinate variables
-        if self.grid_x == None or self.grid_x == None or self.grid_x == None:
+        if self.grid_x is None or self.grid_x is None or self.grid_x is None:
             self.set_grid_axes_quantity_values()            
         
         if 'axes' not in kwargs:
@@ -2792,11 +2792,11 @@ class meshArxv(object):
         """sets the default values of the attributes if they are not set
         """
 
-        if self.grid_qx == None:
+        if self.grid_qx is None:
             self.set_grid_qx( ['hdr', 'nGas'] )
-        if self.grid_qy == None:
+        if self.grid_qy is None:
             self.set_grid_qy( ['hdr', 'G0'] )
-        if self.grid_qz == None:
+        if self.grid_qz is None:
             self.set_grid_qz( ['hdr', 'gammaMech'] )
             
     def set_grid_axes_quantity_values(self, *args, **kwargs):
@@ -2830,12 +2830,12 @@ class meshArxv(object):
         self.set_attributes(**kwargs)
         self.set_default_attributes()
 
-        if self.grid_x == None:
+        if self.grid_x is None:
             self.grid_x = np.log10(self.getQuantityFromAllMeshes(self.grid_qx))
-        if self.grid_y == None:
+        if self.grid_y is None:
             self.grid_y = np.log10(self.getQuantityFromAllMeshes(self.grid_qy))
         
-        if self.grid_z == None:
+        if self.grid_z is None:
             
             # check whether we need to set the z quantity as the ration of heating rates
             try: 
@@ -2844,7 +2844,7 @@ class meshArxv(object):
                 setRelativeGmech = False
                         
             # if relativeGmech is present AND it is True
-            if setRelativeGmech == True:
+            if setRelativeGmech is True:
             
                 #setting the path of the reference database
                 if 'referenceDatabasePath' in kwargs:
@@ -3004,7 +3004,7 @@ class meshArxv(object):
                 #----------------dumping the radex CO lines--------------------
                 fObj.write('%d %.2f %.2f ' % (i, x, y))
 
-                if rdxMeshData != None:
+                if rdxMeshData is not None:
                     for trans in self.meshesRadex[i]:
                         fObj.write('%.5e %.5e ' % (trans['pop_up'], trans['fluxcgs']))
                 else:
@@ -3035,7 +3035,7 @@ class meshArxv(object):
         pdrGuessDb = guess_db(path = path)
 
         # setting the x,y,z coordinate variables
-        if self.grid_x == None or self.grid_x == None or self.grid_x == None:
+        if self.grid_x is None or self.grid_x is None or self.grid_x is None:
             self.set_grid_axes_quantity_values()            
 
         #getting the data from all the meshes
@@ -3280,7 +3280,7 @@ class meshArxv(object):
             #setting the radexDb to use
             self.use_radexDb(Av=Av, specStr=specStr)
             #getting the value we need and appending it
-            if self.meshesRadex[mesh_indx] != None:
+            if self.meshesRadex[mesh_indx] is not None:
                 vs.append(self.meshesRadex[mesh_indx][quantity][transition_idx])
                 Avs.append(Av)
             print 'gMech radex = ', mesh_indx, numpy.log10(self.infoAllRadex[mesh_indx]['parms'][2])
@@ -3344,9 +3344,9 @@ class meshArxv(object):
             arxv.plot_rxns_rates_vs_Av([1559, 2100], numpy.arange(0,30,5), ylim=[1e-24, 1e-5])
         """
         
-        if hasattr(rxnIDs, '__iter__') == False:
+        if hasattr(rxnIDs, '__iter__') is False:
             raise TypeError('rxnIDs must be a list')
-        if hasattr(Avs, '__iter__') == False:
+        if hasattr(Avs, '__iter__') is False:
             raise TypeError('rxnIDs must be a list')
         
         nRxns = len(rxnIDs)
@@ -3363,7 +3363,7 @@ class meshArxv(object):
             #extractin the rates
             for i, rxnID in enumerate(rxnIDs):
                 rate = self.chemNet.getattr_rxn(rxnID, 'rate')
-                if rate == None:       
+                if rate is None:
                     rates[i, j] = -1
                 else:
                     rates[i, j] = rate
@@ -3383,7 +3383,7 @@ class meshArxv(object):
 
         pylab.legend(plots, titles)
         
-        if ylim != None:
+        if ylim is not None:
             pylab.ylim(ylim)
         pylab.show()
     
@@ -3424,7 +3424,7 @@ class meshArxv(object):
         pylab.figure()
         pylab.imshow(v_xy, origin='lower', vmin=-15.0, vmax=-6.0)
         
-        inds_nan = numpy.where(numpy.isfinite(vi) == False)[0]
+        inds_nan = numpy.where(numpy.isfinite(vi) is False)[0]
         if inds_nan.size > 0:
             vi[inds_nan] = numpy.nanmin(v_in)
         
@@ -3489,7 +3489,7 @@ class meshArxv(object):
         
         im = ax.imshow(grd_data, extent=ranges, origin='lower')
         
-        if levels == None:
+        if levels is None:
             dl = (np.nanmax(grd_data) - np.nanmin(grd_data))/nlevels
             levels = np.arange( np.nanmin(grd_data), np.nanmax(grd_data), dl )
         
@@ -3625,7 +3625,7 @@ class meshArxv(object):
 
             v = numpy.array(v)
                         
-            if keep_nans != None and keep_nans == True: 
+            if keep_nans is not None and keep_nans is True:
                 xGrd, yGrd, zGrd = self.grid_x, self.grid_y, self.grid_z
             else:
                 #keeping the points which are useful (finite ones)
@@ -3676,7 +3676,7 @@ class meshArxv(object):
             print '\t Av = %.3f' % Av
                         
             #making the func_kw dict which will be passed to func
-            if func_kw == None:
+            if func_kw is None:
                 func_kw_pass = {}
             else:
                 func_kw_pass = func_kw.copy()
@@ -3689,7 +3689,7 @@ class meshArxv(object):
 
             v = numpy.array(v)
                         
-            if keep_nans != None and keep_nans == True: 
+            if keep_nans is not None and keep_nans is True:
                 xGrd, yGrd, zGrd = self.grid_x, self.grid_y, self.grid_z
             else:
                 #keeping the points which are useful (finite ones)
@@ -3752,7 +3752,7 @@ class meshArxv(object):
         v, data = self.get_emission_from_all_radex_dbs_for_Av_range(**kwargs)
 
         ## constructing the linear interpolation function        
-        if sectioned == False:
+        if sectioned is False:
             F = interpolate.LinearNDInterpolator(data, v)
             setattr(F, 'get', F) 
         else:
@@ -3808,7 +3808,7 @@ class meshArxv(object):
         v, data = self.get_pdr_quantity_from_all_meshes_for_Av_range(**kwargs)
 
         ## constructing the linear interpolation function        
-        if sectioned == False:
+        if sectioned is False:
             F = interpolate.LinearNDInterpolator(data, v)
             setattr(F, 'get', F) 
         else:
@@ -3868,7 +3868,7 @@ class meshArxv(object):
             
 
         ## saving the interpolation function to the disk            
-        if save == True:
+        if save is True:
 
             fpath = self.get_interp_func_path(info, **kwargs)
                         
@@ -3955,7 +3955,7 @@ class meshArxv(object):
             '''returns the indicies of x,y coordinates of the available data withing a section in z '''
             
             #selecting a section in z
-            if dz != None:
+            if dz is not None:
                 inds = numpy.where( (z >= (z_sec - dz))*(z <= (z_sec + dz)) )
             else:
                 inds = numpy.where(z == z_sec)[0]
@@ -3999,7 +3999,7 @@ class meshArxv(object):
             return xxGrdc.flatten(), yyGrdc.flatten(), v_new 
         #
         
-        if f_interp_dim != None and f_interp_dim == '2D':
+        if f_interp_dim is not None and f_interp_dim == '2D':
  
             ## getting a section of values in z by keeping only the points withing the z section
             if get_section_data_using == 'select':
@@ -4092,7 +4092,7 @@ def radex_mesh_log_intensity(mesh_radex, **kwargs):
         quantity = 'fluxcgs'         
         
     
-    if mesh_radex == None:
+    if mesh_radex is None:
         return numpy.nan
     else:
         return numpy.log10(mesh_radex[transitionIdx][quantity])
@@ -4118,7 +4118,7 @@ def radex_mesh_quantity(mesh_radex, **kwargs):
      where kwargs are transitionIdx = integer (the transition index) and quantity = string (the quantity in the gtype to be returned)  
     '''
     
-    if mesh_radex == None:
+    if mesh_radex is None:
         return numpy.nan
     else:
         transition_info = mesh_radex[kwargs['transitionIdx']] 
@@ -4150,7 +4150,7 @@ def pdr_mesh_integrated_quantity(mesh_obj, **kwargs):
     
     value = mesh_obj.compute_integrated_quantity(quantity, Av_range = [0.0, up_to_Av])
     
-    if 'as_log10' in kwargs and kwargs['as_log10'] == True:
+    if 'as_log10' in kwargs and kwargs['as_log10'] is True:
         return numpy.log10(value)
     else:
         return value
@@ -4173,7 +4173,7 @@ def pdr_mesh_column_density(mesh_obj, **kwargs):
     if len(value) == 1:
         value = value[0]
         
-    if 'as_log10' in kwargs and kwargs['as_log10'] == True:
+    if 'as_log10' in kwargs and kwargs['as_log10'] is True:
         return numpy.log10(value)
     else:
         return value

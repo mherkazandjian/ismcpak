@@ -35,7 +35,7 @@ HOME      =  os.environ['HOME']
 dataDir   = HOME + '/ism/code/ismcpak/data/'
 outputDir = HOME + '/ism/runs/tests/dynamicGrid/'
 
-nWorker = 7  # number of proccesses
+nWorker = 4  # number of proccesses
 pdr     = interface.pdrInterface(channel_type = 'mpi', 
                                  number_of_workers = nWorker, 
                                  redirection='none') 
