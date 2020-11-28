@@ -66,7 +66,7 @@ class mesh(object):
     """
     def __init__(self, fileName = None, chemNet = None, metallicity = None):
 
-        if fileName != None:
+        if fileName is not None:
             self.fName = fileName #: path (py:string) of the binary file holding the data of the mesh.
         
             # reading the header, constructing the full mesh dtype
@@ -84,12 +84,12 @@ class mesh(object):
             self.data = None  #: (numpy.dtype) holds all the data of the PDR
             self.hdr  = None  #: (numpy.dtype) holds the header info the PDR. This is the same as :data:`self.data['hdr'] <data>`
             
-        if chemNet != None:
+        if chemNet is not None:
             self.set_chemNet(chemNet)
         else:
             self.chemNet = None #:
 
-        if metallicity != None:
+        if metallicity is not None:
             self.set_metallicity(metallicity)
         else:
             self.metallicity = None #:
@@ -306,7 +306,7 @@ class mesh(object):
         # setting the thickness of the last slab to the one before it
         dxSlabs = self.compute_dx() 
         
-        if maxAv == None:
+        if maxAv is None:
             slabsIdx = numpy.arange(data['hdr']['nSteps'])
         else:
             slabsIdx = numpy.where( Av_m < maxAv)
@@ -335,7 +335,7 @@ class mesh(object):
     
     def setFigureObjects(self, figObj=None, axObj=None):
         
-        if figObj != None and axObj != None:
+        if figObj is not None and axObj is not None:
             pass
         else:
             figObj, axObj = pylab.subplots(2, 2, sharex=False, sharey=False, figsize=(12,12))
@@ -350,7 +350,7 @@ class mesh(object):
            :param list plot_Av_range: a list holding the (min, max) of the x axis.  
         """
         
-        if plot_Av_range == None:
+        if plot_Av_range is None:
             plot_x_range = [0, 20]
         else:
             plot_x_range = plot_Av_range
@@ -488,12 +488,12 @@ class mesh(object):
         
     def plot(self, **kwargs):
         
-        if self.chemNet == None:
+        if self.chemNet is None:
             raise NameError("Error : chemical network object not set.")
         else:
             chemNet = self.chemNet
 
-        if self.metallicity == None:
+        if self.metallicity is None:
             raise NameError("Error : metallicity note set.")
         
         if self.figInit == 0:
@@ -502,7 +502,7 @@ class mesh(object):
         data = self.data
         spcs = chemNet.species
         
-        if self.fig == None:
+        if self.fig is None:
             self.fig, self.axs = pylab.subplots(2, 2, sharex=True, sharey=False) 
 
         # subplot 0,0
@@ -569,7 +569,7 @@ class mesh(object):
         xMin = threshold
         
         # checking the metallciity
-        if self.metallicity == None:
+        if self.metallicity is None:
             strng = "Error : metallicity of mesh not set"
             raise NameError(strng)
         else:
@@ -588,7 +588,7 @@ class mesh(object):
         dxNew[-1]   = dx[-1]
         dx = dxNew
                 
-        if Av_range == None:
+        if Av_range is None:
             Av_range = [0, Av.max()]
 
         inds_in_Av_range = numpy.where( (Av >= Av_range[0])*(Av <= Av_range[1]) )  
@@ -676,7 +676,7 @@ class mesh(object):
         xMin = threshold
         
         # checking the metallciity
-        if self.metallicity == None:
+        if self.metallicity is None:
             strng = "Error : metallicity of mesh not set"
             raise NameError(strng)
         else:
@@ -695,7 +695,7 @@ class mesh(object):
         dxNew[-1]   = dx[-1]
         dx = dxNew
                 
-        if Av_range == None:
+        if Av_range is None:
             Av_range = [0, Av.max()]
 
         inds_in_Av_range = numpy.where( (Av >= Av_range[0])*(Av <= Av_range[1]) )  
@@ -822,7 +822,7 @@ class mesh(object):
         q = fetchNestedDtypeValue(self.data, quantity)
         dxSlabs = self.compute_dx()
 
-        if Av_range == None:
+        if Av_range is None:
             integrated_quantity = numpy.sum(q*dxSlabs)
         else:
             Av = self.data['state']['Av']
@@ -836,7 +836,7 @@ class mesh(object):
         attribute values for some of attributes (NOT ALL OF THEM), see below"""
         
         newMesh = mesh(chemNet = self.chemNet, metallicity = self.metallicity)
-        if self.data != None:
+        if self.data is not None:
             newMesh.setData( self.data.copy() )
         else:
             newMesh.setData(None)
@@ -857,10 +857,10 @@ class mesh(object):
         #get the molecular mass of each specie corresponding to self.data['state']['abun'][:,i]
         mol_mass = numpy.zeros(nSpecs, dtype='f8')
         for spec in self.chemNet.species.values():
-            if spec.num != None:
+            if spec.num is not None:
                 mol_mass[spec.num] = spec.mass
 
-        if slab_idx != None:
+        if slab_idx is not None:
             return numpy.sum(abun[:,slab_idx]*mol_mass)
         else:
             mu = numpy.zeros(nSteps, dtype='f8')
