@@ -36,10 +36,10 @@ class Radex(object):
         :param mol_datadir:
         :param logger:
         """
-        self.exec_path = exec_path
+        self.exec_path = None if exec_path is None else os.path.expanduser(exec_path)
         """str: The path to the radex executable"""
 
-        self.mol_datadir = mol_datadir
+        self.mol_datadir = None if mol_datadir is None else os.path.expanduser(mol_datadir)
         """
         str: Path to the directory containing the transition data for
         the species
@@ -373,23 +373,42 @@ class Radex(object):
         
         strng = ''
 
+        # set value for "Molecular data file ?"
         strng  += '%s/%s\n' % (
             self.mol_datadir, self.molDataFiles[ self.infile['specStr']]
         )
+
+        # set dummy value for "Name of output file ?" (
         strng  += 'foo\n'
+
+        # set value for "inimum and maximum output frequency [GHz] ?"
         strng  += '%d %d\n' % (
             self.infile['freqRange'][0], self.infile['freqRange'][1]
         )
+
+        # set value for "Kinetic temperature [K] ?"
         strng  += '%f\n' % (self.infile['tKin'])
+
+        # set value for "Number of collision partners ?"
         strng  += '%d\n' % self.n_coll_partner
-        
+
+        # set value for "Number of collision partners ?  1"
+        # and "Type of partner 1 ?"
+        # and "Density of collision partner  1 [cm^-3] ?"
         for i in numpy.arange(self.n_coll_partner):
             strng += '%s\n' % self.infile['collisionPartners'][i]
             strng += '%e\n' % self.infile['nDensCollisionPartners'][i]
 
+        # set value for "Background temperature [K] ?"
         strng += '%f\n' % self.infile['tBack']
+
+        # set value for "Molecular column density [cm^-2] ?"
         strng += '%e\n' % self.infile['molnDens']
+
+        # set value for "Line width [km/s] ?"
         strng += '%f\n' % self.infile['lineWidth']
+
+        # set value for "Another calculation [0/1] ?"
         strng += '%d'   % self.infile['runAnother']
 
         # DEBUG
@@ -435,7 +454,7 @@ class Radex(object):
             self.set_flag('PARMSOK')
             return self.FLAGS['PARMSOK']
 
-    def run(self, check_input=None, verbose = None):
+    def run(self, check_input=None, verbose=None):
         """
         Run the radex executable.
         
@@ -485,8 +504,20 @@ class Radex(object):
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
-            radex_output = self.proccess.communicate(input=radex_input)[0]
-            
+            radex_output, radex_err = self.proccess.communicate(input=radex_input)
+
+            if verbose is True:
+                print('{}{}{}'.format(
+                    '-------------',
+                    'raw output of Radex stdout',
+                    '------------------'
+                ))
+                print(radex_output)
+                print('-'*100)
+                print('radex errors:')
+                print(radex_err)
+                print('-'*100)
+
             self.raw_output = radex_output
             self.parse_output()
             self.set_flag('RUNOK')
@@ -496,15 +527,6 @@ class Radex(object):
                 self.set_flag('ITERWARN')
             else:
                 self.set_flag('SUCCESS')
-            
-            if verbose is True:
-                print('{}{}{}'.format(
-                    '-------------',
-                    'raw output of Radex stdout',
-                    '------------------'
-                ))
-                print(radex_output)
-                print('-'*100)
         else:
             if verbose is True:
                 print(
@@ -688,7 +710,91 @@ class Radex(object):
     def flag_is_set(self, flag):
         """return True 'flag' is set, false otherwise"""
         return self.status & self.FLAGS[flag]
-        
+
+    def _parse_output(self):
+        output = self.raw_output
+        lines = output.splitlines()
+        n_lines = len(lines)
+
+        # looking for the part of the output after the warning
+        i = 4  # 5th line (skipping into)
+        while True:
+            if lines[i][0] == '*' and lines[i + 1][0] == '*':
+                break
+            i += 1
+
+        self.warnings = lines[4:i]  # extracting the warning
+        # print self.warnings
+
+        # collecting the header (lines starting with a '*')
+        line_num_hdr_start = i
+        while True:
+            if lines[i][0] == '*' and lines[i + 1][0] != '*':
+                break
+            i += 1
+        line_num_hdr_end = i + 1
+
+        self.output_hdr = lines[line_num_hdr_start:line_num_hdr_end]
+        # print  self.outputHdr
+
+        line_num = line_num_hdr_end
+        line_splt = lines[line_num].split()
+        self.n_iter = numpy.int32(line_splt[3])
+
+        transitions = []
+
+        # -----------------------------------------------------------------
+        # parses a line containing the info of a transition line and returns
+        # a dict of the into
+        def parse_line_data(line):
+            info = {}
+
+            # print self.rawOutput
+            line_splt = line.split()
+            # print lineSplt
+            info['upper'] = line_splt[0].strip()
+            info['lower'] = line_splt[1].strip()
+            info['E_up'] = numpy.float64(line_splt[2])
+            info['Tex'] = numpy.float64(line_splt[5])
+            info['tau'] = numpy.float64(line_splt[6])
+            info['T_R'] = numpy.float64(line_splt[7])
+            info['pop_up'] = numpy.float64(line_splt[8])
+            info['pop_down'] = numpy.float64(line_splt[9])
+            info['fluxKkms'] = numpy.float64(line_splt[10])
+            info['fluxcgs'] = numpy.float64(line_splt[11])
+
+            return info
+
+        # ------------------------------------------------------------------
+
+        # look for the first line which starts with a '1' indicating the
+        # first transition line
+        while True:
+            line_num += 1
+            if 'transition data' in lines[line_num + 1]:
+                line_num += 2
+                break
+
+        # parse the output lines info
+        for line in lines[line_num:n_lines - 1]:
+            transition = parse_line_data(line)
+            transitions.append(transition)
+
+        # copy the content of self.transitions into self.transitionsNdarrya
+        # :note: do this at one go without storing things first in
+        # self.transitiosn
+        # ******************************************************
+        self.n_transitions = len(transitions)
+        transitions_ndarray = numpy.ndarray(
+            self.n_transitions,
+            dtype=self.transition_dtype
+        )
+        for i, trans in enumerate(transitions):
+            for key in trans.keys():
+                transitions_ndarray[i][key] = trans[key]
+        self.transitions = transitions_ndarray
+        # ******************************************************
+
     def parse_output(self):
         """
         Once radex exectues and dumps transition information, this method is
@@ -710,90 +816,14 @@ class Radex(object):
             list..just preallocate the dtype and fill in the values.
         """
         try:
-            output = self.raw_output
-            lines  =  output.splitlines()
-            n_lines = len(lines)
-
-            # looking for the part of the output after the warning
-            i = 4 # 5th line (skipping into)
-            while True:
-                if lines[i][0] == '*' and lines[i+1][0] == '*':
-                    break
-                i += 1
-            
-            self.warnings = lines[4:i]  # extracting the warning
-            #print self.warnings
-            
-            # collecting the header (lines starting with a '*')
-            line_num_hdr_start = i
-            while True:
-                if lines[i][0] == '*' and lines[i+1][0] != '*':
-                    break
-                i += 1
-            line_num_hdr_end = i+1
-            
-            self.output_hdr = lines[line_num_hdr_start:line_num_hdr_end]
-            #print  self.outputHdr
-    
-            line_num = line_num_hdr_end
-            line_splt = lines[line_num].split()
-            self.n_iter = numpy.int32(line_splt[3])
-
-            transitions = []
-            #-----------------------------------------------------------------
-            # parses a line containing the info of a transition line and returns
-            # a dict of the into
-            def parse_line_data(line):
-                info = {}
-                
-                # print self.rawOutput
-                line_splt = line.split()
-                # print lineSplt
-                info['upper'] = line_splt[0].strip()
-                info['lower'] = line_splt[1].strip()
-                info['E_up'] = numpy.float64(line_splt[2])
-                info['Tex'] = numpy.float64(line_splt[5])
-                info['tau'] = numpy.float64(line_splt[6])
-                info['T_R'] = numpy.float64(line_splt[7])
-                info['pop_up'] = numpy.float64(line_splt[8])
-                info['pop_down'] = numpy.float64(line_splt[9])
-                info['fluxKkms'] = numpy.float64(line_splt[10])
-                info['fluxcgs'] = numpy.float64(line_splt[11])
-                
-                return info
-            #------------------------------------------------------------------
-
-            # look for the first line which starts with a '1' indicating the
-            # first transition line
-            while True:
-                line_num += 1
-                if 'transition data' in lines[line_num + 1]:
-                    line_num += 2
-                    break
-
-            #parse the output lines info
-            for line in lines[line_num:n_lines-1]:
-                transition = parse_line_data(line)
-                transitions.append(transition)
-
-            # copy the content of self.transitions into self.transitionsNdarrya
-            # :note: do this at one go without storing things first in
-            # self.transitiosn
-            #******************************************************
-            self.n_transitions = len(transitions)
-            transitions_ndarray = numpy.ndarray(
-                self.n_transitions,
-                dtype=self.transition_dtype
-            )
-            for i, trans in enumerate(transitions):
-                for key in trans.keys():
-                    transitions_ndarray[i][key] = trans[key]
-            self.transitions = transitions_ndarray
-            #******************************************************
-
-        except (ValueError, IndexError):
+            self._parse_output()
+        except (ValueError, IndexError) as exc:
             print(self.raw_output)
             err_str = 'parsing the output failed'
+            print('-'*100)
+            print(repr(exc))
+            traceback.print_exc(file=sys.stdout)
+            print('-'*100)
             raise NameError(err_str)
 
     def check_for_pop_density_sum(self, expected_sum, tolerence):
@@ -1100,7 +1130,7 @@ class Radex(object):
                     removeAll_xLabels(ax)
                     ax.set_xlabel('')
     
-    def plotModel(self):
+    def plot_model(self):
         """plotting a single model
            todo allow for a choice of the number of transitions to be plotted
         """
