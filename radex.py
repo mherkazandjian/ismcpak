@@ -1,8 +1,10 @@
+import os
+import sys
 import numpy
 import pylab
 import subprocess
-import logging, sys
-import os
+import logging
+import traceback
 
 from misc import default_logger
 
@@ -937,8 +939,8 @@ class Radex(object):
           :param title (string): The title to be written at the top of the axes column. 
         """
         
-        if allTrans == None:
-            allTrans =  numpy.arange( len(self.transitions) )
+        if allTrans is None:
+            allTrans = numpy.arange(len(self.transitions))
 
         nTrans = len(allTrans)
         #----------------flux-------------------------
@@ -947,7 +949,7 @@ class Radex(object):
         xticksStrs = ()
         
         xPlot = allTrans
-        yPlot = numpy.ndarray(nTrans, dtype=numpy.float64)
+        yPlot = numpy.ndarray((nTrans,), dtype=numpy.float64)
         for i in numpy.arange(nTrans):
     
             thisTrans = allTrans[i]

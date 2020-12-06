@@ -2189,19 +2189,21 @@ class meshArxv(object):
         :param Av_range: The range in Av used in the in PDR mesh to compute the emissions
         '''
         
-        if isinstance(solver_instance, radex):
+        if isinstance(solver_instance, Radex):
             #updating the display strings on the gui related to Radex
             #updating the ['radex']['title1'] and ['radex']['title2']
             #title1
             
             radexObj = self.radexObj
             
-            strng = 'radex LVG data for species %s, Av = [%.2f, %.2f]' %  (radexObj.inFile['specStr'], Av_range[0], Av_range[1])
+            strng = 'radex LVG data for species %s, Av = [%.2f, %.2f]' % (
+                radexObj.infile['specStr'], Av_range[0], Av_range[1]
+            )
             self.gui['em_lines']['title1'].set_text(strng)
             #title2
-            strng = 'gasT\n%f\nN(specie)\n%e\n' % (radexObj.inFile['tKin'], radexObj.inFile['molnDens'])
-            for i, specStr in enumerate(radexObj.inFile['collisionPartners']):
-                strng += '%s\n%e\n' % (specStr, radexObj.inFile['nDensCollisionPartners'][i])                
+            strng = 'gasT\n%f\nN(specie)\n%e\n' % (radexObj.infile['tKin'], radexObj.infile['molnDens'])
+            for i, specStr in enumerate(radexObj.infile['collisionPartners']):
+                strng += '%s\n%e\n' % (specStr, radexObj.infile['nDensCollisionPartners'][i])
             self.gui['em_lines']['title2'].set_text(strng)
         
     def plotGrids(self, *args, **kwargs):
@@ -2553,16 +2555,16 @@ class meshArxv(object):
         #print collsStr
         #print nDensColls
 
-        radex_obj.setInFileParm('specStr', radex_parms['specStr'])
-        radex_obj.setInFileParm('tKin', gasTRadex)
-        radex_obj.setInFileParm('collisionPartners', collsStr)
-        radex_obj.setInFileParm('nDensCollisionPartners', nDensColls)
-        radex_obj.setInFileParm('molnDens', colDensThisSpec)
+        radex_obj.set_infile_parm('specStr', radex_parms['specStr'])
+        radex_obj.set_infile_parm('tKin', gasTRadex)
+        radex_obj.set_infile_parm('collisionPartners', collsStr)
+        radex_obj.set_infile_parm('nDensCollisionPartners', nDensColls)
+        radex_obj.set_infile_parm('molnDens', colDensThisSpec)
         
         #remove colliders which are underabundant (below radex limits)
-        radex_obj.filterColliders()
+        radex_obj.filter_colliders()
         
-        if len(radex_obj.inFile['collisionPartners']) == 0:
+        if len(radex_obj.infile['collisionPartners']) == 0:
             self.logger.debug('not enough colliders')
             return None, None
         else:
@@ -2572,12 +2574,12 @@ class meshArxv(object):
                 # this file can be used to re-run radex as standalone
                 fName = radex_parms['path'] + '-debug.inp'
                 fObj = open(fName, 'w')
-                fObj.write(radex_obj.genInputFileContentAsStr() )
+                fObj.write(radex_obj.gen_input_file_content_as_str())
                 self.logger.debug('input radex file written to %s' % fName)
             
             if radex_parms['checkOutputIntegrity'] is False:
-                radex_obj.setDefaultStatus()
-                radex_obj.run(checkInput = True, verbose = radex_parms['verbose'])
+                radex_obj.set_default_status()
+                radex_obj.run(checkInput=True, verbose=radex_parms['verbose'])
                 
                 if radex_obj.flag_is_set('RUNOK'):
                     has_lines = True
@@ -2587,13 +2589,14 @@ class meshArxv(object):
             else:
                 #running radex (multiple times if necessary) for it to converge for this set of parms     
                 status, has_lines = radex_obj.run_mutiple_trials(
-                                                                 expected_sum_pop_dens = radex_parms['popDensSumExpected'],
-                                                                 rel_pop_dens_tol = radex_parms['popDensSumTol'],   
-                                                                 change_frac_trial = radex_parms['changeFracTrial'],    
-                                                                 max_trials = radex_parms['nMaxTrial'],
-                                                                 verbose = radex_parms['verbose'],
-                                                                 strict = radex_parms['strict']
-                                                                 )
+                    expected_sum_pop_dens=radex_parms['popDensSumExpected'],
+                    rel_pop_dens_tol=radex_parms['popDensSumTol'],
+                    change_frac_trial=radex_parms['changeFracTrial'],
+                    max_trials=radex_parms['nMaxTrial'],
+                    verbose=radex_parms['verbose'],
+                    strict=radex_parms['strict']
+                )
+
         return has_lines, radex_parm_from_pdr_mesh 
     
     def compute_and_set_radex_curves(self, pdr_mesh_obj=None, radex_parms=None, Av_range=None, compute_only=None, radex_obj = None):
@@ -2612,7 +2615,7 @@ class meshArxv(object):
         
         if compute_only is None:
             #setting the axes
-            radex_obj.setupPlot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
+            radex_obj.setup_plot(nx = 1, fig = self.gui['figure'], axs = self.pltRadex)
             radex_obj.set_logger(self.logger)
             #clearing them in case there was anything
             radex_obj.clearCurves()

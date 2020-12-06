@@ -72,16 +72,16 @@ parms = {
          'nThreads'      : 1,
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
-         'radex'         : { 'use'                  : False,
+         'radex'         : { 'use'                  : True,
                              'loadAllDbs'           : False,
                              'plot_model_from_Db'   : False,   #plot the emission ladder from the database [do not run radex]
                              ###-----------radex database parms-----------------
-                             'compute'              : False, #if true, runns radex on all meshes
+                             'compute'              : False, #if true, runs radex on all meshes
                              'writeDb'              : False, #if true, writes the computed stuff to a db
                              'Av_range'             : [0.0, 0.1],  #range which will be used in extracting data needed by radex from the PDR models
                                                                     #(only relevent to constructing databases)
-                             'path'                 : home + '/ism/code/ismcpak/radex/Radex/bin-gcc/radex',  
-                             'molDataDirPath'       : home + '/ism/code/ismcpak/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
+                             'path'                 : home + '/ism/code/radex/Radex/bin-gcc/radex',
+                             'molDataDirPath'       : home + '/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : specStr_Radex,
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001
