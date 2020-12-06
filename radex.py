@@ -1176,7 +1176,7 @@ class Radex(object):
         return self.logger
 
     def copy(self):
-        radexNew = radex(self.exec_path, self.mol_datadir)
+        radexNew = Radex(self.exec_path, self.mol_datadir)
         radexNew.set_infile(self.infile.copy())
         radexNew.logger = self.logger
         

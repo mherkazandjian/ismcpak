@@ -1804,7 +1804,7 @@ class meshArxv(object):
                     meshesRadex[i] = None
                     radex_obj_utility.print_set_flags()
                 else: # radex succeeded, wirint the transition data
-                    infoAllRadex[i]['info'][1] = radex_obj_utility.nTransitions
+                    infoAllRadex[i]['info'][1] = radex_obj_utility.n_transitions
                     meshesRadex[i] = radex_obj_utility.transitions
     
                 #infoAllRadex[i]['info'][2] = NOT SET HERE, IT IS SET WHEN WRITING THE DB TO A FILE

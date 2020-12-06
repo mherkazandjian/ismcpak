@@ -69,15 +69,15 @@ parms = {
                                     },
                            },
          'gridsRes'      : 100,
-         'nThreads'      : 1,
+         'nThreads'      : 4,
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
           
          'radex'         : { 'use'                  : True,
                              'loadAllDbs'           : False,
                              'plot_model_from_Db'   : False,   #plot the emission ladder from the database [do not run radex]
                              ###-----------radex database parms-----------------
-                             'compute'              : False, #if true, runs radex on all meshes
-                             'writeDb'              : False, #if true, writes the computed stuff to a db
+                             'compute'              : True, #if true, runs radex on all meshes
+                             'writeDb'              : True, #if true, writes the computed stuff to a db
                              'Av_range'             : [0.0, 0.1],  #range which will be used in extracting data needed by radex from the PDR models
                                                                     #(only relevent to constructing databases)
                              'path'                 : home + '/ism/code/radex/Radex/bin-gcc/radex',
@@ -118,7 +118,7 @@ if parms['plot']:
     arxv.plotGrids()
     pylab.show()
 
-if False:
+if True:
     """construct radex databases for a bunch of species for a bunch of Avs"""
 
     parms['radex']['compute'] = True
@@ -126,12 +126,15 @@ if False:
     
     #for Av in numpy.arange(10.0, 30.0+0.0001, 2.0):
     #for Av in numpy.arange(1.0, 10.0+0.0001, 1.0):
-    for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
+    # for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
+    for Av in numpy.array([2.0,]):
         parms['radex']['Av_range'][1] = Av
-        species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'SiO', 'CN', 'CS']
+        #species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'SiO', 'CN', 'CS']
+        # species = ['CO', 'HCN', 'HNC', 'HCO+']
+        species = ['CO',]
         for specStr in species:
             parms['radex']['specStr'] = specStr
-            arxv.constructRadexDatabase(writeDb = True)
+            arxv.constructRadexDatabase(writeDb=True)
 
 if False:
     """construct radex databases for a bunch of species for a bunch of Avs"""
