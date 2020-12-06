@@ -11,6 +11,12 @@ To run a quick example, the following container can be used:
 This is a package which implements some utilities useful for modelling and
 analyzing simulation output of PDRs.
 
+**jupyter notebooks**
+
+To run a jupyter server inside the container with the full ismcpak environment:
+
+    $ singularity exec --scratch /run/user library://mher/default/ismcpak:master jupyter-lab
+
 Build the container locally
 ---------------------------
 

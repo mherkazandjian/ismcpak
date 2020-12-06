@@ -85,16 +85,25 @@ From: ubuntu:16.04
 
     apt-get clean
 
-    pip install nose==1.3.7
-    pip install scipy==1.2.2
-    pip install numpy==1.16.1
-    pip install docutils==0.14
-    pip install h5py==2.9.0
-    pip install mpi4py==3.0.0
-    pip install cython==0.29.5
-    pip install ipython==5.8.0
-    pip install matplotlib==2.2.3
-    pip install pdbpp
+    pip install \
+      nose==1.3.7 \
+      scipy==1.2.2 \
+      numpy==1.16.1 \
+      docutils==0.14 \
+      h5py==2.9.0 \
+      mpi4py==3.0.0 \
+      cython==0.29.5 \
+      ipython==5.8.0 \
+      matplotlib==2.2.3 \
+      qtconsole==4.5.5 \
+      pdbpp==0.10.2 \
+      pyrsistent==0.15.4 \
+      jupyter==1.0.0 \
+      jupyter-client==5.3.1 \
+      jupyter-console==5.2.0 \
+      jupyter-core==4.4.0 \
+      jupyterlab==0.33.12 \
+      jupyterlab-launcher==0.11.2
 
     ## download and configure and build amuse
     mkdir /ism
