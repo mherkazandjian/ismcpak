@@ -8,6 +8,7 @@ import traceback
 
 from misc import default_logger
 
+# .. todo:: fix paths
 radex_bin_path = os.environ['HOME'] + '/ism/code/ismcpak/radex/Radex/bin-gcc/radex'
 radex_moldata_path = os.environ['HOME'] + '/ism/ismcpak/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 print('default radex path       {}'.format(radex_bin_path))
@@ -30,7 +31,7 @@ class Radex(object):
      transitions are not longer than 10 character, or change the length
      accordingly in self.generate_transition_dtype().
     """
-    def __init__(self, exec_path, mol_datadir, logger=None):
+    def __init__(self, exec_path, mol_datadir, logger=None, suppress_acknowledgement=False):
         """
         Constructor
 
@@ -259,7 +260,19 @@ class Radex(object):
         if logger is None:
             self.logger = default_logger()
         else:
-            self.logger = logger 
+            self.logger = logger
+
+        if not suppress_acknowledgement:
+            ackn_str = ""
+            ackn_str += '-'*100 + '\n'
+            ackn_str += "\tRADEX that is included in this project is a slightly modified version\n"
+            ackn_str += "\tof the original source code https://personal.sron.nl/~vdtak/radex/index.shtml\n"
+            ackn_str += "\tPlease make sure to cite:\n"
+            ackn_str += "\t    Van der Tak, F.F.S., Black, J.H., Schoier, F.L., Jansen, D.J., van Dishoeck, E.F. 2007, A&A 468, 627\n"
+            ackn_str += "\tif this module is used for your research\n"
+            ackn_str += '-'*100 + '\n'
+
+            print(ackn_str)
 
     def set_infile_parm(self, parm, value):
         """set values to the parameters to be passed to radex.

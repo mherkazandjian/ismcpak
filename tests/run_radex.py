@@ -8,8 +8,8 @@ from time import time
 
 # path of the radex excutable
 # radex_path = '~/ism/code/radex/Radex/bin-gcc/radex'
-radex_path = '~/ism/code/radex/Radex/bin-gcc/radex'
-mol_data_dirPath = '~/ism/code/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
+radex_path = '../radex/Radex/bin-gcc/radex'
+mol_data_dirPath = '../radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles'
 
 # parameters that will be passed to radex single partner
 infile = {
