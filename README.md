@@ -6,7 +6,7 @@ To run a quick example, the following container can be used:
 
     $ git clone -b alpha-master https://github.com/mherkazandjian/ismcpak.git ~/ismcpak
     $ cd ~/ismcpak/tests
-    $ singularity exec library://mher/default/ismcpak:master mpiexec python run_singleMesh.py 
+    $ singularity exec library://mher/default/ismcpak:latest mpiexec python run_singleMesh.py 
 
 This is a package which implements some utilities useful for modelling and
 analyzing simulation output of PDRs.
@@ -15,7 +15,7 @@ analyzing simulation output of PDRs.
 
 To run a jupyter server inside the container with the full ismcpak environment:
 
-    $ singularity exec --scratch /run/user library://mher/default/ismcpak:master jupyter-lab
+    $ singularity exec --scratch /run/user library://mher/default/ismcpak:latest jupyter-lab
 
 Build the container locally
 ---------------------------
