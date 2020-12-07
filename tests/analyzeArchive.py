@@ -80,8 +80,8 @@ parms = {
                              'writeDb'              : True, #if true, writes the computed stuff to a db
                              'Av_range'             : [0.0, 0.1],  #range which will be used in extracting data needed by radex from the PDR models
                                                                    #(only relevent to constructing databases)
-                             'path'                 : '../radex/Radex/bin-gcc/radex',
-                             'molDataDirPath'       : '../radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
+                             'path'                 : '/ism/ismcpak/radex/Radex/bin-gcc/radex',
+                             'molDataDirPath'       : '/ism/ismcpak/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : specStr_Radex,
                              'freqRange'            : [0, 50000],
                              #'xH2_Min'              : 2*0.0000000001

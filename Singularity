@@ -127,6 +127,7 @@ From: ubuntu:16.04
     ln -s $PWD/ismcpak/oneSided $PWD/amuse-11.2/src/amuse/community/pdr
     cd /ism/amuse-11.2/src/amuse/community/pdr
     make all
+    cd /ism/ismcpak/radex/Radex/src && make
 
     ## setup the dirs for a first quick run
     mkdir -p /ism/runs/tests/oneSided/single_mesh/meshes
