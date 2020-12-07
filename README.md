@@ -156,5 +156,10 @@ research.
 
    Meijerink, R. & Spaans, M. 2005, A&A, 436, 397
 
+Ismpak makes makes use of "Radex" internally to compute the line emissions. Please
+reference the RADEX paper as well:
+
+   Van der Tak, F.F.S., Black, J.H., Schöier, F.L., Jansen, D.J., van Dishoeck, E.F. 2007, A&A 468, 627
+
 
  

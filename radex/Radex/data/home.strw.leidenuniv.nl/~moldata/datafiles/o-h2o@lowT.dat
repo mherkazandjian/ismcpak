@@ -1,0 +1,61 @@
+! MOLECULE
+Ortho H2O spectroscopy from JPL / Holger Müller
+! MASS
+ 18.
+! NUMBER OF ENERGY LEVELS
+5
+! LEVEL + ENERGY(CM-1) + WEIGHT + QUANTUM NOS.  J_K+_K-
+  1    23.794356     9.0      1_0_1
+  2    42.371741     9.0      1_1_0
+  3    79.496382    15.0      2_1_2
+  4   134.901638    15.0      2_2_1
+  5   136.761650    21.0      3_0_3
+! NUMBER OF RADIATIVE TRANSITIONS
+5
+! TRANS + UP + LOW + EINSTEINA(s^-1) + FREQ(GHz)+ E_up(K)
+   1    2   1   3.458E-03    556.93607     61.0
+   2    3   1   5.593E-02   1669.90496    114.4
+   3    4   2   2.564E-01   2773.97691    194.1
+   4    4   3   3.058E-02   1661.00802    194.1
+   5    5   3   5.048E-02   1716.76979    196.8
+! NUMBER OF COLLISION PARTNERS
+2
+! COLLISION PARTNER
+2 oH2O - pH2 from Dubernet et al. (2006)
+! NUMBER OF COLLISIONAL TRANSITIONS
+10
+! NUMBER OF COLLISION TEMPERATURES
+5
+! COLLISION TEMPERATURES
+5.0  8.0  12.0  16.0  20.0   
+! TRANS + UP + LOW + RATE COEFFS(cm^3 s^-1)
+    1    2   1   3.38e-11 3.42e-11 3.40e-11 3.37e-11 .34E-10 
+    2    3   1   3.27e-11 3.26e-11 3.31e-11 3.36e-11 .34E-10 
+    3    3   2   1.19e-11 1.30e-11 1.44e-11 1.54e-11 .16E-10 
+    4    4   1   2.54e-12 2.74e-12 2.97e-12 3.13e-12 .33E-11 
+    5    4   2   3.11e-11 3.19e-11 3.27e-11 3.30e-11 .33E-10 
+    6    4   3   2.15e-11 2.07e-11 1.99e-11 1.93e-11 .19E-10 
+    7    5   1   6.75e-12 6.90e-12 7.08e-12 7.23e-12 .73E-11 
+    8    5   2   7.06e-12 6.77e-12 6.47e-12 6.24e-12 .61E-11 
+    9    5   3   4.00e-11 3.86e-11 3.70e-11 3.57e-11 .35E-10 
+   10    5   4   5.05e-12 5.12e-12 4.92e-12 4.68e-12 .44E-11 
+! COLLISION PARTNER
+3 oH2O - oH2 from Dubernet et al. (2006)
+! NUMBER OF COLLISIONAL TRANSITIONS
+10
+! NUMBER OF COLLISION TEMPERATURES
+5
+! COLLISION TEMPERATURES
+5.0  8.0  12.0  16.0  20.0   
+! TRANS + UP + LOW + RATE COEFFS(cm^3 s^-1)
+    1    2   1   2.35e-10 2.51e-10 2.67e-10 2.80e-10 .29E-09 
+    2    3   1   6.21e-11 7.96e-11 9.32e-11 1.02e-10 .11E-09 
+    3    3   2   6.54e-11 8.38e-11 9.71e-11 1.05e-10 .11E-09 
+    4    4   1   1.64e-11 2.14e-11 2.47e-11 2.66e-11 .28E-10 
+    5    4   2   3.84e-11 5.07e-11 5.89e-11 6.36e-11 .67E-10 
+    6    4   3   4.62e-11 6.37e-11 7.72e-11 8.54e-11 .91E-10 
+    7    5   1   1.66e-11 1.87e-11 2.01e-11 2.08e-11 .21E-10 
+    8    5   2   2.15e-11 2.33e-11 2.40e-11 2.41e-11 .24E-10 
+    9    5   3   7.33e-11 8.47e-11 9.35e-11 9.93e-11 .10E-09 
+   10    5   4   3.16e-11 3.67e-11 4.11e-11 4.37e-11 .45E-10 
+
