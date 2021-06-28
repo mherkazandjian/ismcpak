@@ -59,7 +59,8 @@ class Radex(object):
             'C+':   'c+.dat',
             'O':    'oatom.dat',
             'SiO':  'sio.dat',
-            'CN':   'cn.dat'
+            'CN':   'cn.dat',
+            'HN2+': 'n2h+.dat'
         }
         """
         dict : dictonary for the species files, the keys of this dict are as
