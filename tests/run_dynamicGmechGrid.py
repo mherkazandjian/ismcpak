@@ -9,6 +9,8 @@ n, G0 and gmech
 run using the command:
 
     $ cd $ISMCPAK/test
+    $ mpirun -np 1 run_surfaceGrid.py
+    $ python constructReadArchive.py
     $ mpirun -np run_dynamicGmechGrid.py
 
 </description>
@@ -30,7 +32,7 @@ from ismUtils import *
 from meshUtils import *
 from time import *
 
-dataDir   = '/ism/code/ismcpak/data/'
+dataDir   = '/ism/ismcpak/data/'
 outputDir = '../../data/oneSided/dynamicGrid/'
 
 # create the directory structure of the output
@@ -40,7 +42,7 @@ meshes_dir = os.path.join(outputDir, 'meshes')
 if not os.path.isdir(meshes_dir):
     os.makedirs(meshes_dir)
 
-nWorker = 1  # number of proccesses
+nWorker = 5  # number of proccesses
 pdr     = interface.pdrInterface(channel_type = 'mpi',
                                  number_of_workers = nWorker,
                                  redirection='none')
