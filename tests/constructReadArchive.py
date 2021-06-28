@@ -18,18 +18,16 @@ from meshUtils import *
 from time import *
 import os
 
-home = os.environ['HOME']
-
-runDirPath =  home + '/ism/runs/tests/dynamicGrid/'
+runDirPath =  '../../data/oneSided/surfaceGrid-z-1.0-no-gmech/'
 
 # constructing the archive
 t0 = time()
-arxvW = meshArxv(dirPath = runDirPath)
-arxvW.construct( meshNamePrefix = 'mesh', writeDb = True )
+arxvW = meshArxv(dirPath=runDirPath)
+arxvW.construct(meshNamePrefix='mesh', writeDb=True)
 print 'time constructing %f' % (time() - t0)
 
 
-# reading the archive 
+# reading the archive
 t0 = time()
 arxvR = meshArxv( dirPath = runDirPath )
 arxvR.readDb( )
