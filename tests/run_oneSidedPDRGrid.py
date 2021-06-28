@@ -34,10 +34,17 @@ import meshUtils
 dataDir   = '/ism/ismcpak/data/'
 outputDir = '../../data/oneSided/oneSidedGrid/'
 
+# create the directory structure of the output
+if not os.path.isdir(outputDir):
+    os.makedirs(outputDir)
+meshes_dir = os.path.join(outputDir, 'meshes')
+if not os.path.isdir(meshes_dir):
+    os.makedirs(meshes_dir)
+
 nWorker   = 1  # number of proccesses
-pdr       = interface.pdrInterface( channel_type = 'mpi', 
-                                    number_of_workers = nWorker, 
-                                    redirection='none') 
+pdr       = interface.pdrInterface( channel_type = 'mpi',
+                                    number_of_workers = nWorker,
+                                    redirection='none')
 
 pdr.set_outputDir                  (outputDir + 'meshes/');
 pdr.set_species_fName              (dataDir + 'pdr/species.inp');
@@ -63,7 +70,7 @@ xMin =  0.0
 xMax =  6.0
 
 ny   =  3j  #5j   # log10 G0
-yMin =  0.0  
+yMin =  0.0
 yMax =  6.0
 
 nz   =  2j    #51j
