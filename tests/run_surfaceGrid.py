@@ -10,7 +10,7 @@ from enumSpecies import *
 from ismUtils import *
 import time, sys, os
 
-nWorker = 6  # number of proccesses
+nWorker = 1  # number of proccesses
 pdr     = interface.pdrInterface( channel_type = 'mpi', number_of_workers = nWorker, redirection='none')
 
 metallicity = 1.0   # in terms of solar metallicity

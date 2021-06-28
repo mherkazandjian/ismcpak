@@ -30,28 +30,27 @@ from ismUtils import *
 from meshUtils import *
 from time import *
 
-HOME      =  os.environ['HOME']
+dataDir   = '/ism/code/ismcpak/data/'
+outputDir = '../../data/oneSided/dynamicGrid/'
 
-dataDir   = HOME + '/ism/code/ismcpak/data/'
-outputDir = HOME + '/ism/runs/tests/dynamicGrid/'
+# create the directory structure of the output
+if not os.path.isdir(outputDir):
+    os.makedirs(outputDir)
+meshes_dir = os.path.join(outputDir, 'meshes')
+if not os.path.isdir(meshes_dir):
+    os.makedirs(meshes_dir)
 
-nWorker = 4  # number of proccesses
-pdr     = interface.pdrInterface(channel_type = 'mpi', 
-                                 number_of_workers = nWorker, 
-                                 redirection='none') 
+nWorker = 1  # number of proccesses
+pdr     = interface.pdrInterface(channel_type = 'mpi',
+                                 number_of_workers = nWorker,
+                                 redirection='none')
 
 metallicity  =  1.0   # in terms of solar metallicity
 plotRangenG0 = [[0,6],[0,6]]
 
-# path of the database from which the surface mech heating 
+# path of the database from which the surface mech heating
 # rates will be extracted
-databasePath  = os.path.join(outputDir,'../oneSidedGrid_no_gmech/')
-
-#---------chemical network parameters (not used in the modelling)-------------------
-rxnFile       = HOME + '/ism/code/ismcpak/data/rate99Fixed.inp'
-specNumFile   = HOME + '/ism/code/ismcpak/data/species.inp'
-underAbunFile = HOME + '/ism/code/ismcpak/data/underabundant.inp'
-removeManual  = ['13CH3']
+databasePath  = os.path.join(outputDir, '../surfaceGrid-z-1.0-no-gmech/')
 
 #----------------amuse modeling parameters----------------------------------------
 pdr.set_outputDir                  (outputDir + 'meshes/');
@@ -89,7 +88,7 @@ xMin = 0.0
 xMax = 6.01
 
 dy   = 3.0     # log10 G0
-yMin = 0.0  
+yMin = 0.0
 yMax = 6.01
 
 # factor of surface heating to be added as mechanical heating
@@ -128,7 +127,7 @@ for v in z:
 
     gMechGrid = np.log10(v * (10.0**gammaSurf) )
     zTmp.append( gMechGrid )
-    
+
 x = np.array(xTmp).flatten()
 y = np.array(yTmp).flatten()
 z = np.array(zTmp).flatten()
@@ -167,10 +166,9 @@ mshErr,err = pdr.get_errorFlags(ids)
 T,err = pdr.get_temperature(ids)
 
 # writing the results to an ascii file
-if 1:
-    f = file(outputDir+'results.out', 'w')
-    for i in arange(n):
-        f.write( '%d %.3f %.3f %.3e %.d\n' % (ids[i], rho[i], G0[i], Lmech[i], mshErr[i]))
-    f.close()
+f = file(outputDir+'results.out', 'w')
+for i in arange(n):
+    f.write( '%d %.3f %.3f %.3e %.d\n' % (ids[i], rho[i], G0[i], Lmech[i], mshErr[i]))
+f.close()
 
 print 'done'
