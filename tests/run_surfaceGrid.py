@@ -1,4 +1,6 @@
 #---------------------------------------------------------------------------------------------------
+import matplotlib
+matplotlib.use('PS')
 from numpy import *
 from numpy.random import *
 import pylab as pyl
