@@ -85,6 +85,11 @@ From: ubuntu:16.04
 
     apt-get clean
 
+    # pdbpp was causing a py2.7 issue when installed with all the other
+    # python packages below, this solved the issue and it was installed
+    # properly
+    pip install setuptools-scm==1.17.0 
+    pip install pdbpp==0.10.2
     pip install \
       nose==1.3.7 \
       scipy==1.2.2 \
@@ -96,7 +101,6 @@ From: ubuntu:16.04
       ipython==5.8.0 \
       matplotlib==2.2.3 \
       qtconsole==4.5.5 \
-      pdbpp==0.10.2 \
       pyrsistent==0.15.4 \
       jupyter==1.0.0 \
       jupyter-client==5.3.1 \
