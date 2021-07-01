@@ -13,27 +13,31 @@ home = os.environ['HOME']
 
 specStr_PDR   = 'CO'
 specStr_Radex = 'CO'
+#specStr_PDR   = 'HN2+'
+#specStr_Radex = 'HN2+'
 
 parms = {
          #path to the database files
-         # 'dirPath'      : home + '/ism/runs/tests/dynamicMesh-z-1.0/',
-         'dirPath'      : home + '/ism/runs/tests/dynamicGrid/',
+         #'dirPath'      : home + '/ism/runs/tests/dynamicMesh-z-1.0/',
+         'dirPath'      : '../../data/oneSided/dynamicGrid/',
+         # 'dirPath'      : home + '/ism/runs/tests/dynamicGrid/',
          #------------------------------------------
          'relativeGmech' : True,  # True  => 3rd dim is the gMech/gSurface(gMech=0)
-         #'relativeGmech' : False,  # False => 3rd dim is gMech 
+         #'relativeGmech' : False,  # False => 3rd dim is gMech
+         'runDirPath2'   : '../../data/oneSided/surfaceGrid-z-1.0-no-gmech',
          'min_gMech'     : 1e-50, # set the mimum value of gMech to be used in the ref arxive
-         
+
          'plotRanges'    : [[0, 6], [0, 6], [-10, 0]],     # adaptive gMech
          #'plotRanges'     : [[-4,7],[-4,7],[-51, -15]],  # uniform gmech
-         #'plotRanges'    : [[-1,7],[-1,7  ],[-18, -12]],     # variable CR rate 
+         #'plotRanges'    : [[-1,7],[-1,7  ],[-18, -12]],     # variable CR rate
 
          #useful for variable CR runs
          #'grid_qx'       : ['hdr','nGas'],
          #'grid_qy'       : ['hdr','G0'],
          #'grid_qz'       : ['from_meshes_info', 'parms', 3, 'CR_rate'],  # 3 indicates the 4th column in self.infoAll['parms']
-         
-         #-----------------------------------         
-         'plot'          : True, 
+
+         #-----------------------------------
+         'plot'          : True,
          'showGrids'     : True,
          'gridsInfo'     : { '00' : {#some quantity
                                     'show'     : True,
@@ -41,8 +45,8 @@ parms = {
                                     'quantity' : ['therm', 'heating'],
                                     'slabIdx'  : 0,
                                     },
-                             '01' : {# abundance 
-                                    'show'     : True, 
+                             '01' : {# abundance
+                                    'show'     : True,
                                     'quantity' : ['state', 'abun'],
                                     'slabIdx'  : 0,
                                     'specStr'  : specStr_PDR,
@@ -54,7 +58,7 @@ parms = {
                                     },
                              '11' : { # line intensitities
                                      'show'           : False,
-                                     ##------------------comment those if radex parms is 'pdr' is selected below this------------                                    
+                                     ##------------------comment those if radex parms is 'pdr' is selected below this------------
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','C+','rate','1-0'], # for use with 'pdr'
                                      #'specStr'        : 'C',     # database to be restored/computed
@@ -65,21 +69,21 @@ parms = {
                                      'quantity'       : 'fluxcgs', #,'fluxcgs', 'fluxKkms'
                                      #----------------end radex parms---------------------------------------------------
                                      'showContours'   : True,
-                                     'Av_max'         : 2.0,  #the maximum Av to be used  
+                                     'Av_max'         : 30.0,  #the maximum Av to be used
                                     },
                            },
          'gridsRes'      : 100,
          'nThreads'      : 4,
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
-          
+
          'radex'         : { 'use'                  : True,
                              'loadAllDbs'           : False,
                              'plot_model_from_Db'   : False,   #plot the emission ladder from the database [do not run radex]
                              ###-----------radex database parms-----------------
                              'compute'              : True, #if true, runs radex on all meshes
                              'writeDb'              : True, #if true, writes the computed stuff to a db
-                             'Av_range'             : [0.0, 0.1],  #range which will be used in extracting data needed by radex from the PDR models
-                                                                   #(only relevent to constructing databases)
+                             'Av_range'             : [0.0, 30],  #range which will be used in extracting data needed by radex from the PDR models
+                                                                  #(only relevent to constructing databases)
                              'path'                 : '/ism/ismcpak/radex/Radex/bin-gcc/radex',
                              'molDataDirPath'       : '/ism/ismcpak/radex/Radex/data/home.strw.leidenuniv.nl/~moldata/datafiles',
                              'specStr'              : specStr_Radex,
@@ -94,10 +98,10 @@ parms = {
                              'lineWidth'            : 1.0,
                              'verbose'              : False,
                              'maxDisplayTranistion' : 20,
-                             'quantity'             : 'fluxcgs',  # 'fluxKkms', 'fluxcgs' 
+                             'quantity'             : 'fluxcgs',  # 'fluxKkms', 'fluxcgs'
                              ###----------extra convergence params-----------------------
-                             'checkOutputIntegrity'       : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)                             
-                             'popDensSumExpected'         : 1.0, 
+                             'checkOutputIntegrity'       : True,  # if true, check the radex output (sometimes although it converges, the numbers do not make sense)
+                             'popDensSumExpected'         : 1.0,
                              'popDensSumTol'              : 1e-2,
                              'changeFracTrial'            : 0.05,
                              'strict'                     : True,
@@ -123,7 +127,7 @@ if True:
 
     parms['radex']['compute'] = True
     parms['radex']['writeDb'] = True
-    
+
     #for Av in numpy.arange(10.0, 30.0+0.0001, 2.0):
     #for Av in numpy.arange(1.0, 10.0+0.0001, 1.0):
     # for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
@@ -131,7 +135,8 @@ if True:
         parms['radex']['Av_range'][1] = Av
         #species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'SiO', 'CN', 'CS']
         # species = ['CO', 'HCN', 'HNC', 'HCO+']
-        species = ['CO',]
+        # species = ['CO',]
+        species = ['HN2+',]
         for specStr in species:
             parms['radex']['specStr'] = specStr
             arxv.constructRadexDatabase(writeDb=True)
@@ -141,18 +146,18 @@ if False:
 
     parms['radex']['compute'] = True
     parms['radex']['writeDb'] = True
-    
+
     #for Av in numpy.arange(10.0, 30.0+0.0001, 2.0):
     #for Av in numpy.arange(1.0, 10.0+0.0001, 1.0):
     for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
         parms['radex']['Av_range'][1] = Av
         species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'SiO', 'CN', 'CS']
         #species = ['CO', '13CO']
-        #species = ['CO', '13CO'] 
+        #species = ['CO', '13CO']
         for specStr in species:
             parms['radex']['specStr'] = specStr
             arxv.constructRadexDatabase(writeDb = True)
-            
+
 
 if False:
     for x, y, z in zip(arxv.grid_x, arxv.grid_y, arxv.grid_z):

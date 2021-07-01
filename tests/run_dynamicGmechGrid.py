@@ -78,7 +78,8 @@ pdr.set_maxSlabs                   (200);
 # different paths in the dict below
 parms = {
     'dirPath'      : outputDir,
-    'relativeGmech': False,
+    'relativeGmech': True,
+    'runDirPath2'  : databasePath,
     'metallicity'  : metallicity,
     'chemistry'    : {
                       'rxnFile'       : dataDir + "rate99Fixed.inp",
