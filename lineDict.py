@@ -2,17 +2,17 @@ from amuse.units import units
 
 lines = {
          'C+158'     : {'ismcpak' : ['fineStructureCoolingComponents','C+','rate','1-0'],
-                        'latex'   : r'[CII] 158$\mu m$',  
+                        'latex'   : r'[CII] 158$\mu m$',
                         'latex2'  : r'C$^+$ 158$\mum$',
                         'nu'      : 000e0 | units.Hz,
                         'type'    : 'pdr',
                         'specStr' : 'C+',
                         'radexIdx': 0,
-                        'u'       : {'P':'2', 'J':'3/2'}, 
-                        'l'       : {'P':'2', 'J':'1/2'}, 
+                        'u'       : {'P':'2', 'J':'3/2'},
+                        'l'       : {'P':'2', 'J':'1/2'},
                        },
-         'C609'      : {'ismcpak' : ['fineStructureCoolingComponents','C','rate','1-0'], 
-                        'latex'   : r'[CI] 609$\mu m$', 
+         'C609'      : {'ismcpak' : ['fineStructureCoolingComponents','C','rate','1-0'],
+                        'latex'   : r'[CI] 609$\mu m$',
                         'nu'      : 000e0 | units.Hz,
                         'type'    : 'pdr',
                         'specStr' : 'C',
@@ -20,23 +20,23 @@ lines = {
                         'u'       : {'J':'1'},
                         'l'       : {'J':'0'},
                        },
-         'C369'      : {'ismcpak' : ['fineStructureCoolingComponents','C','rate','2-1'], 
-                        'latex'   : r'[CI] 369$\mu m$', 
+         'C369'      : {'ismcpak' : ['fineStructureCoolingComponents','C','rate','2-1'],
+                        'latex'   : r'[CI] 369$\mu m$',
                         'nu'      : 000e0 | units.Hz,
                         'type'    : 'pdr',
                         'specStr' : 'C',
-                        'radexIdx': 2,                        
-                        'u'       : {'J':'2'}, 
-                        'l'       : {'J':'1'},     
+                        'radexIdx': 2,
+                        'u'       : {'J':'2'},
+                        'l'       : {'J':'1'},
                        },
-         'O63'       : {'ismcpak' : ['fineStructureCoolingComponents','O','rate','1-0'], 
-                        'latex'   : r'[OI] 63$\mu m$', 
+         'O63'       : {'ismcpak' : ['fineStructureCoolingComponents','O','rate','1-0'],
+                        'latex'   : r'[OI] 63$\mu m$',
                         'nu'      : 000e0 | units.Hz,
                         'type'    : 'pdr',
                         'specStr' : 'O',
-                        'radexIdx': 0,                        
-                        'u'       : {'P':'2', 'J':'3'}, 
-                        'l'       : {'P':'1', 'J':'3'}, 
+                        'radexIdx': 0,
+                        'u'       : {'P':'2', 'J':'3'},
+                        'l'       : {'P':'1', 'J':'3'},
                        },
          #----------------------------------------------------------------------------------------------------------
          'CO1-0'     : {'radexIdx'  : 0,  'latex' : 'CO(1-0)'  , 'type'    : 'radex-lvg' , 'specStr': 'CO'  , 'specStr-other' : ['12CO'], },
@@ -79,15 +79,15 @@ lines = {
          '13CO13-12'   : {'radexIdx'  : 12, 'latex' : r'$^{13}$CO(13-12)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
          '13CO14-13'   : {'radexIdx'  : 13, 'latex' : r'$^{13}$CO(14-13)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
          '13CO15-14'   : {'radexIdx'  : 14, 'latex' : r'$^{13}$CO(15-14)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
-         '13CO16-15'   : {'radexIdx'  : 15, 'latex' : r'$^{13}$CO(16-15)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},                  
-         '13CO17-16'   : {'radexIdx'  : 16, 'latex' : r'$^{13}$CO(17-16)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},                  
-         '13CO18-17'   : {'radexIdx'  : 17, 'latex' : r'$^{13}$CO(18-17)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},                  
-         '13CO19-18'   : {'radexIdx'  : 18, 'latex' : r'$^{13}$CO(19-18)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},                  
-         '13CO20-19'   : {'radexIdx'  : 19, 'latex' : r'$^{13}$CO(20-19)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},                  
-         '13CO21-20'   : {'radexIdx'  : 20, 'latex' : r'$^{13}$CO(21-20)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},                  
-         '13CO22-21'   : {'radexIdx'  : 21, 'latex' : r'$^{13}$CO(22-21)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},                  
-         '13CO23-22'   : {'radexIdx'  : 22, 'latex' : r'$^{13}$CO(23-22)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},                  
-         '13CO24-23'   : {'radexIdx'  : 23, 'latex' : r'$^{13}$CO(24-23)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},                  
+         '13CO16-15'   : {'radexIdx'  : 15, 'latex' : r'$^{13}$CO(16-15)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO17-16'   : {'radexIdx'  : 16, 'latex' : r'$^{13}$CO(17-16)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO18-17'   : {'radexIdx'  : 17, 'latex' : r'$^{13}$CO(18-17)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO19-18'   : {'radexIdx'  : 18, 'latex' : r'$^{13}$CO(19-18)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO20-19'   : {'radexIdx'  : 19, 'latex' : r'$^{13}$CO(20-19)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO21-20'   : {'radexIdx'  : 20, 'latex' : r'$^{13}$CO(21-20)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO22-21'   : {'radexIdx'  : 21, 'latex' : r'$^{13}$CO(22-21)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO23-22'   : {'radexIdx'  : 22, 'latex' : r'$^{13}$CO(23-22)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
+         '13CO24-23'   : {'radexIdx'  : 23, 'latex' : r'$^{13}$CO(24-23)', 'type' : 'radex-lvg' , 'specStr': '13CO' ,},
          #------------------------------------------------------------------------------------------------------------
          'HCO+1-0'   : {'radexIdx'  : 0,  'latex' : r'HCO$^+$(1-0)'  , 'type'   : 'radex-lvg' , 'specStr': 'HCO+'  ,},
          'HCO+2-1'   : {'radexIdx'  : 1,  'latex' : r'HCO$^+$(2-1)'  , 'type'   : 'radex-lvg' , 'specStr': 'HCO+'  ,},
@@ -139,16 +139,16 @@ lines = {
          'HNC14-13' : {'radexIdx'  : 13, 'latex' : r'HNC(14-13)', 'type'   : 'radex-lvg' , 'specStr': 'HNC'  ,},
          'HNC15-14' : {'radexIdx'  : 14, 'latex' : r'HNC(15-14)', 'type'   : 'radex-lvg' , 'specStr': 'HNC'  ,},
          'HNC16-15' : {'radexIdx'  : 15, 'latex' : r'HNC(16-15)', 'type'   : 'radex-lvg' , 'specStr': 'HNC'  ,},
-         #------------------------------------------------------------------------------------------------------------         
+         #------------------------------------------------------------------------------------------------------------
          'CN1-0' : {'radexIdx'  : 0,  'latex' : r'CN(1$_{1/2}$-0$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
          'CN2-1' : {'radexIdx'  : 1,  'latex' : r'CN(1$_{3/2}$-0$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
-         'CN3-2' : {'radexIdx'  : 2,  'latex' : r'CN(2$_{3/2}$-1$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},         
-         'CN4-3' : {'radexIdx'  : 3,  'latex' : r'CN(2$_{3/2}$-1$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},         
+         'CN3-2' : {'radexIdx'  : 2,  'latex' : r'CN(2$_{3/2}$-1$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
+         'CN4-3' : {'radexIdx'  : 3,  'latex' : r'CN(2$_{3/2}$-1$_{1/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
          'CN5-4' : {'radexIdx'  : 4,  'latex' : r'CN(2$_{5/2}$-1$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
          'CN6-5' : {'radexIdx'  : 5,  'latex' : r'CN(3$_{5/2}$-2$_{5/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
          'CN7-6' : {'radexIdx'  : 6,  'latex' : r'CN(3$_{5/2}$-2$_{3/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
-         'CN8-7' : {'radexIdx'  : 7,  'latex' : r'CN(3$_{7/2}$-2$_{5/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},         
-         #------------------------------------------------------------------------------------------------------------         
+         'CN8-7' : {'radexIdx'  : 7,  'latex' : r'CN(3$_{7/2}$-2$_{5/2}$)', 'type' : 'radex-lvg' , 'specStr': 'CN' ,},
+         #------------------------------------------------------------------------------------------------------------
          'CS1-0' : {'radexIdx'  : 0,  'latex' : r'CS(1-0)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
          'CS2-1' : {'radexIdx'  : 1,  'latex' : r'CS(2-1)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
          'CS3-2' : {'radexIdx'  : 2,  'latex' : r'CS(3-2)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
@@ -158,7 +158,7 @@ lines = {
          'CS7-6' : {'radexIdx'  : 6,  'latex' : r'CS(7-6)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
          'CS8-7' : {'radexIdx'  : 7,  'latex' : r'CS(8-7)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
          'CS9-8' : {'radexIdx'  : 8,  'latex' : r'CS(9-8)', 'type' : 'radex-lvg' , 'specStr': 'CS' ,},
-         #------------------------------------------------------------------------------------------------------------         
+         #------------------------------------------------------------------------------------------------------------
          'SiO1-0' : {'radexIdx'  : 0,  'latex' : r'SiO(1-0)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
          'SiO2-1' : {'radexIdx'  : 1,  'latex' : r'SiO(2-1)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
          'SiO3-2' : {'radexIdx'  : 2,  'latex' : r'SiO(3-2)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
@@ -167,10 +167,20 @@ lines = {
          'SiO6-5' : {'radexIdx'  : 5,  'latex' : r'SiO(6-5)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
          'SiO7-6' : {'radexIdx'  : 6,  'latex' : r'SiO(7-6)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
          'SiO8-7' : {'radexIdx'  : 7,  'latex' : r'SiO(8-7)', 'type' : 'radex-lvg' , 'specStr': 'SiO' ,},
+         #------------------------------------------------------------------------------------------------------------
+         'N2H+1-0' : {'radexIdx'  : 0,  'latex' : r'N2H+(1-0)', 'type' : 'radex-lvg' , 'specStr': 'N2H+' ,},
+         'N2H+2-1' : {'radexIdx'  : 1,  'latex' : r'N2H+(2-1)', 'type' : 'radex-lvg' , 'specStr': 'N2H+' ,},
+         'N2H+3-2' : {'radexIdx'  : 2,  'latex' : r'N2H+(3-2)', 'type' : 'radex-lvg' , 'specStr': 'N2H+' ,},
+         'N2H+4-3' : {'radexIdx'  : 3,  'latex' : r'N2H+(4-3)', 'type' : 'radex-lvg' , 'specStr': 'N2H+' ,},
+         'N2H+5-4' : {'radexIdx'  : 4,  'latex' : r'N2H+(5-4)', 'type' : 'radex-lvg' , 'specStr': 'N2H+' ,},
+         'N2H+6-5' : {'radexIdx'  : 5,  'latex' : r'N2H+(6-5)', 'type' : 'radex-lvg' , 'specStr': 'N2H+' ,},
+         'N2H+7-6' : {'radexIdx'  : 6,  'latex' : r'N2H+(7-6)', 'type' : 'radex-lvg' , 'specStr': 'N2H+' ,},
+         'N2H+8-7' : {'radexIdx'  : 7,  'latex' : r'N2H+(8-7)', 'type' : 'radex-lvg' , 'specStr': 'N2H+' ,},
+
         }
 
 def get_default_specStr(specStr):
-    '''returns formal string representation (according to this dictionary) of the specie by trying to 
+    '''returns formal string representation (according to this dictionary) of the specie by trying to
     match it to the pre-defined other names of the specie. For example if specStr is '12CO' then 'CO'
     is returned.
     '''
@@ -182,5 +192,5 @@ def get_default_specStr(specStr):
             if 'specStr-other' in lines[line]:
                 if specStr in lines[line]['specStr-other']:
                     return lines[line]['specStr']
-    
+
     return None
