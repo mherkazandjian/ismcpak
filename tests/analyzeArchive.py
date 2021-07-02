@@ -57,7 +57,7 @@ parms = {
                                     'specStr'  : specStr_PDR,
                                     },
                              '11' : { # line intensitities
-                                     'show'           : False,
+                                     'show'           : True,
                                      ##------------------comment those if radex parms is 'pdr' is selected below this------------
                                      #'type'           : 'pdr', #if type = pdr, quantity should point to a valid destination in the dtype in arxv.meshes[i]
                                      #'quantity'      : ['fineStructureCoolingComponents','C+','rate','1-0'], # for use with 'pdr'
@@ -122,7 +122,7 @@ if parms['plot']:
     arxv.plotGrids()
     pylab.show()
 
-if True:
+if False:
     """construct radex databases for a bunch of species for a bunch of Avs"""
 
     parms['radex']['compute'] = True

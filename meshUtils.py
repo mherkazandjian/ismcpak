@@ -823,7 +823,7 @@ class meshArxv(object):
 
             # reading the meshes in database into a list
             meshesRadex = []
-            radexTransitionsDtype = radex(None,None).generate_transition_dtype()
+            radexTransitionsDtype = Radex(None,None).generate_transition_dtype()
 
             for i in np.arange(self.nMeshes):
 
