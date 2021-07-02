@@ -13,5 +13,8 @@ pdr_clean:
 singularity:
 	@singularity build container.sif Singularity
 
+jupyterlab:
+	@singularity exec --scratch /run/user container.sif jupyter-lab
+
 clean:pdr_clean
 	rm -rvf *.pyc *~ .*~ *.log 

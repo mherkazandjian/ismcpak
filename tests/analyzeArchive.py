@@ -1,13 +1,16 @@
-import numpy
-import time
-import sys
 import os
+import sys
+import time
+from pprint import pprint
+import numpy
 import matplotlib
 # matplotlib.use('Qt4Agg')
 matplotlib.use('TkAgg')
+#matplotlib.use('PS')
 
 import pylab
 import meshUtils
+import lineDict
 #########################################parameters##########################################################
 home = os.environ['HOME']
 
@@ -77,11 +80,11 @@ parms = {
          'meshPltAvRng'  : [0, 30.0], #plotting range as a function of Av
 
          'radex'         : { 'use'                  : True,
-                             'loadAllDbs'           : False,
+                             'loadAllDbs'           : True,
                              'plot_model_from_Db'   : False,   #plot the emission ladder from the database [do not run radex]
                              ###-----------radex database parms-----------------
-                             'compute'              : True, #if true, runs radex on all meshes
-                             'writeDb'              : True, #if true, writes the computed stuff to a db
+                             'compute'              : False, #if true, runs radex on all meshes
+                             'writeDb'              : False, #if true, writes the computed stuff to a db
                              'Av_range'             : [0.0, 30],  #range which will be used in extracting data needed by radex from the PDR models
                                                                   #(only relevent to constructing databases)
                              'path'                 : '/ism/ismcpak/radex/Radex/bin-gcc/radex',
@@ -160,13 +163,25 @@ if False:
 
 
 if True:
-    for x, y, z in zip(arxv.grid_x, arxv.grid_y, arxv.grid_z):
-        m = arxv.get_mesh_data(x, y, z)
-        col_den = m.getColumnDensity(specsStrs=['CO'])
-        print '%-21.18e %-21.18e %-21.18e %-21.18e' % (x, y, z, col_den[0])
+    Av = 30.0
+    species = 'CO'
+    transition = '1-0'
 
-    #arxv.use_radexDb(Av=30.0, specStr='CO')
-    #radex_mesh = arxv.meshesRadex[0]
+    arxv.use_radexDb(Av=Av, specStr=species)
+    transition_info =  lineDict.lines[species + transition]
+    transition_index = transition_info['radexIdx']
+    pprint(transition_info)
 
+    for model_ind, (x, y, z) in enumerate(zip(arxv.grid_x, arxv.grid_y, arxv.grid_z)):
+            m = arxv.get_mesh_data(x, y, z)
+            col_den = m.getColumnDensity(specsStrs=[species], maxAv=Av)
+            radex_model = arxv.meshesRadex[model_ind]
+            if radex_model is not None:
+                flux = radex_model[transition_index]['fluxcgs']
+            else:
+                flux = numpy.nan
+
+            print '%-21.18e %-21.18e %-21.18e %-21.18e %-21.18e' % (x, y, z, col_den[0], flux)
 
 print 'done'
+
