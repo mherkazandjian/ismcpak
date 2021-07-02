@@ -7,3 +7,11 @@ radex.tgz
 *.log
 foo
 .idea
+.bash_history
+*.ipynb_checkpoints/
+*.ipynb
+*.sif
+ismcpak_design.uxf
+*.tar.gz
+*.txt
+
