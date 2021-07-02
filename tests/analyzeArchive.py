@@ -128,15 +128,15 @@ if False:
     parms['radex']['compute'] = True
     parms['radex']['writeDb'] = True
 
-    #for Av in numpy.arange(10.0, 30.0+0.0001, 2.0):
+    for Av in numpy.arange(0.001, 30.0+0.0001, 2.0):
     #for Av in numpy.arange(1.0, 10.0+0.0001, 1.0):
-    # for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
-    for Av in numpy.array([2.0,]):
+    #for Av in numpy.array([0.01, 0.1, 1.0, 2.0]):
+    #for Av in numpy.array([2.0,]):
         parms['radex']['Av_range'][1] = Av
         #species = ['CO', '13CO', 'HCN', 'HNC', 'HCO+', 'SiO', 'CN', 'CS']
         # species = ['CO', 'HCN', 'HNC', 'HCO+']
-        # species = ['CO',]
-        species = ['HN2+',]
+        species = ['CO',]
+        #species = ['HN2+',]
         for specStr in species:
             parms['radex']['specStr'] = specStr
             arxv.constructRadexDatabase(writeDb=True)
@@ -159,11 +159,14 @@ if False:
             arxv.constructRadexDatabase(writeDb = True)
 
 
-if False:
+if True:
     for x, y, z in zip(arxv.grid_x, arxv.grid_y, arxv.grid_z):
         m = arxv.get_mesh_data(x, y, z)
-        col_den = m.getColumnDensity(specsStrs=['HN2+'])
+        col_den = m.getColumnDensity(specsStrs=['CO'])
         print '%-21.18e %-21.18e %-21.18e %-21.18e' % (x, y, z, col_den[0])
+
+    #arxv.use_radexDb(Av=30.0, specStr='CO')
+    #radex_mesh = arxv.meshesRadex[0]
 
 
 print 'done'
