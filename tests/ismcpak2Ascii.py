@@ -67,6 +67,37 @@ parameters = {
              }
 
 #
+def fetchNestedDtypeValue(var, namesLst):
+    """Returns the value of a nested dtype given the names to look for as a list.
+       For example, to return the value of var['xx']['yy']['zz'], u can use :
+
+           value = fetchNestedDtypeValue[ var, ['xx', 'yy', 'zz']
+
+       an exception is raised if any of the names is not found
+
+       .. note:: it might be cool to implement a feature where give zz,
+          without xx and yy it can return the value of zz (assuming it
+          is uniqe, i.e no other name is zz). Hint: a tree lokup maybe??
+
+       see testDtypeUtils.py
+    """
+
+    currVar = var
+    for name in namesLst:
+        #print 'looking for current name %s' % name
+        currVarNames = currVar.dtype.names
+        #print 'names in the current var are : ', currVarNames
+        #print '-----------------------------------------------'
+
+        if name in currVarNames:
+            #print 'found the name *%s*' % name
+            currVar = currVar[name]
+        else:
+            raise NameError('name *%s* not found in the variable "currVar"' % name)
+
+    return currVar
+
+
 def main(parms):
 
     ## reading the archive
@@ -185,7 +216,6 @@ def main(parms):
             for quantity_name, quantity in parms['quantities_at_AV']:
 
                 ## using the current mesh as the temporary mesh in the mesh arxv object
-                import pdb; pdb.set_trace()
                 q_vs_Av_this_mesh = fetchNestedDtypeValue(msh, quantity)
                 Av_this_mesh = fetchNestedDtypeValue(msh, ['state', 'Av'])
 
